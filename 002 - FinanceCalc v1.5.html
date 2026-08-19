@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Money</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#121722; --card:#161c28; --card2:#1b2230;
+    --bd:#232c3d; --bd2:#2c3648;
+    --tx:#e6ebf2; --mut:#7c8798;
+    --amber:#f4b73f; --amber-dim:#8a6a1f;
+    --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%}
+  body{padding:16px 14px 60px;max-width:780px;margin:0 auto;line-height:1.45}
+  h1,h2,h3{margin:0;font-weight:650}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+  .mut{color:var(--mut)}
+  button{font-family:var(--sans);cursor:pointer}
+  input,select{font-family:var(--sans)}
+  a{color:var(--amber)}
+
+  /* Header */
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(244,183,63,.12)}
+  .brand h1{font-size:16px;letter-spacing:.3px}
+  .brand .sub{font-size:11px;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
+  #saved{font-size:11px;color:var(--mut);display:flex;align-items:center;gap:6px}
+  #saved .s-dot{width:6px;height:6px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
+  #saved.flash .s-dot{opacity:1}
+
+  /* Balance hero */
+  .hero{background:linear-gradient(160deg,#151b28,#10151f);border:1px solid var(--bd);border-radius:16px;padding:18px 18px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,rgba(244,183,63,.10),transparent 60%);pointer-events:none}
+  .hero .lbl{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut)}
+  .hero .big{font-size:clamp(34px,10vw,52px);font-weight:600;line-height:1.05;margin-top:6px}
+  .hero .big .cur{font-size:.5em;color:var(--amber);vertical-align:top;margin-right:2px;font-weight:600}
+  .hero .cap{font-size:12px;color:var(--mut);margin-top:6px}
+
+  /* stat trio */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 12px}
+  .stat .k{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
+  .stat .v{font-size:16px;margin-top:5px;font-weight:600}
+
+  /* generic panel */
+  .panel{background:var(--panel);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden}
+  .p-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;gap:10px}
+  .p-head h2{font-size:13px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .p-head h2 .tick{color:var(--amber)}
+  .p-body{padding:0 14px 14px}
+
+  /* segmented toggle */
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:2px}
+  .seg button{border:0;background:transparent;color:var(--mut);font-size:11.5px;padding:5px 11px;border-radius:7px;font-weight:600;transition:.15s}
+  .seg button.on{background:var(--amber);color:#20160a}
+  .icon-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);width:30px;height:28px;border-radius:8px;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .icon-btn:hover{color:var(--tx);border-color:var(--bd2)}
+
+  /* chart */
+  #chartWrap{padding:4px 6px 2px}
+  svg.chart{width:100%;height:auto;aspect-ratio:720/196;display:block}
+  .chart-empty{color:var(--mut);font-size:12px;text-align:center;padding:26px 0}
+
+  /* entry form */
+  form.entry{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
+  input,select{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 10px;font-size:14px;width:100%}
+  input:focus,select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(244,183,63,.12)}
+  .btn{border:0;border-radius:9px;padding:10px 14px;font-size:13.5px;font-weight:650}
+  .btn.primary{background:var(--amber);color:#20160a}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .btn.ghost{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
+  .btn.ghost:hover{border-color:var(--bd2)}
+  .btn.sm{padding:7px 11px;font-size:12px}
+
+  /* automation */
+  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .split-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--bd)}
+  .split-row:last-of-type{border-bottom:0}
+  .split-row .nm{display:flex;align-items:center;gap:8px;font-size:13px}
+  .pill{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;letter-spacing:.3px}
+  .pill.debt{background:rgba(255,93,93,.14);color:#ff9a9a}
+  .pill.trade{background:rgba(93,169,230,.16);color:#9cccf2}
+  .pill.save{background:rgba(61,220,132,.14);color:#8ff0bc}
+  .split-row input{width:110px;text-align:right}
+  .auto-note{font-size:11.5px;color:var(--mut);margin:8px 0 10px}
+  .auto-note b{color:var(--tx)}
+
+  /* month summary */
+  .msel{display:flex;align-items:center;gap:10px}
+  .msel select{width:auto;min-width:150px}
+  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  @media(min-width:560px){.metrics{grid-template-columns:repeat(4,1fr)}}
+  .metric{background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:10px 11px}
+  .metric .k{font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
+  .metric .v{font-size:15.5px;font-weight:600;margin-top:4px}
+  .cats{margin-top:12px}
+  .cats .cttl{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
+  .catrow{display:flex;align-items:center;gap:8px;margin:5px 0}
+  .catrow .cn{font-size:12.5px;width:96px;color:var(--tx)}
+  .catbar{flex:1;height:7px;background:var(--card);border-radius:6px;overflow:hidden}
+  .catbar span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-dim))}
+  .catrow .cv{font-size:12px;color:var(--mut);width:78px;text-align:right}
+
+  /* ledger */
+  .led{display:flex;flex-direction:column}
+  .lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+  .lrow:last-child{border-bottom:0}
+  .ldate{font-size:11px;color:var(--mut);width:52px;flex:none;line-height:1.2}
+  .ldate b{display:block;color:var(--tx);font-size:13px;font-weight:600}
+  .lmid{flex:1;min-width:0}
+  .badge{font-size:10px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+  .lnote{font-size:12px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lamt{font-size:14px;font-weight:650;flex:none;text-align:right}
+  .lamt .tag{display:block;font-size:9.5px;color:var(--mut);font-weight:600;letter-spacing:.3px}
+  .up{color:var(--up)} .down{color:var(--down)} .neu{color:var(--mut)} .cool{color:var(--cool)}
+  .del{border:0;background:transparent;color:var(--mut);font-size:16px;padding:2px 4px;line-height:1;flex:none}
+  .del:hover{color:var(--down)}
+  .empty{color:var(--mut);font-size:12.5px;text-align:center;padding:22px 6px}
+  .empty b{color:var(--tx)}
+
+  /* details/setup */
+  details{background:var(--panel);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px}
+  details>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
+  details>summary::-webkit-details-marker{display:none}
+  details>summary .chev{color:var(--mut);transition:.2s}
+  details[open]>summary .chev{transform:rotate(180deg)}
+  .d-body{padding:0 14px 14px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hint{font-size:11.5px;color:var(--mut);margin:2px 0 12px}
+  .data-btns{display:flex;flex-wrap:wrap;gap:8px}
+  textarea{width:100%;min-height:120px;background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:10px;font-family:var(--mono);font-size:11.5px;margin-top:8px}
+  .warn{color:#ff9a9a}
+  hr.sep{border:0;border-top:1px solid var(--bd);margin:14px 0}
+  .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:18px;line-height:1.6}
+
+  /* helper hint under a panel head */
+  .subhint{font-size:12px;color:var(--mut);margin:-2px 0 12px}
+  .subhint b{color:var(--tx)}
+
+  /* photo attach */
+  .photo-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #fPhotoPrev{height:40px;border-radius:6px;border:1px solid var(--bd);object-fit:cover}
+  .photo-chip{border:1px solid var(--bd);background:var(--card2);color:var(--mut);border-radius:7px;font-size:12px;padding:3px 7px;flex:none;line-height:1;display:inline-flex;align-items:center;gap:4px}
+  .photo-chip:hover{color:var(--tx);border-color:var(--amber)}
+
+  /* allowance counter + disabled button */
+  .yr-count{font-size:11.5px;color:var(--mut);margin-top:10px;display:flex;align-items:center;gap:7px}
+  .yr-count .pips{display:inline-flex;gap:3px}
+  .yr-count .pip{width:9px;height:9px;border-radius:2px;background:var(--bd2)}
+  .yr-count .pip.on{background:var(--amber)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.3)}
+  .done-tag{color:var(--up)}
+
+  /* image viewer */
+  .viewer{position:fixed;inset:0;background:rgba(6,9,14,.86);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+  .viewer-inner{background:var(--panel);border:1px solid var(--bd2);border-radius:14px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+  .viewer-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:650}
+  .viewer-body{padding:12px;overflow:auto;text-align:center;background:#0d1119}
+  .viewer-body img{max-width:100%;border-radius:8px}
+  .viewer-foot{padding:10px 12px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+  .viewer-note{color:var(--mut);font-size:12.5px;padding:22px 10px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      <h1>My Money</h1>
+      <div class="sub">personal tracker</div>
+    </div>
+  </div>
+  <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+</header>
+
+<!-- Balance hero -->
+<div class="hero">
+  <div class="lbl">Money I have right now</div>
+  <div class="big mono" id="heroBal">—</div>
+  <div class="cap" id="heroCap"></div>
+</div>
+
+<!-- stat trio -->
+<div class="trio">
+  <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
+  <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
+  <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
+</div>
+
+<!-- Chart -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">▚</span> Balance over time</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="seg" id="chartSeg">
+        <button data-t="candle">Candles</button>
+        <button data-t="line">Line</button>
+      </div>
+      <button class="icon-btn" id="chartToggle" title="Show / hide">▾</button>
+    </div>
+  </div>
+  <div class="p-body" id="chartWrap"></div>
+</div>
+
+<!-- Add entry -->
+<div class="panel">
+  <div class="p-head"><h2><span class="tick">＋</span> Add an entry</h2></div>
+  <div class="p-body">
+    <div class="subhint">To log a <b>purchase</b>, pick <b>Spent on something</b>, choose a category, type the amount. That’s what fills the “By month” spending.</div>
+    <form class="entry" id="entryForm" autocomplete="off">
+      <div class="fld">
+        <label for="fDate">Date</label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="fld">
+        <label for="fType">What happened</label>
+        <select id="fType">
+          <option value="income">Money in (not allowance)</option>
+          <option value="spend">Spent on something</option>
+          <option value="trade_win">Trade — made money</option>
+          <option value="trade_loss">Trade — lost money</option>
+          <option value="pay_debt_balance">Pay Dad (from my money)</option>
+          <option value="borrow">Borrowed / debt went up</option>
+          <option value="save">Move to savings</option>
+          <option value="withdraw">Take from savings</option>
+          <option value="adjust">Adjustment (+ / −)</option>
+        </select>
+      </div>
+      <div class="fld" id="catFld" style="display:none">
+        <label for="fCat">Category</label>
+        <select id="fCat">
+          <option>Snacks</option><option>Food</option><option>Toys</option>
+          <option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fld" id="amtFld">
+        <label for="fAmt"><span id="amtLbl">Amount</span></label>
+        <input type="number" id="fAmt" step="0.01" inputmode="decimal" placeholder="0.00">
+      </div>
+      <div class="fld full">
+        <label for="fNote">Note (optional)</label>
+        <input type="text" id="fNote" placeholder="e.g. birthday money, gold trade, pencil case">
+      </div>
+      <div class="fld full">
+        <label>Photo / receipt (optional)</label>
+        <div class="photo-pick">
+          <input type="file" id="fPhoto" accept="image/*,.heic,.heif,.png,.jpg,.jpeg,.webp,.gif,.bmp" style="display:none">
+          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach photo</button>
+          <span id="fPhotoName" class="mut" style="font-size:12px"></span>
+          <img id="fPhotoPrev" alt="" style="display:none;margin-left:auto">
+          <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove</button>
+        </div>
+      </div>
+      <div class="fld full">
+        <button type="submit" class="btn primary" style="width:100%">Add entry</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Salary automation -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">⟳</span> Monthly allowance</h2>
+    <button class="btn ghost sm" id="applyAlw">Add this month</button>
+  </div>
+  <div class="p-body">
+    <div class="subhint">Set your <b>monthly amount</b> and how it splits. You can add it <b>once per month</b> (up to 12 times a year). Any other money you get, log it as <b>Money in</b> instead.</div>
+    <div class="auto-note" id="autoSummary"></div>
+    <div class="split-row">
+      <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
+      <input type="number" id="sDebt" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill trade">TRADING</span> To trading money</div>
+      <input type="number" id="sTrade" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill save">SAVINGS</span> To savings</div>
+      <input type="number" id="sSave" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:10px">
+      <div class="nm"><b>Monthly amount</b></div>
+      <input type="number" id="sAlw" step="0.01" inputmode="decimal">
+    </div>
+    <div class="yr-count" id="yrCount"></div>
+  </div>
+</div>
+
+<!-- Month summary -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">▦</span> By month</h2>
+    <div class="msel"><select id="monthSel"></select></div>
+  </div>
+  <div class="p-body">
+    <div class="metrics" id="metrics"></div>
+    <div class="cats" id="cats"></div>
+  </div>
+</div>
+
+<!-- Ledger -->
+<div class="panel">
+  <div class="p-head"><h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2></div>
+  <div class="p-body"><div class="led" id="ledger"></div></div>
+</div>
+
+<!-- Setup -->
+<details>
+  <summary>Setup &amp; starting numbers <span class="chev">▾</span></summary>
+  <div class="d-body">
+    <div class="hint">Set where you’re starting from today. Everything above builds on these.</div>
+    <div class="row2">
+      <div class="fld"><label>Starting money (now)</label><input type="number" id="oBal" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Debt to Dad</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Savings</label><input type="number" id="oSav" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Currency symbol</label><input type="text" id="oCur" maxlength="3"></div>
+    </div>
+    <div style="margin-top:12px"><button class="btn primary sm" id="saveSetup">Save starting numbers</button></div>
+  </div>
+</details>
+
+<!-- Data -->
+<details>
+  <summary>Back up &amp; data <span class="chev">▾</span></summary>
+  <div class="d-body">
+    <div class="hint">Your data saves automatically <b>on this device</b> (it’s not in the cloud). To keep it safe or move it to another device, export a backup file — it includes your photos. Import pastes it back.</div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="expCopy">Copy backup</button>
+      <button class="btn ghost sm" id="expFile">Download backup</button>
+      <button class="btn ghost sm" id="impToggle">Import backup</button>
+      <button class="btn ghost sm warn" id="resetBtn" style="margin-left:auto">Reset everything</button>
+    </div>
+    <div id="impWrap" style="display:none">
+      <textarea id="impBox" placeholder="Paste your backup here, then press Load"></textarea>
+      <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
+    </div>
+  </div>
+</details>
+
+<div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
+
+<!-- image viewer -->
+<div id="viewer" class="viewer" style="display:none">
+  <div class="viewer-inner">
+    <div class="viewer-bar"><span id="viewerTitle">Photo</span><button class="icon-btn" id="viewerClose">✕</button></div>
+    <div class="viewer-body" id="viewerBody"></div>
+    <div class="viewer-foot"><button class="btn ghost sm warn" id="viewerDel">Remove photo</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+  /* ---------------- constants ---------------- */
+  var STORE_KEY = "mymoney_v2";
+  var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
+      GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798";
+  var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  var TYPE_META = {
+    income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
+    trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
+    borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"}
+  };
+
+  var DEFAULTS = {
+    currency:"$",
+    opening:{balance:0, debt:0, savings:0},
+    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0},
+    chartType:"candle", chartCollapsed:false,
+    selectedMonth:null,
+    transactions:[{"date":"2025-01-15","type":"income","amount":40.84,"note":"January allowance (150 AED)","id":1},{"date":"2025-01-15","type":"spend","amount":8.17,"note":"Spent (30 AED)","cat":"Other","id":2},{"date":"2025-02-15","type":"income","amount":40.84,"note":"February allowance (150 AED)","id":3},{"date":"2025-03-15","type":"income","amount":40.84,"note":"March allowance (150 AED)","id":4},{"date":"2025-03-15","type":"income","amount":190.61,"note":"Birthday money (700 AED)","id":5},{"date":"2025-04-15","type":"spend","amount":136.15,"note":"Broke a lamp (500 AED)","cat":"Other","id":6},{"date":"2025-09-15","type":"income","amount":40.84,"note":"September allowance (150 AED)","id":7},{"date":"2025-09-15","type":"trade_win","amount":39.21,"note":"Stocks profit (+144 AED)","id":8},{"date":"2025-10-15","type":"income","amount":40.84,"note":"October allowance (150 AED)","id":9},{"date":"2025-10-15","type":"spend","amount":108.92,"note":"Broke shelf: two plants (400 AED)","cat":"Other","id":10},{"date":"2025-10-15","type":"spend","amount":136.15,"note":"Broke shelf: one vase (500 AED)","cat":"Other","id":11},{"date":"2025-11-15","type":"income","amount":40.84,"note":"November allowance (150 AED)","id":12},{"date":"2025-11-15","type":"spend","amount":4.08,"note":"Toy gun (15 AED)","cat":"Toys","id":13},{"date":"2025-12-15","type":"income","amount":40.84,"note":"December allowance (150 AED)","id":14},{"date":"2025-12-15","type":"income","amount":16.34,"note":"Reading money (60 AED)","id":15},{"date":"2025-12-15","type":"trade_loss","amount":141.59,"note":"Stocks loss (−520 AED)","id":16},{"date":"2026-01-15","type":"income","amount":40.84,"note":"January allowance (150 AED)","id":17},{"date":"2026-01-15","type":"income","amount":24.51,"note":"Reading money (90 AED)","id":18},{"date":"2026-01-15","type":"income","amount":2.72,"note":"Dad reading bonus (10 AED)","id":19},{"date":"2026-01-15","type":"income","amount":136.15,"note":"Gift — Ramla Khala (500 AED)","id":20},{"date":"2026-02-15","type":"income","amount":40.84,"note":"February allowance (150 AED)","id":21},{"date":"2026-02-15","type":"trade_win","amount":272.29,"note":"Bitcoin & Google trades (~+1000 AED)","id":22},{"date":"2026-02-15","type":"spend","amount":19.06,"note":"Pencil cases — Dad covered 20 (70 AED)","cat":"Stationery","id":23},{"date":"2026-02-15","type":"spend","amount":20.42,"note":"Cheetos & Doritos (75 AED)","cat":"Snacks","id":24},{"date":"2026-02-15","type":"income","amount":21.78,"note":"School — paid own, reimbursed (80 AED)","id":25},{"date":"2026-02-15","type":"trade_win","amount":47.65,"note":"Stocks (+175 AED)","id":26},{"date":"2026-02-15","type":"income","amount":5.45,"note":"School (+20 AED)","id":27},{"date":"2026-02-15","type":"spend","amount":76.24,"note":"Temu order (280 AED)","cat":"Shopping","id":28},{"date":"2026-02-15","type":"trade_win","amount":50.0,"note":"Trade (+$50)","id":29},{"date":"2026-02-15","type":"trade_win","amount":24.0,"note":"Trade (+$24)","id":30},{"date":"2026-02-15","type":"trade_loss","amount":46.0,"note":"Trade (−$46)","id":31},{"date":"2026-03-15","type":"income","amount":40.84,"note":"March allowance (150 AED)","id":32},{"date":"2026-03-15","type":"income","amount":50.65,"note":"Bet with Dad (+186 AED)","id":33},{"date":"2026-03-15","type":"income","amount":23.42,"note":"Temu refund (+86 AED)","id":34},{"date":"2026-03-15","type":"trade_win","amount":18.24,"note":"Gold (+67 AED)","id":35},{"date":"2026-03-15","type":"trade_loss","amount":499.93,"note":"Bitcoin (−1836 AED)","id":36},{"date":"2026-03-15","type":"trade_win","amount":35.4,"note":"Gold (+130 AED)","id":37},{"date":"2026-03-15","type":"spend","amount":17.43,"note":"Amazon (64 AED)","cat":"Shopping","id":38},{"date":"2026-03-15","type":"trade_win","amount":42.0,"note":"Crude oil (+$42)","id":39},{"date":"2026-03-15","type":"trade_win","amount":3.3,"note":"Crude oil (+$3.30)","id":40},{"date":"2026-03-15","type":"trade_win","amount":23.0,"note":"Gold (+$23)","id":41},{"date":"2026-03-15","type":"trade_loss","amount":120.0,"note":"Gold (−$120)","id":42},{"date":"2026-03-15","type":"trade_loss","amount":6.0,"note":"Gold (−$6, no proof)","id":43},{"date":"2026-03-15","type":"trade_win","amount":15.0,"note":"Trade (+$15)","id":44},{"date":"2026-03-15","type":"trade_loss","amount":1.02,"note":"Trade (−$1.02)","id":45},{"date":"2026-03-15","type":"trade_win","amount":11.6,"note":"Trade (+$11.60)","id":46},{"date":"2026-03-15","type":"income","amount":54.46,"note":"EID money (200 AED)","id":47},{"date":"2026-03-15","type":"trade_loss","amount":51.46,"note":"MetaTrader loss (−189 AED)","id":48},{"date":"2026-03-15","type":"borrow","amount":2300.0,"note":"Lost ~$2300 in bitcoin (8445 AED) — carried as debt to Dad","id":49},{"date":"2026-03-28","type":"adjust","amount":-123.56,"note":"Switched to USD — reset trading capital (loss carried as debt)","id":50},{"date":"2026-04-15","type":"alw_debt","amount":30,"note":"April allowance → debt (2300→2270)","auto":true,"id":51},{"date":"2026-04-15","type":"alw_savings","amount":10,"note":"April allowance → savings","auto":true,"id":52},{"date":"2026-04-15","type":"income","amount":20.0,"note":"Old $20 (previously untracked)","id":53},{"date":"2026-04-15","type":"trade_win","amount":20.0,"note":"Early trading (+$20)","id":54},{"date":"2026-04-15","type":"trade_loss","amount":1.7,"note":"Trade (−$1.7)","id":55},{"date":"2026-04-15","type":"trade_loss","amount":0.22,"note":"Trade (−$0.22)","id":56},{"date":"2026-04-15","type":"trade_loss","amount":6.57,"note":"Trade (−$6.57)","id":57},{"date":"2026-04-15","type":"trade_win","amount":13.06,"note":"Trade (+$13.06)","id":58},{"date":"2026-04-15","type":"trade_win","amount":0.91,"note":"Trade (+$0.91)","id":59},{"date":"2026-04-15","type":"trade_loss","amount":10.56,"note":"Trade (−$10.56)","id":60},{"date":"2026-04-15","type":"trade_loss","amount":3.64,"note":"Trade (−$3.64)","id":61},{"date":"2026-04-15","type":"trade_loss","amount":8.37,"note":"Trade (−$8.37)","id":62},{"date":"2026-04-15","type":"trade_loss","amount":2.33,"note":"Trade (−$2.33)","id":63},{"date":"2026-04-15","type":"trade_loss","amount":0.42,"note":"Trade (−$0.42)","id":64},{"date":"2026-04-15","type":"trade_win","amount":6.5,"note":"Trade split with Dad (+$6.50)","id":65},{"date":"2026-04-15","type":"trade_win","amount":1.24,"note":"Trade (+$1.24)","id":66},{"date":"2026-04-15","type":"trade_loss","amount":0.33,"note":"Trade (−$0.33)","id":67},{"date":"2026-04-15","type":"trade_loss","amount":2.58,"note":"Trade (−$2.58)","id":68},{"date":"2026-04-15","type":"trade_loss","amount":1.4,"note":"Trade (−$1.4)","id":69},{"date":"2026-04-15","type":"trade_loss","amount":2.6,"note":"Trade (−$2.6)","id":70},{"date":"2026-04-15","type":"trade_loss","amount":6.06,"note":"Trade (−$6.06)","id":71},{"date":"2026-04-15","type":"trade_win","amount":5.74,"note":"Trade (+$5.74)","id":72},{"date":"2026-04-15","type":"trade_loss","amount":0.98,"note":"Trade (−$0.98)","id":73},{"date":"2026-04-15","type":"trade_loss","amount":23.0,"note":"ACCOUNT BLOWN (−$23)","id":74},{"date":"2026-04-15","type":"withdraw","amount":10.0,"note":"Withdrew savings to keep trading","id":75},{"date":"2026-04-15","type":"trade_loss","amount":3.5,"note":"Trade (−$3.5)","id":76},{"date":"2026-04-15","type":"trade_loss","amount":1.06,"note":"Trade (−$1.06)","id":77},{"date":"2026-04-15","type":"trade_win","amount":1.5,"note":"Trade (+$1.5)","id":78},{"date":"2026-04-15","type":"trade_loss","amount":5.23,"note":"Trade (−$5.23)","id":79},{"date":"2026-04-15","type":"trade_win","amount":0.66,"note":"Trade (+$0.66)","id":80},{"date":"2026-04-15","type":"trade_loss","amount":3.09,"note":"Trade (−$3.09)","id":81},{"date":"2026-04-15","type":"trade_loss","amount":3.6,"note":"Trade (−$3.6)","id":82},{"date":"2026-05-15","type":"alw_debt","amount":30,"note":"May allowance → debt (2270→2240)","auto":true,"id":83},{"date":"2026-05-15","type":"alw_trading","amount":11,"note":"May allowance → trading","auto":true,"id":84},{"date":"2026-05-15","type":"income","amount":8.17,"note":"Mom — for the SPF trip (+$8.17)","id":85},{"date":"2026-05-15","type":"trade_loss","amount":4.08,"note":"Trade (−$4.08)","id":86},{"date":"2026-05-15","type":"trade_win","amount":2.95,"note":"Trade (+$2.95)","id":87},{"date":"2026-05-15","type":"trade_loss","amount":0.85,"note":"Trade (−$0.85)","id":88},{"date":"2026-05-15","type":"trade_loss","amount":3.73,"note":"Trade (−$3.73)","id":89},{"date":"2026-05-15","type":"trade_loss","amount":2.6,"note":"Trade (−$2.6)","id":90},{"date":"2026-05-15","type":"trade_loss","amount":0.49,"note":"Trade (−$0.49)","id":91},{"date":"2026-05-15","type":"trade_win","amount":1.54,"note":"Trade (+$1.54)","id":92},{"date":"2026-05-15","type":"trade_win","amount":6.75,"note":"Trade (+$6.75)","id":93},{"date":"2026-05-15","type":"trade_win","amount":1.54,"note":"Trade (+$1.54)","id":94},{"date":"2026-05-15","type":"trade_win","amount":2.0,"note":"Trade (+$2)","id":95},{"date":"2026-05-15","type":"trade_win","amount":2.75,"note":"Trade (+$2.75)","id":96},{"date":"2026-05-15","type":"trade_loss","amount":7.15,"note":"Trade (−$7.15)","id":97},{"date":"2026-05-15","type":"trade_loss","amount":6.22,"note":"Trade (−$6.22)","id":98},{"date":"2026-05-15","type":"trade_loss","amount":1.65,"note":"Trade (−$1.65)","id":99},{"date":"2026-05-15","type":"trade_loss","amount":6.6,"note":"Trade (−$6.6)","id":100},{"date":"2026-05-15","type":"trade_loss","amount":4.12,"note":"Trade (−$4.12)","id":101},{"date":"2026-05-15","type":"trade_win","amount":0.93,"note":"Trade (+$0.93)","id":102},{"date":"2026-05-15","type":"trade_win","amount":1.28,"note":"Trade (+$1.28)","id":103},{"date":"2026-05-15","type":"trade_loss","amount":1.7,"note":"Trade (−$1.7)","id":104},{"date":"2026-05-15","type":"trade_win","amount":1.75,"note":"Trade (+$1.75)","id":105},{"date":"2026-05-15","type":"trade_loss","amount":9.95,"note":"Trade (−$9.95)","id":106},{"date":"2026-06-15","type":"alw_debt","amount":30,"note":"June allowance → debt (2240→2210)","auto":true,"id":107},{"date":"2026-06-15","type":"alw_trading","amount":11,"note":"June allowance → trading","auto":true,"id":108},{"date":"2026-06-15","type":"trade_win","amount":16.38,"note":"Trade (+$16.38)","id":109},{"date":"2026-06-15","type":"trade_win","amount":1.0,"note":"Trade (+$1)","id":110},{"date":"2026-06-15","type":"trade_win","amount":10.84,"note":"Trade (+$10.84)","id":111},{"date":"2026-06-15","type":"trade_loss","amount":6.85,"note":"Trade (−$6.85)","id":112},{"date":"2026-06-15","type":"trade_win","amount":2.86,"note":"Trade (+$2.86)","id":113},{"date":"2026-06-15","type":"trade_loss","amount":2.5,"note":"Trade (−$2.5)","id":114},{"date":"2026-06-15","type":"trade_loss","amount":15.03,"note":"Trade (−$15.03)","id":115},{"date":"2026-06-15","type":"trade_win","amount":1.05,"note":"Trade (+$1.05)","id":116},{"date":"2026-06-15","type":"trade_win","amount":2.38,"note":"Trade (+$2.38)","id":117},{"date":"2026-06-15","type":"trade_win","amount":2.89,"note":"Trade (+$2.89)","id":118},{"date":"2026-06-15","type":"trade_win","amount":1.84,"note":"Trade (+$1.84)","id":119},{"date":"2026-06-15","type":"trade_win","amount":3.93,"note":"Trade (+$3.93)","id":120},{"date":"2026-06-15","type":"trade_loss","amount":3.21,"note":"Trade (−$3.21)","id":121},{"date":"2026-06-15","type":"trade_win","amount":5.36,"note":"Trade (+$5.36)","id":122},{"date":"2026-06-15","type":"trade_loss","amount":14.56,"note":"Trade (−$14.56)","id":123},{"date":"2026-06-15","type":"trade_loss","amount":6.59,"note":"Trade (−$6.59)","id":124},{"date":"2026-06-15","type":"trade_win","amount":2.85,"note":"Trade (+$2.85)","id":125},{"date":"2026-06-15","type":"trade_win","amount":24.23,"note":"Trade (+$24.23)","id":126},{"date":"2026-06-15","type":"trade_loss","amount":4.44,"note":"Trade (−$4.44)","id":127},{"date":"2026-06-15","type":"trade_win","amount":3.44,"note":"Trade (+$3.44)","id":128},{"date":"2026-06-15","type":"trade_loss","amount":2.81,"note":"Trade (−$2.81)","id":129},{"date":"2026-06-15","type":"trade_win","amount":2.82,"note":"Trade (+$2.82)","id":130},{"date":"2026-06-15","type":"trade_win","amount":21.2,"note":"Trade (+$21.2)","id":131},{"date":"2026-06-15","type":"trade_loss","amount":32.71,"note":"Trade (−$32.71)","id":132},{"date":"2026-06-15","type":"trade_win","amount":1.37,"note":"Trade (+$1.37)","id":133},{"date":"2026-06-15","type":"trade_loss","amount":1.58,"note":"Trade (−$1.58)","id":134},{"date":"2026-06-15","type":"trade_win","amount":9.67,"note":"Trade (+$9.67)","id":135},{"date":"2026-06-15","type":"trade_loss","amount":1.94,"note":"Trade (−$1.94)","id":136},{"date":"2026-06-15","type":"trade_win","amount":3.64,"note":"Trade (+$3.64)","id":137},{"date":"2026-06-15","type":"trade_loss","amount":5.88,"note":"Trade (−$5.88)","id":138},{"date":"2026-06-15","type":"trade_loss","amount":7.8,"note":"Session net (−$7.80)","id":139},{"date":"2026-06-15","type":"trade_win","amount":21.73,"note":"Trade (+$21.73)","id":140},{"date":"2026-06-15","type":"trade_win","amount":20.76,"note":"Trade (+$20.76)","id":141},{"date":"2026-06-15","type":"trade_loss","amount":22.7,"note":"Trade (−$22.7)","id":142},{"date":"2026-06-15","type":"trade_loss","amount":24.88,"note":"Trade (−$24.88)","id":143},{"date":"2026-06-15","type":"trade_win","amount":58.42,"note":"Trade (+$58.42)","id":144},{"date":"2026-06-15","type":"trade_loss","amount":11.86,"note":"Trade (−$11.86)","id":145},{"date":"2026-06-15","type":"trade_loss","amount":3.73,"note":"Trade split with Dad (−$3.73)","id":146},{"date":"2026-06-15","type":"trade_win","amount":13.11,"note":"Trade (+$13.11)","id":147},{"date":"2026-06-15","type":"trade_loss","amount":7.51,"note":"Trade (−$7.51)","id":148},{"date":"2026-06-15","type":"spend","amount":5.45,"note":"Squish toy — Dragon Mart","cat":"Toys","id":149},{"date":"2026-06-15","type":"spend","amount":3.03,"note":"Staplers (11.13 AED)","cat":"Stationery","id":150},{"date":"2026-06-15","type":"trade_loss","amount":14.89,"note":"Trade (−$14.89)","id":151},{"date":"2026-06-15","type":"trade_win","amount":11.29,"note":"Trade (+$11.29)","id":152},{"date":"2026-06-15","type":"trade_loss","amount":15.02,"note":"Trade (−$15.02)","id":153},{"date":"2026-06-15","type":"trade_loss","amount":31.19,"note":"Trade (−$31.19)","id":154},{"date":"2026-06-15","type":"income","amount":27.23,"note":"Added (100 AED)","id":155},{"date":"2026-06-15","type":"trade_loss","amount":7.66,"note":"XAUUSD session net (−$7.66)","id":156},{"date":"2026-06-15","type":"trade_loss","amount":72.0,"note":"Trade (−$72)","id":157},{"date":"2026-06-15","type":"income","amount":72.0,"note":"Dad covered my loss (+$72)","id":158},{"date":"2026-06-15","type":"trade_loss","amount":27.0,"note":"Lody (−$27)","id":159},{"date":"2026-06-15","type":"trade_loss","amount":1.28,"note":"Trade (−$1.28)","id":160},{"date":"2026-07-15","type":"alw_debt","amount":30,"note":"July allowance → debt (2210→2180)","auto":true,"id":161},{"date":"2026-07-15","type":"alw_trading","amount":11,"note":"July allowance → trading","auto":true,"id":162},{"date":"2026-07-15","type":"trade_loss","amount":8.33,"note":"Trade (−$8.33)","id":163},{"date":"2026-07-15","type":"trade_win","amount":17.97,"note":"Trade (+$17.97)","id":164},{"date":"2026-07-15","type":"trade_win","amount":3.02,"note":"Trade (+$3.02)","id":165},{"date":"2026-07-15","type":"trade_win","amount":1.32,"note":"Trade (+$1.32)","id":166},{"date":"2026-07-15","type":"trade_win","amount":5.42,"note":"Trade (+$5.42)","id":167},{"date":"2026-07-15","type":"trade_win","amount":0.34,"note":"Trade (+$0.34)","id":168}]
+  };
+
+  var state = clone(DEFAULTS);
+
+  /* ---------------- pure helpers ---------------- */
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+  function two(d){ return (d<10?"0":"")+d; }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate()); }
+  function monthKey(dateStr){ return (dateStr||"").slice(0,7); }
+  function monthAdd(key,n){
+    var p=key.split("-"), y=+p[0], m=+p[1]-1; var idx=y*12+m+n;
+    return Math.floor(idx/12)+"-"+two((idx%12)+1);
+  }
+  function monthLabel(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" '"+String(p[0]).slice(2); }
+  function monthLong(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" 20"+String(p[0]).slice(2); }
+  function fmt(v,sym){
+    sym = sym||state.currency;
+    var neg=v<0, a=Math.abs(v);
+    return (neg?"-":"")+sym+a.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtShort(v,sym){
+    sym=sym||state.currency; var neg=v<0, a=Math.round(Math.abs(v));
+    return (neg?"-":"")+sym+a.toLocaleString("en-US");
+  }
+
+  function balDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "income": case "trade_win": case "withdraw": case "alw_trading": return a;
+      case "adjust": return a; // may be negative
+      case "spend": case "trade_loss": case "pay_debt_balance": case "save": return -a;
+      default: return 0;
+    }
+  }
+  function debtDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "pay_debt_balance": case "alw_debt": return -a;
+      case "borrow": return a;
+      default: return 0;
+    }
+  }
+  function savDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "save": case "alw_savings": return a;
+      case "withdraw": return -a;
+      default: return 0;
+    }
+  }
+
+  function sortedTx(){
+    return state.transactions.slice().sort(function(x,y){
+      if(x.date<y.date) return -1; if(x.date>y.date) return 1;
+      return (x.id||0)-(y.id||0);
+    });
+  }
+
+  function totals(){
+    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings);
+    state.transactions.forEach(function(t){ b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); });
+    return {balance:b, debt:d, savings:s, net:b+s-d};
+  }
+
+  // Monthly OHLC of spendable balance. Continuous months from first tx (or current) to max(last tx, current).
+  function computeMonthly(cur){
+    cur = cur || monthKey(todayStr());
+    var txs=sortedTx();
+    var open0=num(state.opening.balance);
+    var out=[];
+    if(txs.length===0){
+      out=[{key:cur,o:open0,h:open0,l:open0,c:open0}];
+    } else {
+      var first=monthKey(txs[0].date);
+      var lastTx=monthKey(txs[txs.length-1].date);
+      var end = (lastTx>cur)?lastTx:cur;
+      var byMonth={};
+      txs.forEach(function(t){ var k=monthKey(t.date); (byMonth[k]=byMonth[k]||[]).push(t); });
+      var carry=open0, k=first, guard=0;
+      while(guard++<600){
+        var arr=byMonth[k]||[];
+        var o=carry, hi=carry, lo=carry, curv=carry;
+        arr.forEach(function(t){ curv+=balDelta(t); if(curv>hi)hi=curv; if(curv<lo)lo=curv; });
+        out.push({key:k,o:o,h:hi,l:lo,c:curv});
+        carry=curv;
+        if(k===end) break;
+        k=monthAdd(k,1);
+      }
+    }
+    // pad-left so the chart always looks like a chart (flat "before you started" months)
+    if(out.length<6){
+      var need=6-out.length, fk=out[0].key, fv=out[0].o, pre=[];
+      for(var i=need;i>=1;i--){ var kk=monthAdd(fk,-i); pre.push({key:kk,o:fv,h:fv,l:fv,c:fv}); }
+      out=pre.concat(out);
+    }
+    if(out.length>24) out=out.slice(out.length-24);
+    return out;
+  }
+
+  function summaryFor(scope){ // scope = 'all' or 'YYYY-MM'
+    var r={spent:0,tradePL:0,moneyIn:0,debtPaid:0,saved:0,net:0,cats:{}};
+    state.transactions.forEach(function(t){
+      if(scope!=="all" && monthKey(t.date)!==scope) return;
+      var a=num(t.amount);
+      r.net+=balDelta(t);
+      if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
+      else if(t.type==="trade_win"){ r.tradePL+=a; }
+      else if(t.type==="trade_loss"){ r.tradePL-=a; }
+      else if(t.type==="income" || t.type==="alw_trading"){ r.moneyIn+=a; }
+      if(t.type==="pay_debt_balance"||t.type==="alw_debt") r.debtPaid+=a;
+      r.saved+=savDelta(t);
+    });
+    return r;
+  }
+
+  function monthsInData(){
+    var set={}; state.transactions.forEach(function(t){ set[monthKey(t.date)]=1; });
+    var cur=monthKey(todayStr()); set[cur]=1;
+    return Object.keys(set).sort();
+  }
+
+  // months (this-year, and whether current month) that already have an allowance added
+  function allowanceMonths(){
+    var set={};
+    state.transactions.forEach(function(t){ if(t.auto) set[monthKey(t.date)]=1; });
+    return set;
+  }
+  function appliedThisMonth(){ return !!allowanceMonths()[monthKey(todayStr())]; }
+  function allowanceCountThisYear(){
+    var yr=todayStr().slice(0,4), set=allowanceMonths(), n=0;
+    for(var k in set){ if(k.slice(0,4)===yr) n++; }
+    return n;
+  }
+
+  /* ---------------- photo store (separate keys, cached) ---------------- */
+  var photoCache={};
+  function photoKey(id){ return STORE_KEY+"_ph_"+id; }
+  function savePhoto(id, dataUrl, cb){
+    photoCache[id]=dataUrl;
+    var done=false;
+    try{
+      if(window.storage && typeof window.storage.set==="function"){
+        var p=window.storage.set(photoKey(id), dataUrl, false);
+        if(p && p.then){ p.then(function(){ cb&&cb(); }).catch(function(){ lsPhotoSave(id,dataUrl); cb&&cb(); }); done=true; }
+      }
+    }catch(e){}
+    if(!done){ lsPhotoSave(id,dataUrl); cb&&cb(); }
+  }
+  function lsPhotoSave(id,dataUrl){ try{ window.localStorage.setItem(photoKey(id),dataUrl); }catch(e){} }
+  function lsPhotoGet(id){ try{ return window.localStorage.getItem(photoKey(id)); }catch(e){ return null; } }
+  function loadPhoto(id, cb){
+    if(photoCache[id]){ cb(photoCache[id]); return; }
+    var handled=false;
+    try{
+      if(window.storage && typeof window.storage.get==="function"){
+        handled=true;
+        var p=window.storage.get(photoKey(id), false);
+        if(p && p.then){
+          p.then(function(r){ var v=(r&&r.value)?r.value:lsPhotoGet(id); if(v) photoCache[id]=v; cb(v||null); })
+           .catch(function(){ var v=lsPhotoGet(id); if(v) photoCache[id]=v; cb(v||null); });
+          return;
+        }
+      }
+    }catch(e){}
+    var v=lsPhotoGet(id); if(v) photoCache[id]=v; cb(v||null);
+  }
+  function delPhoto(id){
+    delete photoCache[id];
+    try{ if(window.storage && typeof window.storage["delete"]==="function"){ window.storage["delete"](photoKey(id), false); } }catch(e){}
+    try{ window.localStorage.removeItem(photoKey(id)); }catch(e){}
+  }
+  // shrink an image file to keep storage small; falls back to raw if it can't decode (e.g. HEIC)
+  function processImage(file, cb){
+    var nm=file.name||"photo";
+    var reader=new FileReader();
+    reader.onload=function(){
+      var dataUrl=reader.result;
+      var img=new Image();
+      img.onload=function(){
+        try{
+          var max=1100, w=img.width, h=img.height;
+          if(w>max||h>max){ var s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s); }
+          var c=document.createElement("canvas"); c.width=w; c.height=h;
+          var ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+          var out=c.toDataURL("image/jpeg",0.72);
+          cb({dataUrl:(out&&out.length<dataUrl.length)?out:dataUrl, name:nm});
+        }catch(e){ cb({dataUrl:dataUrl, name:nm}); }
+      };
+      img.onerror=function(){ cb({dataUrl:dataUrl, name:nm, raw:true}); };
+      img.src=dataUrl;
+    };
+    reader.onerror=function(){ alert("Couldn't read that photo — try a different one."); };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------------- storage ---------------- */
+  var saveTimer=null;
+  function flashSaved(txt){
+    var el=document.getElementById("saved"); document.getElementById("savedTxt").textContent=txt||"saved";
+    el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },400);
+  }
+  function persist(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){ doPersist(); }, 250);
+  }
+  function doPersist(){
+    var json;
+    try{ json=JSON.stringify(state); }catch(e){ return; }
+    var done=false;
+    try{
+      if(window.storage && typeof window.storage.set==="function"){
+        var p=window.storage.set(STORE_KEY, json, false);
+        if(p && typeof p.then==="function"){ p.then(function(){ flashSaved(); }).catch(function(){ lsSave(json); }); done=true; }
+      }
+    }catch(e){}
+    if(!done){ if(lsSave(json)) flashSaved(); }
+  }
+  function lsSave(json){
+    try{ window.localStorage.setItem(STORE_KEY, json); return true; }catch(e){ return false; }
+  }
+  function loadData(cb){
+    // try window.storage first
+    var handled=false;
+    try{
+      if(window.storage && typeof window.storage.get==="function"){
+        handled=true;
+        var p=window.storage.get(STORE_KEY, false);
+        if(p && typeof p.then==="function"){
+          p.then(function(res){
+            if(res && res.value){ applyLoaded(res.value); cb(); }
+            else { lsLoad(); cb(); }
+          }).catch(function(){ lsLoad(); cb(); });
+          return;
+        }
+      }
+    }catch(e){}
+    if(!handled){ lsLoad(); cb(); }
+    else { lsLoad(); cb(); }
+  }
+  function lsLoad(){
+    try{ var s=window.localStorage.getItem(STORE_KEY); if(s) applyLoaded(s); }catch(e){}
+  }
+  function applyLoaded(str){
+    try{
+      var obj=JSON.parse(str); if(!obj||typeof obj!=="object") return;
+      state=Object.assign(clone(DEFAULTS), obj);
+      state.opening=Object.assign(clone(DEFAULTS.opening), obj.opening||{});
+      state.settings=Object.assign(clone(DEFAULTS.settings), obj.settings||{});
+      if(!Array.isArray(state.transactions)) state.transactions=[];
+    }catch(e){}
+  }
+
+  /* ---------------- chart rendering ---------------- */
+  function buildChart(){
+    var wrap=document.getElementById("chartWrap");
+    if(state.chartCollapsed){ wrap.style.display="none"; document.getElementById("chartToggle").textContent="▸"; return; }
+    wrap.style.display="block"; document.getElementById("chartToggle").textContent="▾";
+
+    var candles=computeMonthly();
+    var sym=state.currency;
+    var W=720, H=196, padL=46, padR=12, padT=14, padB=24;
+    var n=candles.length;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+
+    var lo=0, hi=0, i;
+    for(i=0;i<n;i++){ if(candles[i].l<lo)lo=candles[i].l; if(candles[i].h>hi)hi=candles[i].h; }
+    if(hi===lo){ hi=lo+1; }
+    var range=hi-lo, pad=range*0.10; hi+=pad; lo-=pad; range=hi-lo;
+    function Y(v){ return padT + plotH*(1-(v-lo)/range); }
+    var step=plotW/n;
+    function X(i){ return padL + step*i + step/2; }
+
+    var svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img">';
+
+    // gridlines: hi, 0 (if in range), lo, plus mid
+    var lines=[hi, lo, (hi+lo)/2];
+    if(lo<0 && hi>0) lines.push(0);
+    lines.forEach(function(gv){
+      var y=Y(gv), isZero=(Math.abs(gv)<1e-9);
+      svg+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="'+(isZero?ZERO:GRID)+'" stroke-width="1" '+(isZero?'':'stroke-dasharray="2 4"')+'/>';
+      svg+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="'+AXTX+'">'+fmtShort(gv,sym)+'</text>';
+    });
+
+    var labelEvery = n>16?3:(n>10?2:1);
+
+    if(state.chartType==="line"){
+      var pts=""; 
+      for(i=0;i<n;i++){ pts+=X(i).toFixed(1)+","+Y(candles[i].c).toFixed(1)+" "; }
+      // soft area
+      var area="M "+padL+" "+Y(lo)+" ";
+      // build area along closes then back
+      area="M "+X(0).toFixed(1)+" "+Y(candles[0].c).toFixed(1)+" ";
+      for(i=1;i<n;i++){ area+="L "+X(i).toFixed(1)+" "+Y(candles[i].c).toFixed(1)+" "; }
+      area+="L "+X(n-1).toFixed(1)+" "+Y(lo).toFixed(1)+" L "+X(0).toFixed(1)+" "+Y(lo).toFixed(1)+" Z";
+      svg+='<path d="'+area+'" fill="rgba(244,183,63,.08)"/>';
+      svg+='<polyline points="'+pts.trim()+'" fill="none" stroke="'+AMBER+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+      for(i=0;i<n;i++){
+        svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(candles[i].c).toFixed(1)+'" r="2.4" fill="'+AMBER+'">'
+            +'<title>'+monthLong(candles[i].key)+'  •  '+fmt(candles[i].c,sym)+'</title></circle>';
+      }
+    } else {
+      var bw=Math.max(3, Math.min(step*0.55, 16));
+      for(i=0;i<n;i++){
+        var c=candles[i], cx=X(i), up=c.c>=c.o, col=(Math.abs(c.c-c.o)<1e-9)?DOJI:(up?UP:DOWN);
+        var yH=Y(c.h), yL=Y(c.l), yO=Y(c.o), yC=Y(c.c);
+        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),1.5);
+        svg+='<g><title>'+monthLong(c.key)+'\nOpen '+fmt(c.o,sym)+'   Close '+fmt(c.c,sym)+'\nHigh '+fmt(c.h,sym)+'   Low '+fmt(c.l,sym)+'</title>';
+        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="1.3"/>';
+        svg+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="'+col+'"/>';
+        svg+='</g>';
+      }
+    }
+
+    // x labels
+    for(i=0;i<n;i++){
+      if(i%labelEvery!==0 && i!==n-1) continue;
+      svg+='<text x="'+X(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="'+AXTX+'">'+monthLabel(candles[i].key)+'</text>';
+    }
+
+    svg+='</svg>';
+    wrap.innerHTML=svg;
+  }
+
+  /* ---------------- render ---------------- */
+  function render(){
+    var t=totals(), sym=state.currency;
+
+    // hero
+    var hb=document.getElementById("heroBal");
+    hb.innerHTML='<span class="cur">'+sym+'</span>'+ (t.balance<0?"-":"") + Math.abs(t.balance).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+    hb.className="big mono "+(t.balance<0?"down":"");
+    var curM=monthKey(todayStr());
+    var sThis=summaryFor(curM);
+    var capParts=[];
+    if(sThis.net!==0) capParts.push((sThis.net>0?"up ":"down ")+fmt(Math.abs(sThis.net),sym)+" this month");
+    else capParts.push("no change yet this month");
+    document.getElementById("heroCap").textContent=capParts[0];
+
+    // trio
+    document.getElementById("stDebt").textContent=fmt(t.debt,sym);
+    document.getElementById("stDebt").className="v mono "+(t.debt>0?"down":"up");
+    document.getElementById("stSav").textContent=fmt(t.savings,sym);
+    var netEl=document.getElementById("stNet");
+    netEl.textContent=fmt(t.net,sym);
+    netEl.className="v mono "+(t.net>=0?"up":"down");
+
+    // chart
+    buildChart();
+
+    // automation summary
+    var alw=num(state.settings.allowance), sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
+    var used=sd+stt+ss, left=alw-used;
+    var au=document.getElementById("autoSummary");
+    var msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to debt, <b>"+fmt(stt,sym)+"</b> to trading, <b>"+fmt(ss,sym)+"</b> to savings.";
+    if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
+    au.innerHTML=msg;
+
+    // allowance button state (once per month)
+    var btn=document.getElementById("applyAlw");
+    var done=appliedThisMonth(), thisMonthName=monthLong(curM);
+    if(done){ btn.disabled=true; btn.textContent="Added for "+thisMonthName+" ✓"; }
+    else if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
+    else { btn.disabled=false; btn.textContent="Add for "+MONTHS[(+curM.split("-")[1])-1]; }
+
+    // year counter (12 pips)
+    var yc=document.getElementById("yrCount");
+    var nApplied=allowanceCountThisYear(), pips="";
+    for(var pi=0;pi<12;pi++){ pips+='<span class="pip'+(pi<nApplied?" on":"")+'"></span>'; }
+    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> of 12 months in '+todayStr().slice(0,4)+'</span>';
+
+    // month select
+    var sel=document.getElementById("monthSel");
+    var months=monthsInData();
+    if(!state.selectedMonth || (state.selectedMonth!=="all" && months.indexOf(state.selectedMonth)<0)){
+      state.selectedMonth = (months.indexOf(curM)>=0)?curM:months[months.length-1];
+    }
+    var opt='<option value="all">All months</option>';
+    for(var mi=months.length-1; mi>=0; mi--){ opt+='<option value="'+months[mi]+'">'+monthLong(months[mi])+'</option>'; }
+    sel.innerHTML=opt;
+    sel.value=state.selectedMonth;
+
+    // metrics
+    var sc=state.selectedMonth;
+    var sm=summaryFor(sc);
+    var m=document.getElementById("metrics");
+    function metric(k,v,cls){ return '<div class="metric"><div class="k">'+k+'</div><div class="v mono '+(cls||"")+'">'+v+'</div></div>'; }
+    var tradeCls=sm.tradePL>0?"up":(sm.tradePL<0?"down":"");
+    var netCls=sm.net>0?"up":(sm.net<0?"down":"");
+    m.innerHTML=
+      metric("Spent", fmt(sm.spent,sym), sm.spent>0?"down":"") +
+      metric("Trade P/L", (sm.tradePL>0?"+":"")+fmt(sm.tradePL,sym), tradeCls) +
+      metric("Money in", fmt(sm.moneyIn,sym), sm.moneyIn>0?"up":"") +
+      metric("Net change", (sm.net>0?"+":"")+fmt(sm.net,sym), netCls);
+
+    // categories
+    var cats=document.getElementById("cats");
+    var keys=Object.keys(sm.cats).sort(function(a,b){ return sm.cats[b]-sm.cats[a]; });
+    if(keys.length===0){ cats.innerHTML=""; }
+    else{
+      var max=sm.cats[keys[0]]||1;
+      var html='<div class="cttl">Where the spending went'+(sc==="all"?"":" · "+monthLong(sc))+'</div>';
+      keys.forEach(function(k){
+        var v=sm.cats[k], pct=Math.max(4,Math.round(v/max*100));
+        html+='<div class="catrow"><div class="cn">'+esc(k)+'</div><div class="catbar"><span style="width:'+pct+'%"></span></div><div class="cv mono">'+fmt(v,sym)+'</div></div>';
+      });
+      cats.innerHTML=html;
+    }
+
+    // ledger
+    renderLedger();
+
+    // sync inputs (only if not focused, to avoid disrupting typing)
+    syncInput("sAlw", state.settings.allowance);
+    syncInput("sDebt", state.settings.toDebt);
+    syncInput("sTrade", state.settings.toTrading);
+    syncInput("sSave", state.settings.toSavings);
+    syncInput("oBal", state.opening.balance);
+    syncInput("oDebt", state.opening.debt);
+    syncInput("oSav", state.opening.savings);
+    syncInput("oCur", state.currency);
+
+    // chart seg active
+    Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
+      b.classList.toggle("on", b.getAttribute("data-t")===state.chartType);
+    });
+  }
+
+  function renderLedger(){
+    var sym=state.currency, sc=state.selectedMonth;
+    var list=sortedTx().reverse().filter(function(t){ return sc==="all" || monthKey(t.date)===sc; });
+    var led=document.getElementById("ledger");
+    document.getElementById("ledCount").textContent = list.length? "· "+list.length : "";
+    if(list.length===0){
+      led.innerHTML='<div class="empty"><b>Nothing logged'+(sc==="all"?"":" for "+monthLong(sc))+' yet.</b><br>Add your first entry above.</div>';
+      return;
+    }
+    var html="";
+    list.forEach(function(t){
+      var d=t.date.split("-"), dd=(+d[2]), mm=MONTHS[(+d[1])-1];
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var db=balDelta(t), dd2=debtDelta(t), ds=savDelta(t);
+      var amtHtml, tag="";
+      if(db!==0){ amtHtml=(db>0?"+":"")+fmt(db,sym); amtHtml='<span class="'+(db>0?"up":"down")+'">'+amtHtml+'</span>'; }
+      else if(dd2!==0){ // debt-only (allowance→debt). less debt = good = green
+        amtHtml='<span class="'+(dd2<0?"up":"down")+'">'+(dd2<0?"−":"+")+fmt(Math.abs(dd2),sym)+'</span>'; tag="debt";
+      } else if(ds!==0){ amtHtml='<span class="cool">'+(ds>0?"+":"−")+fmt(Math.abs(ds),sym)+'</span>'; tag="savings"; }
+      else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
+      var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      var photoBtn = t.photo? '<button class="photo-chip" data-photo="'+t.id+'" title="View photo">📎</button>' : '';
+      html+='<div class="lrow">'
+          +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
+          +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'
+          + (note? '<div class="lnote">'+note+'</div>':'') +'</div>'
+          + photoBtn
+          +'<div class="lamt">'+amtHtml+ (tag?'<span class="tag">'+tag+'</span>':'') +'</div>'
+          +'<button class="del" data-id="'+t.id+'" title="Delete">×</button>'
+          +'</div>';
+    });
+    led.innerHTML=html;
+    Array.prototype.forEach.call(led.querySelectorAll(".del"), function(b){
+      b.addEventListener("click", function(){
+        var id=+b.getAttribute("data-id");
+        var tx=state.transactions.filter(function(x){ return x.id===id; })[0];
+        if(tx && tx.photo) delPhoto(tx.photo);
+        state.transactions=state.transactions.filter(function(x){ return x.id!==id; });
+        persist(); render();
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".photo-chip"), function(b){
+      b.addEventListener("click", function(){ openViewer(+b.getAttribute("data-photo")); });
+    });
+  }
+
+  /* ---------------- image viewer ---------------- */
+  var viewingId=null;
+  function openViewer(txId){
+    var tx=state.transactions.filter(function(x){ return x.id===txId; })[0];
+    if(!tx || !tx.photo) return;
+    viewingId=txId;
+    var body=document.getElementById("viewerBody");
+    document.getElementById("viewerTitle").textContent = tx.note || (tx.cat||"Photo");
+    body.innerHTML='<div class="viewer-note">Loading…</div>';
+    document.getElementById("viewer").style.display="flex";
+    loadPhoto(tx.photo, function(data){
+      if(!data){ body.innerHTML='<div class="viewer-note">Couldn’t find this photo.</div>'; return; }
+      var img=new Image();
+      img.onload=function(){ body.innerHTML=""; body.appendChild(img); };
+      img.onerror=function(){
+        body.innerHTML='<div class="viewer-note">This photo type can’t preview here.<br><a href="'+data+'" download="receipt">Download it</a> to open.</div>';
+      };
+      img.src=data; img.alt="attachment";
+    });
+  }
+  function closeViewer(){ document.getElementById("viewer").style.display="none"; viewingId=null; }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function syncInput(id,val){
+    var el=document.getElementById(id); if(!el) return;
+    if(document.activeElement===el) return;
+    el.value = (val===0||val)? val : "";
+  }
+
+  /* ---------------- events ---------------- */
+  function bind(){
+    // chart toggle type
+    Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
+      b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
+    });
+    // collapse chart
+    document.getElementById("chartToggle").addEventListener("click", function(){
+      state.chartCollapsed=!state.chartCollapsed; persist(); buildChart();
+    });
+
+    // type -> show/hide category & adjust label
+    var typeSel=document.getElementById("fType");
+    function typeUI(){
+      var v=typeSel.value;
+      document.getElementById("catFld").style.display = (v==="spend")?"flex":"none";
+      var lbl=document.getElementById("amtLbl");
+      lbl.textContent = (v==="adjust")?"Amount (use − for a drop)":"Amount";
+    }
+    typeSel.addEventListener("change", typeUI); typeUI();
+
+    // photo picker
+    var pendingPhoto=null;
+    var fPhoto=document.getElementById("fPhoto");
+    document.getElementById("fPhotoBtn").addEventListener("click", function(){ fPhoto.click(); });
+    fPhoto.addEventListener("change", function(){
+      var f=fPhoto.files && fPhoto.files[0]; if(!f) return;
+      document.getElementById("fPhotoName").textContent="reading…";
+      processImage(f, function(res){
+        pendingPhoto=res;
+        var nm=res.name||"photo";
+        document.getElementById("fPhotoName").textContent = nm.length>22? nm.slice(0,20)+"…" : nm;
+        var prev=document.getElementById("fPhotoPrev");
+        if(!res.raw){ prev.src=res.dataUrl; prev.style.display="block"; } else { prev.style.display="none"; }
+        document.getElementById("fPhotoClear").style.display="inline-block";
+      });
+    });
+    function clearPhotoPick(){
+      pendingPhoto=null; fPhoto.value="";
+      document.getElementById("fPhotoName").textContent="";
+      document.getElementById("fPhotoPrev").style.display="none";
+      document.getElementById("fPhotoClear").style.display="none";
+    }
+    document.getElementById("fPhotoClear").addEventListener("click", clearPhotoPick);
+
+    // entry submit
+    document.getElementById("entryForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var type=typeSel.value;
+      var date=document.getElementById("fDate").value || todayStr();
+      var raw=num(document.getElementById("fAmt").value);
+      if(type!=="adjust") raw=Math.abs(raw);
+      if(!raw){ shake(document.getElementById("fAmt")); return; }
+      var tx={ id:Date.now()+Math.floor(Math.random()*1000), date:date, type:type, amount:raw };
+      if(type==="spend") tx.cat=document.getElementById("fCat").value;
+      var note=document.getElementById("fNote").value.trim(); if(note) tx.note=note;
+      if(pendingPhoto){ tx.photo=tx.id; savePhoto(tx.id, pendingPhoto.dataUrl); }
+      state.transactions.push(tx);
+      state.selectedMonth=monthKey(date);
+      persist(); render();
+      document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
+      clearPhotoPick();
+      document.getElementById("fAmt").focus();
+    });
+
+    // month select
+    document.getElementById("monthSel").addEventListener("change", function(e){
+      state.selectedMonth=e.target.value; persist(); render();
+    });
+
+    // salary / allowance inputs
+    [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"]].forEach(function(pair){
+      document.getElementById(pair[0]).addEventListener("input", function(e){
+        state.settings[pair[1]]=num(e.target.value); persist(); render();
+      });
+    });
+
+    // apply allowance — only once per calendar month (max 12 a year)
+    document.getElementById("applyAlw").addEventListener("click", function(){
+      if(appliedThisMonth()) return;
+      var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
+      if(sd+stt+ss<=0) return;
+      var today=todayStr(), curM=monthKey(today), base=Date.now();
+      if(sd>0) state.transactions.push({id:base+1,date:today,type:"alw_debt",amount:sd,note:"Allowance → debt",auto:true});
+      if(stt>0) state.transactions.push({id:base+2,date:today,type:"alw_trading",amount:stt,note:"Allowance → trading",auto:true});
+      if(ss>0) state.transactions.push({id:base+3,date:today,type:"alw_savings",amount:ss,note:"Allowance → savings",auto:true});
+      state.selectedMonth=curM;
+      persist(); render();
+      flashSaved("added");
+    });
+
+    // setup save
+    document.getElementById("saveSetup").addEventListener("click", function(){
+      state.opening.balance=num(document.getElementById("oBal").value);
+      state.opening.debt=num(document.getElementById("oDebt").value);
+      state.opening.savings=num(document.getElementById("oSav").value);
+      var c=document.getElementById("oCur").value.trim(); state.currency=c||"$";
+      persist(); render(); flashSaved("saved");
+    });
+
+    // build a backup string that also bundles photos
+    function exportData(cb){
+      var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+      var photos={}, i=0;
+      (function next(){
+        if(i>=ids.length){ cb(JSON.stringify({__mymoney:1, state:state, photos:photos}, null, 2)); return; }
+        var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+      })();
+    }
+    function fallbackShow(json){
+      var w=document.getElementById("impWrap"); w.style.display="block";
+      document.getElementById("impBox").value=json;
+    }
+    // export copy
+    document.getElementById("expCopy").addEventListener("click", function(){
+      flashSaved("preparing…");
+      exportData(function(json){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(json).then(function(){ flashSaved("copied"); }, function(){ fallbackShow(json); });
+        } else fallbackShow(json);
+      });
+    });
+    // export file
+    document.getElementById("expFile").addEventListener("click", function(){
+      flashSaved("preparing…");
+      exportData(function(json){
+        try{
+          var blob=new Blob([json],{type:"application/json"});
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement("a"); a.href=url; a.download="my-money-backup.json";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+          flashSaved("downloaded");
+        }catch(e){ alert("Couldn't download here — use Copy backup instead."); }
+      });
+    });
+    // import
+    document.getElementById("impToggle").addEventListener("click", function(){
+      var w=document.getElementById("impWrap"); w.style.display=(w.style.display==="none"?"block":"none");
+    });
+    document.getElementById("impLoad").addEventListener("click", function(){
+      var txt=document.getElementById("impBox").value.trim(); if(!txt) return;
+      try{
+        var obj=JSON.parse(txt);
+        if(obj && obj.__mymoney && obj.state){
+          if(obj.photos){ for(var pid in obj.photos){ savePhoto(pid, obj.photos[pid]); } }
+          applyLoaded(JSON.stringify(obj.state));
+        } else {
+          applyLoaded(JSON.stringify(obj));
+        }
+        state.selectedMonth=null;
+        persist(); render();
+        document.getElementById("impWrap").style.display="none";
+        flashSaved("loaded");
+      }catch(e){ alert("That backup didn't look right. Check you pasted the whole thing."); }
+    });
+    // reset
+    document.getElementById("resetBtn").addEventListener("click", function(){
+      if(!confirm("This clears your changes and restores the full history logged from your note. Continue?")) return;
+      state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+      state=clone(DEFAULTS); state.selectedMonth=null;
+      persist(); render(); flashSaved("reset");
+    });
+
+    // image viewer
+    document.getElementById("viewerClose").addEventListener("click", closeViewer);
+    document.getElementById("viewer").addEventListener("click", function(e){ if(e.target===this) closeViewer(); });
+    document.getElementById("viewerDel").addEventListener("click", function(){
+      if(viewingId==null) return;
+      var tx=state.transactions.filter(function(x){ return x.id===viewingId; })[0];
+      if(tx && tx.photo){ delPhoto(tx.photo); delete tx.photo; }
+      persist(); render(); closeViewer();
+    });
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeViewer(); });
+  }
+
+  function shake(el){
+    el.style.borderColor=DOWN;
+    setTimeout(function(){ el.style.borderColor=""; },600);
+  }
+
+  /* ---------------- init ---------------- */
+  function init(){
+    document.getElementById("fDate").value=todayStr();
+    bind();
+    loadData(function(){ render(); });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+</body>
+</html>
