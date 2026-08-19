@@ -56,6 +56,28 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  /* AI mode */
+  .ai-thumbs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .ai-th{position:relative;width:58px;height:58px;border-radius:8px;overflow:hidden;border:1px solid var(--bd2);flex:none}
+  .ai-th img{width:100%;height:100%;object-fit:cover;display:block}
+  .ai-th button{position:absolute;top:1px;right:1px;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:11px;line-height:1;width:16px;height:16px;border-radius:50%;cursor:pointer;padding:0}
+  .ai-log{margin-top:12px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;font-family:var(--mono);font-size:11.5px;max-height:200px;overflow-y:auto;line-height:1.6}
+  .ai-log div{padding:1px 0}
+  .ai-log .ok{color:var(--up)} .ai-log .warn{color:var(--amber)} .ai-log .err{color:var(--down)}
+  .ai-rows{margin-top:12px}
+  .ai-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--bd);border-radius:9px;margin-bottom:6px;background:var(--card);font-size:12.5px}
+  .ai-row.low{border-color:var(--amber)}
+  .ai-row input[type=checkbox]{flex:none}
+  .ai-row .r-main{flex:1;min-width:0}
+  .ai-row .r-note{color:var(--mut);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ai-row .r-amt{font-family:var(--mono);font-weight:700;flex:none}
+  .ai-banner{border-radius:10px;padding:11px 12px;font-size:12.5px;line-height:1.5;margin-top:12px}
+  .ai-banner.good{background:rgba(61,220,132,.1);border:1px solid var(--up);color:var(--up)}
+  .ai-banner.bad{background:rgba(255,93,93,.1);border:1px solid var(--down);color:var(--down)}
+  .ai-banner.warn{background:rgba(244,183,63,.1);border:1px solid var(--amber);color:var(--amber)}
+  .ai-banner b{color:var(--tx)}
+  #aiBtn{display:none}
+
   /* In-app modal — replaces the browser's native prompt/confirm */
   .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
   .mdl{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;width:min(420px,100%);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;animation:mdlIn .16s ease-out}
@@ -321,6 +343,7 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
+  <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
   <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
   <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
@@ -356,6 +379,7 @@
 <div class="trio">
   <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
   <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
+  <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
 </div>
 
@@ -398,6 +422,8 @@
           <option value="borrow">Borrowed / debt went up</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
+          <option value="tax_set">Set aside for tax</option>
+          <option value="tax_pay">Pay tax bill (from set-aside)</option>
           <option value="adjust">Adjustment (+ / −)</option>
         </select>
       </div>
@@ -503,6 +529,36 @@
 <div id="undoToast" class="undo-toast" style="display:none">
   <span id="undoToastMsg">Entry deleted</span>
   <button type="button" id="undoToastBtn">Undo</button>
+</div>
+
+<!-- AI auto-fill panel -->
+<div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:120"></div>
+<div id="aiPanel" class="pf-panel" style="display:none;width:min(560px,100vw)">
+  <div class="pf-bar">
+    <span>🤖 AI auto-fill</span>
+    <button type="button" class="icon-btn" id="aiPanelClose">✕</button>
+  </div>
+  <div class="pf-hint">Add photos of receipts, statements or trade screenshots. Each image is read in full — one image can hold several transactions, or none.</div>
+  <div style="padding:10px 20px">
+    <input type="file" id="aiFiles" accept="image/*" multiple style="display:none">
+    <div class="data-btns">
+      <button class="btn ghost sm" id="aiAddImgs">+ Add images</button>
+      <button class="btn ghost sm" id="aiClearImgs">Clear</button>
+    </div>
+    <div id="aiThumbs" class="ai-thumbs"></div>
+
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-end">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mut);display:block;margin-bottom:4px">Split into how many transactions?</label>
+        <input type="number" id="aiExpected" min="0" max="100" step="1" placeholder="Leave blank — let the AI decide">
+      </div>
+    </div>
+    <div class="subhint" style="margin-top:6px">Blank lets the AI decide. Set a number if you know exactly how many there should be.</div>
+
+    <button class="btn primary sm" id="aiRunBtn" style="width:100%;margin-top:14px">Read images</button>
+    <div id="aiLog" class="ai-log" style="display:none"></div>
+    <div id="aiResults" style="display:none"></div>
+  </div>
 </div>
 
 <!-- portfolio switcher -->
@@ -1005,13 +1061,13 @@
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
     borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
-    alw_trading:{label:"TRADING"}
+    alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
   };
 
   var DEFAULTS = {
     currency:"$",
-    opening:{balance:0, debt:0, savings:0},
-    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0},
+    opening:{balance:0, debt:0, savings:0, tax:0},
+    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0},
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -1082,7 +1138,18 @@
     switch(t.type){
       case "income": case "trade_win": case "withdraw": case "alw_trading": return a;
       case "adjust": return a; // may be negative
-      case "spend": case "trade_loss": case "pay_debt_balance": case "save": return -a;
+      case "spend": case "trade_loss": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      default: return 0;
+    }
+  }
+  // Money parked for tax. Setting it aside moves it out of the spendable balance and into
+  // this pot; paying the bill drains the pot without touching the balance again, because
+  // that money already left when it was set aside.
+  function taxDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "tax_set": return a;
+      case "tax_pay": return -a;
       default: return 0;
     }
   }
@@ -1111,9 +1178,10 @@
   }
 
   function totals(){
-    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings);
-    state.transactions.forEach(function(t){ b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); });
-    return {balance:b, debt:d, savings:s, net:b+s-d};
+    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings), x=num(state.opening.tax);
+    state.transactions.forEach(function(t){ b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); x+=taxDelta(t); });
+    // Tax set aside is deliberately NOT part of net worth — it was never really yours.
+    return {balance:b, debt:d, savings:s, tax:x, net:b+s-d};
   }
 
   // Monthly OHLC of spendable balance. Continuous months from first tx (or current) to max(last tx, current).
@@ -1675,6 +1743,256 @@
     }
   }
 
+  /* ================= AI MODE =================
+     Two independent engines get the identical images and the identical prompt. If they
+     agree, the entries go straight in. If they disagree, we retry from scratch (a fresh
+     request, telling the model it's being cross-checked and what the disagreement was).
+     Only when repeated attempts still disagree do we interrupt the user — the whole point
+     is that a review prompt means something, rather than appearing on every run. */
+
+  var AI_PROVIDERS={
+    gemini:{
+      label:"Gemini",
+      model:"gemini-2.0-flash",
+      keyUrl:"https://aistudio.google.com/apikey",
+      keyHint:"Google AI Studio → Get API key → Create API key. Free tier is generous.",
+      async run(key, prompt, images){
+        var parts=[{text:prompt}];
+        images.forEach(function(im){ parts.push({inline_data:{mime_type:im.mime, data:im.b64}}); });
+        var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+this.model+":generateContent?key="+encodeURIComponent(key),{
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({contents:[{parts:parts}], generationConfig:{temperature:0, responseMimeType:"application/json"}})
+        });
+        if(!r.ok) throw new Error("Gemini "+r.status+": "+(await r.text()).slice(0,180));
+        var j=await r.json();
+        var c=j.candidates&&j.candidates[0];
+        if(!c) throw new Error("Gemini returned no answer (possibly blocked by a safety filter).");
+        return (c.content.parts||[]).map(function(p){ return p.text||""; }).join("");
+      }
+    },
+    openai:{
+      label:"OpenAI",
+      model:"gpt-4o-mini",
+      keyUrl:"https://platform.openai.com/api-keys",
+      keyHint:"platform.openai.com → API keys → Create new secret key. Needs billing set up.",
+      async run(key, prompt, images){
+        var content=[{type:"text",text:prompt}];
+        images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
+        var r=await fetch("https://api.openai.com/v1/chat/completions",{
+          method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+          body:JSON.stringify({model:this.model, temperature:0, response_format:{type:"json_object"}, messages:[{role:"user",content:content}]})
+        });
+        if(!r.ok) throw new Error("OpenAI "+r.status+": "+(await r.text()).slice(0,180));
+        var j=await r.json();
+        return j.choices[0].message.content;
+      }
+    },
+    anthropic:{
+      label:"Claude",
+      model:"claude-sonnet-4-6",
+      keyUrl:"https://console.anthropic.com/settings/keys",
+      keyHint:"console.anthropic.com → Settings → API keys. Needs billing set up.",
+      async run(key, prompt, images){
+        var content=[];
+        images.forEach(function(im){ content.push({type:"image", source:{type:"base64", media_type:im.mime, data:im.b64}}); });
+        content.push({type:"text",text:prompt});
+        var r=await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+          body:JSON.stringify({model:this.model, max_tokens:4000, temperature:0, messages:[{role:"user",content:content}]})
+        });
+        if(!r.ok) throw new Error("Claude "+r.status+": "+(await r.text()).slice(0,180));
+        var j=await r.json();
+        return (j.content||[]).filter(function(b){ return b.type==="text"; }).map(function(b){ return b.text; }).join("");
+      }
+    }
+  };
+
+  // Keys live outside the portfolio blob on purpose: backups get shared, and a backup
+  // that carries live API keys is a wallet with the PIN written on it.
+  var AI_KEY="mymoney_ai_cfg";
+  var aiCfg={provA:"gemini", keyA:"", provB:"", keyB:""};
+  function loadAiCfg(){
+    try{ var raw=window.localStorage.getItem(AI_KEY); if(raw) aiCfg=Object.assign(aiCfg, JSON.parse(raw)); }catch(e){}
+  }
+  function saveAiCfg(){
+    try{ window.localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }catch(e){}
+  }
+  function aiConfigured(){ return !!(aiCfg.keyA && aiCfg.provA); }
+  function aiCrossChecking(){ return !!(aiCfg.keyA && aiCfg.keyB && aiCfg.provB); }
+  function aiOnline(){ return navigator.onLine!==false; }
+
+  var AI_TYPES=["income","spend","trade_win","trade_loss","pay_debt_balance","borrow","save","withdraw","tax_set","tax_pay","adjust"];
+
+  // Read the categories straight off the form's own dropdown — hardcoding a second copy
+  // here would silently drift the moment the dropdown changes.
+  function aiCats(){
+    return Array.prototype.map.call(document.querySelectorAll("#fCat option"), function(o){ return o.textContent.trim(); });
+  }
+  function aiPrompt(opts){
+    var cats=aiCats().join(", ");
+    var p=[
+"You are reading images of receipts, bank/trading screenshots or handwritten notes, and turning them into ledger entries.",
+"",
+"Return ONLY a JSON object. No prose, no markdown, no code fences. Exact shape:",
+'{"transactions":[{"date":"YYYY-MM-DD","type":"<type>","amount":<positive number>,"cat":"<category or empty>","note":"<short note>","confidence":<0..1>}]}',
+"",
+"Allowed type values (use EXACTLY one of these):",
+AI_TYPES.join(", "),
+"",
+"What each type means:",
+"- income: money received (not an allowance)",
+"- spend: money spent on something",
+"- trade_win / trade_loss: profit or loss on a trade",
+"- pay_debt_balance: paying down debt out of your own money",
+"- borrow: debt went up",
+"- save / withdraw: moving money into / out of savings",
+"- tax_set: money parked aside for tax",
+"- tax_pay: paying a tax bill out of money already set aside",
+"- adjust: a correction; only this type may be negative",
+"",
+"Rules:",
+"- amount is ALWAYS a positive number, except for 'adjust' which may be negative.",
+"- Never include a currency symbol or thousands separators in amount. 1,234.50 -> 1234.50",
+"- date must be YYYY-MM-DD. If the image shows no year, assume "+todayStr().slice(0,4)+". If no date at all, use "+todayStr()+".",
+"- cat only applies to 'spend'. Choose from: "+cats+". Otherwise use an empty string.",
+"- note: short and factual (merchant, instrument, what it was). No invented detail.",
+"- confidence: your honest 0..1 read of how sure you are of THIS entry.",
+"- Read every image. One image may hold several transactions, or none.",
+"- If an image contains nothing financial, contribute no entries for it.",
+"- Do not merge separate transactions, and do not split one transaction into several."
+    ];
+    if(opts.expected>0){
+      p.push("- The user states there are EXACTLY "+opts.expected+" transactions across these images. Return exactly "+opts.expected+". If you can only find fewer, still return "+opts.expected+" and mark the uncertain ones with low confidence.");
+    }
+    if(opts.conflict){
+      p.push("",
+"IMPORTANT — CROSS-CHECK CONTEXT:",
+"A second, independent AI was given these exact images and the exact same instructions, and returned a DIFFERENT answer. That means at least one of you misread something. This is attempt "+opts.attempt+".",
+"",
+"Your previous answer:", opts.mine,
+"",
+"The other model's answer:", opts.theirs,
+"",
+"Re-examine the images from scratch. Do not simply repeat your previous answer, and do not simply defer to the other model — either of you may be wrong. Look specifically at the fields that differ (dates, amounts, and types). Return your best, carefully re-checked answer in the same JSON format.");
+    }
+    return p.join("\n");
+  }
+
+  function aiParse(txt){
+    if(!txt) throw new Error("Empty response.");
+    var s=String(txt).trim();
+    s=s.replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+    // some models still wrap the object in a sentence — take the outermost braces
+    var a=s.indexOf("{"), b=s.lastIndexOf("}");
+    if(a<0||b<0) throw new Error("No JSON in response.");
+    var o=JSON.parse(s.slice(a,b+1));
+    var list=o.transactions||o.entries||[];
+    if(!Array.isArray(list)) throw new Error("No transactions array.");
+    return list.map(function(t){
+      var type=String(t.type||"").trim();
+      if(AI_TYPES.indexOf(type)<0) type="spend";
+      var amt=parseFloat(String(t.amount==null?0:t.amount).replace(/[^0-9.\-]/g,""));
+      if(!isFinite(amt)) amt=0;
+      if(type!=="adjust") amt=Math.abs(amt);
+      var d=String(t.date||"").slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) d=todayStr();
+      var conf=parseFloat(t.confidence);
+      var cat="";
+      if(type==="spend"){
+        cat=String(t.cat||"").trim();
+        var valid=aiCats();
+        if(valid.indexOf(cat)<0) cat="Other"; // model invented a category that isn't on the form
+      }
+      return {
+        date:d, type:type, amount:Math.round(amt*100)/100,
+        cat:cat,
+        note:String(t.note||"").slice(0,140),
+        confidence:(isFinite(conf)?Math.max(0,Math.min(1,conf)):0.5)
+      };
+    });
+  }
+
+  // The comparison deliberately ignores 'note' and 'confidence'. Two different models
+  // will essentially never phrase a note identically, so comparing free text would mean
+  // a "conflict" on every single run — which would train you to click through the very
+  // warning that's supposed to be rare. What matters is the money: date, type, amount,
+  // and category. Those either match or they genuinely don't.
+  function aiSig(list){
+    return list.map(function(t){ return [t.date,t.type,t.amount.toFixed(2),t.cat||""].join("|"); })
+               .sort().join("\n");
+  }
+  function aiDiff(a,b){
+    var sa=aiSig(a).split("\n"), sb=aiSig(b).split("\n");
+    var onlyA=sa.filter(function(x){ return sb.indexOf(x)<0 && x; });
+    var onlyB=sb.filter(function(x){ return sa.indexOf(x)<0 && x; });
+    return {onlyA:onlyA, onlyB:onlyB};
+  }
+
+  // The escalation ladder. Agreement is the fast path. Disagreement is retried from a
+  // clean slate up to MAX_ATTEMPTS, each time telling both models they're being
+  // cross-checked and exactly where they diverged. Only if that never converges does the
+  // user get pulled in — which is what makes the interruption worth paying attention to.
+  var AI_MAX_ATTEMPTS=3;
+  async function aiExtract(images, expected, log){
+    var provA=AI_PROVIDERS[aiCfg.provA], provB=aiCfg.provB?AI_PROVIDERS[aiCfg.provB]:null;
+    if(!provA || !aiCfg.keyA) throw new Error("Engine A isn't configured.");
+
+    if(!provB || !aiCfg.keyB){
+      log("Single engine ("+provA.label+") — no cross-check configured.","warn");
+      var only=aiParse(await provA.run(aiCfg.keyA, aiPrompt({expected:expected}), images));
+      log("Read "+only.length+" "+(only.length===1?"entry":"entries")+".","ok");
+      return {list:only, verified:false, reason:"Only one engine configured — nothing to cross-check against."};
+    }
+
+    var lastA=null, lastB=null, lastDiff=null;
+    for(var attempt=1; attempt<=AI_MAX_ATTEMPTS; attempt++){
+      log(attempt===1
+        ? "Asking "+provA.label+" and "+provB.label+" independently…"
+        : "Attempt "+attempt+" — re-reading from scratch, both engines told where they disagreed…", attempt===1?"":"warn");
+
+      var pA=aiPrompt({expected:expected, conflict:attempt>1, attempt:attempt, mine:JSON.stringify(lastA||[]), theirs:JSON.stringify(lastB||[])});
+      var pB=aiPrompt({expected:expected, conflict:attempt>1, attempt:attempt, mine:JSON.stringify(lastB||[]), theirs:JSON.stringify(lastA||[])});
+
+      var settled=await Promise.allSettled([
+        provA.run(aiCfg.keyA, pA, images),
+        provB.run(aiCfg.keyB, pB, images)
+      ]);
+
+      // If one engine is simply broken (bad key, no quota), cross-checking isn't
+      // possible at all — say so rather than pretending the survivor was verified.
+      if(settled[0].status==="rejected" && settled[1].status==="rejected")
+        throw new Error("Both engines failed.\n"+settled[0].reason.message+"\n"+settled[1].reason.message);
+      if(settled[0].status==="rejected" || settled[1].status==="rejected"){
+        var okIdx=settled[0].status==="fulfilled"?0:1;
+        var deadName=okIdx===0?provB.label:provA.label;
+        var err=settled[okIdx===0?1:0].reason.message;
+        log(deadName+" failed: "+err,"err");
+        var solo=aiParse(settled[okIdx].value);
+        return {list:solo, verified:false, reason:deadName+" couldn't be reached, so nothing cross-checked this answer."};
+      }
+
+      var a, b;
+      try{ a=aiParse(settled[0].value); }catch(e){ log(provA.label+" sent unreadable JSON: "+e.message,"err"); a=[]; }
+      try{ b=aiParse(settled[1].value); }catch(e){ log(provB.label+" sent unreadable JSON: "+e.message,"err"); b=[]; }
+      lastA=a; lastB=b;
+
+      log(provA.label+": "+a.length+" · "+provB.label+": "+b.length);
+
+      if(a.length && aiSig(a)===aiSig(b)){
+        log("Both engines agree exactly. ✓","ok");
+        // notes are taken from A by design — they're not part of what's compared
+        return {list:a, verified:true, attempts:attempt};
+      }
+      lastDiff=aiDiff(a,b);
+      log("Disagreement: "+lastDiff.onlyA.length+" only in "+provA.label+", "+lastDiff.onlyB.length+" only in "+provB.label+".","warn");
+    }
+
+    log("Still disagreeing after "+AI_MAX_ATTEMPTS+" attempts — needs your eyes.","err");
+    return {list:lastA||[], verified:false, conflict:true, other:lastB||[], diff:lastDiff,
+            reason:"The two engines never agreed, even after "+AI_MAX_ATTEMPTS+" independent re-reads."};
+  }
+
   /* ---------------- portfolio actions ---------------- */
   function flushActiveIntoRegistry(){
     var p=activePortfolio();
@@ -1903,6 +2221,263 @@
     function go(){ if(printed) return; printed=true; try{ w.focus(); w.print(); }catch(e){} }
     w.onload=go;
     setTimeout(go, 300); // Safari/iOS sometimes never fires onload on a written doc
+  }
+
+  /* ---------------- AI mode UI ---------------- */
+  var _openSettings=null; // openSettings lives inside bind(); this hands it out
+  var aiImages=[]; // {mime, b64, url}
+  var aiBusy=false;
+
+  // Everything AI is gated on being online — the section and the button vanish entirely
+  // offline rather than sitting there dead and failing when tapped.
+  function refreshAiVisibility(){
+    var on=aiOnline();
+    var sec=document.getElementById("aiSection");
+    var sep=document.getElementById("aiSectionSep");
+    var btn=document.getElementById("aiBtn");
+    if(sec) sec.style.display = on ? "" : "none";
+    if(sep) sep.style.display = on ? "" : "none";
+    if(btn) btn.style.display = on ? "" : "none";
+    if(!on) closeAiPanel();
+    var pill=document.getElementById("aiStatusPill");
+    if(pill){
+      pill.textContent = !aiConfigured() ? "· not set up"
+        : (aiCrossChecking() ? "· cross-checking on" : "· single engine");
+      pill.style.color = !aiConfigured() ? "var(--mut)" : (aiCrossChecking() ? "var(--up)" : "var(--amber)");
+    }
+    var ch=document.getElementById("aiCrossHint");
+    if(ch){
+      ch.innerHTML = aiCrossChecking()
+        ? "✅ Two engines set. Every read is checked by both, and you're only interrupted when they can't agree."
+        : "⚠️ With one engine there's nothing to check its answer against, so mistakes can pass silently. Adding a second is what makes this trustworthy.";
+      ch.style.color = aiCrossChecking() ? "var(--up)" : "var(--amber)";
+    }
+  }
+  function fillProviderSelects(){
+    ["aiProvA","aiProvB"].forEach(function(id){
+      var el=document.getElementById(id); if(!el) return;
+      var isB=(id==="aiProvB");
+      el.innerHTML=(isB?'<option value="">None</option>':'')
+        + Object.keys(AI_PROVIDERS).map(function(k){
+            return '<option value="'+k+'">'+esc(AI_PROVIDERS[k].label)+'</option>';
+          }).join("");
+      el.value = isB ? (aiCfg.provB||"") : (aiCfg.provA||"gemini");
+    });
+    document.getElementById("aiKeyA").value=aiCfg.keyA||"";
+    document.getElementById("aiKeyB").value=aiCfg.keyB||"";
+  }
+  function aiHelpModal(){
+    var rows=Object.keys(AI_PROVIDERS).map(function(k){
+      var p=AI_PROVIDERS[k];
+      return "<b>"+esc(p.label)+"</b> — "+esc(p.keyHint)+"\n"+p.keyUrl;
+    }).join("\n\n");
+    appModal({
+      title:"Getting API keys",
+      message:"AI mode calls these services with your own key, so the cost and the data are yours, not routed through anything of mine.\n\n"+rows
+        +"\n\nUse <b>two different companies</b> for A and B. Two keys from the same provider tend to make the same mistake on the same image, which defeats the point of checking.",
+      confirmText:"Got it", cancelText:"Close"
+    });
+  }
+  function openAiPanel(){
+    if(!aiOnline()) return;
+    if(!aiConfigured()){
+      appModal({
+        title:"Set up AI mode first",
+        message:"AI auto-fill needs at least one API key. Open <b>Settings → AI Mode</b> to add one — it takes a couple of minutes and the free tiers are usually enough.\n\nTwo keys from different companies is strongly recommended: that's what lets the app catch its own mistakes instead of quietly getting things wrong.",
+        confirmText:"Open settings",
+        onConfirm:function(){ if(_openSettings) _openSettings(); setTimeout(function(){ var s=document.getElementById("aiSection"); if(s) s.scrollIntoView({behavior:"smooth"}); },120); }
+      });
+      return;
+    }
+    document.getElementById("aiPanel").style.display="block";
+    document.getElementById("aiPanelOverlay").style.display="block";
+  }
+  function closeAiPanel(){
+    var p=document.getElementById("aiPanel"); if(p) p.style.display="none";
+    var o=document.getElementById("aiPanelOverlay"); if(o) o.style.display="none";
+  }
+  function renderAiThumbs(){
+    var w=document.getElementById("aiThumbs");
+    w.innerHTML=aiImages.map(function(im,i){
+      return '<div class="ai-th"><img src="'+im.url+'" alt=""><button type="button" data-i="'+i+'">×</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(w.querySelectorAll("button"), function(b){
+      b.addEventListener("click", function(){ aiImages.splice(+b.getAttribute("data-i"),1); renderAiThumbs(); });
+    });
+    document.getElementById("aiRunBtn").disabled = aiImages.length===0 || aiBusy;
+    document.getElementById("aiRunBtn").textContent = aiImages.length
+      ? "Read "+aiImages.length+" image"+(aiImages.length===1?"":"s") : "Read images";
+  }
+  function aiLogLine(msg, cls){
+    var l=document.getElementById("aiLog");
+    l.style.display="block";
+    var d=document.createElement("div");
+    if(cls) d.className=cls;
+    d.textContent=msg;
+    l.appendChild(d); l.scrollTop=l.scrollHeight;
+  }
+
+  function renderAiResults(res){
+    var box=document.getElementById("aiResults");
+    box.style.display="block";
+    var list=res.list||[];
+    if(!list.length){
+      box.innerHTML='<div class="ai-banner warn">Nothing financial found in those images.</div>';
+      return;
+    }
+    var banner;
+    if(res.conflict){
+      var d=res.diff||{onlyA:[],onlyB:[]};
+      banner='<div class="ai-banner bad"><b>⚠️ Needs your eyes — do not just accept this.</b><br>'+esc(res.reason)
+        +'<br><br>The two engines read these images differently, so at least one is wrong. Check every row against the original image before adding.'
+        +'<br><br><b>Only engine A said:</b><br>'+(d.onlyA.map(esc).join("<br>")||"—")
+        +'<br><br><b>Only engine B said:</b><br>'+(d.onlyB.map(esc).join("<br>")||"—")
+        +'</div>';
+    } else if(res.verified){
+      banner='<div class="ai-banner good">✅ Both engines read these identically'
+        +(res.attempts>1?" (agreed on attempt "+res.attempts+")":"")+'. Safe to add.</div>';
+    } else {
+      banner='<div class="ai-banner warn"><b>Not cross-checked.</b> '+esc(res.reason||"")+' Worth a quick look before adding.</div>';
+    }
+    var rows=list.map(function(t,i){
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var low=t.confidence<0.6;
+      return '<div class="ai-row'+(low?" low":"")+'">'
+        +'<input type="checkbox" class="ai-pick" data-i="'+i+'" checked>'
+        +'<div class="r-main"><div><span class="badge">'+esc(meta.label)+'</span> '+esc(t.date)
+        +(low?' <span style="color:var(--amber)">· unsure</span>':'')+'</div>'
+        +'<div class="r-note">'+esc(t.note||t.cat||"")+'</div></div>'
+        +'<div class="r-amt">'+fmt(t.amount)+'</div>'
+        +'</div>';
+    }).join("");
+    box.innerHTML=banner+'<div class="ai-rows">'+rows+'</div>'
+      +'<button class="btn primary sm" id="aiAddSel" style="width:100%;margin-top:6px">Add selected entries</button>';
+
+    document.getElementById("aiAddSel").addEventListener("click", function(){
+      var picks=Array.prototype.filter.call(box.querySelectorAll(".ai-pick"), function(c){ return c.checked; })
+                     .map(function(c){ return list[+c.getAttribute("data-i")]; });
+      if(!picks.length) return;
+      picks.forEach(function(t){
+        var tx={id:freshIdBase(), date:t.date, type:t.type, amount:t.amount};
+        if(t.type==="spend" && t.cat) tx.cat=t.cat;
+        if(t.note) tx.note=t.note;
+        state.transactions.push(tx);
+        mirrorNewTransaction(tx);
+      });
+      state.selectedMonths=null;
+      persistNow(); render();
+      flashSaved("added "+picks.length);
+      closeAiPanel();
+      aiImages=[]; renderAiThumbs();
+      box.style.display="none"; box.innerHTML="";
+      document.getElementById("aiLog").style.display="none";
+      document.getElementById("aiLog").innerHTML="";
+    });
+  }
+
+  function bindAiUI(){
+    document.getElementById("aiBtn").addEventListener("click", openAiPanel);
+    document.getElementById("aiPanelClose").addEventListener("click", closeAiPanel);
+    document.getElementById("aiPanelOverlay").addEventListener("click", closeAiPanel);
+    document.getElementById("aiHelpBtn").addEventListener("click", aiHelpModal);
+
+    ["aiProvA","aiProvB","aiKeyA","aiKeyB"].forEach(function(id){
+      document.getElementById(id).addEventListener("change", function(){
+        aiCfg.provA=document.getElementById("aiProvA").value;
+        aiCfg.provB=document.getElementById("aiProvB").value;
+        aiCfg.keyA=document.getElementById("aiKeyA").value.trim();
+        aiCfg.keyB=document.getElementById("aiKeyB").value.trim();
+        saveAiCfg(); refreshAiVisibility();
+      });
+    });
+    document.getElementById("aiClearBtn").addEventListener("click", function(){
+      appModal({title:"Forget API keys?", message:"Both keys are removed from this device. Your entries aren't affected.", confirmText:"Forget", danger:true, onConfirm:function(){
+        aiCfg={provA:"gemini", keyA:"", provB:"", keyB:""};
+        saveAiCfg(); fillProviderSelects(); refreshAiVisibility();
+        document.getElementById("aiTestOut").textContent="";
+        flashSaved("keys forgotten");
+      }});
+    });
+    document.getElementById("aiTestBtn").addEventListener("click", async function(){
+      var out=document.getElementById("aiTestOut");
+      out.style.color="var(--mut)"; out.textContent="Testing…";
+      var probe="Reply with exactly this JSON and nothing else: {\"transactions\":[]}";
+      var msgs=[];
+      for(var slot of [["A",aiCfg.provA,aiCfg.keyA],["B",aiCfg.provB,aiCfg.keyB]]){
+        if(!slot[1]||!slot[2]){ msgs.push("Engine "+slot[0]+": not set"); continue; }
+        try{ await AI_PROVIDERS[slot[1]].run(slot[2], probe, []); msgs.push("Engine "+slot[0]+" ("+AI_PROVIDERS[slot[1]].label+"): ✅ working"); }
+        catch(e){ msgs.push("Engine "+slot[0]+" ("+AI_PROVIDERS[slot[1]].label+"): ❌ "+e.message); }
+      }
+      out.innerHTML=msgs.map(esc).join("<br>");
+    });
+
+    document.getElementById("aiAddImgs").addEventListener("click", function(){ document.getElementById("aiFiles").click(); });
+    document.getElementById("aiClearImgs").addEventListener("click", function(){ aiImages=[]; renderAiThumbs(); });
+    document.getElementById("aiFiles").addEventListener("change", function(e){
+      var files=Array.prototype.slice.call(e.target.files||[]);
+      var left=files.length;
+      if(!left) return;
+      files.forEach(function(f){
+        var r=new FileReader();
+        r.onload=function(){
+          var url=r.result;
+          var comma=url.indexOf(",");
+          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
+          if(--left<=0) renderAiThumbs();
+        };
+        r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
+        r.readAsDataURL(f);
+      });
+      e.target.value=""; // so picking the same file twice still fires
+    });
+
+    document.getElementById("aiRunBtn").addEventListener("click", async function(){
+      if(aiBusy || !aiImages.length) return;
+      aiBusy=true;
+      var btn=this; btn.disabled=true; btn.textContent="Reading…";
+      var log=document.getElementById("aiLog"); log.innerHTML=""; log.style.display="block";
+      document.getElementById("aiResults").style.display="none";
+      var expected=parseInt(document.getElementById("aiExpected").value,10);
+      if(!isFinite(expected) || expected<1) expected=0;
+      try{
+        var res=await aiExtract(aiImages, expected, aiLogLine);
+        if(expected>0 && res.list.length!==expected){
+          aiLogLine("You said "+expected+" but "+res.list.length+" came back — check the list.","warn");
+        }
+        renderAiResults(res);
+      }catch(e){
+        aiLogLine(e.message,"err");
+        document.getElementById("aiResults").style.display="block";
+        document.getElementById("aiResults").innerHTML='<div class="ai-banner bad"><b>Couldn\'t read the images.</b><br>'+esc(e.message)+'</div>';
+      }
+      aiBusy=false; renderAiThumbs();
+    });
+
+    window.addEventListener("online", refreshAiVisibility);
+    window.addEventListener("offline", refreshAiVisibility);
+  }
+
+  // Offers the set-aside rather than doing it silently: money quietly leaving your
+  // spendable balance is exactly the kind of surprise a tracker shouldn't spring on you.
+  function maybeSuggestTax(tx){
+    var pct=num(state.settings.taxPct);
+    if(pct<=0) return;
+    if(tx.type!=="income" && tx.type!=="trade_win") return;
+    var amt=Math.round(num(tx.amount)*pct)/100;
+    if(amt<0.01) return;
+    appModal({
+      title:"Set aside for tax?",
+      message:"You've set a tax rate of <b>"+pct+"%</b>. On "+fmt(num(tx.amount))+" that's <b>"+fmt(amt)+"</b>.\n\nSetting it aside moves it out of your spendable balance into the tax pot. It won't count toward net worth.",
+      confirmText:"Set aside "+fmt(amt),
+      cancelText:"Skip",
+      onConfirm:function(){
+        var t={id:freshIdBase(), date:tx.date, type:"tax_set", amount:amt, note:"Tax "+pct+"% of "+fmt(num(tx.amount))};
+        state.transactions.push(t);
+        mirrorNewTransaction(t);
+        persistNow(); render();
+        flashSaved("tax set aside");
+      }
+    });
   }
 
   /* ---------------- storage tier badge + health dashboard ---------------- */
@@ -2189,6 +2764,12 @@
     document.getElementById("stDebt").textContent=fmt(t.debt,sym);
     document.getElementById("stDebt").className="v mono "+(t.debt>0?"down":"up");
     document.getElementById("stSav").textContent=fmt(t.savings,sym);
+    // the tax tile stays hidden until tax is actually in play, so it doesn't clutter
+    // the row for people who never use it
+    var taxWrap=document.getElementById("stTaxWrap");
+    var taxUsed = Math.abs(t.tax)>=0.01 || num(state.settings.taxPct)>0 || num(state.opening.tax)>0;
+    taxWrap.style.display = taxUsed ? "" : "none";
+    if(taxUsed) document.getElementById("stTax").textContent=fmt(t.tax,sym);
     var netEl=document.getElementById("stNet");
     netEl.textContent=fmt(t.net,sym);
     netEl.className="v mono "+(t.net>=0?"up":"down");
@@ -2200,8 +2781,15 @@
     var alw=num(state.settings.allowance), sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
     var used=sd+stt+ss, left=alw-used;
     var au=document.getElementById("autoSummary");
-    var msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to debt, <b>"+fmt(stt,sym)+"</b> to trading, <b>"+fmt(ss,sym)+"</b> to savings.";
-    if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
+    var msg;
+    // Zero is a legitimate answer — plenty of people have no fixed monthly income.
+    // Don't warn about "unassigned" money when there's no money to assign.
+    if(alw<=0 && used<=0){
+      msg="No fixed monthly amount set. That's fine — just add entries manually as money comes in.";
+    } else {
+      msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to debt, <b>"+fmt(stt,sym)+"</b> to trading, <b>"+fmt(ss,sym)+"</b> to savings.";
+      if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
+    }
     au.innerHTML=msg;
 
     // allowance button state — shows next un-added month, allows up to 3 months advance
@@ -2222,7 +2810,7 @@
       if(ak > curM) advanceTaken++;
     }
     var canAdvance=advanceTaken<3;
-    if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
+    if(used<=0){ btn.disabled=true; btn.textContent=(alw<=0?"No monthly amount":"Set amounts first"); }
     else if(!nextUnadded){ btn.disabled=true; btn.textContent="All set for now ✓"; }
     else if(nextUnadded<=curM){
       // current or past month not yet added — always allow
@@ -2342,6 +2930,14 @@
 
     // sync inputs (only if not focused, to avoid disrupting typing)
     syncInput("sAlw", state.settings.allowance);
+    syncInput("sTaxPct", state.settings.taxPct);
+    var tph=document.getElementById("taxPctHint");
+    if(tph){
+      var tp=num(state.settings.taxPct);
+      tph.textContent = tp>0
+        ? "When you add money in or a trade win, the app will offer to set aside "+tp+"% for tax."
+        : "Set a percentage to get a nudge whenever money comes in. Leave at 0 to handle tax manually.";
+    }
     syncInput("sDebt", state.settings.toDebt);
     syncInput("sTrade", state.settings.toTrading);
     syncInput("sSave", state.settings.toSavings);
@@ -2716,6 +3312,7 @@
     })();
 
     // Settings drawer
+    _openSettings=openSettings;
     function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
       // re-highlight active theme when drawer opens
       var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
@@ -2850,6 +3447,7 @@
         state.selectedMonths=[monthKey(date)];
         mirrorNewTransaction(tx2);
         persist(); render();
+        maybeSuggestTax(tx2);
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
         document.getElementById("fSplit").value="1";
         hideSplitHint();
@@ -2918,7 +3516,7 @@
       if(settingsRenderTimer) clearTimeout(settingsRenderTimer);
       settingsRenderTimer=setTimeout(function(){ render(); }, 200);
     }
-    [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"]].forEach(function(pair){
+    [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"],["sTaxPct","taxPct"]].forEach(function(pair){
       document.getElementById(pair[0]).addEventListener("input", function(e){
         state.settings[pair[1]]=num(e.target.value); persist(); debouncedRender();
       });
@@ -3326,6 +3924,10 @@
     setInterval(function(){ StorageManager.tryAutoHeal().then(function(healed){ if(healed) refreshStorageBadge(); }); }, 30000);
     bind();
     bindPortfolioUI();
+    loadAiCfg();
+    fillProviderSelects();
+    bindAiUI();
+    refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
     window.addEventListener("pagehide", function(){ if(saveTimer) persistNow(); });
@@ -3455,6 +4057,48 @@
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Tax -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Tax Set-Aside</div>
+    <div class="subhint" style="margin-bottom:12px">Money parked for tax leaves your spendable balance and sits in its own pot. It's left out of net worth on purpose — it was never really yours. Use <b>Set aside for tax</b> and <b>Pay tax bill</b> in the entry form.</div>
+    <div class="split-row">
+      <div class="nm">Auto-suggest on money in</div>
+      <input type="number" id="sTaxPct" step="0.1" min="0" max="100" inputmode="decimal" placeholder="0">
+    </div>
+    <div class="subhint" id="taxPctHint" style="margin-top:8px"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- AI Mode — hidden entirely while offline -->
+  <div id="aiSection" style="padding:0 20px;display:none">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">🤖 AI Mode <span id="aiStatusPill" style="font-weight:500;text-transform:none;letter-spacing:0"></span></div>
+    <div class="subhint" style="margin-bottom:12px">Reads receipts and screenshots and fills in entries for you. Needs internet, so this section disappears when you're offline.</div>
+
+    <div class="split-row">
+      <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
+      <select id="aiProvA" style="max-width:130px"></select>
+    </div>
+    <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:10px">
+
+    <div class="split-row">
+      <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
+      <select id="aiProvB" style="max-width:130px"></select>
+    </div>
+    <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:8px">
+
+    <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
+      <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
+      <button class="btn ghost sm" id="aiClearBtn">Forget keys</button>
+    </div>
+    <div class="subhint" id="aiTestOut" style="margin-top:8px"></div>
+    <div class="subhint" style="margin-top:10px;color:var(--mut)">🔒 Keys are stored on this device only and are deliberately <b>excluded from backups and exports</b> — so sharing a backup never leaks them. Anyone with access to this device can read them.</div>
+  </div>
+
+  <hr class="sep" style="margin:20px" id="aiSectionSep">
+
   <!-- Danger zone -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--down);margin-bottom:12px">Danger Zone</div>
@@ -3468,7 +4112,7 @@
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v11.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
