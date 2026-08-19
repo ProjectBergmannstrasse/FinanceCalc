@@ -1009,6 +1009,14 @@
   function genPid(){ return "p"+Date.now()+Math.floor(Math.random()*1000); }
   function findPortfolio(pid){ return PORTFOLIOS.filter(function(p){ return p.id===pid; })[0]; }
   function activePortfolio(){ return findPortfolio(ACTIVE_PID); }
+  // Both the search filter and the export checkboxes are transient UI state scoped to
+  // whichever portfolio is on screen — carrying them across a switch means the export
+  // button counts entries that no longer exist in the ledger you're looking at.
+  function resetLedgerView(){
+    searchQuery="";
+    var sEl=document.getElementById("ledSearch"); if(sEl) sEl.value="";
+    selectedIds={};
+  }
 
   /* ---------------- pure helpers ---------------- */
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -1492,8 +1500,7 @@
     ACTIVE_PID=pid;
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
-    searchQuery=""; 
-    var sEl=document.getElementById("ledSearch"); if(sEl) sEl.value="";
+    resetLedgerView();
     persist();
     render();
     renderPortfolioUI();
@@ -1509,6 +1516,7 @@
     ACTIVE_PID=pid;
     applyPortfolioData(clone(DEFAULTS));
     photoCache={};
+    resetLedgerView();
     persist();
     render();
     renderPortfolioUI();
@@ -1535,6 +1543,7 @@
       ACTIVE_PID=PORTFOLIOS[0].id;
       applyPortfolioData(clone(PORTFOLIOS[0].data||{}));
       photoCache={};
+      resetLedgerView();
       render();
     }
     persist();
@@ -1671,9 +1680,12 @@
     var w=window.open("", "_blank");
     if(!w){ alert("Please allow pop-ups for this page to print."); return; }
     w.document.open(); w.document.write(html); w.document.close();
-    function go(){ try{ w.focus(); w.print(); }catch(e){} }
+    // onload may or may not still fire after document.close() — belt-and-braces, but
+    // guarded so the user never gets two print dialogs stacked on top of each other
+    var printed=false;
+    function go(){ if(printed) return; printed=true; try{ w.focus(); w.print(); }catch(e){} }
     w.onload=go;
-    setTimeout(go, 300); // Safari/iOS sometimes fires onload before layout settles
+    setTimeout(go, 300); // Safari/iOS sometimes never fires onload on a written doc
   }
 
   /* ---------------- storage tier badge + health dashboard ---------------- */
@@ -2954,6 +2966,7 @@
         return;
       }
 
+      resetLedgerView();
       persist(); render(); renderPortfolioUI();
       document.getElementById("impWrap").style.display="none";
       flashSaved("loaded");
@@ -3141,7 +3154,7 @@
   <!-- Back up & data in drawer -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Back Up &amp; Data</div>
-    <div class="hint">Export a backup file that works in any browser on any device. Import it back to restore.</div>
+    <div class="hint">Backups cover <b>every portfolio</b> and their photos, and work in any browser on any device. Import one back to restore. CSV exports the current portfolio only, and follows the date range set in Print Transactions above.</div>
     <div class="data-btns">
       <button class="btn ghost sm" id="expCopy">Copy backup</button>
       <button class="btn ghost sm" id="expFile">Download backup</button>
