@@ -83,6 +83,10 @@
   #saved .s-dot{width:7px;height:7px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
   #saved.flash .s-dot{opacity:1}
 
+  /* live date bar — always the real device date, never a hardcoded string */
+  .datebar{font-size:13px;color:var(--mut);letter-spacing:.2px;margin:-8px 0 16px;font-weight:500}
+  .datebar b{color:var(--tx);font-weight:700}
+
   /* Balance hero */
   .hero{background:var(--hero-grad,linear-gradient(160deg,#151b28,#10151f));border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
   .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,var(--hero-glow,rgba(244,183,63,.13)),transparent 60%);pointer-events:none}
@@ -99,7 +103,7 @@
 
   /* generic panel */
   .panel{background:var(--panel);border:1px solid var(--bd);border-radius:16px;margin-bottom:14px;overflow:hidden}
-  .p-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:10px}
+  .p-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:10px;flex-wrap:wrap;row-gap:8px}
   .p-head h2{font-size:15px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
   .p-head h2 .tick{color:var(--amber)}
   .p-body{padding:0 18px 18px}
@@ -143,6 +147,19 @@
   .auto-note{font-size:13px;color:var(--mut);margin:9px 0 11px}
   .auto-note b{color:var(--tx)}
 
+  /* advance notices — shown on the month that gave, and the month that received, an advance */
+  .adv-notes{margin:2px 0 4px}
+  .adv-note{font-size:13px;padding:9px 12px;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .adv-note.adv-in{background:rgba(61,220,132,.10);color:#8ff0bc;border:1px solid rgba(61,220,132,.25)}
+  .adv-note.adv-out{background:rgba(244,183,63,.10);color:var(--amber);border:1px solid rgba(244,183,63,.25)}
+  .adv-remove{border:1px solid currentColor;background:transparent;color:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;flex:none;opacity:.85}
+  .adv-remove:hover{opacity:1}
+  .adv-list-ttl{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:600;margin:14px 0 8px}
+  .adv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--bd)}
+  .adv-row:last-child{border-bottom:0}
+  .adv-row .adv-remove{font-size:11px;padding:4px 8px;border-color:var(--bd2);color:var(--mut)}
+  .adv-row .adv-remove:hover{color:var(--down);border-color:var(--down)}
+
   /* month summary */
   .msel{display:flex;align-items:center;gap:10px}
   .msel select{width:auto;min-width:160px}
@@ -160,8 +177,12 @@
   .catrow .cv{font-size:13px;color:var(--mut);width:86px;text-align:right}
 
   /* ledger */
+  .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut)}
+  .sel-all{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .sel-all input{width:auto;margin:0;accent-color:var(--amber)}
   .led{display:flex;flex-direction:column}
   .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd)}
+  .lchk{width:16px;height:16px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
   .lrow:last-child{border-bottom:0}
   .ldate{font-size:12px;color:var(--mut);width:58px;flex:none;line-height:1.3}
   .ldate b{display:block;color:var(--tx);font-size:15px;font-weight:700}
@@ -239,6 +260,9 @@
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
   <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
+
+<!-- Live date, always computed from the device clock — never hand-typed -->
+<div class="datebar" id="dateBar">—</div>
 
 <!-- Balance hero -->
 <div class="hero">
@@ -332,6 +356,7 @@
     <div class="msel"><select id="monthSel"></select></div>
   </div>
   <div class="p-body">
+    <div class="adv-notes" id="advNotes"></div>
     <div class="metrics" id="metrics"></div>
     <div class="cats" id="cats"></div>
   </div>
@@ -339,7 +364,13 @@
 
 <!-- Ledger -->
 <div class="panel">
-  <div class="p-head"><h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2></div>
+  <div class="p-head">
+    <h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2>
+    <div class="led-tools">
+      <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
+      <button class="btn ghost sm" id="exportSelBtn" disabled>Export</button>
+    </div>
+  </div>
   <div class="p-body"><div class="led" id="ledger"></div></div>
 </div>
 
@@ -363,6 +394,8 @@
   var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
       GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798";
   var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var WEEKDAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
   var TYPE_META = {
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
@@ -394,6 +427,21 @@
   }
   function monthLabel(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" '"+String(p[0]).slice(2); }
   function monthLong(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" 20"+String(p[0]).slice(2); }
+  function niceDate(dateStr){ var p=(dateStr||"").split("-"); if(p.length<3) return dateStr||""; return MONTHS[(+p[1])-1]+" "+(+p[2]); }
+  function ordinal(n){
+    var v=n%100;
+    if(v>=11&&v<=13) return n+"th";
+    switch(n%10){ case 1: return n+"st"; case 2: return n+"nd"; case 3: return n+"rd"; default: return n+"th"; }
+  }
+  // Always reads the live device clock — nothing about "today" is ever hardcoded.
+  function fullDateStr(){
+    var d=new Date();
+    return WEEKDAYS[d.getDay()]+", "+MONTHS_LONG[d.getMonth()]+" "+ordinal(d.getDate())+", "+d.getFullYear();
+  }
+  function updateDateBar(){
+    var el=document.getElementById("dateBar");
+    if(el) el.innerHTML="Today · <b>"+fullDateStr()+"</b>";
+  }
   function fmt(v,sym){
     sym = sym||state.currency;
     var neg=v<0, a=Math.abs(v);
@@ -497,16 +545,24 @@
     return r;
   }
 
+  // Includes forMonth so a future month that only exists because an advance targets it
+  // still shows up in the "By month" picker — this list is never capped to any one year.
   function monthsInData(){
-    var set={}; state.transactions.forEach(function(t){ set[monthKey(t.date)]=1; });
+    var set={};
+    state.transactions.forEach(function(t){
+      set[monthKey(t.date)]=1;
+      if(t.forMonth) set[t.forMonth]=1;
+    });
     var cur=monthKey(todayStr()); set[cur]=1;
     return Object.keys(set).sort();
   }
 
-  // months (this-year, and whether current month) that already have an allowance added
+  // months that already have an allowance added, keyed by which month it's FOR
+  // (forMonth), not necessarily the day it was logged — so an advance taken today
+  // for a future month still correctly marks that future month as "done".
   function allowanceMonths(){
     var set={};
-    state.transactions.forEach(function(t){ if(t.auto) set[monthKey(t.date)]=1; });
+    state.transactions.forEach(function(t){ if(t.auto) set[t.forMonth||monthKey(t.date)]=1; });
     return set;
   }
   function appliedThisMonth(){ return !!allowanceMonths()[monthKey(todayStr())]; }
@@ -514,6 +570,56 @@
     var yr=todayStr().slice(0,4), set=allowanceMonths(), n=0;
     for(var k in set){ if(k.slice(0,4)===yr) n++; }
     return n;
+  }
+
+  /* ---------------- advances: taken today, dated today, but earmarked for a future month ---------------- */
+
+  // advance legs still outstanding (their target month hasn't arrived yet)
+  function outstandingAdvances(){
+    var curM=monthKey(todayStr()), map={};
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth && t.forMonth>curM){
+        if(!map[t.forMonth]) map[t.forMonth]={forMonth:t.forMonth, amount:0, date:t.date};
+        map[t.forMonth].amount+=num(t.amount);
+        if(t.date<map[t.forMonth].date) map[t.forMonth].date=t.date;
+      }
+    });
+    return Object.keys(map).sort().map(function(k){ return map[k]; });
+  }
+  // advances that were taken *during* a given month, for some later month
+  function advancesTakenIn(scopeMonth){
+    var map={};
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth && monthKey(t.date)===scopeMonth){
+        if(!map[t.forMonth]) map[t.forMonth]={forMonth:t.forMonth, amount:0, date:t.date};
+        map[t.forMonth].amount+=num(t.amount);
+      }
+    });
+    return Object.keys(map).sort().map(function(k){ return map[k]; });
+  }
+  // was this month's own allowance already received earlier, as someone else's advance?
+  function advanceReceivedFor(scopeMonth){
+    var amount=0, date=null;
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth===scopeMonth && monthKey(t.date)!==scopeMonth){
+        amount+=num(t.amount);
+        if(!date||t.date<date) date=t.date;
+      }
+    });
+    return amount>0 ? {amount:amount, date:date} : null;
+  }
+  // undo an advance: removes every leg (debt/trading/savings) tied to that target month
+  // and frees up the advance slot again
+  function removeAdvance(forMonth){
+    var txs=state.transactions.filter(function(t){ return t.advance && t.forMonth===forMonth; });
+    if(!txs.length) return;
+    var total=0; txs.forEach(function(t){ total+=num(t.amount); });
+    var n=txs.length;
+    if(!confirm("Remove the advance taken for "+monthLong(forMonth)+" ("+fmt(total)+")? This deletes "+n+" linked "+(n===1?"entry":"entries")+" and frees up that advance slot.")) return;
+    var ids=txs.map(function(t){ return t.id; });
+    state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
+    ids.forEach(function(id){ delete selectedIds[id]; });
+    persist(); render(); flashSaved("advance removed");
   }
 
   /* ---------------- photo store (separate keys, cached) ---------------- */
@@ -848,6 +954,9 @@
   function render(){
     var t=totals(), sym=state.currency;
 
+    // live date, top of page
+    updateDateBar();
+
     // hero
     var hb=document.getElementById("heroBal");
     hb.innerHTML='<span class="cur">'+sym+'</span>'+ (t.balance<0?"-":"") + Math.abs(t.balance).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -881,12 +990,14 @@
     // allowance button state — shows next un-added month, allows up to 3 months advance
     var btn=document.getElementById("applyAlw");
     var amSet2=allowanceMonths();
-    // find next unadded month starting from current month
+    // find next unadded month starting from current month — walks forward with monthAdd()
+    // so it rolls over Dec → Jan into next year automatically, instead of stopping dead
+    // at December of whatever year it happens to be right now.
     var nextUnadded=null;
-    var curYr=+todayStr().slice(0,4), curMo=+todayStr().slice(5,7);
-    for(var mi=curMo;mi<=12;mi++){
-      var mk2=curYr+"-"+two(mi);
+    var mk2=curM;
+    for(var gi=0; gi<60; gi++){
       if(!amSet2[mk2]){ nextUnadded=mk2; break; }
+      mk2=monthAdd(mk2,1);
     }
     // how many advance months already taken (months added AFTER current month)
     var advanceTaken=0;
@@ -895,7 +1006,7 @@
     }
     var canAdvance=advanceTaken<3;
     if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
-    else if(!nextUnadded){ btn.disabled=true; btn.textContent="All 12 months added ✓"; }
+    else if(!nextUnadded){ btn.disabled=true; btn.textContent="All set for now ✓"; }
     else if(nextUnadded<=curM){
       // current or past month not yet added — always allow
       btn.disabled=false;
@@ -924,6 +1035,24 @@
     }
     yc.innerHTML='<span class="pips">'+pips+'</span><span>Month <b class="done-tag">'+curMonthNum+'</b> / 12 of '+yr+'</span>';
 
+    // outstanding advances — one row per future month already funded, each removable
+    var advL=document.getElementById("advList");
+    if(advL){
+      var outAdv=outstandingAdvances();
+      if(!outAdv.length){ advL.innerHTML=""; }
+      else{
+        var ah='<div class="adv-list-ttl">Outstanding advances</div>';
+        outAdv.forEach(function(a){
+          ah+='<div class="adv-row"><span>'+monthLong(a.forMonth)+' <span class="mono">'+fmt(a.amount,sym)+'</span> <span class="mut" style="font-weight:400">· taken '+niceDate(a.date)+'</span></span>'
+             +'<button class="adv-remove" data-fm="'+a.forMonth+'">✕ Remove</button></div>';
+        });
+        advL.innerHTML=ah;
+        Array.prototype.forEach.call(advL.querySelectorAll(".adv-remove"), function(b){
+          b.addEventListener("click", function(){ removeAdvance(b.getAttribute("data-fm")); });
+        });
+      }
+    }
+
     // month select
     var sel=document.getElementById("monthSel");
     var months=monthsInData();
@@ -938,6 +1067,29 @@
     // metrics
     var sc=state.selectedMonth;
     var sm=summaryFor(sc);
+
+    // advance notices for the selected month
+    var advNotesEl=document.getElementById("advNotes");
+    if(advNotesEl){
+      if(sc==="all"){ advNotesEl.innerHTML=""; }
+      else{
+        var nh="";
+        var advIn=advanceReceivedFor(sc);
+        if(advIn){
+          nh+='<div class="adv-note adv-in"><span>✓ This month\'s allowance ('+fmt(advIn.amount,sym)+') was already taken in advance on '+niceDate(advIn.date)+'.</span>'
+             +'<button class="adv-remove" data-fm="'+sc+'">✕ Remove</button></div>';
+        }
+        advancesTakenIn(sc).forEach(function(a){
+          nh+='<div class="adv-note adv-out"><span>⚡ Advance taken for '+monthLong(a.forMonth)+': '+fmt(a.amount,sym)+'</span>'
+             +'<button class="adv-remove" data-fm="'+a.forMonth+'">✕ Remove</button></div>';
+        });
+        advNotesEl.innerHTML=nh;
+        Array.prototype.forEach.call(advNotesEl.querySelectorAll(".adv-remove"), function(b){
+          b.addEventListener("click", function(){ removeAdvance(b.getAttribute("data-fm")); });
+        });
+      }
+    }
+
     var m=document.getElementById("metrics");
     function metric(k,v,cls){ return '<div class="metric"><div class="k">'+k+'</div><div class="v mono '+(cls||"")+'">'+v+'</div></div>'; }
     var tradeCls=sm.tradePL>0?"up":(sm.tradePL<0?"down":"");
@@ -999,6 +1151,19 @@
     });
   }
 
+  var selectedIds={}; // ephemeral UI-only selection for "export selected" — never persisted
+
+  // Guarantees a fresh, strictly-increasing id base even if called twice inside the
+  // same millisecond (Date.now() alone can't promise that). Each call reserves 10 ids
+  // (base+1..base+9) for a batch's sibling legs, which is more than any batch needs.
+  var __lastIdBase=0;
+  function freshIdBase(){
+    var b=Date.now();
+    if(b<=__lastIdBase) b=__lastIdBase+10;
+    __lastIdBase=b;
+    return b;
+  }
+
   function renderLedger(){
     var sym=state.currency, sc=state.selectedMonth;
     var list=sortedTx().reverse().filter(function(t){ return sc==="all" || monthKey(t.date)===sc; });
@@ -1006,6 +1171,7 @@
     document.getElementById("ledCount").textContent = list.length? "· "+list.length : "";
     if(list.length===0){
       led.innerHTML='<div class="empty"><b>Nothing logged'+(sc==="all"?"":" for "+monthLong(sc))+' yet.</b><br>Add your first entry above.</div>';
+      updateExportBtn();
       return;
     }
     var html="";
@@ -1022,7 +1188,9 @@
       var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
       var hasProof = !!(t.photo || t.screenshot);
       var eyeBtn = hasProof ? '<span class="eye-btn" title="Click row to view screenshot">\u{1F441}</span>' : '';
+      var checked = selectedIds[t.id] ? " checked" : "";
       html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
+          +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
           +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
           +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'
           +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
@@ -1039,16 +1207,83 @@
         var tx2=state.transactions.filter(function(x){ return x.id===id; })[0];
         if(tx2 && tx2.photo) delPhoto(tx2.photo);
         state.transactions=state.transactions.filter(function(x){ return x.id!==id; });
+        delete selectedIds[id];
         persist(); render();
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".lchk"), function(cb){
+      cb.addEventListener("click", function(e){ e.stopPropagation(); });
+      cb.addEventListener("change", function(){
+        var id=+cb.getAttribute("data-id");
+        if(cb.checked) selectedIds[id]=true; else delete selectedIds[id];
+        updateExportBtn();
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.classList.contains("del")) return;
+        if(e.target.classList.contains("del") || e.target.classList.contains("lchk")) return;
         var id=+row.getAttribute("data-id");
         var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
         if(tx3 && (tx3.photo || tx3.screenshot)) openViewer(id);
       });
+    });
+    updateExportBtn();
+  }
+
+  /* ---------------- select-specific-entries export (separate from the full backup) ---------------- */
+  function currentVisibleIds(){
+    var sc=state.selectedMonth;
+    return sortedTx().filter(function(t){ return sc==="all" || monthKey(t.date)===sc; }).map(function(t){ return t.id; });
+  }
+  function selectedCount(){ var n=0; for(var k in selectedIds){ if(selectedIds[k]) n++; } return n; }
+  function updateExportBtn(){
+    var btn=document.getElementById("exportSelBtn"), chk=document.getElementById("selAllChk");
+    if(!btn||!chk) return;
+    var n=selectedCount();
+    btn.disabled = n===0;
+    btn.textContent = n>0 ? "Export ("+n+")" : "Export";
+    var visible=currentVisibleIds();
+    if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }
+    chk.disabled=false;
+    var checkedVisible=visible.filter(function(id){ return !!selectedIds[id]; }).length;
+    chk.checked = checkedVisible===visible.length;
+    chk.indeterminate = checkedVisible>0 && checkedVisible<visible.length;
+  }
+  function toggleSelectAll(checked){
+    currentVisibleIds().forEach(function(id){ if(checked) selectedIds[id]=true; else delete selectedIds[id]; });
+    renderLedger();
+  }
+  // bundles a chosen list of transactions (plus any photos they reference) into one JSON payload
+  function exportTxList(list, cb){
+    var ids=[]; list.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+    var photos={}, i=0;
+    (function next(){
+      if(i>=ids.length){
+        var payload={__mymoneyExport:1, exportedAt:new Date().toISOString(), count:list.length, currency:state.currency, transactions:list, photos:photos};
+        cb(JSON.stringify(payload,null,2), list.length);
+        return;
+      }
+      var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+    })();
+  }
+  function exportSelectedClick(){
+    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+    if(!ids.length) return;
+    var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });
+    flashSaved("preparing…");
+    exportTxList(list, function(json, count){
+      try{
+        var blob=new Blob([json],{type:"application/json"});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement("a");
+        var scopeName=(state.selectedMonth&&state.selectedMonth!=="all")?state.selectedMonth:"selected";
+        a.href=url; a.download="my-money-"+scopeName+"-"+count+(count===1?"-entry":"-entries")+".json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+        selectedIds={};
+        renderLedger();
+        flashSaved("exported");
+      }catch(e){ alert("Couldn't download here — try again."); }
     });
   }
 
@@ -1200,8 +1435,12 @@
 
     // month select
     document.getElementById("monthSel").addEventListener("change", function(e){
-      state.selectedMonth=e.target.value; persist(); render();
+      state.selectedMonth=e.target.value; selectedIds={}; persist(); render();
     });
+
+    // select-all + export selected entries as their own .json (separate from the full backup)
+    document.getElementById("selAllChk").addEventListener("change", function(e){ toggleSelectAll(e.target.checked); });
+    document.getElementById("exportSelBtn").addEventListener("click", exportSelectedClick);
 
     // salary / allowance inputs
     [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"]].forEach(function(pair){
@@ -1215,16 +1454,17 @@
       var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
       if(sd+stt+ss<=0) return;
       var amSetNow=allowanceMonths();
-      // find next unadded month from current month onwards (current year only)
-      var cYr=+todayStr().slice(0,4), cMo=+todayStr().slice(5,7);
-      var targetMonth=null;
-      for(var mi=cMo;mi<=12;mi++){
-        var mk3=cYr+"-"+two(mi);
+      // find next unadded month from current month onwards — walks forward with monthAdd()
+      // so it can roll from December into January of next year and keep going indefinitely.
+      var curM2=monthKey(todayStr());
+      var targetMonth=null, mk3=curM2;
+      for(var gi2=0; gi2<60; gi2++){
         if(!amSetNow[mk3]){ targetMonth=mk3; break; }
+        mk3=monthAdd(mk3,1);
       }
       if(!targetMonth) return;
       // count advances = months strictly ahead of today that are already logged
-      var curM2=monthKey(todayStr()), advNow=0;
+      var advNow=0;
       for(var ak2 in amSetNow){ if(ak2>curM2) advNow++; }
       var isAdvance=targetMonth>curM2;
       if(isAdvance && advNow>=3){
@@ -1234,15 +1474,17 @@
       // confirm if advance
       if(isAdvance){
         var advLeft=3-advNow;
-        if(!confirm("Take advance allowance for "+monthLong(targetMonth)+"? You have "+advNow+" of 3 advance slots used. After this: "+(advNow+1)+"/3 — "+advLeft+" slot"+(advLeft===1?"":"s")+" remaining."))
+        if(!confirm("Take advance allowance for "+monthLong(targetMonth)+"? It'll be logged today ("+niceDate(todayStr())+") and marked as an advance for "+monthLong(targetMonth)+" — you can remove it later if you change your mind. You have "+advNow+" of 3 advance slots used. After this: "+(advNow+1)+"/3 — "+advLeft+" slot"+(advLeft===1?"":"s")+" remaining."))
           return;
       }
-      var dateStr=targetMonth+"-01";
-      var base2=Date.now();
-      var advTag=isAdvance?" (advance: "+monthLong(targetMonth)+")":"";
-      if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,auto:true});
-      if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true});
-      if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag,auto:true});
+      // non-advance (current/past month): dated the 1st of that month, as before.
+      // true advance: dated *today* — the day it was actually taken — not the future month.
+      var dateStr=isAdvance?todayStr():(targetMonth+"-01");
+      var base2=freshIdBase();
+      var advTag=isAdvance?" (advance for "+monthLong(targetMonth)+", taken "+niceDate(todayStr())+")":"";
+      if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,   auto:true, forMonth:targetMonth, advance:isAdvance});
+      if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true, forMonth:targetMonth, advance:isAdvance});
+      if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag, auto:true, forMonth:targetMonth, advance:isAdvance});
       state.selectedMonth=targetMonth;
       persist(); render();
       flashSaved(isAdvance?"advance added":"added");
@@ -1357,6 +1599,9 @@
   /* ---------------- init ---------------- */
   function init(){
     document.getElementById("fDate").value=todayStr();
+    updateDateBar();
+    setInterval(updateDateBar, 60000);
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) updateDateBar(); });
     bind();
     loadData(function(){ render(); });
   }
@@ -1388,7 +1633,7 @@
   <!-- Monthly allowance in drawer -->
   <div style="padding:18px 20px 0">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly Allowance</div>
-    <div class="subhint" style="margin-bottom:12px">Once per calendar month. Tap the button to add current month. You can take up to <b>3 months advance</b> from today — but only 3 total outstanding at any time.</div>
+    <div class="subhint" style="margin-bottom:12px">Once per calendar month. Tap the button to add current month. You can take up to <b>3 months advance</b> from today — but only 3 total outstanding at any time. An advance is logged on the day you actually take it, not the future month — and can be removed below if you change your mind.</div>
     <div class="auto-note" id="autoSummary"></div>
     <div class="split-row">
       <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
@@ -1410,6 +1655,7 @@
       <button class="btn ghost sm" id="applyAlw" style="width:100%">Add this month</button>
     </div>
     <div class="yr-count" id="yrCount" style="margin-top:12px"></div>
+    <div id="advList"></div>
   </div>
 
   <hr class="sep" style="margin:20px">
