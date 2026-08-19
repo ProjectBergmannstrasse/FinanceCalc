@@ -1765,6 +1765,35 @@
     return new Error(prefix+" "+r.status+": "+msg.slice(0,400)+hint);
   }
 
+  // Keys get pasted from emails, notes apps and password managers, which love to bring
+  // along stray whitespace, smart quotes, zero-width characters or a "Bearer " prefix.
+  // Any one of those makes a perfectly good key come back "not valid".
+  function aiCleanKey(k){
+    return String(k||"")
+      .replace(/[\u200B-\u200D\uFEFF]/g,"")   // zero-width junk
+      .replace(/[\u2018\u2019\u201C\u201D]/g,"") // smart quotes
+      .replace(/^\s*["']|["']\s*$/g,"")
+      .replace(/^\s*Bearer\s+/i,"")
+      .replace(/\s+/g,"")                      // API keys never contain whitespace
+      .trim();
+  }
+
+  // fetch() rejects with a bare TypeError ("Load failed" in Safari, "Failed to fetch" in
+  // Chrome) when the request never leaves the browser — CORS, offline, blocked. That is a
+  // completely different problem from the server rejecting your key, and conflating the
+  // two sends you off checking credentials that were never even read.
+  async function aiFetch(label, url, opts){
+    try{
+      return await fetch(url, opts);
+    }catch(e){
+      var isFile = (location.protocol==="file:");
+      throw new Error(label+": the request never reached the server ("+((e&&e.message)||"network error")+")."
+        +" This is a connection or CORS problem — your key was never checked."
+        +(isFile ? "  ← You've opened this file straight from disk (file://), which some providers refuse outright. Gemini is usually the one that still works here." : "")
+      );
+    }
+  }
+
   var AI_PROVIDERS={
     gemini:{
       label:"Gemini",
@@ -1780,7 +1809,7 @@
         for(var vi=0; vi<2; vi++){
           var ver=["v1beta","v1"][vi];
           try{
-            var r=await fetch("https://generativelanguage.googleapis.com/"+ver+"/models?pageSize=200&key="+encodeURIComponent(key));
+            var r=await aiFetch("Gemini","https://generativelanguage.googleapis.com/"+ver+"/models?pageSize=200&key="+encodeURIComponent(key));
             if(!r.ok){ lastErr=await aiHttpErr("Gemini",r); continue; }
             var j=await r.json();
             var out=(j.models||[]).filter(function(m){
@@ -1807,7 +1836,7 @@
             var b=JSON.parse(JSON.stringify(body));
             if(pass===1) delete b.generationConfig.responseMimeType;
             try{
-              var r=await fetch("https://generativelanguage.googleapis.com/"+versions[i]+"/models/"+encodeURIComponent(model||this.model)+":generateContent?key="+encodeURIComponent(key),{
+              var r=await aiFetch("Gemini","https://generativelanguage.googleapis.com/"+versions[i]+"/models/"+encodeURIComponent(model||this.model)+":generateContent?key="+encodeURIComponent(key),{
                 method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b)
               });
               if(!r.ok){
@@ -1835,7 +1864,7 @@
       keyHint:"platform.openai.com → API keys → Create new secret key. Needs billing set up.",
       canList:true,
       async listModels(key){
-        var r=await fetch("https://api.openai.com/v1/models",{headers:{"Authorization":"Bearer "+key}});
+        var r=await aiFetch("OpenAI","https://api.openai.com/v1/models",{headers:{"Authorization":"Bearer "+key}});
         if(!r.ok) throw await aiHttpErr("OpenAI",r);
         var j=await r.json();
         return (j.data||[]).map(function(m){ return {id:m.id, display:m.id}; })
@@ -1845,7 +1874,7 @@
       async run(key, prompt, images, model){
         var content=[{type:"text",text:prompt}];
         images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
-        var r=await fetch("https://api.openai.com/v1/chat/completions",{
+        var r=await aiFetch("OpenAI","https://api.openai.com/v1/chat/completions",{
           method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
           body:JSON.stringify({model:model||this.model, temperature:0, response_format:{type:"json_object"}, messages:[{role:"user",content:content}]})
         });
@@ -1861,7 +1890,7 @@
       keyHint:"console.anthropic.com → Settings → API keys. Needs billing set up.",
       canList:true,
       async listModels(key){
-        var r=await fetch("https://api.anthropic.com/v1/models?limit=100",{
+        var r=await aiFetch("Claude","https://api.anthropic.com/v1/models?limit=100",{
           headers:{"x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}
         });
         if(!r.ok) throw await aiHttpErr("Claude",r);
@@ -1872,7 +1901,7 @@
         var content=[];
         images.forEach(function(im){ content.push({type:"image", source:{type:"base64", media_type:im.mime, data:im.b64}}); });
         content.push({type:"text",text:prompt});
-        var r=await fetch("https://api.anthropic.com/v1/messages",{
+        var r=await aiFetch("Claude","https://api.anthropic.com/v1/messages",{
           method:"POST",
           headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
           body:JSON.stringify({model:model||this.model, max_tokens:4000, temperature:0, messages:[{role:"user",content:content}]})
@@ -2396,6 +2425,13 @@ AI_TYPES.join(", "),
         : "⚠️ With one engine there's nothing to check its answer against, so mistakes can pass silently. Adding a second is what makes this trustworthy.";
       ch.style.color = aiCrossChecking() ? "var(--up)" : "var(--amber)";
     }
+    var ow=document.getElementById("aiOriginWarn");
+    if(ow){
+      if(location.protocol==="file:"){
+        ow.style.display="block";
+        ow.innerHTML="⚠️ <b>This file is open straight from disk (file://).</b> Browsers send no origin for local files, and OpenAI and Claude reject those requests before your key is ever read — that's what “Load failed” means. <b>Gemini generally still works</b> because its key travels in the URL. To use the others, serve the file over http (or host it) rather than double-clicking it.";
+      } else ow.style.display="none";
+    }
   }
   function fillProviderSelects(){
     ["aiProvA","aiProvB"].forEach(function(id){
@@ -2528,12 +2564,14 @@ AI_TYPES.join(", "),
     document.getElementById("aiHelpBtn").addEventListener("click", aiHelpModal);
 
     ["aiProvA","aiProvB","aiKeyA","aiKeyB","aiModelA","aiModelB"].forEach(function(id){
-      document.getElementById(id).addEventListener("change", function(){
+      // "input" not "change": change only fires on blur, so a key typed and immediately
+      // tested could still be unsaved when the request goes out
+      document.getElementById(id).addEventListener("input", function(){
         var prevA=aiCfg.provA, prevB=aiCfg.provB;
         aiCfg.provA=document.getElementById("aiProvA").value;
         aiCfg.provB=document.getElementById("aiProvB").value;
-        aiCfg.keyA=document.getElementById("aiKeyA").value.trim();
-        aiCfg.keyB=document.getElementById("aiKeyB").value.trim();
+        aiCfg.keyA=aiCleanKey(document.getElementById("aiKeyA").value);
+        aiCfg.keyB=aiCleanKey(document.getElementById("aiKeyB").value);
         aiCfg.modelA=document.getElementById("aiModelA").value.trim();
         aiCfg.modelB=document.getElementById("aiModelB").value.trim();
         // a model name is meaningless against a different provider — drop it on switch
@@ -4265,6 +4303,7 @@ AI_TYPES.join(", "),
     </div>
 
     <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
+    <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
     <div class="data-btns">
       <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
       <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
@@ -4289,7 +4328,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.1</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.2</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
