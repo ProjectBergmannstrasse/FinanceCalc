@@ -1750,24 +1750,82 @@
      Only when repeated attempts still disagree do we interrupt the user — the whole point
      is that a review prompt means something, rather than appearing on every run. */
 
+  // Providers return structured errors ({error:{message}}); showing the raw body
+  // truncated mid-sentence is how a clear "model not found" turns into a mystery.
+  async function aiHttpErr(prefix, r){
+    var txt="";
+    try{ txt=await r.text(); }catch(e){}
+    var msg=txt;
+    try{ var j=JSON.parse(txt); msg=(j.error&&(j.error.message||j.error.type))||txt; }catch(e){}
+    msg=String(msg||"").trim()||("HTTP "+r.status);
+    var hint="";
+    if(r.status===404) hint="  ← that model name doesn't exist for this key. Tap “Find models”.";
+    else if(r.status===401||r.status===403) hint="  ← key rejected. Check it's pasted whole and has no HTTP-referrer restriction.";
+    else if(r.status===429) hint="  ← rate limited or out of quota.";
+    return new Error(prefix+" "+r.status+": "+msg.slice(0,400)+hint);
+  }
+
   var AI_PROVIDERS={
     gemini:{
       label:"Gemini",
-      model:"gemini-2.0-flash",
+      model:"gemini-2.0-flash", // only a starting guess — real list comes from listModels()
       keyUrl:"https://aistudio.google.com/apikey",
       keyHint:"Google AI Studio → Get API key → Create API key. Free tier is generous.",
-      async run(key, prompt, images){
+      canList:true,
+      // Model IDs churn constantly, so ask the API what this key can actually use rather
+      // than trusting a name baked in months ago. Doubles as a key test: a good key with
+      // a dead model still lists fine, which separates "bad key" from "bad model name".
+      async listModels(key){
+        var lastErr=null;
+        for(var vi=0; vi<2; vi++){
+          var ver=["v1beta","v1"][vi];
+          try{
+            var r=await fetch("https://generativelanguage.googleapis.com/"+ver+"/models?pageSize=200&key="+encodeURIComponent(key));
+            if(!r.ok){ lastErr=await aiHttpErr("Gemini",r); continue; }
+            var j=await r.json();
+            var out=(j.models||[]).filter(function(m){
+              return (m.supportedGenerationMethods||[]).indexOf("generateContent")>=0;
+            }).map(function(m){
+              return {id:String(m.name||"").replace(/^models\//,""), ver:ver, display:m.displayName||m.name};
+            }).filter(function(m){
+              return !/embedding|aqa|imagen|veo|tts/i.test(m.id); // can't read receipts
+            });
+            if(out.length) return out;
+          }catch(e){ lastErr=e; }
+        }
+        throw lastErr || new Error("Gemini returned no usable models for this key.");
+      },
+      async run(key, prompt, images, model, ver){
         var parts=[{text:prompt}];
         images.forEach(function(im){ parts.push({inline_data:{mime_type:im.mime, data:im.b64}}); });
-        var r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+this.model+":generateContent?key="+encodeURIComponent(key),{
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({contents:[{parts:parts}], generationConfig:{temperature:0, responseMimeType:"application/json"}})
-        });
-        if(!r.ok) throw new Error("Gemini "+r.status+": "+(await r.text()).slice(0,180));
-        var j=await r.json();
-        var c=j.candidates&&j.candidates[0];
-        if(!c) throw new Error("Gemini returned no answer (possibly blocked by a safety filter).");
-        return (c.content.parts||[]).map(function(p){ return p.text||""; }).join("");
+        var body={contents:[{parts:parts}], generationConfig:{temperature:0, responseMimeType:"application/json"}};
+        var versions = ver ? [ver] : ["v1beta","v1"];
+        var lastErr=null;
+        for(var i=0;i<versions.length;i++){
+          for(var pass=0; pass<2; pass++){
+            // some models reject responseMimeType outright — retry once without it
+            var b=JSON.parse(JSON.stringify(body));
+            if(pass===1) delete b.generationConfig.responseMimeType;
+            try{
+              var r=await fetch("https://generativelanguage.googleapis.com/"+versions[i]+"/models/"+encodeURIComponent(model||this.model)+":generateContent?key="+encodeURIComponent(key),{
+                method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(b)
+              });
+              if(!r.ok){
+                lastErr=await aiHttpErr("Gemini",r);
+                if(r.status===400 && pass===0) continue;  // maybe the mime type — try again
+                break;                                     // 404/401/429 won't improve on pass 2
+              }
+              var j=await r.json();
+              var c=j.candidates&&j.candidates[0];
+              if(!c){
+                var bl=j.promptFeedback&&j.promptFeedback.blockReason;
+                throw new Error("Gemini returned no answer"+(bl?" (blocked: "+bl+")":"")+".");
+              }
+              return ((c.content&&c.content.parts)||[]).map(function(p){ return p.text||""; }).join("");
+            }catch(e){ lastErr=e; }
+          }
+        }
+        throw lastErr || new Error("Gemini call failed.");
       }
     },
     openai:{
@@ -1775,14 +1833,23 @@
       model:"gpt-4o-mini",
       keyUrl:"https://platform.openai.com/api-keys",
       keyHint:"platform.openai.com → API keys → Create new secret key. Needs billing set up.",
-      async run(key, prompt, images){
+      canList:true,
+      async listModels(key){
+        var r=await fetch("https://api.openai.com/v1/models",{headers:{"Authorization":"Bearer "+key}});
+        if(!r.ok) throw await aiHttpErr("OpenAI",r);
+        var j=await r.json();
+        return (j.data||[]).map(function(m){ return {id:m.id, display:m.id}; })
+          .filter(function(m){ return /^(gpt-|o\d|chatgpt)/i.test(m.id) && !/audio|realtime|tts|whisper|embed|moderation|image|dall/i.test(m.id); })
+          .sort(function(a,b){ return a.id<b.id?1:-1; });
+      },
+      async run(key, prompt, images, model){
         var content=[{type:"text",text:prompt}];
         images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
         var r=await fetch("https://api.openai.com/v1/chat/completions",{
           method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-          body:JSON.stringify({model:this.model, temperature:0, response_format:{type:"json_object"}, messages:[{role:"user",content:content}]})
+          body:JSON.stringify({model:model||this.model, temperature:0, response_format:{type:"json_object"}, messages:[{role:"user",content:content}]})
         });
-        if(!r.ok) throw new Error("OpenAI "+r.status+": "+(await r.text()).slice(0,180));
+        if(!r.ok) throw await aiHttpErr("OpenAI",r);
         var j=await r.json();
         return j.choices[0].message.content;
       }
@@ -1792,16 +1859,25 @@
       model:"claude-sonnet-4-6",
       keyUrl:"https://console.anthropic.com/settings/keys",
       keyHint:"console.anthropic.com → Settings → API keys. Needs billing set up.",
-      async run(key, prompt, images){
+      canList:true,
+      async listModels(key){
+        var r=await fetch("https://api.anthropic.com/v1/models?limit=100",{
+          headers:{"x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}
+        });
+        if(!r.ok) throw await aiHttpErr("Claude",r);
+        var j=await r.json();
+        return (j.data||[]).map(function(m){ return {id:m.id, display:m.display_name||m.id}; });
+      },
+      async run(key, prompt, images, model){
         var content=[];
         images.forEach(function(im){ content.push({type:"image", source:{type:"base64", media_type:im.mime, data:im.b64}}); });
         content.push({type:"text",text:prompt});
         var r=await fetch("https://api.anthropic.com/v1/messages",{
           method:"POST",
           headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-          body:JSON.stringify({model:this.model, max_tokens:4000, temperature:0, messages:[{role:"user",content:content}]})
+          body:JSON.stringify({model:model||this.model, max_tokens:4000, temperature:0, messages:[{role:"user",content:content}]})
         });
-        if(!r.ok) throw new Error("Claude "+r.status+": "+(await r.text()).slice(0,180));
+        if(!r.ok) throw await aiHttpErr("Claude",r);
         var j=await r.json();
         return (j.content||[]).filter(function(b){ return b.type==="text"; }).map(function(b){ return b.text; }).join("");
       }
@@ -1811,7 +1887,7 @@
   // Keys live outside the portfolio blob on purpose: backups get shared, and a backup
   // that carries live API keys is a wallet with the PIN written on it.
   var AI_KEY="mymoney_ai_cfg";
-  var aiCfg={provA:"gemini", keyA:"", provB:"", keyB:""};
+  var aiCfg={provA:"gemini", keyA:"", modelA:"", verA:"", provB:"", keyB:"", modelB:"", verB:""};
   function loadAiCfg(){
     try{ var raw=window.localStorage.getItem(AI_KEY); if(raw) aiCfg=Object.assign(aiCfg, JSON.parse(raw)); }catch(e){}
   }
@@ -1940,7 +2016,7 @@ AI_TYPES.join(", "),
 
     if(!provB || !aiCfg.keyB){
       log("Single engine ("+provA.label+") — no cross-check configured.","warn");
-      var only=aiParse(await provA.run(aiCfg.keyA, aiPrompt({expected:expected}), images));
+      var only=aiParse(await provA.run(aiCfg.keyA, aiPrompt({expected:expected}), images, aiCfg.modelA, aiCfg.verA));
       log("Read "+only.length+" "+(only.length===1?"entry":"entries")+".","ok");
       return {list:only, verified:false, reason:"Only one engine configured — nothing to cross-check against."};
     }
@@ -1955,8 +2031,8 @@ AI_TYPES.join(", "),
       var pB=aiPrompt({expected:expected, conflict:attempt>1, attempt:attempt, mine:JSON.stringify(lastB||[]), theirs:JSON.stringify(lastA||[])});
 
       var settled=await Promise.allSettled([
-        provA.run(aiCfg.keyA, pA, images),
-        provB.run(aiCfg.keyB, pB, images)
+        provA.run(aiCfg.keyA, pA, images, aiCfg.modelA, aiCfg.verA),
+        provB.run(aiCfg.keyB, pB, images, aiCfg.modelB, aiCfg.verB)
       ]);
 
       // If one engine is simply broken (bad key, no quota), cross-checking isn't
@@ -2223,6 +2299,74 @@ AI_TYPES.join(", "),
     setTimeout(go, 300); // Safari/iOS sometimes never fires onload on a written doc
   }
 
+  // Ranks discovered models so "auto" lands on something sensible without the user
+  // needing to know the naming scheme. Flash/mini tiers are cheap and plenty for reading
+  // a receipt; experimental and dated snapshots rank below stable names.
+  // Matches on name SEGMENTS, not substrings — "gemini" contains "mini", which would
+  // otherwise hand every Gemini model the cheap-tier bonus.
+  function aiRankModel(id){
+    var l=String(id).toLowerCase();
+    var seg=l.split(/[-_.]/);
+    function has(w){ return seg.indexOf(w)>=0; }
+    var s=0;
+    if(has("flash")||has("mini")||has("haiku")) s+=3;
+    if(has("pro")||has("sonnet")||/gpt-4o|gpt-4\.1/.test(l)) s+=2;
+    if(has("lite")||has("nano")) s-=1;
+    if(has("exp")||has("preview")||has("thinking")) s-=2;
+    if(/\d{4}-?\d{2}-?\d{2}/.test(l)) s-=1; // dated snapshot
+    var m=l.match(/(\d+)\.(\d+)/);
+    if(m) s+=Math.min(4, parseFloat(m[1]+"."+m[2]));
+    return s;
+  }
+  function aiPickModels(slot){
+    var isB=(slot==="B");
+    var prov=AI_PROVIDERS[isB?aiCfg.provB:aiCfg.provA];
+    var key=isB?aiCfg.keyB:aiCfg.keyA;
+    if(!prov || !key){
+      appModal({title:"Add a key first", message:"Paste the API key for engine "+slot+", then tap Find models.", confirmText:"OK", cancelText:"Close"});
+      return;
+    }
+    var out=document.getElementById("aiTestOut");
+    out.style.color="var(--mut)"; out.textContent="Asking "+prov.label+" which models this key can use…";
+    prov.listModels(key).then(function(models){
+      if(!models.length){ out.style.color="var(--down)"; out.textContent="No usable models came back for this key."; return; }
+      models.sort(function(a,b){ return aiRankModel(b.id)-aiRankModel(a.id); });
+      out.textContent="";
+      var body=models.slice(0,40).map(function(m,i){
+        return '<label style="display:flex;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--bd);cursor:pointer">'
+          +'<input type="radio" name="mdlPick" value="'+esc(m.id)+'" data-ver="'+esc(m.ver||"")+'"'+(i===0?" checked":"")+'>'
+          +'<span style="font-family:var(--mono);font-size:11.5px">'+esc(m.id)+(i===0?' <span style="color:var(--up)">· recommended</span>':'')+'</span></label>';
+      }).join("");
+      appModal({
+        title:prov.label+" models",
+        message:'<div style="max-height:280px;overflow-y:auto;margin-top:6px">'+body+'</div>',
+        confirmText:"Use this one",
+        onConfirm:function(){}
+      });
+      // wire after the modal exists
+      setTimeout(function(){
+        var ok=document.getElementById("mdlOk");
+        if(!ok) return;
+        ok.onclick=function(){
+          var sel=document.querySelector('input[name="mdlPick"]:checked');
+          if(!sel) return;
+          if(isB){ aiCfg.modelB=sel.value; aiCfg.verB=sel.getAttribute("data-ver")||""; }
+          else   { aiCfg.modelA=sel.value; aiCfg.verA=sel.getAttribute("data-ver")||""; }
+          saveAiCfg();
+          document.getElementById(isB?"aiModelB":"aiModelA").value=sel.value;
+          closeModal();
+          out.style.color="var(--up)";
+          out.textContent="Engine "+slot+" set to "+sel.value;
+          refreshAiVisibility();
+        };
+      }, 40);
+    }).catch(function(e){
+      out.style.color="var(--down)";
+      out.innerHTML="<b>Couldn't list models.</b><br>"+esc(e.message)
+        +"<br><br>If this says the key was rejected, the key itself is the problem. If it lists fine but reading images fails, it's the model name.";
+    });
+  }
+
   /* ---------------- AI mode UI ---------------- */
   var _openSettings=null; // openSettings lives inside bind(); this hands it out
   var aiImages=[]; // {mime, b64, url}
@@ -2265,6 +2409,8 @@ AI_TYPES.join(", "),
     });
     document.getElementById("aiKeyA").value=aiCfg.keyA||"";
     document.getElementById("aiKeyB").value=aiCfg.keyB||"";
+    document.getElementById("aiModelA").value=aiCfg.modelA||"";
+    document.getElementById("aiModelB").value=aiCfg.modelB||"";
   }
   function aiHelpModal(){
     var rows=Object.keys(AI_PROVIDERS).map(function(k){
@@ -2381,18 +2527,26 @@ AI_TYPES.join(", "),
     document.getElementById("aiPanelOverlay").addEventListener("click", closeAiPanel);
     document.getElementById("aiHelpBtn").addEventListener("click", aiHelpModal);
 
-    ["aiProvA","aiProvB","aiKeyA","aiKeyB"].forEach(function(id){
+    ["aiProvA","aiProvB","aiKeyA","aiKeyB","aiModelA","aiModelB"].forEach(function(id){
       document.getElementById(id).addEventListener("change", function(){
+        var prevA=aiCfg.provA, prevB=aiCfg.provB;
         aiCfg.provA=document.getElementById("aiProvA").value;
         aiCfg.provB=document.getElementById("aiProvB").value;
         aiCfg.keyA=document.getElementById("aiKeyA").value.trim();
         aiCfg.keyB=document.getElementById("aiKeyB").value.trim();
+        aiCfg.modelA=document.getElementById("aiModelA").value.trim();
+        aiCfg.modelB=document.getElementById("aiModelB").value.trim();
+        // a model name is meaningless against a different provider — drop it on switch
+        if(prevA!==aiCfg.provA){ aiCfg.modelA=""; aiCfg.verA=""; document.getElementById("aiModelA").value=""; }
+        if(prevB!==aiCfg.provB){ aiCfg.modelB=""; aiCfg.verB=""; document.getElementById("aiModelB").value=""; }
         saveAiCfg(); refreshAiVisibility();
       });
     });
+    document.getElementById("aiFindA").addEventListener("click", function(){ aiPickModels("A"); });
+    document.getElementById("aiFindB").addEventListener("click", function(){ aiPickModels("B"); });
     document.getElementById("aiClearBtn").addEventListener("click", function(){
       appModal({title:"Forget API keys?", message:"Both keys are removed from this device. Your entries aren't affected.", confirmText:"Forget", danger:true, onConfirm:function(){
-        aiCfg={provA:"gemini", keyA:"", provB:"", keyB:""};
+        aiCfg={provA:"gemini", keyA:"", modelA:"", verA:"", provB:"", keyB:"", modelB:"", verB:""};
         saveAiCfg(); fillProviderSelects(); refreshAiVisibility();
         document.getElementById("aiTestOut").textContent="";
         flashSaved("keys forgotten");
@@ -2403,11 +2557,26 @@ AI_TYPES.join(", "),
       out.style.color="var(--mut)"; out.textContent="Testing…";
       var probe="Reply with exactly this JSON and nothing else: {\"transactions\":[]}";
       var msgs=[];
-      for(var slot of [["A",aiCfg.provA,aiCfg.keyA],["B",aiCfg.provB,aiCfg.keyB]]){
-        if(!slot[1]||!slot[2]){ msgs.push("Engine "+slot[0]+": not set"); continue; }
-        try{ await AI_PROVIDERS[slot[1]].run(slot[2], probe, []); msgs.push("Engine "+slot[0]+" ("+AI_PROVIDERS[slot[1]].label+"): ✅ working"); }
-        catch(e){ msgs.push("Engine "+slot[0]+" ("+AI_PROVIDERS[slot[1]].label+"): ❌ "+e.message); }
+      var slots=[["A",aiCfg.provA,aiCfg.keyA,aiCfg.modelA,aiCfg.verA],["B",aiCfg.provB,aiCfg.keyB,aiCfg.modelB,aiCfg.verB]];
+      for(var si=0; si<slots.length; si++){
+        var slot=slots[si], name=slot[0], pk=slot[1], key=slot[2];
+        if(!pk||!key){ msgs.push("Engine "+name+": not set"); continue; }
+        var prov=AI_PROVIDERS[pk], tag="Engine "+name+" ("+prov.label+")";
+        // Step 1 proves the KEY. Step 2 proves the MODEL. Collapsing them is why a dead
+        // model name reads as "my key never works".
+        var keyOk=false;
+        if(prov.canList){
+          try{ await prov.listModels(key); keyOk=true; msgs.push(tag+": ✅ key accepted"); }
+          catch(e){ msgs.push(tag+": ❌ key problem — "+e.message); continue; }
+        }
+        try{
+          await prov.run(key, probe, [], slot[3], slot[4]);
+          msgs.push(tag+": ✅ model “"+(slot[3]||prov.model)+"” works");
+        }catch(e2){
+          msgs.push(tag+": "+(keyOk?"⚠️ key is fine, but the model failed":"❌")+" — "+e2.message);
+        }
       }
+      out.style.color="var(--mut)";
       out.innerHTML=msgs.map(esc).join("<br>");
     });
 
@@ -4079,13 +4248,21 @@ AI_TYPES.join(", "),
       <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
       <select id="aiProvA" style="max-width:130px"></select>
     </div>
-    <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:10px">
+    <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+      <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
+    </div>
 
     <div class="split-row">
       <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
       <select id="aiProvB" style="max-width:130px"></select>
     </div>
-    <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:8px">
+    <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+      <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
+    </div>
 
     <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
     <div class="data-btns">
@@ -4112,7 +4289,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.1</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
