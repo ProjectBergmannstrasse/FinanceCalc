@@ -2797,11 +2797,26 @@
       printTransactions(from, to);
     });
 
+    // Full backup = EVERY portfolio (and every photo any of them reference), not just
+    // the active one. Anything less isn't actually a backup once portfolios exist.
     function exportData(cb){
-      var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+      flushActiveIntoRegistry();
+      var ids=[];
+      PORTFOLIOS.forEach(function(p){
+        var txs=(p.data&&Array.isArray(p.data.transactions))?p.data.transactions:[];
+        txs.forEach(function(t){ if(t.photo && ids.indexOf(t.photo)<0) ids.push(t.photo); });
+      });
       var photos={}, i=0;
       (function next(){
-        if(i>=ids.length){ cb(JSON.stringify({__mymoney:1, state:state, photos:photos}, null, 2)); return; }
+        if(i>=ids.length){
+          cb(JSON.stringify({
+            __mymoney:2,
+            activePortfolioId:ACTIVE_PID,
+            portfolios:PORTFOLIOS,
+            photos:photos
+          }, null, 2));
+          return;
+        }
         var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
       })();
     }
@@ -2868,6 +2883,23 @@
     document.getElementById("impToggle").addEventListener("click", function(){
       var w=document.getElementById("impWrap"); w.style.display=(w.style.display==="none"?"block":"none");
     });
+    // Photos live in ONE global namespace keyed by transaction id, but transaction ids
+    // are only unique within a portfolio. So anything imported gets fresh ids (and fresh
+    // photo ids) — otherwise an imported entry can silently overwrite another
+    // portfolio's photo that happens to share its id.
+    function adoptTransactions(txs, photosMap){
+      return txs.map(function(t){
+        var copy=clone(t);
+        var oldPhoto=copy.photo;
+        copy.id=freshIdBase();
+        if(oldPhoto){
+          if(photosMap && photosMap[oldPhoto]){ copy.photo=copy.id; savePhoto(copy.id, photosMap[oldPhoto]); }
+          else delete copy.photo;
+        }
+        return copy;
+      });
+    }
+
     document.getElementById("impLoad").addEventListener("click", function(){
       var txt=document.getElementById("impBox").value.trim(); if(!txt) return;
       var obj;
@@ -2875,42 +2907,61 @@
       catch(e){ alert("That backup didn't look right — it isn't valid JSON. Check you pasted the whole thing."); return; }
       if(!obj || typeof obj!=="object"){ alert("That backup didn't look right. Check you pasted the whole thing."); return; }
 
-      if(obj.__mymoney && obj.state && Array.isArray(obj.state.transactions)){
-        // full backup — this REPLACES everything, so confirm first
-        var n0=obj.state.transactions.length;
-        if(!confirm("This is a full backup with "+n0+" "+(n0===1?"entry":"entries")+". Loading it REPLACES everything currently in the app. Continue?")) return;
-        if(obj.photos){ for(var pid in obj.photos){ savePhoto(pid, obj.photos[pid]); } }
-        applyLoaded(JSON.stringify(obj.state));
+      if(obj.__mymoney===2 && Array.isArray(obj.portfolios) && obj.portfolios.length){
+        // full multi-portfolio backup — this genuinely replaces everything
+        var pc=obj.portfolios.length;
+        var tc=0; obj.portfolios.forEach(function(p){ tc+=((p.data&&p.data.transactions)||[]).length; });
+        if(!confirm("This is a full backup: "+pc+" portfolio"+(pc===1?"":"s")+", "+tc+" "+(tc===1?"entry":"entries")+" in total.\n\nLoading it REPLACES every portfolio currently in the app. Continue?")) return;
+        if(obj.photos){ for(var pidA in obj.photos){ savePhoto(pidA, obj.photos[pidA]); } }
+        PORTFOLIOS=obj.portfolios;
+        ACTIVE_PID=(obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
+        applyPortfolioData(clone(activePortfolio().data||{}));
         state.selectedMonths=null;
+        photoCache={};
+      } else if(obj.__mymoney && obj.state && Array.isArray(obj.state.transactions)){
+        // older single-portfolio backup (made before portfolios existed). It only ever
+        // described ONE ledger, so it replaces the ACTIVE portfolio — the others are
+        // untouched. Wiping them here would be silent, unrecoverable data loss.
+        var n0=obj.state.transactions.length;
+        var pfName=(activePortfolio()&&activePortfolio().name)||"this portfolio";
+        if(!confirm("This is an older backup with "+n0+" "+(n0===1?"entry":"entries")+".\n\nIt will replace everything in \u201c"+pfName+"\u201d. Your other portfolios are not affected. Continue?")) return;
+        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        var incoming=clone(obj.state);
+        incoming.transactions=adoptTransactions(obj.state.transactions, obj.photos);
+        applyPortfolioData(incoming);
+        state.selectedMonths=null;
+        flushActiveIntoRegistry();
       } else if(obj.__mymoneyExport && Array.isArray(obj.transactions)){
         // a "selected entries" export — a subset, so merge it in rather than replace anything
         var n=obj.transactions.length;
         if(!confirm("This is a partial export with "+n+" "+(n===1?"entry":"entries")+". Add "+(n===1?"it":"them")+" to your current ledger? Nothing existing is removed.")) return;
-        var existingIds={}; state.transactions.forEach(function(t){ existingIds[t.id]=true; });
-        obj.transactions.forEach(function(t){
-          var copy=clone(t);
-          if(existingIds[copy.id]) copy.id=freshIdBase(); // avoid clobbering an existing entry that happens to share this id
-          existingIds[copy.id]=true;
+        adoptTransactions(obj.transactions, obj.photos).forEach(function(copy){
           state.transactions.push(copy);
         });
-        if(obj.photos){ for(var pid2 in obj.photos){ savePhoto(pid2, obj.photos[pid2]); } }
       } else if(Array.isArray(obj.transactions)){
-        // a bare state-shaped object (e.g. hand-edited or from an older version) — treat as a full replace
-        if(!confirm("Loading this REPLACES everything currently in the app with "+obj.transactions.length+" entries. Continue?")) return;
-        applyLoaded(JSON.stringify(obj));
+        // a bare state-shaped object (hand-edited, or from an older version) — replaces
+        // the ACTIVE portfolio only, for the same reason as the older-backup branch above
+        var pfName2=(activePortfolio()&&activePortfolio().name)||"this portfolio";
+        if(!confirm("This replaces everything in \u201c"+pfName2+"\u201d with "+obj.transactions.length+" entries. Your other portfolios are not affected. Continue?")) return;
+        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        var incoming2=clone(obj);
+        incoming2.transactions=adoptTransactions(obj.transactions, obj.photos);
+        applyPortfolioData(incoming2);
         state.selectedMonths=null;
+        flushActiveIntoRegistry();
       } else {
         alert("That doesn't look like a My Money backup or export — no transactions list found. Check you pasted the whole thing.");
         return;
       }
 
-      persist(); render();
+      persist(); render(); renderPortfolioUI();
       document.getElementById("impWrap").style.display="none";
       flashSaved("loaded");
     });
-    // reset
+    // reset — clears the ACTIVE portfolio only; other portfolios are left alone
     document.getElementById("resetBtn").addEventListener("click", function(){
-      if(!confirm("Reset clears everything you've added and restores the starting history baked into this file. All attached photos are permanently deleted — this can't be undone.\n\nA safety backup will download automatically first. Continue?")) return;
+      var pfN=(activePortfolio()&&activePortfolio().name)||"this portfolio";
+      if(!confirm("Reset clears every entry in \u201c"+pfN+"\u201d and its attached photos, permanently — this can't be undone. Your other portfolios are not affected.\n\nA safety backup of ALL portfolios will download automatically first. Continue?")) return;
       flashSaved("backing up…");
       exportData(function(json){
         try{
@@ -2922,7 +2973,8 @@
         }catch(e){ /* best-effort safety backup — reset proceeds either way */ }
         state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
         state=clone(DEFAULTS); state.selectedMonths=null;
-        persist(); render(); flashSaved("reset — backup downloaded");
+        flushActiveIntoRegistry();
+        persist(); render(); renderPortfolioUI(); flashSaved("reset — backup downloaded");
       });
     });
 
