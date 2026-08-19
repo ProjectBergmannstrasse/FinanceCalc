@@ -1,0 +1,2902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Money</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#121722; --card:#161c28; --card2:#1b2230;
+    --bd:#232c3d; --bd2:#2c3648;
+    --tx:#e6ebf2; --mut:#7c8798;
+    --amber:#f4b73f; --amber-dim:#8a6a1f;
+    --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --hero-grad:linear-gradient(160deg,#151b28,#10151f);
+    --hero-glow:rgba(244,183,63,.13);
+  }
+  /* Theme: Mono — black bg, white text, green/red P&L kept */
+  [data-theme="mono"]{
+    --bg:#000000; --panel:#111111; --card:#1a1a1a; --card2:#222222;
+    --bd:#333333; --bd2:#444444;
+    --tx:#ffffff; --mut:#888888;
+    --amber:#ffffff; --amber-dim:#aaaaaa;
+    --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
+    --hero-grad:linear-gradient(160deg,#111111,#000000);
+    --hero-glow:rgba(255,255,255,.05);
+  }
+  [data-theme="mono"] .hero .big .cur{color:#ffffff}
+  [data-theme="mono"] .seg button.on{background:#ffffff;color:#000000}
+  [data-theme="mono"] .btn.primary{background:#ffffff;color:#000000}
+  [data-theme="mono"] .yr-count .pip.on{background:#ffffff}
+  [data-theme="mono"] .done-tag{color:#3ddc84}
+  [data-theme="mono"] .catbar span{background:linear-gradient(90deg,#ffffff,#888888)}
+  [data-theme="mono"] a{color:#aaaaaa}
+  [data-theme="mono"] input:focus,[data-theme="mono"] select:focus{border-color:#ffffff;box-shadow:0 0 0 3px rgba(255,255,255,.10)}
+  [data-theme="mono"] .dot{background:#ffffff;box-shadow:0 0 0 5px rgba(255,255,255,.10)}
+  [data-theme="mono"] .badge{background:#1a1a1a;color:#888888;border-color:#333333}
+
+  /* Theme: Emerald — deep green terminal */
+  [data-theme="emerald"]{
+    --bg:#030d07; --panel:#071410; --card:#0b1e14; --card2:#102519;
+    --bd:#1a3d26; --bd2:#235234;
+    --tx:#d4f5e2; --mut:#5a8a6e;
+    --amber:#00ff88; --amber-dim:#007a40;
+    --up:#00ff88; --down:#ff4466; --cool:#00ccff;
+    --hero-grad:linear-gradient(160deg,#071a0f,#030d07);
+    --hero-glow:rgba(0,255,136,.10);
+  }
+  [data-theme="emerald"] .seg button.on{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .btn.primary{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .yr-count .pip.on{background:#00ff88}
+  [data-theme="emerald"] .done-tag{color:#00ff88}
+  [data-theme="emerald"] .catbar span{background:linear-gradient(90deg,#00ff88,#007a40)}
+  [data-theme="emerald"] a{color:#00ff88}
+  [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
+  [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+
+  /* Portfolio switcher */
+  .pf-panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:111;overflow-y:auto;padding:0 0 20px}
+  .pf-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1;font-size:16px;font-weight:700}
+  .pf-hint{padding:14px 20px 4px;font-size:12.5px;color:var(--mut);line-height:1.5}
+  .pf-list{padding:10px 14px}
+  .pf-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;background:var(--card);cursor:pointer}
+  .pf-row.pf-on{border-color:var(--amber)}
+  .pf-main{flex:1;min-width:0}
+  .pf-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pf-sub{font-size:12px;color:var(--mut);margin-top:2px}
+  .pf-acts{display:flex;gap:4px;flex:none}
+  .pf-acts .icon-btn{width:30px;height:30px;font-size:14px}
+  .pf-foot{padding:10px 20px 0}
+
+  /* Theme picker in settings */
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .theme-opt{display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px;font-weight:700;padding:11px 8px;cursor:pointer;transition:.15s}
+  .theme-opt:hover{border-color:var(--bd2)}
+  .theme-opt.on{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber) inset}
+  .theme-opt .tsw{width:14px;height:14px;border-radius:4px;flex:none}
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%;font-size:16px}
+  body{padding:20px 18px 70px;max-width:860px;margin:0 auto;line-height:1.5}
+  h1,h2,h3{margin:0;font-weight:700}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+  .mut{color:var(--mut)}
+  button{font-family:var(--sans);cursor:pointer}
+  input,select{font-family:var(--sans)}
+  a{color:var(--amber)}
+
+  /* Header */
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 5px rgba(244,183,63,.15)}
+  .brand h1{font-size:20px;letter-spacing:.3px}
+  .brand .sub{font-size:13px;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
+  #saved{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px}
+  #saved .s-dot{width:7px;height:7px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
+
+  /* storage tier badge + health dashboard */
+  .tier-badge{border:1px solid var(--bd);background:var(--card);color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.2px;padding:5px 9px;border-radius:20px;cursor:pointer;white-space:nowrap}
+  .tier-badge.emergency{border-color:rgba(255,93,93,.4);color:#ff9a9a;background:rgba(255,93,93,.08)}
+  .tier-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd);font-size:13px}
+  .tier-row:last-child{border-bottom:0}
+  .tier-row .tn{display:flex;align-items:center;gap:8px}
+  .tier-row .ti{font-size:14px;flex:none}
+  .tier-row .td{color:var(--mut);font-size:12px}
+  .tier-row .tag-active{font-size:10px;font-weight:700;letter-spacing:.3px;color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:1px 5px}
+  #saved.flash .s-dot{opacity:1}
+
+  /* live date bar — always the real device date, never a hardcoded string */
+  .datebar{font-size:13px;color:var(--mut);letter-spacing:.2px;margin:-8px 0 16px;font-weight:500}
+  .datebar b{color:var(--tx);font-weight:700}
+
+  /* storage failure banner — only ever shown when a save genuinely couldn't persist */
+  .storage-warn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,93,93,.12);border:1px solid rgba(255,93,93,.35);color:#ff9a9a;border-radius:12px;padding:10px 12px;font-size:13px;margin:-6px 0 16px}
+  .storage-warn button{flex:none;color:#ff9a9a;border-color:rgba(255,93,93,.35)}
+
+  /* Balance hero */
+  .hero{background:var(--hero-grad,linear-gradient(160deg,#151b28,#10151f));border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,var(--hero-glow,rgba(244,183,63,.13)),transparent 60%);pointer-events:none}
+  .hero .lbl{font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .hero .big{font-size:64px;font-weight:700;line-height:1.0;margin-top:8px;letter-spacing:-2px}
+  .hero .big .cur{font-size:.45em;color:var(--amber);vertical-align:top;margin-right:3px;font-weight:700;letter-spacing:0}
+  .hero .cap{font-size:14px;color:var(--mut);margin-top:8px}
+
+  /* stat trio */
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+  .stat .k{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .stat .v{font-size:20px;margin-top:6px;font-weight:700}
+
+  /* generic panel */
+  .panel{background:var(--panel);border:1px solid var(--bd);border-radius:16px;margin-bottom:14px;overflow:hidden}
+  .p-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:10px;flex-wrap:wrap;row-gap:8px}
+  .p-head h2{font-size:15px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .p-head h2 .tick{color:var(--amber)}
+  .p-body{padding:0 18px 18px}
+
+  /* segmented toggle */
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:3px}
+  .seg button{border:0;background:transparent;color:var(--mut);font-size:13px;padding:6px 14px;border-radius:8px;font-weight:600;transition:.15s}
+  .seg button.on{background:var(--amber);color:#20160a}
+  .icon-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);width:34px;height:32px;border-radius:9px;font-size:14px;display:inline-flex;align-items:center;justify-content:center}
+  .icon-btn:hover{color:var(--tx);border-color:var(--bd2)}
+
+  /* chart */
+  #chartWrap{padding:6px 8px 4px}
+  svg.chart{width:100%;height:auto;aspect-ratio:720/220;display:block}
+  .chart-empty{color:var(--mut);font-size:13px;text-align:center;padding:30px 0}
+
+  /* entry form */
+  form.entry{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld.full{grid-column:1/-1}
+  .fld label{font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  input,select{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:11px 13px;font-size:15px;width:100%}
+  input:focus,select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(244,183,63,.12)}
+  .btn{border:0;border-radius:10px;padding:12px 16px;font-size:14.5px;font-weight:700}
+  .btn.primary{background:var(--amber);color:#20160a}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .btn.ghost{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
+  .btn.ghost:hover{border-color:var(--bd2)}
+  .btn.sm{padding:8px 13px;font-size:13px}
+
+  /* automation */
+  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .split-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd)}
+  .split-row:last-of-type{border-bottom:0}
+  .split-row .nm{display:flex;align-items:center;gap:9px;font-size:14px}
+  .pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;letter-spacing:.3px}
+  .pill.debt{background:rgba(255,93,93,.14);color:#ff9a9a}
+  .pill.trade{background:rgba(93,169,230,.16);color:#9cccf2}
+  .pill.save{background:rgba(61,220,132,.14);color:#8ff0bc}
+  .split-row input{width:120px;text-align:right}
+  .auto-note{font-size:13px;color:var(--mut);margin:9px 0 11px}
+  .auto-note b{color:var(--tx)}
+
+  /* advance notices — shown on the month that gave, and the month that received, an advance */
+  .adv-notes{margin:2px 0 4px}
+  .adv-note{font-size:13px;padding:9px 12px;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .adv-note.adv-in{background:rgba(61,220,132,.10);color:#8ff0bc;border:1px solid rgba(61,220,132,.25)}
+  .adv-note.adv-out{background:rgba(244,183,63,.10);color:var(--amber);border:1px solid rgba(244,183,63,.25)}
+  .adv-note.adv-info{background:rgba(90,169,230,.10);color:var(--cool);border:1px solid rgba(90,169,230,.25)}
+  .adv-remove{border:1px solid currentColor;background:transparent;color:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;flex:none;opacity:.85}
+  .adv-remove:hover{opacity:1}
+  .adv-list-ttl{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:600;margin:14px 0 8px}
+  .adv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--bd)}
+  .adv-row:last-child{border-bottom:0}
+  .adv-row .adv-remove{font-size:11px;padding:4px 8px;border-color:var(--bd2);color:var(--mut)}
+  .adv-row .adv-remove:hover{color:var(--down);border-color:var(--down)}
+
+  /* month summary */
+  .msel{display:flex;align-items:center;gap:10px}
+  .msel select{width:auto;min-width:160px}
+  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+  @media(min-width:560px){.metrics{grid-template-columns:repeat(4,1fr)}}
+  .metric{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+  .metric .k{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .metric .v{font-size:18px;font-weight:700;margin-top:5px}
+  .cats{margin-top:14px}
+  .cats .cttl{font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:9px;font-weight:600}
+  .catrow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .catrow .cn{font-size:13.5px;width:100px;color:var(--tx)}
+  .catbar{flex:1;height:8px;background:var(--card);border-radius:6px;overflow:hidden}
+  .catbar span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-dim))}
+  .catrow .cv{font-size:13px;color:var(--mut);width:86px;text-align:right}
+
+  /* ledger */
+  .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut)}
+  .sel-all{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+  .sel-all input{width:auto;margin:0;accent-color:var(--amber)}
+  .led{display:flex;flex-direction:column}
+  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd)}
+  .lchk{width:16px;height:16px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
+  .lrow:last-child{border-bottom:0}
+  .ldate{font-size:12px;color:var(--mut);width:58px;flex:none;line-height:1.3}
+  .ldate b{display:block;color:var(--tx);font-size:15px;font-weight:700}
+  .lmid{flex:1;min-width:0}
+  .badge{font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 8px;border-radius:7px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+  .lnote{font-size:13px;color:var(--mut);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lamt{font-size:16px;font-weight:700;flex:none;text-align:right}
+  .lamt .tag{display:block;font-size:10.5px;color:var(--mut);font-weight:600;letter-spacing:.3px}
+  .up{color:var(--up)} .down{color:var(--down)} .neu{color:var(--mut)} .cool{color:var(--cool)}
+  .del{border:0;background:transparent;color:var(--mut);font-size:18px;padding:2px 5px;line-height:1;flex:none}
+  .edit{border:0;background:transparent;color:var(--mut);font-size:14px;padding:2px 6px;line-height:1;flex:none;opacity:.75}
+  .edit:hover{opacity:1}
+  .del:hover{color:var(--down)}
+  .empty{color:var(--mut);font-size:14px;text-align:center;padding:26px 6px}
+  .empty b{color:var(--tx)}
+
+  /* details/setup */
+  details{background:var(--panel);border:1px solid var(--bd);border-radius:16px;margin-bottom:14px}
+  details>summary{list-style:none;cursor:pointer;padding:16px 18px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+  details>summary::-webkit-details-marker{display:none}
+  details>summary .chev{color:var(--mut);transition:.2s}
+  details[open]>summary .chev{transform:rotate(180deg)}
+  .d-body{padding:0 18px 18px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:13px;color:var(--mut);margin:2px 0 14px}
+  .data-btns{display:flex;flex-wrap:wrap;gap:10px}
+  textarea{width:100%;min-height:120px;background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:12px;font-family:var(--mono);font-size:13px;margin-top:10px}
+  .warn{color:#ff9a9a}
+  hr.sep{border:0;border-top:1px solid var(--bd);margin:16px 0}
+  .foot{font-size:13px;color:var(--mut);text-align:center;margin-top:20px;line-height:1.7}
+
+  /* helper hint under a panel head */
+  .subhint{font-size:13px;color:var(--mut);margin:-2px 0 14px}
+  .subhint b{color:var(--tx)}
+
+  /* photo attach */
+  .photo-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #fPhotoPrev{height:48px;border-radius:7px;border:1px solid var(--bd);object-fit:cover}
+  .photo-chip{border:1px solid var(--bd);background:var(--card2);color:var(--mut);border-radius:8px;font-size:13px;padding:4px 9px;flex:none;line-height:1;display:inline-flex;align-items:center;gap:5px}
+  .photo-chip:hover{color:var(--tx);border-color:var(--amber)}
+
+  /* allowance counter + disabled button */
+  .yr-count{font-size:13px;color:var(--mut);margin-top:12px;display:flex;align-items:center;gap:8px}
+  .yr-count .pips{display:inline-flex;gap:4px}
+  .yr-count .pip{width:10px;height:10px;border-radius:2px;background:var(--bd2)}
+  .yr-count .pip.on{background:var(--amber)}
+  .yr-count .pip.future{opacity:0.25}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.3)}
+  .done-tag{color:var(--up)}
+
+  /* image viewer */
+  .viewer{position:fixed;inset:0;background:rgba(6,9,14,.88);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+  .viewer-inner{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;max-width:640px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  .viewer-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);font-size:14px;font-weight:700}
+  .viewer-body{padding:14px;overflow:auto;text-align:center;background:#0d1119}
+  .viewer-body img{max-width:100%;border-radius:8px}
+  .viewer-foot{padding:12px 16px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px}
+  .viewer-note{color:var(--mut);font-size:14px;padding:26px 12px}
+  /* eye icon on ledger rows */
+  .eye-btn{font-size:17px;cursor:pointer;flex:none;opacity:0.55;transition:opacity .15s;line-height:1;padding:2px 5px;user-select:none}
+  .eye-btn:hover{opacity:1}
+  .lrow.has-proof{cursor:pointer}
+  .lrow.has-proof:hover{background:rgba(244,183,63,.04);border-radius:8px;margin:0 -4px;padding:13px 4px}
+  .lrow.has-proof:hover .eye-btn{opacity:1}
+
+  /* month picker — tick any combination of months */
+  .mpick{position:fixed;inset:0;background:rgba(6,9,14,.88);z-index:55;display:flex;align-items:center;justify-content:center;padding:16px}
+  .mpick-inner{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;max-width:360px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden}
+  .mpick-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);font-size:14px;font-weight:700}
+  .mpick-actions{display:flex;gap:8px;padding:12px 16px 0}
+  .mpick-actions .btn{flex:1}
+  .mpick-list{padding:8px 10px;overflow-y:auto;flex:1;min-height:80px}
+  .mpick-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:9px;font-size:14px;cursor:pointer;user-select:none}
+  .mpick-item:hover{background:var(--card)}
+  .mpick-item input{width:17px;height:17px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
+  .mpick-foot{padding:12px 16px 16px}
+
+  /* undo-delete toast */
+  .undo-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:70;max-width:calc(100vw - 32px)}
+  .undo-toast button{background:var(--amber);color:#20160a;border:0;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;flex:none;cursor:pointer}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      <h1>My Money</h1>
+      <div class="sub">personal tracker</div>
+    </div>
+  </div>
+  <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
+  <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+  <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
+  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
+</header>
+
+<!-- Live date, always computed from the device clock — never hand-typed -->
+<div class="datebar" id="dateBar">—</div>
+
+<!-- shown only when a save genuinely fails to persist anywhere -->
+<div id="storageWarn" class="storage-warn" style="display:none">
+  <span>⚠️ Your last change didn't save — device storage may be full or blocked. Try exporting a backup so nothing gets lost.</span>
+  <button type="button" class="icon-btn" id="storageWarnDismiss" title="Dismiss">✕</button>
+</div>
+
+<!-- shown once per month if that month's allowance hasn't been added yet -->
+<div id="allowancePrompt" class="adv-note adv-out" style="display:none">
+  <span id="allowancePromptMsg"></span>
+  <span style="display:flex;gap:8px;flex:none">
+    <button type="button" class="adv-remove" id="allowancePromptAdd">Add now</button>
+    <button type="button" class="adv-remove" id="allowancePromptDismiss">Not now</button>
+  </span>
+</div>
+
+<!-- Balance hero -->
+<div class="hero">
+  <div class="lbl">Money I have right now</div>
+  <div class="big mono" id="heroBal">—</div>
+  <div class="cap" id="heroCap"></div>
+</div>
+
+<!-- stat trio -->
+<div class="trio">
+  <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
+  <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
+  <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
+</div>
+
+<!-- Chart -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">▚</span> Balance over time</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="seg" id="chartSeg">
+        <button data-t="candle">Candles</button>
+        <button data-t="line">Line</button>
+      </div>
+      <button class="icon-btn" id="chartToggle" title="Show / hide">▾</button>
+    </div>
+  </div>
+  <div class="p-body" id="chartWrap"></div>
+</div>
+
+<!-- Add entry -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
+    <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
+  </div>
+  <div class="p-body">
+    <div class="subhint">To log a <b>purchase</b>, pick <b>Spent on something</b>, choose a category, type the amount. That’s what fills the “By month” spending.</div>
+    <form class="entry" id="entryForm" autocomplete="off">
+      <div class="fld">
+        <label for="fDate">Date</label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="fld">
+        <label for="fType">What happened</label>
+        <select id="fType">
+          <option value="income">Money in (not allowance)</option>
+          <option value="spend">Spent on something</option>
+          <option value="trade_win">Trade — made money</option>
+          <option value="trade_loss">Trade — lost money</option>
+          <option value="pay_debt_balance">Pay Dad (from my money)</option>
+          <option value="borrow">Borrowed / debt went up</option>
+          <option value="save">Move to savings</option>
+          <option value="withdraw">Take from savings</option>
+          <option value="adjust">Adjustment (+ / −)</option>
+        </select>
+      </div>
+      <div class="fld" id="catFld" style="display:none">
+        <label for="fCat">Category</label>
+        <select id="fCat">
+          <option>Snacks</option><option>Food</option><option>Toys</option>
+          <option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option>
+        </select>
+      </div>
+      <div class="fld" id="amtFld">
+        <label for="fAmt"><span id="amtLbl">Amount</span></label>
+        <input type="number" id="fAmt" step="0.01" inputmode="decimal" placeholder="0.00">
+      </div>
+      <div class="fld full">
+        <label for="fNote">Note (optional)</label>
+        <input type="text" id="fNote" placeholder="e.g. birthday money, gold trade, pencil case">
+      </div>
+      <div class="fld full">
+        <label>Photo / receipt (optional)</label>
+        <div class="photo-pick">
+          <input type="file" id="fPhoto" accept="image/*,.heic,.heif,.png,.jpg,.jpeg,.webp,.gif,.bmp" style="display:none">
+          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach photo</button>
+          <span id="fPhotoName" class="mut" style="font-size:12px"></span>
+          <img id="fPhotoPrev" alt="" style="display:none;margin-left:auto">
+          <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove</button>
+        </div>
+      </div>
+      <div class="fld full">
+        <button type="submit" class="btn primary" id="entrySubmitBtn" style="width:100%">Add entry</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Month summary -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">▦</span> By month</h2>
+    <div class="msel"><button type="button" class="btn ghost sm" id="monthSelBtn">All months ▾</button></div>
+  </div>
+  <div class="p-body">
+    <div class="adv-notes" id="advNotes"></div>
+    <div class="metrics" id="metrics"></div>
+    <div class="cats" id="cats"></div>
+  </div>
+</div>
+
+<!-- Ledger -->
+<div class="panel">
+  <div class="p-head">
+    <h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2>
+    <div class="led-tools">
+      <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
+      <button class="btn ghost sm" id="exportSelBtn" disabled>Export</button>
+    </div>
+  </div>
+  <div class="p-body"><div class="led" id="ledger"></div></div>
+</div>
+
+
+<div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
+
+<!-- image viewer -->
+<div id="viewer" class="viewer" style="display:none">
+  <div class="viewer-inner">
+    <div class="viewer-bar"><span id="viewerTitle">Photo</span><button class="icon-btn" id="viewerClose">✕</button></div>
+    <div class="viewer-body" id="viewerBody"></div>
+    <div class="viewer-foot"><button class="btn ghost sm warn" id="viewerDel">Remove photo</button></div>
+  </div>
+</div>
+
+<!-- month picker — tick any combination of months -->
+<div id="monthPicker" class="mpick" style="display:none">
+  <div class="mpick-inner">
+    <div class="mpick-bar"><span>Choose months</span><button class="icon-btn" id="monthPickClose">✕</button></div>
+    <div class="mpick-actions">
+      <button type="button" class="btn ghost sm" id="monthPickAll">Select all</button>
+      <button type="button" class="btn ghost sm" id="monthPickClear">Clear</button>
+    </div>
+    <div class="mpick-list" id="monthPickList"></div>
+    <div class="mpick-foot"><button type="button" class="btn primary sm" id="monthPickDone" style="width:100%">Done</button></div>
+  </div>
+</div>
+
+<!-- undo-delete toast -->
+<div id="undoToast" class="undo-toast" style="display:none">
+  <span id="undoToastMsg">Entry deleted</span>
+  <button type="button" id="undoToastBtn">Undo</button>
+</div>
+
+<!-- portfolio switcher -->
+<div id="portfolioPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
+<div id="portfolioPanel" class="pf-panel" style="display:none">
+  <div class="pf-bar">
+    <span>📁 Portfolios</span>
+    <button type="button" class="icon-btn" id="portfolioPanelClose">✕</button>
+  </div>
+  <div class="pf-hint">Each portfolio has its own balances, settings and transaction history. Duplicating one makes a fully independent copy — including its own copies of any attached photos.</div>
+  <div id="portfolioList" class="pf-list"></div>
+  <div class="pf-foot">
+    <button type="button" class="btn primary sm" id="portfolioAddBtn" style="width:100%">+ New portfolio</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+  /* ---------------- constants ---------------- */
+  var STORE_KEY = "mymoney_v14";
+  var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
+      GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798",
+      MFONT="ui-monospace,Menlo,monospace";
+
+  /* ============================================================
+     STORAGE MANAGER — multi-tier with automatic detection & fallback
+     Priority: OPFS > File System Access > WebKit sandboxed FS > IndexedDB > localStorage
+     Every tier implements: available(), read(), write(core), readPhoto(id,ext),
+     writePhoto(id,ext,blob), deletePhoto(id,ext), listPhotos(), health(), name, priority.
+     StorageManager is the ONLY thing the rest of the app talks to — nothing else ever
+     calls a tier directly. Every write also shadow-copies to IndexedDB (unless IDB is
+     already the active tier), so a fresh load can recover even if the primary tier
+     was reset or unavailable that session.
+     ============================================================ */
+
+  function reqToPromise(req){
+    return new Promise(function(resolve,reject){
+      req.onsuccess=function(){ resolve(req.result); };
+      req.onerror=function(){ reject(req.error); };
+    });
+  }
+  function blobToDataURL(blob){
+    return new Promise(function(resolve,reject){
+      var r=new FileReader();
+      r.onload=function(){ resolve(r.result); };
+      r.onerror=function(){ reject(r.error); };
+      r.readAsDataURL(blob);
+    });
+  }
+  function dataURLtoBlob(dataUrl){
+    var parts=dataUrl.split(","), meta=parts[0], b64=parts[1];
+    var mimeMatch=/data:(.*?);base64/.exec(meta);
+    var mime=mimeMatch?mimeMatch[1]:"application/octet-stream";
+    var bin=atob(b64), len=bin.length, arr=new Uint8Array(len);
+    for(var i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+    return new Blob([arr], {type:mime});
+  }
+
+  // ---- shared IndexedDB connection (used by TierIDB itself, and to persist the
+  // File System Access directory handle across sessions) ----
+  var _idbConn=null;
+  function openMoneyDB(){
+    if(_idbConn) return _idbConn;
+    _idbConn=new Promise(function(resolve,reject){
+      if(typeof indexedDB==="undefined"){ reject(new Error("no indexedDB")); return; }
+      var req=indexedDB.open("mymoney_v15",1);
+      req.onupgradeneeded=function(){
+        var db=req.result;
+        if(!db.objectStoreNames.contains("core")) db.createObjectStore("core");
+        if(!db.objectStoreNames.contains("photos")) db.createObjectStore("photos");
+        if(!db.objectStoreNames.contains("meta")) db.createObjectStore("meta");
+        if(!db.objectStoreNames.contains("handles")) db.createObjectStore("handles");
+      };
+      req.onsuccess=function(){ resolve(req.result); };
+      req.onerror=function(){ reject(req.error); };
+    });
+    return _idbConn;
+  }
+  async function idbStore(name, mode){
+    var db=await openMoneyDB();
+    return db.transaction(name, mode).objectStore(name);
+  }
+
+  /* ---- Tier 1: Origin Private File System — Chrome 86+, Safari 17+, Firefox 111+.
+     No permission prompt, ever. Sandboxed to this page's origin (not user-visible
+     in Finder/Explorer — that's what OPFS trades for having zero prompts). ---- */
+  var TierOPFS = {
+    name:"opfs", priority:1, _dataDir:null, _photosDir:null,
+    async available(){
+      try{ return !!(navigator.storage && typeof navigator.storage.getDirectory==="function"); }
+      catch(e){ return false; }
+    },
+    async _ensureDirs(){
+      if(this._dataDir && this._photosDir) return;
+      var root=await navigator.storage.getDirectory();
+      this._dataDir=await root.getDirectoryHandle("my-money-data",{create:true});
+      this._photosDir=await this._dataDir.getDirectoryHandle("photos",{create:true});
+    },
+    async read(){
+      try{
+        await this._ensureDirs();
+        var fh=await this._dataDir.getFileHandle("core.json");
+        var core=JSON.parse(await (await fh.getFile()).text());
+        return {core:core, photoIds:await this.listPhotos()};
+      }catch(e){ return null; }
+    },
+    async write(core){
+      await this._ensureDirs();
+      var fh=await this._dataDir.getFileHandle("core.json",{create:true});
+      var w=await fh.createWritable(); await w.write(JSON.stringify(core)); await w.close();
+    },
+    async readPhoto(id,ext){
+      try{ await this._ensureDirs(); var fh=await this._photosDir.getFileHandle(id+"."+ext); return await fh.getFile(); }
+      catch(e){ return null; }
+    },
+    async writePhoto(id,ext,blob){
+      await this._ensureDirs();
+      var fh=await this._photosDir.getFileHandle(id+"."+ext,{create:true});
+      var w=await fh.createWritable(); await w.write(blob); await w.close();
+    },
+    async deletePhoto(id,ext){ try{ await this._ensureDirs(); await this._photosDir.removeEntry(id+"."+ext); }catch(e){} },
+    async listPhotos(){
+      var out=[];
+      try{ await this._ensureDirs(); for await (var entry of this._photosDir.values()){ if(entry.kind==="file") out.push(entry.name); } }
+      catch(e){}
+      return out;
+    },
+    async health(){
+      try{
+        if(!(await this.available())) return {ok:false, space:0, detail:"Not supported in this browser"};
+        var est=(navigator.storage && navigator.storage.estimate) ? await navigator.storage.estimate() : {quota:0,usage:0};
+        return {ok:true, space:(est.quota||0)-(est.usage||0), detail:"OK"};
+      }catch(e){ return {ok:false, space:0, detail:String((e&&e.message)||e)}; }
+    }
+  };
+
+  /* ---- Tier 2: File System Access — Chrome/Edge desktop only. Real files on real
+     disk (USB, SD, NAS-mapped drive, or a synced OneDrive/Drive/Dropbox folder — the
+     app never talks to any cloud service directly, it just writes local files that
+     something else happens to sync). Requires a user click to pick the folder once;
+     the handle is then remembered in IndexedDB, with a one-click re-grant each new
+     session (browsers require that — it's not something any app can skip). ---- */
+  var TierFSA = {
+    name:"fsa", priority:2, _dirHandle:null,
+    async available(){
+      try{ return typeof window!=="undefined" && typeof window.showDirectoryPicker==="function"; }
+      catch(e){ return false; }
+    },
+    async _restoreHandle(){
+      if(this._dirHandle) return this._dirHandle;
+      try{
+        var store=await idbStore("handles","readonly");
+        var saved=await reqToPromise(store.get("fsa_dir"));
+        if(!saved) return null;
+        var perm=await saved.queryPermission({mode:"readwrite"});
+        if(perm!=="granted") perm=await saved.requestPermission({mode:"readwrite"});
+        if(perm==="granted"){ this._dirHandle=saved; return saved; }
+      }catch(e){}
+      return null;
+    },
+    // must be called directly from a user click — browsers require a real gesture
+    async pickFolder(){
+      var handle=await window.showDirectoryPicker({mode:"readwrite"});
+      var store=await idbStore("handles","readwrite");
+      await reqToPromise(store.put(handle,"fsa_dir"));
+      this._dirHandle=handle;
+      return handle;
+    },
+    async forgetFolder(){
+      this._dirHandle=null;
+      try{ var store=await idbStore("handles","readwrite"); await reqToPromise(store.delete("fsa_dir")); }catch(e){}
+    },
+    async _ensureDirs(){
+      var root=await this._restoreHandle();
+      if(!root){ var e=new Error("No folder selected"); e.needsFolder=true; throw e; }
+      var dataDir=await root.getDirectoryHandle("my-money-data",{create:true});
+      var photosDir=await dataDir.getDirectoryHandle("photos",{create:true});
+      return {dataDir:dataDir, photosDir:photosDir};
+    },
+    async read(){
+      try{
+        var d=await this._ensureDirs();
+        var fh=await d.dataDir.getFileHandle("core.json");
+        var core=JSON.parse(await (await fh.getFile()).text());
+        return {core:core, photoIds:await this.listPhotos()};
+      }catch(e){ return null; }
+    },
+    async write(core){
+      var d=await this._ensureDirs();
+      var fh=await d.dataDir.getFileHandle("core.json",{create:true});
+      var w=await fh.createWritable(); await w.write(JSON.stringify(core)); await w.close();
+    },
+    async readPhoto(id,ext){
+      try{ var d=await this._ensureDirs(); var fh=await d.photosDir.getFileHandle(id+"."+ext); return await fh.getFile(); }
+      catch(e){ return null; }
+    },
+    async writePhoto(id,ext,blob){
+      var d=await this._ensureDirs();
+      var fh=await d.photosDir.getFileHandle(id+"."+ext,{create:true});
+      var w=await fh.createWritable(); await w.write(blob); await w.close();
+    },
+    async deletePhoto(id,ext){ try{ var d=await this._ensureDirs(); await d.photosDir.removeEntry(id+"."+ext); }catch(e){} },
+    async listPhotos(){
+      var out=[];
+      try{ var d=await this._ensureDirs(); for await (var entry of d.photosDir.values()){ if(entry.kind==="file") out.push(entry.name); } }
+      catch(e){}
+      return out;
+    },
+    async health(){
+      try{
+        if(!(await this.available())) return {ok:false, space:0, detail:"Desktop Chrome/Edge only"};
+        var handle=await this._restoreHandle();
+        if(!handle) return {ok:false, space:0, detail:"No folder selected", needsFolder:true};
+        return {ok:true, space:null, detail:"Connected: "+(handle.name||"folder")};
+      }catch(e){ return {ok:false, space:0, detail:String((e&&e.message)||e)}; }
+    }
+  };
+
+  /* ---- Tier 3: legacy WebKit sandboxed filesystem (window.webkitRequestFileSystem).
+     Worth being precise about what this actually is: it is a SANDBOXED, app-private
+     store, the same category as OPFS — NOT a bridge into the user's visible iCloud
+     Drive. (That's a common mix-up; there's no browser API that hands a page direct
+     read/write access to a user's iCloud Drive folder.) On Safari 17+, OPFS (Tier 1)
+     already covers this and is the modern replacement. This tier only matters as a
+     fallback on older Safari that predates OPFS. Real cross-Apple-device sync needs
+     Syncthing+Möbius or manual AirDrop export/import — both covered elsewhere. ---- */
+  var TierWebKitFS = {
+    name:"webkitfs", priority:3, _fs:null, _dataDir:null, _photosDir:null,
+    async available(){
+      try{ return typeof window!=="undefined" && typeof window.webkitRequestFileSystem==="function"; }
+      catch(e){ return false; }
+    },
+    _requestFS(){
+      var self=this;
+      return new Promise(function(resolve,reject){
+        window.webkitRequestFileSystem(window.PERSISTENT, 10*1024*1024*1024, resolve, reject);
+      });
+    },
+    _getDirEntry(parent,name){
+      return new Promise(function(resolve,reject){
+        parent.getDirectory(name,{create:true},resolve,reject);
+      });
+    },
+    _getFileEntry(parent,name,create){
+      return new Promise(function(resolve,reject){
+        parent.getFile(name,{create:!!create},resolve,reject);
+      });
+    },
+    async _ensureDirs(){
+      if(this._dataDir && this._photosDir) return;
+      if(!this._fs) this._fs=await this._requestFS();
+      this._dataDir=await this._getDirEntry(this._fs.root,"my-money-data");
+      this._photosDir=await this._getDirEntry(this._dataDir,"photos");
+    },
+    _writeFileEntry(entry, blobOrString){
+      return new Promise(function(resolve,reject){
+        entry.createWriter(function(writer){
+          writer.onwriteend=function(){ resolve(); };
+          writer.onerror=reject;
+          var blob=(typeof blobOrString==="string") ? new Blob([blobOrString],{type:"application/json"}) : blobOrString;
+          writer.write(blob);
+        }, reject);
+      });
+    },
+    _readFileEntry(entry){
+      return new Promise(function(resolve,reject){
+        entry.file(function(file){ resolve(file); }, reject);
+      });
+    },
+    async read(){
+      try{
+        await this._ensureDirs();
+        var entry=await this._getFileEntry(this._dataDir,"core.json",false);
+        var file=await this._readFileEntry(entry);
+        var text=await file.text();
+        return {core:JSON.parse(text), photoIds:await this.listPhotos()};
+      }catch(e){ return null; }
+    },
+    async write(core){
+      await this._ensureDirs();
+      var entry=await this._getFileEntry(this._dataDir,"core.json",true);
+      await this._writeFileEntry(entry, JSON.stringify(core));
+    },
+    async readPhoto(id,ext){
+      try{ await this._ensureDirs(); var entry=await this._getFileEntry(this._photosDir,id+"."+ext,false); return await this._readFileEntry(entry); }
+      catch(e){ return null; }
+    },
+    async writePhoto(id,ext,blob){
+      await this._ensureDirs();
+      var entry=await this._getFileEntry(this._photosDir,id+"."+ext,true);
+      await this._writeFileEntry(entry, blob);
+    },
+    async deletePhoto(id,ext){
+      try{
+        await this._ensureDirs();
+        var entry=await this._getFileEntry(this._photosDir,id+"."+ext,false);
+        await new Promise(function(resolve,reject){ entry.remove(resolve,reject); });
+      }catch(e){}
+    },
+    async listPhotos(){
+      var out=[];
+      try{
+        await this._ensureDirs();
+        var reader=this._photosDir.createReader();
+        var entries=await new Promise(function(resolve,reject){ reader.readEntries(resolve,reject); });
+        entries.forEach(function(e){ if(e.isFile) out.push(e.name); });
+      }catch(e){}
+      return out;
+    },
+    async health(){
+      try{
+        if(!(await this.available())) return {ok:false, space:0, detail:"Safari only (legacy API)"};
+        var usage=await new Promise(function(resolve,reject){
+          if(!window.webkitStorageInfo){ resolve({usage:0,quota:0}); return; }
+          window.webkitStorageInfo.queryUsageAndQuota(window.PERSISTENT,
+            function(u,q){ resolve({usage:u,quota:q}); }, function(){ resolve({usage:0,quota:0}); });
+        });
+        return {ok:true, space:(usage.quota||0)-(usage.usage||0), detail:"Sandboxed local storage (not iCloud-synced)"};
+      }catch(e){ return {ok:false, space:0, detail:String((e&&e.message)||e)}; }
+    }
+  };
+
+  /* ---- Tier 4: IndexedDB — every browser, gigabytes of quota, no prompts. Always
+     also used as the shadow copy for whatever tier is actually active. ---- */
+  var TierIDB = {
+    name:"idb", priority:4,
+    async available(){ try{ return typeof indexedDB!=="undefined"; }catch(e){ return false; } },
+    async read(){
+      try{
+        var store=await idbStore("core","readonly");
+        var core=await reqToPromise(store.get("state"));
+        if(!core) return null;
+        return {core:core, photoIds:await this.listPhotos()};
+      }catch(e){ return null; }
+    },
+    async write(core){ var store=await idbStore("core","readwrite"); await reqToPromise(store.put(core,"state")); },
+    async readPhoto(id,ext){
+      try{ var store=await idbStore("photos","readonly"); var blob=await reqToPromise(store.get(String(id))); return blob||null; }
+      catch(e){ return null; }
+    },
+    async writePhoto(id,ext,blob){ var store=await idbStore("photos","readwrite"); await reqToPromise(store.put(blob,String(id))); },
+    async deletePhoto(id,ext){ try{ var store=await idbStore("photos","readwrite"); await reqToPromise(store.delete(String(id))); }catch(e){} },
+    async listPhotos(){
+      try{ var store=await idbStore("photos","readonly"); var keys=await reqToPromise(store.getAllKeys()); return keys.map(String); }
+      catch(e){ return []; }
+    },
+    async health(){
+      try{
+        if(!(await this.available())) return {ok:false, space:0, detail:"Not supported"};
+        await openMoneyDB();
+        var est=(navigator.storage && navigator.storage.estimate) ? await navigator.storage.estimate() : {quota:0,usage:0};
+        return {ok:true, space:(est.quota||0)-(est.usage||0), detail:"OK — shadow copy"};
+      }catch(e){ return {ok:false, space:0, detail:String((e&&e.message)||e)}; }
+    }
+  };
+
+  /* ---- Tier 5: localStorage — emergency only. Never primary on a fresh install;
+     only activated if every other tier fails or throws mid-session. Photos here are
+     base64 data URLs (localStorage can't hold real Blobs), kept at full quality —
+     this is a short-lived emergency measure, not a place data is meant to live. ---- */
+  var TierLS = {
+    name:"ls", priority:5,
+    async available(){ try{ window.localStorage.setItem("__mm_t","1"); window.localStorage.removeItem("__mm_t"); return true; }catch(e){ return false; } },
+    async read(){
+      try{
+        var raw=window.localStorage.getItem("mymoney_v15_emergency");
+        if(!raw) return null;
+        return {core:JSON.parse(raw), photoIds:await this.listPhotos()};
+      }catch(e){ return null; }
+    },
+    async write(core){ window.localStorage.setItem("mymoney_v15_emergency", JSON.stringify(core)); },
+    async readPhoto(id,ext){
+      try{ var raw=window.localStorage.getItem("mymoney_ph_"+id); return raw ? dataURLtoBlob(raw) : null; }
+      catch(e){ return null; }
+    },
+    async writePhoto(id,ext,blob){ var dataUrl=await blobToDataURL(blob); window.localStorage.setItem("mymoney_ph_"+id, dataUrl); },
+    async deletePhoto(id,ext){ try{ window.localStorage.removeItem("mymoney_ph_"+id); }catch(e){} },
+    async listPhotos(){
+      var out=[];
+      try{ for(var i=0;i<window.localStorage.length;i++){ var k=window.localStorage.key(i); if(k && k.indexOf("mymoney_ph_")===0) out.push(k.slice(11)); } }
+      catch(e){}
+      return out;
+    },
+    async health(){
+      var ok=await this.available();
+      return {ok:ok, space:null, detail:ok?"OK (emergency only)":"Not available"};
+    }
+  };
+
+  /* ---- StorageManager: the only thing the rest of the app talks to ---- */
+  var StorageManager = {
+    tiers:[TierOPFS, TierFSA, TierWebKitFS, TierIDB, TierLS],
+    _active:null,
+    emergencyActive:false,
+    onEmergencyChange:null, // set by the app to update the UI when this flips
+    async detect(){
+      var out=[];
+      for(var i=0;i<this.tiers.length;i++){
+        var t=this.tiers[i], avail=false;
+        try{ avail=await t.available(); }catch(e){ avail=false; }
+        out.push({tier:t, available:avail});
+      }
+      return out;
+    },
+    async best(forcedName){
+      var results=await this.detect();
+      if(forcedName){
+        var forced=results.find(function(r){ return r.tier.name===forcedName && r.available; });
+        if(forced) return forced.tier;
+      }
+      var found=results.filter(function(r){ return r.available; }).sort(function(a,b){ return a.tier.priority-b.tier.priority; });
+      return found.length ? found[0].tier : TierLS;
+    },
+    async init(forcedName){
+      this._active=await this.best(forcedName);
+      return this._active;
+    },
+    active(){ return this._active; },
+    _setEmergency(on){
+      if(this.emergencyActive===on) return;
+      this.emergencyActive=on;
+      if(this.onEmergencyChange) this.onEmergencyChange(on);
+    },
+    async write(core){
+      if(!this._active) await this.init();
+      try{
+        await this._active.write(core);
+        this._setEmergency(this._active.name==="ls");
+      }catch(e){
+        this._setEmergency(true);
+        await TierLS.write(core);
+      }
+      if(this._active!==TierIDB){ try{ await TierIDB.write(core); }catch(e){} }
+    },
+    async read(){
+      if(!this._active) await this.init();
+      var res=null;
+      try{ res=await this._active.read(); }catch(e){ res=null; }
+      if(!res && this._active!==TierIDB){ try{ res=await TierIDB.read(); }catch(e){} }
+      if(!res && this._active!==TierLS){ try{ res=await TierLS.read(); }catch(e){} }
+      return res;
+    },
+    async writePhoto(id,ext,blob){
+      if(!this._active) await this.init();
+      try{ await this._active.writePhoto(id,ext,blob); this._setEmergency(this._active.name==="ls"); }
+      catch(e){ this._setEmergency(true); try{ await TierLS.writePhoto(id,ext,blob); }catch(e2){} }
+      if(this._active!==TierIDB){ try{ await TierIDB.writePhoto(id,ext,blob); }catch(e){} }
+    },
+    async readPhoto(id,ext){
+      if(!this._active) await this.init();
+      var blob=null;
+      try{ blob=await this._active.readPhoto(id,ext); }catch(e){}
+      if(!blob && this._active!==TierIDB){ try{ blob=await TierIDB.readPhoto(id,ext); }catch(e){} }
+      if(!blob && this._active!==TierLS){ try{ blob=await TierLS.readPhoto(id,ext); }catch(e){} }
+      return blob;
+    },
+    async deletePhoto(id,ext){
+      if(!this._active) await this.init();
+      try{ await this._active.deletePhoto(id,ext); }catch(e){}
+      try{ await TierIDB.deletePhoto(id,ext); }catch(e){}
+      try{ await TierLS.deletePhoto(id,ext); }catch(e){}
+    },
+    async health(){
+      var out=[];
+      for(var i=0;i<this.tiers.length;i++){
+        var t=this.tiers[i], h;
+        try{ h=await t.health(); }catch(e){ h={ok:false,space:0,detail:String((e&&e.message)||e)}; }
+        out.push({name:t.name, priority:t.priority, active:(this._active===t), health:h});
+      }
+      return out;
+    },
+    // every 30s, if we're on the emergency tier, check whether a real tier has come
+    // back and, if so, migrate the emergency data over and drop back out of emergency
+    async tryAutoHeal(){
+      if(!this.emergencyActive) return false;
+      var candidate=await this.best();
+      if(candidate.name==="ls") return false; // still nothing better available
+      var emergencyRead=await TierLS.read();
+      if(emergencyRead && emergencyRead.core){
+        try{
+          await candidate.write(emergencyRead.core);
+          this._active=candidate;
+          this._setEmergency(false);
+          return true;
+        }catch(e){ return false; }
+      }
+      this._active=candidate;
+      this._setEmergency(false);
+      return true;
+    }
+  };
+
+  var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var WEEKDAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+  var TYPE_META = {
+    income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
+    trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
+    borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
+    alw_trading:{label:"TRADING"}
+  };
+
+  var DEFAULTS = {
+    currency:"$",
+    opening:{balance:0, debt:0, savings:0},
+    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0},
+    chartType:"candle", chartCollapsed:false,
+    selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
+    transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
+  };
+
+  var state = clone(DEFAULTS);
+
+  /* ---------------- portfolios ----------------
+     Multiple independent portfolios can live side by side. Each has its own
+     opening balances, settings, currency and transaction history. `state`
+     above always holds the CURRENTLY ACTIVE portfolio's flat data (exactly
+     the shape it always has), so every existing function that reads/writes
+     `state` keeps working unchanged. PORTFOLIOS is the in-memory registry;
+     it — and which portfolio is active — is what actually gets persisted. */
+  var PORTFOLIOS = [{id:"default", name:"Main Portfolio", createdAt:Date.now(), data:clone(DEFAULTS)}];
+  var ACTIVE_PID = "default";
+  function genPid(){ return "p"+Date.now()+Math.floor(Math.random()*1000); }
+  function findPortfolio(pid){ return PORTFOLIOS.filter(function(p){ return p.id===pid; })[0]; }
+  function activePortfolio(){ return findPortfolio(ACTIVE_PID); }
+
+  /* ---------------- pure helpers ---------------- */
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+  function two(d){ return (d<10?"0":"")+d; }
+  function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate()); }
+  function monthKey(dateStr){ return (dateStr||"").slice(0,7); }
+  function monthAdd(key,n){
+    var p=key.split("-"), y=+p[0], m=+p[1]-1; var idx=y*12+m+n;
+    return Math.floor(idx/12)+"-"+two((idx%12)+1);
+  }
+  function monthLabel(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" '"+String(p[0]).slice(2); }
+  function monthLong(key){ var p=key.split("-"); return MONTHS[(+p[1])-1]+" "+p[0]; }
+  function niceDate(dateStr){ var p=(dateStr||"").split("-"); if(p.length<3) return dateStr||""; return MONTHS[(+p[1])-1]+" "+(+p[2]); }
+  function ordinal(n){
+    var v=n%100;
+    if(v>=11&&v<=13) return n+"th";
+    switch(n%10){ case 1: return n+"st"; case 2: return n+"nd"; case 3: return n+"rd"; default: return n+"th"; }
+  }
+  // Always reads the live device clock — nothing about "today" is ever hardcoded.
+  function fullDateStr(){
+    var d=new Date();
+    return WEEKDAYS[d.getDay()]+", "+MONTHS_LONG[d.getMonth()]+" "+ordinal(d.getDate())+", "+d.getFullYear();
+  }
+  function updateDateBar(){
+    var el=document.getElementById("dateBar");
+    if(el) el.innerHTML="Today · <b>"+fullDateStr()+"</b>";
+  }
+  function fmt(v,sym){
+    sym = esc(sym||state.currency);
+    var neg=v<0, a=Math.abs(v);
+    return (neg?"-":"")+sym+a.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtShort(v,sym){
+    sym=esc(sym||state.currency); var neg=v<0, a=Math.round(Math.abs(v));
+    return (neg?"-":"")+sym+a.toLocaleString("en-US");
+  }
+
+  function balDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "income": case "trade_win": case "withdraw": case "alw_trading": return a;
+      case "adjust": return a; // may be negative
+      case "spend": case "trade_loss": case "pay_debt_balance": case "save": return -a;
+      default: return 0;
+    }
+  }
+  function debtDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "pay_debt_balance": case "alw_debt": return -a;
+      case "borrow": return a;
+      default: return 0;
+    }
+  }
+  function savDelta(t){
+    var a=num(t.amount);
+    switch(t.type){
+      case "save": case "alw_savings": return a;
+      case "withdraw": return -a;
+      default: return 0;
+    }
+  }
+
+  function sortedTx(){
+    return state.transactions.slice().sort(function(x,y){
+      if(x.date<y.date) return -1; if(x.date>y.date) return 1;
+      return (x.id||0)-(y.id||0);
+    });
+  }
+
+  function totals(){
+    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings);
+    state.transactions.forEach(function(t){ b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); });
+    return {balance:b, debt:d, savings:s, net:b+s-d};
+  }
+
+  // Monthly OHLC of spendable balance. Continuous months from first tx (or current) to max(last tx, current).
+  function computeMonthly(cur){
+    cur = cur || monthKey(todayStr());
+    var txs=sortedTx();
+    var open0=num(state.opening.balance);
+    var out=[];
+    if(txs.length===0){
+      out=[{key:cur,o:open0,h:open0,l:open0,c:open0}];
+    } else {
+      var first=monthKey(txs[0].date);
+      var lastTx=monthKey(txs[txs.length-1].date);
+      var end = (lastTx>cur)?lastTx:cur;
+      var byMonth={};
+      txs.forEach(function(t){ var k=monthKey(t.date); (byMonth[k]=byMonth[k]||[]).push(t); });
+      var carry=open0, k=first, guard=0;
+      while(guard++<600){
+        var arr=byMonth[k]||[];
+        var o=carry, hi=carry, lo=carry, curv=carry;
+        arr.forEach(function(t){ curv+=balDelta(t); if(curv>hi)hi=curv; if(curv<lo)lo=curv; });
+        out.push({key:k,o:o,h:hi,l:lo,c:curv});
+        carry=curv;
+        if(k===end) break;
+        k=monthAdd(k,1);
+      }
+    }
+    // pad-left so the chart always looks like a chart (flat "before you started" months)
+    if(out.length<6){
+      var need=6-out.length, fk=out[0].key, fv=out[0].o, pre=[];
+      for(var i=need;i>=1;i--){ var kk=monthAdd(fk,-i); pre.push({key:kk,o:fv,h:fv,l:fv,c:fv}); }
+      out=pre.concat(out);
+    }
+    if(out.length>10) out=out.slice(out.length-10);
+    return out;
+  }
+
+  /* ---------------- currency conversion: fully offline, hardcoded, direct pairwise ----------------
+     Every one of the 42 directed pairs below is a real, independent number — switching
+     currency never routes through USD (or anything else) internally at runtime, it's a
+     flat table[from][to] lookup. (The numbers WERE generated from a common USD reference
+     so they triangulate consistently — e.g. USD->GBP->CHF matches USD->CHF directly to
+     within rounding — but that reference is an authoring detail, not part of the shipped
+     logic; nothing here ever computes "convert to USD, then to target".) Rates are a
+     snapshot, editable by hand if you want to update them later — this app never phones
+     out to a live rate API, by design, so it works with zero connectivity. */
+  var CURRENCY_RATES = {
+    USD:{AED:3.6725, GBP:0.746,    EUR:0.877,    CHF:0.806,    SGD:1.29,     JPY:162},
+    AED:{USD:0.272294,GBP:0.203131,EUR:0.238802, CHF:0.219469, SGD:0.351259, JPY:44.11},
+    GBP:{USD:1.3405, AED:4.9229,   EUR:1.1756,   CHF:1.0804,   SGD:1.7292,   JPY:217.16},
+    EUR:{USD:1.1403, AED:4.1876,   GBP:0.850627, CHF:0.919042, SGD:1.4709,   JPY:184.72},
+    CHF:{USD:1.2407, AED:4.5565,   GBP:0.925558, EUR:1.0881,   SGD:1.6005,   JPY:200.99},
+    SGD:{USD:0.775194,AED:2.8469,  GBP:0.578295, EUR:0.679845, CHF:0.624806, JPY:125.58},
+    JPY:{USD:0.006173,AED:0.02267, GBP:0.004605, EUR:0.005414, CHF:0.004975, SGD:0.007963}
+  };
+  var CURRENCY_META = {
+    USD:{sym:"$",  code:"USD", name:"US Dollar",       flag:"🇺🇸"},
+    AED:{sym:"AED",code:"AED", name:"UAE Dirham",       flag:"🇦🇪"},
+    GBP:{sym:"£",  code:"GBP", name:"British Pound",    flag:"🇬🇧"},
+    EUR:{sym:"€",  code:"EUR", name:"Euro",             flag:"🇪🇺"},
+    CHF:{sym:"CHF",code:"CHF", name:"Swiss Franc",      flag:"🇨🇭"},
+    SGD:{sym:"SGD",code:"SGD", name:"Singapore Dollar", flag:"🇸🇬"},
+    JPY:{sym:"¥",  code:"JPY", name:"Japanese Yen",     flag:"🇯🇵"}
+  };
+  // the settings dropdown's existing option values ("$", "AED", "£"...) -> rate-table codes
+  var SYMBOL_TO_CODE = {"$":"USD", AED:"AED", CHF:"CHF", SGD:"SGD", "£":"GBP", "€":"EUR", "¥":"JPY"};
+
+  function convertAmount(amount, fromCode, toCode){
+    if(!fromCode || !toCode || fromCode===toCode) return amount;
+    var row=CURRENCY_RATES[fromCode];
+    if(!row || row[toCode]==null) return amount; // unknown pair (e.g. a custom symbol) — leave untouched
+    return amount*row[toCode];
+  }
+  function roundMoney(v){ return Math.round(v*10000)/10000; } // sub-cent precision like the real data already uses (e.g. 17.965) — just clamps runaway float noise
+  // rewrites every stored amount in state from one currency symbol to another, in place
+  function convertStateCurrency(fromSym, toSym){
+    var fromCode=SYMBOL_TO_CODE[fromSym], toCode=SYMBOL_TO_CODE[toSym];
+    if(!fromCode || !toCode || fromCode===toCode) return false;
+    state.transactions.forEach(function(t){ t.amount=roundMoney(convertAmount(t.amount, fromCode, toCode)); });
+    state.opening.balance=roundMoney(convertAmount(state.opening.balance, fromCode, toCode));
+    state.opening.debt=roundMoney(convertAmount(state.opening.debt, fromCode, toCode));
+    state.opening.savings=roundMoney(convertAmount(state.opening.savings, fromCode, toCode));
+    state.settings.allowance=roundMoney(convertAmount(state.settings.allowance, fromCode, toCode));
+    state.settings.toDebt=roundMoney(convertAmount(state.settings.toDebt, fromCode, toCode));
+    state.settings.toTrading=roundMoney(convertAmount(state.settings.toTrading, fromCode, toCode));
+    state.settings.toSavings=roundMoney(convertAmount(state.settings.toSavings, fromCode, toCode));
+    return true;
+  }
+
+  // Currency switch date — trades before this were AED-era, reset to zero, don't count in P/L
+  var USD_ERA_START = "2026-04-01";
+
+  function summaryFor(scope){ // scope = 'all', a single 'YYYY-MM', or an array of 'YYYY-MM'
+    var monthSet=null;
+    if(Array.isArray(scope)){ monthSet={}; scope.forEach(function(k){ monthSet[k]=1; }); }
+    var r={spent:0,tradePL:0,moneyIn:0,debtPaid:0,saved:0,net:0,cats:{}};
+    state.transactions.forEach(function(t){
+      if(monthSet){ if(!monthSet[monthKey(t.date)]) return; }
+      else if(scope!=="all" && monthKey(t.date)!==scope){ return; }
+      var a=num(t.amount);
+      r.net+=balDelta(t);
+      if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
+      else if(t.type==="trade_win"&&t.date>=USD_ERA_START){ r.tradePL+=a; }
+      else if(t.type==="trade_loss"&&t.date>=USD_ERA_START){ r.tradePL-=a; }
+      else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
+      if(t.type==="pay_debt_balance"||t.type==="alw_debt") r.debtPaid+=a;
+      r.saved+=savDelta(t);
+    });
+    return r;
+  }
+
+  // ---- multi-month picker helpers ----
+  function isAllSelected(){
+    var sm=state.selectedMonths;
+    return !!sm && sm.length===1 && sm[0]==="all";
+  }
+  function activeMonths(){
+    if(isAllSelected()) return monthsInData();
+    return Array.isArray(state.selectedMonths) ? state.selectedMonths.slice() : [];
+  }
+  // compact display text for an arbitrary set of picked months
+  function scopeLabel(monthsArr){
+    var a=monthsArr.slice().sort();
+    if(a.length===0) return "No months";
+    if(a.length===1) return monthLong(a[0]);
+    if(a.length<=3) return a.map(monthLabel).join(", ");
+    return a.length+" months";
+  }
+  function updateMonthPickBtn(){
+    var btn=document.getElementById("monthSelBtn");
+    if(!btn) return;
+    btn.textContent = (isAllSelected() ? "All months" : scopeLabel(activeMonths())) + " ▾";
+  }
+
+
+  // Includes forMonth so a future month that only exists because an advance targets it
+  // still shows up in the "By month" picker — this list is never capped to any one year.
+  function monthsInData(){
+    var set={};
+    state.transactions.forEach(function(t){
+      set[monthKey(t.date)]=1;
+      if(t.forMonth) set[t.forMonth]=1;
+    });
+    var cur=monthKey(todayStr()); set[cur]=1;
+    return Object.keys(set).sort();
+  }
+
+  // months that already have an allowance added, keyed by which month it's FOR
+  // (forMonth), not necessarily the day it was logged — so an advance taken today
+  // for a future month still correctly marks that future month as "done".
+  function allowanceMonths(){
+    var set={};
+    state.transactions.forEach(function(t){ if(t.auto) set[t.forMonth||monthKey(t.date)]=1; });
+    return set;
+  }
+
+  // dismissed-this-month state lives in plain localStorage, separate from the main
+  // synced state — it's a lightweight UI preference, not data worth backing up
+  function checkAllowancePrompt(){
+    var el=document.getElementById("allowancePrompt");
+    if(!el) return;
+    var curM=monthKey(todayStr());
+    var used=num(state.settings.toDebt)+num(state.settings.toTrading)+num(state.settings.toSavings);
+    var already=!!allowanceMonths()[curM];
+    var dismissedFor=null;
+    try{ dismissedFor=window.localStorage.getItem("mymoney_dismissed_prompt"); }catch(e){}
+    if(used>0 && !already && dismissedFor!==curM){
+      document.getElementById("allowancePromptMsg").textContent=monthLong(curM)+"’s allowance hasn’t been added yet.";
+      el.style.display="flex";
+    } else {
+      el.style.display="none";
+    }
+  }
+
+  /* ---------------- advances: taken today, dated today, but earmarked for a future month ---------------- */
+
+  // advance legs still outstanding (their target month hasn't arrived yet)
+  function outstandingAdvances(){
+    var curM=monthKey(todayStr()), map={};
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth && t.forMonth>curM){
+        if(!map[t.forMonth]) map[t.forMonth]={forMonth:t.forMonth, amount:0, date:t.date};
+        map[t.forMonth].amount+=num(t.amount);
+        if(t.date<map[t.forMonth].date) map[t.forMonth].date=t.date;
+      }
+    });
+    return Object.keys(map).sort().map(function(k){ return map[k]; });
+  }
+  // advances that were taken *during* a given month, for some later month
+  function advancesTakenIn(scopeMonth){
+    var map={};
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth && monthKey(t.date)===scopeMonth){
+        if(!map[t.forMonth]) map[t.forMonth]={forMonth:t.forMonth, amount:0, date:t.date};
+        map[t.forMonth].amount+=num(t.amount);
+      }
+    });
+    return Object.keys(map).sort().map(function(k){ return map[k]; });
+  }
+  // was this month's own allowance already received earlier, as someone else's advance?
+  function advanceReceivedFor(scopeMonth){
+    var amount=0, date=null;
+    state.transactions.forEach(function(t){
+      if(t.advance && t.forMonth===scopeMonth && monthKey(t.date)!==scopeMonth){
+        amount+=num(t.amount);
+        if(!date||t.date<date) date=t.date;
+      }
+    });
+    return amount>0 ? {amount:amount, date:date} : null;
+  }
+  // undo an advance: removes every leg (debt/trading/savings) tied to that target month
+  // and frees up the advance slot again
+  function removeAdvance(forMonth){
+    var txs=state.transactions.filter(function(t){ return t.advance && t.forMonth===forMonth; });
+    if(!txs.length) return;
+    var total=0; txs.forEach(function(t){ total+=num(t.amount); });
+    var n=txs.length;
+    if(!confirm("Remove the advance taken for "+monthLong(forMonth)+" ("+fmt(total)+")? This deletes "+n+" linked "+(n===1?"entry":"entries")+" and frees up that advance slot.")) return;
+    var ids=txs.map(function(t){ return t.id; });
+    state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
+    ids.forEach(function(id){ delete selectedIds[id]; });
+    persist(); render(); flashSaved("advance removed");
+  }
+
+  /* ---------------- photo store — routes through StorageManager ----------------
+     Claude's own artifact storage (window.storage), when present, is checked first —
+     that's this file's existing behavior when opened inside claude.ai. Everywhere else
+     (a plain downloaded HTML file), photos go through the full multi-tier cascade:
+     OPFS → File System Access → legacy WebKit FS → IndexedDB → localStorage. */
+  var photoCache={};       // in-memory: id -> dataURL, for fast repeat reads this session
+  var photoExtMap={};      // in-memory: id -> file extension (the file-based tiers name files "{id}.{ext}")
+  var photoExtMapLoaded=false;
+  function photoKey(id){ return STORE_KEY+"_ph_"+id; }
+  function mimeToExt(mime){
+    var m={"image/jpeg":"jpg","image/jpg":"jpg","image/png":"png","image/gif":"gif","image/webp":"webp","image/bmp":"bmp","image/heic":"heic","image/heif":"heif"};
+    return m[mime]||"jpg";
+  }
+  function extFromDataUrl(dataUrl){ var m=/^data:([^;]+);/.exec(dataUrl||""); return mimeToExt(m?m[1]:""); }
+  async function loadPhotoExtMap(){
+    if(photoExtMapLoaded) return;
+    photoExtMapLoaded=true;
+    try{ var store=await idbStore("meta","readonly"); var saved=await reqToPromise(store.get("photoExtMap")); if(saved) photoExtMap=Object.assign({}, saved, photoExtMap); }
+    catch(e){}
+  }
+  async function savePhotoExtMap(){ try{ var store=await idbStore("meta","readwrite"); await reqToPromise(store.put(photoExtMap,"photoExtMap")); }catch(e){} }
+  function savePhoto(id, dataUrl, cb){
+    photoCache[id]=dataUrl;
+    var ext=extFromDataUrl(dataUrl);
+    photoExtMap[id]=ext;
+    var done=false;
+    try{
+      if(window.storage && typeof window.storage.set==="function"){
+        var p=window.storage.set(photoKey(id), dataUrl, false);
+        if(p && p.then){ p.then(function(){ hideStorageWarning(); cb&&cb(); }).catch(function(){ savePhotoViaManager(id,ext,dataUrl,cb); }); done=true; }
+      }
+    }catch(e){}
+    if(!done) savePhotoViaManager(id,ext,dataUrl,cb);
+  }
+  function savePhotoViaManager(id,ext,dataUrl,cb){
+    savePhotoExtMap();
+    var blob; try{ blob=dataURLtoBlob(dataUrl); }catch(e){ blob=null; }
+    if(!blob){ showStorageWarning(); cb&&cb(); return; }
+    StorageManager.writePhoto(id, ext, blob).then(function(){ hideStorageWarning(); cb&&cb(); })
+      .catch(function(){ showStorageWarning(); cb&&cb(); });
+  }
+  function loadPhoto(id, cb){
+    if(photoCache[id]){ cb(photoCache[id]); return; }
+    var handled=false;
+    try{
+      if(window.storage && typeof window.storage.get==="function"){
+        handled=true;
+        var p=window.storage.get(photoKey(id), false);
+        if(p && p.then){
+          p.then(function(r){ if(r && r.value){ photoCache[id]=r.value; cb(r.value); return; } loadPhotoViaManager(id, cb); })
+           .catch(function(){ loadPhotoViaManager(id, cb); });
+          return;
+        }
+      }
+    }catch(e){}
+    if(!handled) loadPhotoViaManager(id, cb);
+  }
+  async function loadPhotoViaManager(id, cb){
+    await loadPhotoExtMap();
+    var ext=photoExtMap[id]||"jpg";
+    try{
+      var blob=await StorageManager.readPhoto(id, ext);
+      if(!blob){ cb(null); return; }
+      var dataUrl=await blobToDataURL(blob);
+      photoCache[id]=dataUrl;
+      cb(dataUrl);
+    }catch(e){ cb(null); }
+  }
+  function delPhoto(id){
+    delete photoCache[id];
+    var ext=photoExtMap[id]||"jpg";
+    delete photoExtMap[id];
+    savePhotoExtMap();
+    try{ if(window.storage && typeof window.storage["delete"]==="function"){ window.storage["delete"](photoKey(id), false); } }catch(e){}
+    StorageManager.deletePhoto(id, ext).catch(function(){});
+  }
+  // Per the spec: original bytes, zero re-encoding, zero resize, zero quality loss — ever.
+  // (Storage headroom for large originals is now the multi-tier system's job, not this
+  // function's — OPFS/File-System-Access/IndexedDB all hold far more than localStorage did.)
+  function processImage(file, cb){
+    var nm=file.name||"photo";
+    var reader=new FileReader();
+    reader.onload=function(){ cb({dataUrl:reader.result, name:nm}); };
+    reader.onerror=function(){ alert("Couldn't read that photo — try a different one."); };
+    reader.readAsDataURL(file);
+  }
+
+  /* ---------------- storage ---------------- */
+  var saveTimer=null;
+  function flashSaved(txt){
+    var el=document.getElementById("saved"); document.getElementById("savedTxt").textContent=txt||"saved";
+    el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },400);
+  }
+  function showStorageWarning(){ var el=document.getElementById("storageWarn"); if(el) el.style.display="flex"; }
+  function hideStorageWarning(){ var el=document.getElementById("storageWarn"); if(el) el.style.display="none"; }
+  StorageManager.onEmergencyChange=function(on){ if(on) showStorageWarning(); refreshStorageBadge(); };
+  function persist(){
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){ doPersist(); }, 250);
+  }
+  function buildRoot(){
+    var p=activePortfolio();
+    if(!p){ p={id:ACTIVE_PID, name:"Portfolio", createdAt:Date.now()}; PORTFOLIOS.push(p); }
+    p.data=state;
+    return {version:2, activePortfolioId:ACTIVE_PID, portfolios:PORTFOLIOS};
+  }
+  function doPersist(){
+    var done=false;
+    try{
+      if(window.storage && typeof window.storage.set==="function"){
+        var json=JSON.stringify(buildRoot());
+        var p=window.storage.set(STORE_KEY, json, false);
+        if(p && typeof p.then==="function"){
+          p.then(function(){ flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
+          done=true;
+        }
+      }
+    }catch(e){}
+    if(!done) doPersistViaManager();
+  }
+  function doPersistViaManager(){
+    StorageManager.write(buildRoot()).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
+      .catch(function(){ showStorageWarning(); });
+  }
+  function loadData(cb){
+    try{
+      if(window.storage && typeof window.storage.get==="function"){
+        var p=window.storage.get(STORE_KEY, false);
+        if(p && typeof p.then==="function"){
+          p.then(function(res){ if(res && res.value){ applyLoaded(res.value); cb(); } else { loadDataViaManager(cb); } })
+           .catch(function(){ loadDataViaManager(cb); });
+          return;
+        }
+      }
+    }catch(e){}
+    loadDataViaManager(cb);
+  }
+  function loadDataViaManager(cb){
+    StorageManager.init().then(function(){ return StorageManager.read(); }).then(function(res){
+      if(res && res.core) applyLoaded(JSON.stringify(res.core));
+      refreshStorageBadge();
+      cb();
+    }).catch(function(){ refreshStorageBadge(); cb(); });
+  }
+  function applyPortfolioData(obj){
+    obj = obj || {};
+    state=Object.assign(clone(DEFAULTS), obj);
+    state.opening=Object.assign(clone(DEFAULTS.opening), obj.opening||{});
+    state.settings=Object.assign(clone(DEFAULTS.settings), obj.settings||{});
+    if(!Array.isArray(state.transactions)) state.transactions=[];
+    // migrate an old single-month save (from before multi-month picking existed)
+    if(!Array.isArray(state.selectedMonths) && typeof obj.selectedMonth==="string"){
+      state.selectedMonths = obj.selectedMonth==="all" ? ["all"] : [obj.selectedMonth];
+    }
+  }
+  function applyLoaded(str){
+    try{
+      var obj=JSON.parse(str); if(!obj||typeof obj!=="object") return;
+      if(Array.isArray(obj.portfolios) && obj.portfolios.length){
+        // current multi-portfolio format
+        PORTFOLIOS = obj.portfolios;
+        ACTIVE_PID = (obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
+        applyPortfolioData(activePortfolio().data);
+      } else {
+        // legacy save from before multiple portfolios existed — wrap it as
+        // the one and only portfolio so nobody's existing data is touched.
+        ACTIVE_PID = "default";
+        PORTFOLIOS = [{id:"default", name:"Main Portfolio", createdAt:Date.now(), data:obj}];
+        applyPortfolioData(obj);
+      }
+    }catch(e){}
+  }
+
+  /* ---------------- portfolio actions ---------------- */
+  function flushActiveIntoRegistry(){
+    var p=activePortfolio();
+    if(p) p.data=state; else PORTFOLIOS.push({id:ACTIVE_PID, name:"Portfolio", createdAt:Date.now(), data:state});
+  }
+  function switchPortfolio(pid){
+    if(pid===ACTIVE_PID || !findPortfolio(pid)) { renderPortfolioUI(); return; }
+    flushActiveIntoRegistry();
+    ACTIVE_PID=pid;
+    applyPortfolioData(clone(findPortfolio(pid).data||{}));
+    photoCache={};
+    persist();
+    render();
+    renderPortfolioUI();
+    closePortfolioPanel();
+  }
+  function createPortfolio(){
+    var name=prompt("Name this portfolio:", "New Portfolio");
+    if(name===null) return;
+    name=name.trim()||"New Portfolio";
+    flushActiveIntoRegistry();
+    var pid=genPid();
+    PORTFOLIOS.push({id:pid, name:name, createdAt:Date.now(), data:clone(DEFAULTS)});
+    ACTIVE_PID=pid;
+    applyPortfolioData(clone(DEFAULTS));
+    photoCache={};
+    persist();
+    render();
+    renderPortfolioUI();
+  }
+  function renamePortfolio(pid){
+    var p=findPortfolio(pid); if(!p) return;
+    var name=prompt("Rename portfolio:", p.name);
+    if(name===null) return;
+    name=name.trim(); if(!name) return;
+    p.name=name;
+    if(pid===ACTIVE_PID) flushActiveIntoRegistry();
+    persist();
+    renderPortfolioUI();
+  }
+  function deletePortfolio(pid){
+    if(PORTFOLIOS.length<=1){ alert("You need at least one portfolio — create another before deleting this one."); return; }
+    var p=findPortfolio(pid); if(!p) return;
+    if(!confirm("Delete portfolio \""+p.name+"\"? This permanently removes all of its transactions and photos. This can't be undone.")) return;
+    var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
+    txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+    var wasActive=(pid===ACTIVE_PID);
+    PORTFOLIOS=PORTFOLIOS.filter(function(x){ return x.id!==pid; });
+    if(wasActive){
+      ACTIVE_PID=PORTFOLIOS[0].id;
+      applyPortfolioData(clone(PORTFOLIOS[0].data||{}));
+      photoCache={};
+      render();
+    }
+    persist();
+    renderPortfolioUI();
+  }
+  // Duplicates a portfolio (any of them, not just the active one) into a brand
+  // new, fully independent copy — including its own copies of every photo, so
+  // editing/deleting things in the copy never touches the original.
+  function duplicatePortfolio(pid){
+    var src=findPortfolio(pid); if(!src) return;
+    if(pid===ACTIVE_PID) flushActiveIntoRegistry();
+    var name=prompt("Name the copy:", src.name+" copy");
+    if(name===null) return;
+    name=name.trim()||(src.name+" copy");
+    var dataCopy=clone(src.data||{});
+    var txs=Array.isArray(dataCopy.transactions)?dataCopy.transactions:[];
+    var newPid=genPid();
+    var photoJobs=[];
+    txs.forEach(function(t){
+      var oldPhoto=t.photo;
+      t.id=freshIdBase();
+      if(oldPhoto){ t.photo=t.id; photoJobs.push({oldId:oldPhoto, newId:t.id}); }
+    });
+    PORTFOLIOS.push({id:newPid, name:name, createdAt:Date.now(), data:dataCopy});
+    var remaining=photoJobs.length;
+    function finish(){ switchPortfolio(newPid); }
+    if(remaining===0){ finish(); return; }
+    photoJobs.forEach(function(job){
+      loadPhoto(job.oldId, function(dataUrl){
+        if(dataUrl){ savePhoto(job.newId, dataUrl, function(){ remaining--; if(remaining<=0) finish(); }); }
+        else { remaining--; if(remaining<=0) finish(); }
+      });
+    });
+  }
+  function portfolioStats(p){
+    var d=p.data||{}, txs=Array.isArray(d.transactions)?d.transactions:[];
+    return {count:txs.length, sym:d.currency||"$"};
+  }
+  function openPortfolioPanel(){
+    var el=document.getElementById("portfolioPanel"); if(!el) return;
+    renderPortfolioUI();
+    el.style.display="block";
+    document.getElementById("portfolioPanelOverlay").style.display="block";
+  }
+  function closePortfolioPanel(){
+    var el=document.getElementById("portfolioPanel"); if(el) el.style.display="none";
+    var ov=document.getElementById("portfolioPanelOverlay"); if(ov) ov.style.display="none";
+  }
+  function renderPortfolioUI(){
+    var btn=document.getElementById("portfolioBtn");
+    var p=activePortfolio();
+    if(btn) btn.textContent="📁 "+((p&&p.name)||"Portfolio");
+    var list=document.getElementById("portfolioList");
+    if(!list) return;
+    var html="";
+    PORTFOLIOS.forEach(function(pf){
+      var st=portfolioStats(pf);
+      var on=pf.id===ACTIVE_PID;
+      html+='<div class="pf-row'+(on?' pf-on':'')+'" data-pid="'+esc(pf.id)+'">'
+        +'<div class="pf-main" data-act="switch">'
+          +'<div class="pf-name">'+(on?'✓ ':'')+esc(pf.name)+'</div>'
+          +'<div class="pf-sub">'+st.count+' '+(st.count===1?'entry':'entries')+'</div>'
+        +'</div>'
+        +'<div class="pf-acts">'
+          +'<button type="button" class="icon-btn" data-act="dup" title="Duplicate">⧉</button>'
+          +'<button type="button" class="icon-btn" data-act="ren" title="Rename">✎</button>'
+          +'<button type="button" class="icon-btn" data-act="del" title="Delete">🗑</button>'
+        +'</div>'
+      +'</div>';
+    });
+    list.innerHTML=html;
+  }
+  function bindPortfolioUI(){
+    var btn=document.getElementById("portfolioBtn");
+    if(btn) btn.addEventListener("click", openPortfolioPanel);
+    var closeBtn=document.getElementById("portfolioPanelClose");
+    if(closeBtn) closeBtn.addEventListener("click", closePortfolioPanel);
+    var ov=document.getElementById("portfolioPanelOverlay");
+    if(ov) ov.addEventListener("click", closePortfolioPanel);
+    var addBtn=document.getElementById("portfolioAddBtn");
+    if(addBtn) addBtn.addEventListener("click", createPortfolio);
+    var list=document.getElementById("portfolioList");
+    if(list) list.addEventListener("click", function(e){
+      var row=e.target.closest(".pf-row"); if(!row) return;
+      var pid=row.getAttribute("data-pid");
+      var act=e.target.closest("[data-act]"); act=act?act.getAttribute("data-act"):null;
+      if(act==="dup") duplicatePortfolio(pid);
+      else if(act==="ren") renamePortfolio(pid);
+      else if(act==="del") deletePortfolio(pid);
+      else switchPortfolio(pid);
+    });
+  }
+
+  /* ---------------- storage tier badge + health dashboard ---------------- */
+  var TIER_ICONS={opfs:"🗄️",fsa:"💾",webkitfs:"🍎",idb:"🧱",ls:"⚠️"};
+  var TIER_LABELS={opfs:"On-device storage",fsa:"Folder on disk",webkitfs:"Safari sandboxed storage",idb:"Browser database",ls:"Emergency (browser cache)"};
+  function fmtBytes(n){
+    if(n==null) return "";
+    if(n>1e9) return (n/1e9).toFixed(1)+" GB";
+    if(n>1e6) return (n/1e6).toFixed(1)+" MB";
+    if(n>1e3) return (n/1e3).toFixed(0)+" KB";
+    return n+" B";
+  }
+  async function renderTierList(){
+    var el=document.getElementById("tierList");
+    if(!el) return;
+    var report=await StorageManager.health();
+    report.sort(function(a,b){ return a.priority-b.priority; });
+    var html="";
+    report.forEach(function(r){
+      var icon = r.health.ok ? (r.active?"🟢":"🟡") : "🔴";
+      var detail = r.health.detail || (r.health.ok?"OK":"Unavailable");
+      if(r.health.space!=null && r.health.ok) detail += " · "+fmtBytes(r.health.space)+" free";
+      html+='<div class="tier-row"><div class="tn"><span class="ti">'+icon+'</span><span>'+esc(TIER_LABELS[r.name]||r.name)+'</span>'
+        +(r.active?'<span class="tag-active">ACTIVE</span>':'')+'</div><div class="td">'+esc(detail)+'</div></div>';
+    });
+    el.innerHTML=html;
+    var fsaReport=report.find(function(r){ return r.name==="fsa"; });
+    var pickBtn=document.getElementById("tierPickFolder"), forgetBtn=document.getElementById("tierForgetFolder");
+    if(pickBtn && fsaReport){
+      pickBtn.style.display = (fsaReport.health.ok || fsaReport.health.needsFolder) ? "inline-block" : "none";
+      forgetBtn.style.display = (fsaReport.health.ok && !fsaReport.health.needsFolder) ? "inline-block" : "none";
+    }
+  }
+  async function refreshStorageBadge(){
+    var badge=document.getElementById("tierBadge");
+    if(!badge) return;
+    var active=StorageManager.active();
+    if(active){
+      badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
+      badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
+    }
+    await renderTierList();
+  }
+
+
+  /* ---------------- chart rendering (TradingView-style crosshair) ---------------- */
+  function buildChart(){
+    var wrap=document.getElementById("chartWrap");
+    if(state.chartCollapsed){ wrap.style.display="none"; document.getElementById("chartToggle").textContent="▸"; return; }
+    wrap.style.display="block"; document.getElementById("chartToggle").textContent="▾";
+
+    var candles=computeMonthly();
+    var sym=state.currency;
+    var W=720, H=210, padL=52, padR=14, padT=16, padB=28;
+    var n=candles.length;
+    var plotW=W-padL-padR, plotH=H-padT-padB;
+
+    var lo=Infinity, hi=-Infinity, i;
+    for(i=0;i<n;i++){
+      if(candles[i].l<lo) lo=candles[i].l;
+      if(candles[i].h>hi) hi=candles[i].h;
+    }
+    if(!isFinite(lo)||!isFinite(hi)||hi===lo){ lo=lo-1; hi=hi+1; }
+    var range=hi-lo, pad=range*0.12; hi+=pad; lo-=pad; range=hi-lo;
+    function Yv(v){ return padT + plotH*(1-(v-lo)/range); }
+    var step=plotW/n;
+    function Xc(idx){ return padL + step*idx + step/2; }
+
+    // Build static SVG parts (background, grid, candles/line, x-labels)
+    var svg='';
+
+    // gridlines
+    var gridVals=[hi, lo, (hi+lo)/2];
+    if(lo<0 && hi>0) gridVals.push(0);
+    gridVals.forEach(function(gv){
+      var y=Yv(gv), isZero=(Math.abs(gv)<0.001);
+      svg+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+
+           '" stroke="'+(isZero?ZERO:GRID)+'" stroke-width="'+(isZero?1.5:1)+'"'+
+           (isZero?'':' stroke-dasharray="3 5"')+' opacity="0.7"/>';
+      svg+='<text x="'+(padL-5)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" '+
+           'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+fmtShort(gv,sym)+'</text>';
+    });
+
+    var labelEvery = n>18?3:(n>10?2:1);
+    var isLine = state.chartType==="line";
+
+    if(isLine){
+      // gradient area
+      var apts="M "+Xc(0).toFixed(1)+" "+Yv(candles[0].c).toFixed(1)+" ";
+      for(i=1;i<n;i++) apts+="L "+Xc(i).toFixed(1)+" "+Yv(candles[i].c).toFixed(1)+" ";
+      apts+="L "+Xc(n-1).toFixed(1)+" "+(padT+plotH)+" L "+Xc(0).toFixed(1)+" "+(padT+plotH)+" Z";
+      svg+='<defs><linearGradient id="lgrad" x1="0" y1="0" x2="0" y2="1">'+
+           '<stop offset="0%" stop-color="'+AMBER+'" stop-opacity="0.18"/>'+
+           '<stop offset="100%" stop-color="'+AMBER+'" stop-opacity="0.01"/></linearGradient></defs>';
+      svg+='<path d="'+apts+'" fill="url(#lgrad)"/>';
+      // line
+      var lpts="";
+      for(i=0;i<n;i++) lpts+=Xc(i).toFixed(1)+","+Yv(candles[i].c).toFixed(1)+" ";
+      svg+='<polyline points="'+lpts.trim()+'" fill="none" stroke="'+AMBER+'" stroke-width="2.2" '+
+           'stroke-linejoin="round" stroke-linecap="round"/>';
+      // dots (invisible large hit areas + visible small dots)
+      for(i=0;i<n;i++){
+        var cx2=Xc(i).toFixed(1), cy2=Yv(candles[i].c).toFixed(1);
+        svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'"/>';
+      }
+    } else {
+      var bw=Math.max(6, Math.min(step*0.6, 26));
+      for(i=0;i<n;i++){
+        var c=candles[i], cx=Xc(i);
+        var isUp=c.c>=c.o;
+        var col=(Math.abs(c.c-c.o)<0.001)?DOJI:(isUp?UP:DOWN);
+        var yH=Yv(c.h), yL=Yv(c.l), yO=Yv(c.o), yC=Yv(c.c);
+        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),3);
+        svg+='<g class="cv-candle" data-i="'+i+'">';
+        svg+='<rect x="'+(cx-step/2).toFixed(1)+'" y="'+padT+'" width="'+step.toFixed(1)+'" height="'+plotH+'" fill="transparent"/>';
+        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="2"/>';
+        svg+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="2" fill="'+col+'" stroke="'+col+'" stroke-width="0.5"/>';
+        svg+='</g>';
+      }
+    }
+
+    // x-axis labels
+    for(i=0;i<n;i++){
+      if(i%labelEvery!==0 && i!==n-1) continue;
+      svg+='<text x="'+Xc(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" '+
+           'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+monthLabel(candles[i].key)+'</text>';
+    }
+
+    // Crosshair elements (hidden by default, shown on hover via JS)
+    svg+='<line id="cvVLine" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+plotH)+'" '+
+         'stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    svg+='<line id="cvHLine" x1="'+padL+'" y1="0" x2="'+(W-padR)+'" y2="0" '+
+         'stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    // price label on y-axis
+    svg+='<rect id="cvYBg" x="0" y="0" width="'+padL+'" height="15" rx="3" fill="'+AMBER+'" style="display:none"/>';
+    svg+='<text id="cvYTxt" x="'+(padL-4)+'" y="10" text-anchor="end" font-size="9" font-family="'+MFONT+'" font-weight="700" fill="#20160a" style="display:none"></text>';
+    // month label on x-axis
+    svg+='<rect id="cvXBg" x="0" y="'+(H-padB+1)+'" width="54" height="14" rx="3" fill="'+AMBER+'" style="display:none"/>';
+    svg+='<text id="cvXTxt" x="0" y="'+(H-padB+10)+'" text-anchor="middle" font-size="9" font-family="'+MFONT+'" font-weight="700" fill="#20160a" style="display:none"></text>';
+    // Tooltip box (OHLC for candles, value for line)
+    svg+='<rect id="cvTipBg" x="60" y="6" rx="5" ry="5" fill="#1b2230" stroke="#2c3648" stroke-width="1" style="display:none"/>';
+    svg+='<text id="cvTipTxt" x="68" y="18" font-size="9.5" font-family="'+MFONT+'" fill="#e6ebf2" style="display:none"></text>';
+    // Highlight circle (line mode)
+    svg+='<circle id="cvDot" r="5" fill="'+AMBER+'" stroke="#0b0e14" stroke-width="2" style="display:none"/>';
+
+    // Invisible mouse capture overlay
+    svg+='<rect id="cvOverlay" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent" style="cursor:crosshair"/>';
+
+    svg='<svg id="chartSvg" class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+svg+'</svg>';
+    wrap.innerHTML=svg;
+
+    // ---- crosshair interaction ----
+    var svgEl=document.getElementById("chartSvg");
+    var overlay=document.getElementById("cvOverlay");
+    var vLine=document.getElementById("cvVLine");
+    var hLine=document.getElementById("cvHLine");
+    var yBg=document.getElementById("cvYBg");
+    var yTxt=document.getElementById("cvYTxt");
+    var xBg=document.getElementById("cvXBg");
+    var xTxt=document.getElementById("cvXTxt");
+    var tipBg=document.getElementById("cvTipBg");
+    var tipTxt=document.getElementById("cvTipTxt");
+    var dotEl=document.getElementById("cvDot");
+
+    function getSVGPoint(e){
+      var rect=svgEl.getBoundingClientRect();
+      var clientX=e.touches?e.touches[0].clientX:e.clientX;
+      var clientY=e.touches?e.touches[0].clientY:e.clientY;
+      var sx=(clientX-rect.left)/rect.width*W;
+      var sy=(clientY-rect.top)/rect.height*H;
+      return {x:sx, y:sy};
+    }
+
+    function showCrosshair(e){
+      var pt=getSVGPoint(e);
+      var mx=pt.x, my=pt.y;
+      if(mx<padL||mx>W-padR||my<padT||my>padT+plotH){ hideCrosshair(); return; }
+      // find nearest candle index
+      var idx=Math.round((mx-padL)/step - 0.5);
+      idx=Math.max(0,Math.min(n-1,idx));
+      var cx=Xc(idx);
+      var c=candles[idx];
+      var valY=isLine?Yv(c.c):my;
+      var priceAtCursor=isLine?c.c:(lo + (1-(my-padT)/plotH)*range);
+
+      // vertical line snapped to candle center
+      vLine.setAttribute("x1",cx.toFixed(1)); vLine.setAttribute("x2",cx.toFixed(1));
+      vLine.style.display="";
+      // horizontal line at cursor y
+      hLine.setAttribute("y1",valY.toFixed(1)); hLine.setAttribute("y2",valY.toFixed(1));
+      hLine.style.display="";
+
+      // y-axis price label
+      var dispPrice=isLine?c.c:priceAtCursor;
+      var yLabelY=(valY-6).toFixed(1);
+      yBg.setAttribute("y",yLabelY); yBg.setAttribute("width",padL); yBg.style.display="";
+      yTxt.setAttribute("y",(parseFloat(yLabelY)+10).toFixed(1));
+      yTxt.textContent=sym+(dispPrice>=0?"":"-")+Math.abs(dispPrice).toFixed(2);
+      yTxt.style.display="";
+
+      // x-axis month label
+      var tipW=56;
+      xBg.setAttribute("x",(cx-tipW/2).toFixed(1)); xBg.setAttribute("width",tipW);
+      xBg.style.display="";
+      xTxt.setAttribute("x",cx.toFixed(1));
+      xTxt.textContent=monthLong(c.key);
+      xTxt.style.display="";
+
+      // highlight dot (line mode)
+      if(isLine){
+        dotEl.setAttribute("cx",cx.toFixed(1));
+        dotEl.setAttribute("cy",Yv(c.c).toFixed(1));
+        dotEl.style.display="";
+      } else { dotEl.style.display="none"; }
+
+      // tooltip box
+      var lines2, maxLen;
+      if(isLine){
+        lines2=[monthLong(c.key)+"  "+sym+c.c.toFixed(2)];
+        maxLen=lines2[0].length;
+      } else {
+        lines2=[
+          monthLong(c.key),
+          "O "+sym+c.o.toFixed(2)+"  C "+sym+c.c.toFixed(2),
+          "H "+sym+c.h.toFixed(2)+"  L "+sym+c.l.toFixed(2)
+        ];
+        maxLen=Math.max(lines2[0].length,lines2[1].length,lines2[2].length);
+      }
+      var tw=maxLen*5.8+16, th=lines2.length*14+8;
+      var tx=cx+10; if(tx+tw>W-padR) tx=cx-tw-10;
+      var ty=padT+4; if(isLine) ty=Math.max(padT+4,Yv(c.c)-th-8);
+      tipBg.setAttribute("x",tx.toFixed(1)); tipBg.setAttribute("y",ty.toFixed(1));
+      tipBg.setAttribute("width",tw.toFixed(1)); tipBg.setAttribute("height",th.toFixed(1));
+      tipBg.style.display="";
+      // clear old tspans
+      while(tipTxt.firstChild) tipTxt.removeChild(tipTxt.firstChild);
+      lines2.forEach(function(ln,li){
+        var ts=document.createElementNS("http://www.w3.org/2000/svg","tspan");
+        ts.setAttribute("x",(tx+8).toFixed(1));
+        ts.setAttribute("dy",li===0?((ty+12).toFixed(1)):"13");
+        if(li===0){ ts.setAttribute("y",(ty+12).toFixed(1)); ts.removeAttribute("dy"); }
+        else ts.setAttribute("dy","13");
+        ts.setAttribute("fill",li===0?AMBER:"#e6ebf2");
+        ts.textContent=ln;
+        tipTxt.appendChild(ts);
+      });
+      tipTxt.style.display="";
+    }
+
+    function hideCrosshair(){
+      [vLine,hLine,yBg,yTxt,xBg,xTxt,tipBg,tipTxt,dotEl].forEach(function(el){ el.style.display="none"; });
+    }
+
+    overlay.addEventListener("mousemove", showCrosshair);
+    overlay.addEventListener("touchmove", function(e){ e.preventDefault(); showCrosshair(e); }, {passive:false});
+    overlay.addEventListener("mouseleave", hideCrosshair);
+    overlay.addEventListener("touchend", hideCrosshair);
+    // also attach to candle/dot hit areas
+    svgEl.querySelectorAll(".cv-candle,.cv-dot").forEach(function(el){
+      el.addEventListener("mousemove", showCrosshair);
+      el.addEventListener("mouseleave", hideCrosshair);
+    });
+  }
+
+  /* ---------------- render ---------------- */
+  function render(){
+    var t=totals(), sym=state.currency;
+
+    // live date, top of page
+    updateDateBar();
+
+    // hero
+    var hb=document.getElementById("heroBal");
+    hb.innerHTML='<span class="cur">'+esc(sym)+'</span>'+ (t.balance<0?"-":"") + Math.abs(t.balance).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+    hb.className="big mono "+(t.balance<0?"down":"");
+    var curM=monthKey(todayStr());
+    var sThis=summaryFor(curM);
+    var capParts=[];
+    if(sThis.net!==0) capParts.push((sThis.net>0?"up ":"down ")+fmt(Math.abs(sThis.net),sym)+" this month");
+    else capParts.push("no change yet this month");
+    document.getElementById("heroCap").textContent=capParts[0];
+
+    // trio
+    document.getElementById("stDebt").textContent=fmt(t.debt,sym);
+    document.getElementById("stDebt").className="v mono "+(t.debt>0?"down":"up");
+    document.getElementById("stSav").textContent=fmt(t.savings,sym);
+    var netEl=document.getElementById("stNet");
+    netEl.textContent=fmt(t.net,sym);
+    netEl.className="v mono "+(t.net>=0?"up":"down");
+
+    // chart
+    buildChart();
+
+    // automation summary
+    var alw=num(state.settings.allowance), sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
+    var used=sd+stt+ss, left=alw-used;
+    var au=document.getElementById("autoSummary");
+    var msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to debt, <b>"+fmt(stt,sym)+"</b> to trading, <b>"+fmt(ss,sym)+"</b> to savings.";
+    if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
+    au.innerHTML=msg;
+
+    // allowance button state — shows next un-added month, allows up to 3 months advance
+    var btn=document.getElementById("applyAlw");
+    var amSet2=allowanceMonths();
+    // find next unadded month starting from current month — walks forward with monthAdd()
+    // so it rolls over Dec → Jan into next year automatically, instead of stopping dead
+    // at December of whatever year it happens to be right now.
+    var nextUnadded=null;
+    var mk2=curM;
+    for(var gi=0; gi<60; gi++){
+      if(!amSet2[mk2]){ nextUnadded=mk2; break; }
+      mk2=monthAdd(mk2,1);
+    }
+    // how many advance months already taken (months added AFTER current month)
+    var advanceTaken=0;
+    for(var ak in amSet2){
+      if(ak > curM) advanceTaken++;
+    }
+    var canAdvance=advanceTaken<3;
+    if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
+    else if(!nextUnadded){ btn.disabled=true; btn.textContent="All set for now ✓"; }
+    else if(nextUnadded<=curM){
+      // current or past month not yet added — always allow
+      btn.disabled=false;
+      btn.textContent="Add "+monthLong(nextUnadded);
+    } else {
+      // would be an advance month
+      if(canAdvance){
+        btn.disabled=false;
+        btn.textContent="Advance: "+monthLong(nextUnadded)+" ("+(3-advanceTaken)+" left)";
+        btn.style.borderColor="var(--amber)";
+        btn.style.color="var(--amber)";
+      } else {
+        btn.disabled=true;
+        btn.textContent="Max advance taken (3 months)";
+      }
+    }
+
+    // year progress — 12 pips lit for months added, label shows current month / 12
+    var yc=document.getElementById("yrCount");
+    var amSet=allowanceMonths(), pips="";
+    var curMonthNum=+todayStr().slice(5,7), yr=todayStr().slice(0,4);
+    for(var pi=1;pi<=12;pi++){
+      var mk=yr+"-"+two(pi);
+      var on=!!amSet[mk];
+      pips+='<span class="pip'+(on?" on":"")+(pi>curMonthNum?" future":"")+'"></span>';
+    }
+    yc.innerHTML='<span class="pips">'+pips+'</span><span>Month <b class="done-tag">'+curMonthNum+'</b> / 12 of '+yr+'</span>';
+
+    // outstanding advances — one row per future month already funded, each removable
+    var advL=document.getElementById("advList");
+    if(advL){
+      var outAdv=outstandingAdvances();
+      if(!outAdv.length){ advL.innerHTML=""; }
+      else{
+        var ah='<div class="adv-list-ttl">Outstanding advances</div>';
+        outAdv.forEach(function(a){
+          ah+='<div class="adv-row"><span>'+monthLong(a.forMonth)+' <span class="mono">'+fmt(a.amount,sym)+'</span> <span class="mut" style="font-weight:400">· taken '+niceDate(a.date)+'</span></span>'
+             +'<button class="adv-remove" data-fm="'+a.forMonth+'">✕ Remove</button></div>';
+        });
+        advL.innerHTML=ah;
+        Array.prototype.forEach.call(advL.querySelectorAll(".adv-remove"), function(b){
+          b.addEventListener("click", function(){ removeAdvance(b.getAttribute("data-fm")); });
+        });
+      }
+    }
+
+    // month picker — normalize selection (defaults to current month on first-ever load)
+    var months=monthsInData();
+    if(state.selectedMonths===null){
+      state.selectedMonths=[curM];
+    } else if(!isAllSelected()){
+      state.selectedMonths=state.selectedMonths.filter(function(m){ return months.indexOf(m)>=0; });
+    }
+    updateMonthPickBtn();
+
+    // metrics — combined across every ticked month (or everything, or nothing)
+    var activeM=activeMonths(), allSel=isAllSelected();
+    var sm = allSel ? summaryFor("all") : summaryFor(activeM);
+
+    // advance notices — one set of banners per ticked month; the era-boundary note
+    // applies to "All months" too, since the same Trade P/L gap exists there
+    var advNotesEl=document.getElementById("advNotes");
+    if(advNotesEl){
+      var nh="";
+      var eraMonth=monthKey(USD_ERA_START);
+      var eraCheckMonths = allSel ? monthsInData() : activeM;
+      if(eraCheckMonths.some(function(m){ return m<eraMonth; })){
+        nh+='<div class="adv-note adv-info"><span>\u2139\ufe0f Trade P/L above only counts trades from '+monthLong(eraMonth)+' onward (the AED\u2192USD switch). Earlier trades still show their original amounts in the list below \u2014 they\u2019re just not folded into this total.</span></div>';
+      }
+      if(!allSel && activeM.length>0){
+        activeM.slice().sort().forEach(function(mkey){
+          var advIn=advanceReceivedFor(mkey);
+          if(advIn){
+            nh+='<div class="adv-note adv-in"><span>✓ '+monthLong(mkey)+'\'s allowance ('+fmt(advIn.amount,sym)+') was already taken in advance on '+niceDate(advIn.date)+'.</span>'
+               +'<button class="adv-remove" data-fm="'+mkey+'">✕ Remove</button></div>';
+          }
+          advancesTakenIn(mkey).forEach(function(a){
+            nh+='<div class="adv-note adv-out"><span>⚡ Advance taken (in '+monthLong(mkey)+') for '+monthLong(a.forMonth)+': '+fmt(a.amount,sym)+'</span>'
+               +'<button class="adv-remove" data-fm="'+a.forMonth+'">✕ Remove</button></div>';
+          });
+        });
+      }
+      advNotesEl.innerHTML=nh;
+      Array.prototype.forEach.call(advNotesEl.querySelectorAll(".adv-remove"), function(b){
+        b.addEventListener("click", function(){ removeAdvance(b.getAttribute("data-fm")); });
+      });
+    }
+
+    var m=document.getElementById("metrics");
+    function metric(k,v,cls){ return '<div class="metric"><div class="k">'+k+'</div><div class="v mono '+(cls||"")+'">'+v+'</div></div>'; }
+    var tradeCls=sm.tradePL>0?"up":(sm.tradePL<0?"down":"");
+    var netCls=sm.net>0?"up":(sm.net<0?"down":"");
+    m.innerHTML=
+      metric("Spent", fmt(sm.spent,sym), sm.spent>0?"down":"") +
+      metric("Trade P/L", (sm.tradePL>0?"+":"")+fmt(sm.tradePL,sym), tradeCls) +
+      metric("Money in", fmt(sm.moneyIn,sym), sm.moneyIn>0?"up":"") +
+      metric("Net change", (sm.net>0?"+":"")+fmt(sm.net,sym), netCls);
+
+    // categories
+    var cats=document.getElementById("cats");
+    var keys=Object.keys(sm.cats).sort(function(a,b){ return sm.cats[b]-sm.cats[a]; });
+    if(keys.length===0){ cats.innerHTML= (!allSel && activeM.length===0) ? '<div class="cttl">Tick a month above to see numbers here.</div>' : ""; }
+    else{
+      var max=sm.cats[keys[0]]||1;
+      var html='<div class="cttl">Where the spending went'+(allSel?"":" · "+scopeLabel(activeM))+'</div>';
+      keys.forEach(function(k){
+        var v=sm.cats[k], pct=Math.max(4,Math.round(v/max*100));
+        html+='<div class="catrow"><div class="cn">'+esc(k)+'</div><div class="catbar"><span style="width:'+pct+'%"></span></div><div class="cv mono">'+fmt(v,sym)+'</div></div>';
+      });
+      cats.innerHTML=html;
+    }
+
+    // ledger
+    renderLedger();
+    checkAllowancePrompt();
+
+    // sync inputs (only if not focused, to avoid disrupting typing)
+    syncInput("sAlw", state.settings.allowance);
+    syncInput("sDebt", state.settings.toDebt);
+    syncInput("sTrade", state.settings.toTrading);
+    syncInput("sSave", state.settings.toSavings);
+    syncInput("oBal", state.opening.balance);
+    syncInput("oDebt", state.opening.debt);
+    syncInput("oSav", state.opening.savings);
+    // sync currency select
+    syncCurrencySelect();
+
+    // chart seg active
+    Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
+      b.classList.toggle("on", b.getAttribute("data-t")===state.chartType);
+    });
+  }
+
+  var selectedIds={}; // ephemeral UI-only selection for "export selected" — never persisted
+  var editingId=null;      // id of the transaction currently loaded into the form for editing, or null
+  var pendingPhoto=null;   // {dataUrl,name} freshly picked in the form, not yet saved
+  var photoCleared=false;  // true if the user explicitly removed a photo while editing
+
+  // type -> show/hide category & adjust label (shared by bind()'s live listener and startEdit/cancelEdit)
+  function typeUI(){
+    var v=document.getElementById("fType").value;
+    document.getElementById("catFld").style.display = (v==="spend")?"flex":"none";
+    var lbl=document.getElementById("amtLbl");
+    lbl.textContent = (v==="adjust")?"Amount (use − for a drop)":"Amount";
+  }
+  function clearPhotoPick(){
+    pendingPhoto=null; photoCleared=true;
+    var fPhotoEl=document.getElementById("fPhoto"); if(fPhotoEl) fPhotoEl.value="";
+    document.getElementById("fPhotoName").textContent="";
+    document.getElementById("fPhotoPrev").style.display="none";
+    document.getElementById("fPhotoClear").style.display="none";
+  }
+
+
+  // Guarantees a fresh, strictly-increasing id for every new transaction, even if two are
+  // created in the same millisecond (Date.now() alone can't promise that — a same-millisecond
+  // collision used to mean deleting one row silently deleted every row sharing that id).
+  // Each call reserves 10 ids (base+1..base+9) for a batch's sibling legs, which is more
+  // than any single entry or allowance batch ever needs.
+  var __lastIdBase=0;
+  function freshIdBase(){
+    var b=Date.now();
+    if(b<=__lastIdBase) b=__lastIdBase+10;
+    __lastIdBase=b;
+    return b;
+  }
+
+  function renderLedger(){
+    var sym=state.currency, allSel=isAllSelected(), activeM=activeMonths(), activeSet={};
+    activeM.forEach(function(k){ activeSet[k]=1; });
+    var list=sortedTx().reverse().filter(function(t){ return allSel || activeSet[monthKey(t.date)]; });
+    var led=document.getElementById("ledger");
+    document.getElementById("ledCount").textContent = list.length? "· "+list.length : "";
+    if(list.length===0){
+      var emptyWhy = allSel ? "" : (activeM.length===0 ? " — no months are ticked" : " for "+scopeLabel(activeM));
+      led.innerHTML='<div class="empty"><b>Nothing logged'+emptyWhy+' yet.</b><br>'+(activeM.length===0&&!allSel ? "Tick a month above." : "Add your first entry above.")+'</div>';
+      updateExportBtn();
+      return;
+    }
+    var html="";
+    list.forEach(function(t){
+      var d=t.date.split("-"), dd=(+d[2]), mm=MONTHS[(+d[1])-1];
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var db=balDelta(t), dd2=debtDelta(t), ds=savDelta(t);
+      var amtHtml, tag="";
+      if(db!==0){ amtHtml=(db>0?"+":"")+fmt(db,sym); amtHtml='<span class="'+(db>0?"up":"down")+'">'+amtHtml+'</span>'; }
+      else if(dd2!==0){ // debt-only (allowance→debt). less debt = good = green
+        amtHtml='<span class="'+(dd2<0?"up":"down")+'">'+(dd2<0?"−":"+")+fmt(Math.abs(dd2),sym)+'</span>'; tag="debt";
+      } else if(ds!==0){ amtHtml='<span class="cool">'+(ds>0?"+":"−")+fmt(Math.abs(ds),sym)+'</span>'; tag="savings"; }
+      else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
+      var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      var hasProof = !!t.photo;
+      var eyeBtn = hasProof ? '<span class="eye-btn" title="Click row to view screenshot">\u{1F441}</span>' : '';
+      var checked = selectedIds[t.id] ? " checked" : "";
+      // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
+      var editBtn = t.auto ? '' : '<button class="edit" data-id="'+t.id+'" title="Edit">\u270f\ufe0f</button>';
+      html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
+          +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
+          +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
+          +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'
+          +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
+          +eyeBtn
+          +'<div class="lamt">'+amtHtml+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'
+          +editBtn
+          +'<button class="del" data-id="'+t.id+'" title="Delete">\xd7</button>'
+          +'</div>';
+    });
+    led.innerHTML=html;
+    Array.prototype.forEach.call(led.querySelectorAll(".del"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        var id=+b.getAttribute("data-id");
+        if(editingId===id) cancelEdit(); // don't leave a deleted entry loaded in the form
+        deleteWithUndo(id);
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".edit"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        startEdit(+b.getAttribute("data-id"));
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".lchk"), function(cb){
+      cb.addEventListener("click", function(e){ e.stopPropagation(); });
+      cb.addEventListener("change", function(){
+        var id=+cb.getAttribute("data-id");
+        if(cb.checked) selectedIds[id]=true; else delete selectedIds[id];
+        updateExportBtn();
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
+      row.addEventListener("click", function(e){
+        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("lchk")) return;
+        var id=+row.getAttribute("data-id");
+        var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
+        if(tx3 && tx3.photo) openViewer(id);
+      });
+    });
+    updateExportBtn();
+  }
+
+  /* ---------------- edit-in-place (manual entries only) ---------------- */
+  function startEdit(id){
+    var tx=state.transactions.filter(function(t){ return t.id===id; })[0];
+    if(!tx || tx.auto) return;
+    editingId=id;
+    document.getElementById("fDate").value=tx.date;
+    document.getElementById("fType").value=tx.type;
+    typeUI();
+    if(tx.type==="spend") document.getElementById("fCat").value=tx.cat||"Other";
+    document.getElementById("fAmt").value=tx.amount;
+    document.getElementById("fNote").value=tx.note||"";
+    pendingPhoto=null; photoCleared=false;
+    if(tx.photo){
+      document.getElementById("fPhotoName").textContent="current photo (pick a new one to replace it)";
+      document.getElementById("fPhotoClear").style.display="inline-block";
+      var prevEl=document.getElementById("fPhotoPrev");
+      loadPhoto(tx.photo, function(data){ if(data){ prevEl.src=data; prevEl.style.display="block"; } });
+    } else {
+      document.getElementById("fPhotoName").textContent="";
+      document.getElementById("fPhotoPrev").style.display="none";
+      document.getElementById("fPhotoClear").style.display="none";
+    }
+    var titleEl=document.getElementById("formTitle"); if(titleEl) titleEl.textContent="Editing entry";
+    var submitBtn=document.getElementById("entrySubmitBtn"); if(submitBtn) submitBtn.textContent="Save changes";
+    var cancelBtn=document.getElementById("cancelEditBtn"); if(cancelBtn) cancelBtn.style.display="inline-block";
+    var form=document.getElementById("entryForm");
+    if(form && form.scrollIntoView) form.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  function cancelEdit(){
+    editingId=null;
+    var form=document.getElementById("entryForm");
+    if(form && form.reset) form.reset();
+    document.getElementById("fDate").value=todayStr();
+    document.getElementById("fType").value="income";
+    typeUI();
+    clearPhotoPick();
+    var titleEl=document.getElementById("formTitle"); if(titleEl) titleEl.textContent="Add an entry";
+    var submitBtn=document.getElementById("entrySubmitBtn"); if(submitBtn) submitBtn.textContent="Add entry";
+    var cancelBtn=document.getElementById("cancelEditBtn"); if(cancelBtn) cancelBtn.style.display="none";
+  }
+
+  /* ---------------- delete with a 5-second undo ---------------- */
+  var pendingDelete=null; // {tx, timer}
+  function deleteWithUndo(id){
+    var idx=-1;
+    for(var i=0;i<state.transactions.length;i++){ if(state.transactions[i].id===id){ idx=i; break; } }
+    if(idx<0) return;
+    var tx=state.transactions[idx];
+    if(pendingDelete) finalizePendingDelete(); // only one undo slot — finalize whatever was already pending
+    state.transactions.splice(idx,1);
+    delete selectedIds[id];
+    persist(); render();
+    pendingDelete={ tx:tx };
+    pendingDelete.timer=setTimeout(finalizePendingDelete, 5000);
+    showUndoToast(tx);
+  }
+  function finalizePendingDelete(){
+    if(!pendingDelete) return;
+    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
+    if(pendingDelete.tx.photo) delPhoto(pendingDelete.tx.photo);
+    pendingDelete=null;
+    hideUndoToast();
+  }
+  function undoDelete(){
+    if(!pendingDelete) return;
+    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
+    state.transactions.push(pendingDelete.tx);
+    pendingDelete=null;
+    persist(); render();
+    hideUndoToast();
+  }
+  function showUndoToast(tx){
+    var el=document.getElementById("undoToast");
+    if(!el) return;
+    document.getElementById("undoToastMsg").textContent="Entry deleted";
+    el.style.display="flex";
+  }
+  function hideUndoToast(){
+    var el=document.getElementById("undoToast");
+    if(el) el.style.display="none";
+  }
+
+  /* ---------------- select-specific-entries export (separate from the full backup) ---------------- */
+  function currentVisibleIds(){
+    var allSel=isAllSelected(), activeSet={};
+    activeMonths().forEach(function(k){ activeSet[k]=1; });
+    return sortedTx().filter(function(t){ return allSel || activeSet[monthKey(t.date)]; }).map(function(t){ return t.id; });
+  }
+  function selectedCount(){ var n=0; for(var k in selectedIds){ if(selectedIds[k]) n++; } return n; }
+  function updateExportBtn(){
+    var btn=document.getElementById("exportSelBtn"), chk=document.getElementById("selAllChk");
+    if(!btn||!chk) return;
+    var n=selectedCount();
+    btn.disabled = n===0;
+    btn.textContent = n>0 ? "Export ("+n+")" : "Export";
+    var visible=currentVisibleIds();
+    if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }
+    chk.disabled=false;
+    var checkedVisible=visible.filter(function(id){ return !!selectedIds[id]; }).length;
+    chk.checked = checkedVisible===visible.length;
+    chk.indeterminate = checkedVisible>0 && checkedVisible<visible.length;
+  }
+  function toggleSelectAll(checked){
+    currentVisibleIds().forEach(function(id){ if(checked) selectedIds[id]=true; else delete selectedIds[id]; });
+    renderLedger();
+  }
+  // bundles a chosen list of transactions (plus any photos they reference) into one JSON payload
+  function exportTxList(list, cb){
+    var ids=[]; list.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+    var photos={}, i=0;
+    (function next(){
+      if(i>=ids.length){
+        var payload={__mymoneyExport:1, exportedAt:new Date().toISOString(), count:list.length, currency:state.currency, transactions:list, photos:photos};
+        cb(JSON.stringify(payload,null,2), list.length);
+        return;
+      }
+      var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+    })();
+  }
+  function exportSelectedClick(){
+    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+    if(!ids.length) return;
+    var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });
+    flashSaved("preparing…");
+    exportTxList(list, function(json, count){
+      try{
+        var blob=new Blob([json],{type:"application/json"});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement("a");
+        var am=activeMonths();
+        var scopeName = isAllSelected() ? "selected"
+          : am.length===1 ? am[0]
+          : am.length<=3 ? am.slice().sort().join("_")
+          : am.length+"-months";
+        a.href=url; a.download="my-money-"+scopeName+"-"+count+(count===1?"-entry":"-entries")+".json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+        selectedIds={};
+        renderLedger();
+        flashSaved("exported");
+      }catch(e){ alert("Couldn't download here — try again."); }
+    });
+  }
+
+  /* ---------------- image viewer ---------------- */
+  var viewingId=null;
+  function openViewer(txId){
+    var tx=state.transactions.filter(function(x){ return x.id===txId; })[0];
+    if(!tx) return;
+    viewingId=txId;
+    var body=document.getElementById("viewerBody");
+    document.getElementById("viewerTitle").textContent=(tx.note||tx.cat||"Photo").slice(0,55);
+    body.innerHTML='<div class="viewer-note">Loading\u2026</div>';
+    document.getElementById("viewer").style.display="flex";
+    if(tx.photo){
+      loadPhoto(tx.photo, function(data){
+        if(!data){ body.innerHTML='<div class="viewer-note">Photo not found. Re-attach it with the \ud83d\udcce button.</div>'; return; }
+        var img=new Image();
+        img.style.cssText="max-width:100%;border-radius:8px";
+        img.onload=function(){ body.innerHTML=""; body.appendChild(img); };
+        img.onerror=function(){ body.innerHTML='<div class="viewer-note">Can\'t preview this format in browser.<br><a href="'+data+'" download="receipt">Download to view</a></div>'; };
+        img.src=data; img.alt="receipt";
+      });
+    } else {
+      body.innerHTML='<div class="viewer-note">No photo attached.</div>';
+    }
+  }
+
+  function closeViewer(){ document.getElementById("viewer").style.display="none"; viewingId=null; }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  function syncInput(id,val){
+    var el=document.getElementById(id); if(!el) return;
+    if(document.activeElement===el) return;
+    el.value = (val===0||val)? val : "";
+  }
+  var CUR_NOTES={"AED":"Pegged 1:1 to USD at 3.6725 — ultra-stable for the Gulf.","CHF":"Swiss Franc — near-zero inflation, world\'s top wealth preserver. Backed by gold reserves and strict fiscal policy.","SGD":"Singapore Dollar — Asia\'s primary reserve haven. Backed by massive monetary reserves and AAA fiscal policy."};
+  function syncCurrencySelect(){
+    var sel=document.getElementById("oCurSelect");
+    if(!sel) return;
+    var cur=state.currency||"$";
+    var found=false;
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===cur){ sel.selectedIndex=i; found=true; break; }
+    }
+    var ci=document.getElementById("oCurCustom");
+    if(!found){
+      sel.value="custom";
+      if(ci){ ci.style.display="block"; ci.value=cur; }
+    } else if(ci){
+      ci.style.display="none";
+    }
+    var nd=document.getElementById("curNote");
+    if(nd) nd.textContent=CUR_NOTES[cur]||"";
+  }
+
+  /* ---------------- events ---------------- */
+  function bind(){
+    // theme switcher — mono is the default
+    var THEMES=[
+      {key:"mono",   label:"⬛ Mono",   swatch:"#000000"},
+      {key:"dark",   label:"🌑 Dark",   swatch:"#0b0e14"},
+      {key:"emerald",label:"💚 Matrix", swatch:"#00ff88"}
+    ];
+    function applyTheme(key){
+      document.documentElement.setAttribute("data-theme", key==="dark"?"":key);
+      try{localStorage.setItem("mymoney_theme",key);}catch(e){}
+      // highlight active theme button
+      Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
+        b.classList.toggle("on", b.getAttribute("data-theme-key")===key);
+      });
+    }
+    window.__applyTheme=applyTheme;
+    (function(){
+      var saved; try{saved=localStorage.getItem("mymoney_theme");}catch(e){}
+      applyTheme(saved||"mono");
+    })();
+
+    // Settings drawer
+    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
+      // re-highlight active theme when drawer opens
+      var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
+      Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){ b.classList.toggle("on", b.getAttribute("data-theme-key")===cur); });
+      refreshStorageBadge();
+    }
+    function closeSettings(){ document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("tierBadge").addEventListener("click", openSettings);
+    document.getElementById("storageWarnDismiss").addEventListener("click", hideStorageWarning);
+    document.getElementById("tierHealthCheck").addEventListener("click", function(){
+      var note=document.getElementById("tierNote");
+      note.textContent="Checking…";
+      refreshStorageBadge().then(function(){ note.textContent="Checked just now."; });
+    });
+    // showDirectoryPicker() requires a real, direct user click — this handler IS that click
+    document.getElementById("tierPickFolder").addEventListener("click", function(){
+      var note=document.getElementById("tierNote");
+      if(typeof TierFSA.pickFolder!=="function" || !window.showDirectoryPicker){
+        note.textContent="Folder picking needs desktop Chrome or Edge.";
+        return;
+      }
+      TierFSA.pickFolder()
+        .then(function(){ return StorageManager.init(); })
+        .then(function(){ return StorageManager.write(state); })
+        .then(function(){ note.textContent="Folder connected."; flashSaved("folder connected"); return refreshStorageBadge(); })
+        .catch(function(e){ note.textContent="Couldn't connect that folder: "+((e&&e.message)||e); });
+    });
+    document.getElementById("tierForgetFolder").addEventListener("click", function(){
+      TierFSA.forgetFolder()
+        .then(function(){ return StorageManager.init(); })
+        .then(function(){ flashSaved("folder forgotten"); return refreshStorageBadge(); });
+    });
+    document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
+    document.getElementById("undoToastBtn").addEventListener("click", undoDelete);
+    document.getElementById("allowancePromptAdd").addEventListener("click", function(){
+      document.getElementById("applyAlw").click();
+    });
+    document.getElementById("allowancePromptDismiss").addEventListener("click", function(){
+      try{ window.localStorage.setItem("mymoney_dismissed_prompt", monthKey(todayStr())); }catch(e){}
+      document.getElementById("allowancePrompt").style.display="none";
+    });
+    document.getElementById("settingsClose").addEventListener("click", closeSettings);
+    document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+    // theme option buttons
+    Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
+      b.addEventListener("click", function(){ applyTheme(b.getAttribute("data-theme-key")); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
+      b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
+    });
+    // collapse chart
+    document.getElementById("chartToggle").addEventListener("click", function(){
+      state.chartCollapsed=!state.chartCollapsed; persist(); buildChart();
+    });
+
+    // type -> show/hide category & adjust label
+    var typeSel=document.getElementById("fType");
+    typeSel.addEventListener("change", typeUI); typeUI();
+
+    // photo picker
+    var fPhoto=document.getElementById("fPhoto");
+    document.getElementById("fPhotoBtn").addEventListener("click", function(){ fPhoto.click(); });
+    fPhoto.addEventListener("change", function(){
+      var f=fPhoto.files && fPhoto.files[0]; if(!f) return;
+      document.getElementById("fPhotoName").textContent="reading…";
+      processImage(f, function(res){
+        pendingPhoto=res; photoCleared=false;
+        var nm=res.name||"photo";
+        document.getElementById("fPhotoName").textContent = nm.length>22? nm.slice(0,20)+"…" : nm;
+        var prev=document.getElementById("fPhotoPrev");
+        prev.src=res.dataUrl; prev.style.display="block";
+        document.getElementById("fPhotoClear").style.display="inline-block";
+      });
+    });
+    document.getElementById("fPhotoClear").addEventListener("click", clearPhotoPick);
+
+    // entry submit — creates a new entry, or saves changes if one is loaded for editing
+    document.getElementById("entryForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var type=typeSel.value;
+      var date=document.getElementById("fDate").value || todayStr();
+      var raw=num(document.getElementById("fAmt").value);
+      if(type!=="adjust") raw=Math.abs(raw);
+      if(!raw){ shake(document.getElementById("fAmt")); return; }
+      var note=document.getElementById("fNote").value.trim();
+
+      if(editingId!=null){
+        var tx=state.transactions.filter(function(t){ return t.id===editingId; })[0];
+        if(!tx){ cancelEdit(); return; }
+        tx.date=date; tx.type=type; tx.amount=raw;
+        if(type==="spend") tx.cat=document.getElementById("fCat").value; else delete tx.cat;
+        if(note) tx.note=note; else delete tx.note;
+        if(pendingPhoto){
+          if(tx.photo) delPhoto(tx.photo);
+          tx.photo=tx.id; savePhoto(tx.id, pendingPhoto.dataUrl);
+        } else if(photoCleared && tx.photo){
+          delPhoto(tx.photo); delete tx.photo;
+        }
+        cancelEdit();
+        state.selectedMonths=[monthKey(date)];
+        persist(); render();
+        flashSaved("saved changes");
+      } else {
+        var tx2={ id:freshIdBase(), date:date, type:type, amount:raw };
+        if(type==="spend") tx2.cat=document.getElementById("fCat").value;
+        if(note) tx2.note=note;
+        if(pendingPhoto){ tx2.photo=tx2.id; savePhoto(tx2.id, pendingPhoto.dataUrl); }
+        state.transactions.push(tx2);
+        state.selectedMonths=[monthKey(date)];
+        persist(); render();
+        document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
+        clearPhotoPick();
+        document.getElementById("fAmt").focus();
+      }
+    });
+
+    // month picker — tick any combination of months
+    var monthPicker=document.getElementById("monthPicker");
+    var monthPickList=document.getElementById("monthPickList");
+    function applyMonthCheckboxes(){
+      var boxes=Array.prototype.slice.call(monthPickList.querySelectorAll("input[type=checkbox]"));
+      var checked=boxes.filter(function(b){ return b.checked; }).map(function(b){ return b.getAttribute("data-m"); });
+      state.selectedMonths = (boxes.length>0 && checked.length===boxes.length) ? ["all"] : checked;
+      selectedIds={};
+      persist(); render();
+    }
+    function openMonthPicker(){
+      var months=monthsInData().slice().sort().reverse();
+      var allSel=isAllSelected(), activeSet={};
+      activeMonths().forEach(function(k){ activeSet[k]=1; });
+      var lh="";
+      months.forEach(function(mk){
+        var checked=allSel||activeSet[mk];
+        lh+='<label class="mpick-item"><input type="checkbox" data-m="'+mk+'"'+(checked?" checked":"")+'>'+monthLong(mk)+'</label>';
+      });
+      monthPickList.innerHTML = lh || '<div class="hint" style="margin:6px 2px">No months yet.</div>';
+      Array.prototype.forEach.call(monthPickList.querySelectorAll("input[type=checkbox]"), function(cb){
+        cb.addEventListener("change", applyMonthCheckboxes);
+      });
+      monthPicker.style.display="flex";
+    }
+    function closeMonthPicker(){ monthPicker.style.display="none"; }
+    document.getElementById("monthSelBtn").addEventListener("click", openMonthPicker);
+    document.getElementById("monthPickClose").addEventListener("click", closeMonthPicker);
+    document.getElementById("monthPickDone").addEventListener("click", closeMonthPicker);
+    monthPicker.addEventListener("click", function(e){ if(e.target===monthPicker) closeMonthPicker(); });
+    document.getElementById("monthPickAll").addEventListener("click", function(){
+      Array.prototype.forEach.call(monthPickList.querySelectorAll("input[type=checkbox]"), function(cb){ cb.checked=true; });
+      applyMonthCheckboxes();
+    });
+    document.getElementById("monthPickClear").addEventListener("click", function(){
+      Array.prototype.forEach.call(monthPickList.querySelectorAll("input[type=checkbox]"), function(cb){ cb.checked=false; });
+      applyMonthCheckboxes();
+    });
+
+    // select-all + export selected entries as their own .json (separate from the full backup)
+    document.getElementById("selAllChk").addEventListener("change", function(e){ toggleSelectAll(e.target.checked); });
+    document.getElementById("exportSelBtn").addEventListener("click", exportSelectedClick);
+
+    // salary / allowance inputs — debounced so typing doesn't rebuild the whole ledger/chart per keystroke
+    var settingsRenderTimer=null;
+    function debouncedRender(){
+      if(settingsRenderTimer) clearTimeout(settingsRenderTimer);
+      settingsRenderTimer=setTimeout(function(){ render(); }, 200);
+    }
+    [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"]].forEach(function(pair){
+      document.getElementById(pair[0]).addEventListener("input", function(e){
+        state.settings[pair[1]]=num(e.target.value); persist(); debouncedRender();
+      });
+    });
+
+    // apply allowance — adds next unadded month, up to 3 months advance outstanding at once
+    document.getElementById("applyAlw").addEventListener("click", function(){
+      var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
+      if(sd+stt+ss<=0) return;
+      var amSetNow=allowanceMonths();
+      // find next unadded month from current month onwards — walks forward with monthAdd()
+      // so it can roll from December into January of next year and keep going indefinitely.
+      var curM2=monthKey(todayStr());
+      var targetMonth=null, mk3=curM2;
+      for(var gi2=0; gi2<60; gi2++){
+        if(!amSetNow[mk3]){ targetMonth=mk3; break; }
+        mk3=monthAdd(mk3,1);
+      }
+      if(!targetMonth) return;
+      // count advances = months strictly ahead of today that are already logged
+      var advNow=0;
+      for(var ak2 in amSetNow){ if(ak2>curM2) advNow++; }
+      var isAdvance=targetMonth>curM2;
+      if(isAdvance && advNow>=3){
+        alert("You already have 3 months advance outstanding ("+advNow+" ahead). Wait until those months arrive before taking more.");
+        return;
+      }
+      // confirm if advance
+      if(isAdvance){
+        var advLeft=3-advNow;
+        if(!confirm("Take advance allowance for "+monthLong(targetMonth)+"? It'll be logged today ("+niceDate(todayStr())+") and marked as an advance for "+monthLong(targetMonth)+" — you can remove it later if you change your mind. You have "+advNow+" of 3 advance slots used. After this: "+(advNow+1)+"/3 — "+advLeft+" slot"+(advLeft===1?"":"s")+" remaining."))
+          return;
+      }
+      // non-advance (current/past month): dated the 1st of that month, as before.
+      // true advance: dated *today* — the day it was actually taken — not the future month.
+      var dateStr=isAdvance?todayStr():(targetMonth+"-01");
+      var base2=freshIdBase();
+      var advTag=isAdvance?" (advance for "+monthLong(targetMonth)+", taken "+niceDate(todayStr())+")":"";
+      if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,   auto:true, forMonth:targetMonth, advance:isAdvance});
+      if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true, forMonth:targetMonth, advance:isAdvance});
+      if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag, auto:true, forMonth:targetMonth, advance:isAdvance});
+      state.selectedMonths=[targetMonth];
+      persist(); render();
+      flashSaved(isAdvance?"advance added":"added");
+    });
+
+    // currency select interaction — switching to a KNOWN currency converts every stored
+    // amount immediately (offline, via the direct-pairwise table above); switching to a
+    // custom symbol just relabels, since there's no rate to convert with
+    var curSel=document.getElementById("oCurSelect");
+    var curCustom=document.getElementById("oCurCustom");
+    var curNoteEl=document.getElementById("curNote");
+    if(curSel){
+      curSel.addEventListener("change", function(){
+        var v=curSel.value;
+        curCustom.style.display = (v==="custom") ? "block" : "none";
+        if(curNoteEl) curNoteEl.textContent = CUR_NOTES[v]||"";
+        if(v==="custom") return;
+        var from=state.currency, to=v;
+        if(from===to) return;
+        var fromCode=SYMBOL_TO_CODE[from], toCode=SYMBOL_TO_CODE[to];
+        var willConvert = !!(fromCode && toCode && fromCode!==toCode);
+        if(willConvert){
+          var rate=convertAmount(1, fromCode, toCode);
+          var ok=confirm("Switch to "+(CURRENCY_META[toCode]?CURRENCY_META[toCode].name:to)+"? Every amount converts right now, offline, using the built-in rate (1 "+fromCode+" = "+rate.toFixed(4)+" "+toCode+"). Switching back later won't be pixel-perfect due to rounding \u2014 grab a backup first if you want the exact originals kept somewhere.");
+          if(!ok){ syncCurrencySelect(); return; }
+          convertStateCurrency(from, to);
+        }
+        state.currency=v;
+        persist(); render();
+        flashSaved(willConvert ? "converted to "+v : "saved");
+      });
+    }
+    // setup save — opening numbers, plus finalizing a custom currency symbol if one was typed
+    document.getElementById("saveSetup").addEventListener("click", function(){
+      state.opening.balance=num(document.getElementById("oBal").value);
+      state.opening.debt=num(document.getElementById("oDebt").value);
+      state.opening.savings=num(document.getElementById("oSav").value);
+      if(curSel && curSel.value==="custom"){
+        var c=curCustom?curCustom.value.trim():"";
+        if(c) state.currency=c;
+      }
+      persist(); render(); flashSaved("saved");
+    });
+
+    // build a backup string that also bundles photos
+    function exportData(cb){
+      var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+      var photos={}, i=0;
+      (function next(){
+        if(i>=ids.length){ cb(JSON.stringify({__mymoney:1, state:state, photos:photos}, null, 2)); return; }
+        var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+      })();
+    }
+    function fallbackShow(json){
+      var w=document.getElementById("impWrap"); w.style.display="block";
+      document.getElementById("impBox").value=json;
+    }
+    // export copy
+    document.getElementById("expCopy").addEventListener("click", function(){
+      flashSaved("preparing…");
+      exportData(function(json){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(json).then(function(){ flashSaved("copied"); }, function(){ fallbackShow(json); });
+        } else fallbackShow(json);
+      });
+    });
+    // export file
+    document.getElementById("expFile").addEventListener("click", function(){
+      flashSaved("preparing…");
+      exportData(function(json){
+        try{
+          var blob=new Blob([json],{type:"application/json"});
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement("a"); a.href=url; a.download="my-money-backup.json";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+          flashSaved("downloaded");
+        }catch(e){ alert("Couldn't download here — use Copy backup instead."); }
+      });
+    });
+    // import
+    document.getElementById("impToggle").addEventListener("click", function(){
+      var w=document.getElementById("impWrap"); w.style.display=(w.style.display==="none"?"block":"none");
+    });
+    document.getElementById("impLoad").addEventListener("click", function(){
+      var txt=document.getElementById("impBox").value.trim(); if(!txt) return;
+      var obj;
+      try{ obj=JSON.parse(txt); }
+      catch(e){ alert("That backup didn't look right — it isn't valid JSON. Check you pasted the whole thing."); return; }
+      if(!obj || typeof obj!=="object"){ alert("That backup didn't look right. Check you pasted the whole thing."); return; }
+
+      if(obj.__mymoney && obj.state && Array.isArray(obj.state.transactions)){
+        // full backup — this REPLACES everything, so confirm first
+        var n0=obj.state.transactions.length;
+        if(!confirm("This is a full backup with "+n0+" "+(n0===1?"entry":"entries")+". Loading it REPLACES everything currently in the app. Continue?")) return;
+        if(obj.photos){ for(var pid in obj.photos){ savePhoto(pid, obj.photos[pid]); } }
+        applyLoaded(JSON.stringify(obj.state));
+        state.selectedMonths=null;
+      } else if(obj.__mymoneyExport && Array.isArray(obj.transactions)){
+        // a "selected entries" export — a subset, so merge it in rather than replace anything
+        var n=obj.transactions.length;
+        if(!confirm("This is a partial export with "+n+" "+(n===1?"entry":"entries")+". Add "+(n===1?"it":"them")+" to your current ledger? Nothing existing is removed.")) return;
+        var existingIds={}; state.transactions.forEach(function(t){ existingIds[t.id]=true; });
+        obj.transactions.forEach(function(t){
+          var copy=clone(t);
+          if(existingIds[copy.id]) copy.id=freshIdBase(); // avoid clobbering an existing entry that happens to share this id
+          existingIds[copy.id]=true;
+          state.transactions.push(copy);
+        });
+        if(obj.photos){ for(var pid2 in obj.photos){ savePhoto(pid2, obj.photos[pid2]); } }
+      } else if(Array.isArray(obj.transactions)){
+        // a bare state-shaped object (e.g. hand-edited or from an older version) — treat as a full replace
+        if(!confirm("Loading this REPLACES everything currently in the app with "+obj.transactions.length+" entries. Continue?")) return;
+        applyLoaded(JSON.stringify(obj));
+        state.selectedMonths=null;
+      } else {
+        alert("That doesn't look like a My Money backup or export — no transactions list found. Check you pasted the whole thing.");
+        return;
+      }
+
+      persist(); render();
+      document.getElementById("impWrap").style.display="none";
+      flashSaved("loaded");
+    });
+    // reset
+    document.getElementById("resetBtn").addEventListener("click", function(){
+      if(!confirm("Reset clears everything you've added and restores the starting history baked into this file. All attached photos are permanently deleted — this can't be undone.\n\nA safety backup will download automatically first. Continue?")) return;
+      flashSaved("backing up…");
+      exportData(function(json){
+        try{
+          var blob=new Blob([json],{type:"application/json"});
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement("a"); a.href=url; a.download="my-money-before-reset-"+todayStr()+".json";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+        }catch(e){ /* best-effort safety backup — reset proceeds either way */ }
+        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        state=clone(DEFAULTS); state.selectedMonths=null;
+        persist(); render(); flashSaved("reset — backup downloaded");
+      });
+    });
+
+    // image viewer
+    document.getElementById("viewerClose").addEventListener("click", closeViewer);
+    document.getElementById("viewer").addEventListener("click", function(e){ if(e.target===this) closeViewer(); });
+    document.getElementById("viewerDel").addEventListener("click", function(){
+      if(viewingId==null) return;
+      var tx=state.transactions.filter(function(x){ return x.id===viewingId; })[0];
+      if(tx && tx.photo){ delPhoto(tx.photo); delete tx.photo; }
+      persist(); render(); closeViewer();
+    });
+
+    // one Escape handler for every overlay, closing only the topmost open one
+    document.addEventListener("keydown", function(e){
+      if(e.key!=="Escape") return;
+      if(document.getElementById("viewer").style.display!=="none") closeViewer();
+      else if(document.getElementById("monthPicker").style.display!=="none") closeMonthPicker();
+      else if(document.getElementById("settingsDrawer").style.display!=="none") closeSettings();
+    });
+  }
+
+  function shake(el){
+    el.style.borderColor=DOWN;
+    setTimeout(function(){ el.style.borderColor=""; },600);
+  }
+
+  /* ---------------- init ---------------- */
+  function init(){
+    document.getElementById("fDate").value=todayStr();
+    updateDateBar();
+    setInterval(updateDateBar, 60000);
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) updateDateBar(); });
+    window.addEventListener("beforeunload", function(){ if(saveTimer) clearTimeout(saveTimer); doPersist(); });
+    // storage: check health every 5 min, and — if currently on the emergency
+    // localStorage tier — try every 30s to migrate back to a real tier
+    setInterval(function(){ refreshStorageBadge(); }, 5*60*1000);
+    setInterval(function(){ StorageManager.tryAutoHeal().then(function(healed){ if(healed) refreshStorageBadge(); }); }, 30000);
+    bind();
+    bindPortfolioUI();
+    loadData(function(){ render(); renderPortfolioUI(); refreshStorageBadge(); });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+
+<!-- Settings drawer -->
+<div id="settingsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100"></div>
+<div id="settingsDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:101;overflow-y:auto;padding:0 0 40px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1">
+    <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
+    <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
+  </div>
+
+  <!-- Theme picker -->
+  <div style="padding:18px 20px 0">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Appearance</div>
+    <div class="theme-grid">
+      <button class="theme-opt" data-theme-key="mono"><span class="tsw" style="background:#000;border:1px solid #444"></span>⬛ Mono</button>
+      <button class="theme-opt" data-theme-key="dark"><span class="tsw" style="background:#0b0e14;border:1px solid #f4b73f"></span>🌑 Dark</button>
+      <button class="theme-opt" data-theme-key="emerald"><span class="tsw" style="background:#00ff88"></span>💚 Matrix</button>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Monthly allowance in drawer -->
+  <div style="padding:18px 20px 0">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly Allowance</div>
+    <div class="subhint" style="margin-bottom:12px">Once per calendar month. Tap the button to add current month. You can take up to <b>3 months advance</b> from today — but only 3 total outstanding at any time. An advance is logged on the day you actually take it, not the future month — and can be removed below if you change your mind.</div>
+    <div class="auto-note" id="autoSummary"></div>
+    <div class="split-row">
+      <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
+      <input type="number" id="sDebt" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill trade">TRADING</span> To trading money</div>
+      <input type="number" id="sTrade" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill save">SAVINGS</span> To savings</div>
+      <input type="number" id="sSave" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:10px">
+      <div class="nm"><b>Monthly amount</b></div>
+      <input type="number" id="sAlw" step="0.01" inputmode="decimal">
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn ghost sm" id="applyAlw" style="width:100%">Add this month</button>
+    </div>
+    <div class="yr-count" id="yrCount" style="margin-top:12px"></div>
+    <div id="advList"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Setup & starting numbers in drawer -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Setup &amp; Starting Numbers</div>
+    <div class="hint">Set where you're starting from. Everything builds on these.</div>
+    <div class="row2">
+      <div class="fld"><label>Starting money (now)</label><input type="number" id="oBal" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Debt to Dad</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Savings</label><input type="number" id="oSav" step="0.01" inputmode="decimal"></div>
+      <div class="fld full">
+        <label>Currency</label>
+        <select id="oCurSelect">
+          <option value="$">🇺🇸 USD — US Dollar ($)</option>
+          <option value="AED">🇦🇪 AED — UAE Dirham (AED)</option>
+          <option value="CHF">🇨🇭 CHF — Swiss Franc · near-zero inflation, top wealth preserver</option>
+          <option value="SGD">🇸🇬 SGD — Singapore Dollar · Asia's primary reserve haven</option>
+          <option value="£">🇬🇧 GBP — British Pound (£)</option>
+          <option value="€">🇪🇺 EUR — Euro (€)</option>
+          <option value="¥">🇯🇵 JPY — Japanese Yen (¥)</option>
+          <option value="custom">✏️ Custom symbol…</option>
+        </select>
+        <input type="text" id="oCurCustom" maxlength="6" placeholder="e.g. ₿ or kr" style="display:none;margin-top:8px">
+        <div id="curNote" class="hint" style="margin-top:6px;margin-bottom:0;font-style:italic"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px"><button class="btn primary sm" id="saveSetup">Save starting numbers</button></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Storage tier dashboard -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Storage</div>
+    <div class="hint">Where your data actually lives. It tries these in order and falls back automatically — nothing here needs to be touched unless you want to.</div>
+    <div id="tierList"></div>
+    <div class="data-btns" style="margin-top:12px">
+      <button class="btn ghost sm" id="tierPickFolder">Choose a folder (USB/disk)…</button>
+      <button class="btn ghost sm" id="tierForgetFolder" style="display:none">Forget folder</button>
+      <button class="btn ghost sm" id="tierHealthCheck">Run health check</button>
+    </div>
+    <div id="tierNote" class="hint" style="margin-top:10px;margin-bottom:0"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Back up & data in drawer -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Back Up &amp; Data</div>
+    <div class="hint">Export a backup file that works in any browser on any device. Import it back to restore.</div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="expCopy">Copy backup</button>
+      <button class="btn ghost sm" id="expFile">Download backup</button>
+      <button class="btn ghost sm" id="impToggle">Import backup</button>
+      <button class="btn ghost sm warn" id="resetBtn" style="margin-left:auto">Reset</button>
+    </div>
+    <div id="impWrap" style="display:none">
+      <textarea id="impBox" placeholder="Paste your backup here, then press Load"></textarea>
+      <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
