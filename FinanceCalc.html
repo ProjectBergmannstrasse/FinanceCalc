@@ -13,7 +13,58 @@
     --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --hero-grad:linear-gradient(160deg,#151b28,#10151f);
+    --hero-glow:rgba(244,183,63,.13);
   }
+  /* Theme: Mono — pure black & white, newspaper feel */
+  [data-theme="mono"]{
+    --bg:#ffffff; --panel:#f4f4f4; --card:#ebebeb; --card2:#e0e0e0;
+    --bd:#cccccc; --bd2:#bbbbbb;
+    --tx:#111111; --mut:#777777;
+    --amber:#111111; --amber-dim:#444444;
+    --up:#111111; --down:#555555; --cool:#333333;
+    --hero-grad:linear-gradient(160deg,#1a1a1a,#000000);
+    --hero-glow:rgba(255,255,255,.08);
+  }
+  [data-theme="mono"] .hero .lbl{color:#aaaaaa}
+  [data-theme="mono"] .hero .big{color:#ffffff}
+  [data-theme="mono"] .hero .cap{color:#aaaaaa}
+  [data-theme="mono"] .hero .big .cur{color:#ffffff}
+  [data-theme="mono"] .up{color:#111111!important}
+  [data-theme="mono"] .down{color:#555555!important}
+  [data-theme="mono"] .seg button.on{background:#111111;color:#ffffff}
+  [data-theme="mono"] .btn.primary{background:#111111;color:#ffffff}
+  [data-theme="mono"] .yr-count .pip.on{background:#111111}
+  [data-theme="mono"] .done-tag{color:#111111}
+  [data-theme="mono"] .catbar span{background:#111111}
+  [data-theme="mono"] a{color:#111111}
+  [data-theme="mono"] input:focus,[data-theme="mono"] select:focus{border-color:#111111;box-shadow:0 0 0 3px rgba(0,0,0,.10)}
+  [data-theme="mono"] .dot{background:#111111;box-shadow:0 0 0 5px rgba(0,0,0,.10)}
+  [data-theme="mono"] #chartSvg{filter:grayscale(1) contrast(1.2)}
+
+  /* Theme: Emerald — deep green terminal */
+  [data-theme="emerald"]{
+    --bg:#030d07; --panel:#071410; --card:#0b1e14; --card2:#102519;
+    --bd:#1a3d26; --bd2:#235234;
+    --tx:#d4f5e2; --mut:#5a8a6e;
+    --amber:#00ff88; --amber-dim:#007a40;
+    --up:#00ff88; --down:#ff4466; --cool:#00ccff;
+    --hero-grad:linear-gradient(160deg,#071a0f,#030d07);
+    --hero-glow:rgba(0,255,136,.10);
+  }
+  [data-theme="emerald"] .seg button.on{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .btn.primary{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .yr-count .pip.on{background:#00ff88}
+  [data-theme="emerald"] .done-tag{color:#00ff88}
+  [data-theme="emerald"] .catbar span{background:linear-gradient(90deg,#00ff88,#007a40)}
+  [data-theme="emerald"] a{color:#00ff88}
+  [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
+  [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+
+  /* Theme switcher button */
+  .theme-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);border-radius:9px;font-size:12px;font-weight:700;padding:5px 11px;cursor:pointer;letter-spacing:.3px;transition:.15s}
+  .theme-btn:hover{color:var(--tx);border-color:var(--bd2)}
+
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%;font-size:16px}
   body{padding:20px 18px 70px;max-width:860px;margin:0 auto;line-height:1.5}
@@ -35,8 +86,8 @@
   #saved.flash .s-dot{opacity:1}
 
   /* Balance hero */
-  .hero{background:linear-gradient(160deg,#151b28,#10151f);border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
-  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,rgba(244,183,63,.13),transparent 60%);pointer-events:none}
+  .hero{background:var(--hero-grad,linear-gradient(160deg,#151b28,#10151f));border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,var(--hero-glow,rgba(244,183,63,.13)),transparent 60%);pointer-events:none}
   .hero .lbl{font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);font-weight:600}
   .hero .big{font-size:64px;font-weight:700;line-height:1.0;margin-top:8px;letter-spacing:-2px}
   .hero .big .cur{font-size:.45em;color:var(--amber);vertical-align:top;margin-right:3px;font-weight:700;letter-spacing:0}
@@ -188,6 +239,7 @@
     </div>
   </div>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+  <button class="theme-btn" id="themeBtn">🎨 Theme</button>
 </header>
 
 <!-- Balance hero -->
@@ -907,7 +959,7 @@
       if(on) nApplied++;
       pips+='<span class="pip'+(on?" on":"")+(pi>curMonthNum?" future":"")+'"></span>';
     }
-    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> of '+curMonthNum+' months so far in '+todayStr().slice(0,4)+'</span>';
+    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> of 12 months in '+todayStr().slice(0,4)+'</span>';
 
     // month select
     var sel=document.getElementById("monthSel");
@@ -1068,7 +1120,29 @@
 
   /* ---------------- events ---------------- */
   function bind(){
-    // chart toggle type
+    // theme switcher
+    var THEMES=[
+      {key:"dark",   label:"🌑 Dark"},
+      {key:"mono",   label:"⬛ Mono"},
+      {key:"emerald",label:"💚 Matrix"}
+    ];
+    function applyTheme(key){
+      var t=THEMES.find(function(x){return x.key===key;})||THEMES[0];
+      document.documentElement.setAttribute("data-theme", key==="dark"?"":key);
+      document.getElementById("themeBtn").textContent=t.label;
+      try{localStorage.setItem("mymoney_theme",key);}catch(e){}
+    }
+    (function(){
+      var saved; try{saved=localStorage.getItem("mymoney_theme");}catch(e){}
+      applyTheme(saved||"dark");
+    })();
+    document.getElementById("themeBtn").addEventListener("click",function(){
+      var cur=document.documentElement.getAttribute("data-theme")||"dark";
+      if(!cur||cur==="") cur="dark";
+      var idx=THEMES.findIndex(function(x){return x.key===cur;});
+      var next=THEMES[(idx+1)%THEMES.length];
+      applyTheme(next.key);
+    });
     Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
       b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
     });
