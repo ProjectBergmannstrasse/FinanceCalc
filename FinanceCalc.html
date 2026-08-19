@@ -56,9 +56,12 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
-  /* Theme switcher button */
-  .theme-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);border-radius:9px;font-size:12px;font-weight:700;padding:5px 11px;cursor:pointer;letter-spacing:.3px;transition:.15s}
-  .theme-btn:hover{color:var(--tx);border-color:var(--bd2)}
+  /* Theme picker in settings */
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .theme-opt{display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px;font-weight:700;padding:11px 8px;cursor:pointer;transition:.15s}
+  .theme-opt:hover{border-color:var(--bd2)}
+  .theme-opt.on{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber) inset}
+  .theme-opt .tsw{width:14px;height:14px;border-radius:4px;flex:none}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%;font-size:16px}
@@ -356,7 +359,7 @@
 "use strict";
 (function(){
   /* ---------------- constants ---------------- */
-  var STORE_KEY = "mymoney_v12";
+  var STORE_KEY = "mymoney_v14";
   var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
       GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798";
   var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -471,7 +474,7 @@
       for(var i=need;i>=1;i--){ var kk=monthAdd(fk,-i); pre.push({key:kk,o:fv,h:fv,l:fv,c:fv}); }
       out=pre.concat(out);
     }
-    if(out.length>24) out=out.slice(out.length-24);
+    if(out.length>10) out=out.slice(out.length-10);
     return out;
   }
 
@@ -681,17 +684,17 @@
         svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'"/>';
       }
     } else {
-      var bw=Math.max(4, Math.min(step*0.55, 18));
+      var bw=Math.max(6, Math.min(step*0.6, 26));
       for(i=0;i<n;i++){
         var c=candles[i], cx=Xc(i);
         var isUp=c.c>=c.o;
         var col=(Math.abs(c.c-c.o)<0.001)?DOJI:(isUp?UP:DOWN);
         var yH=Yv(c.h), yL=Yv(c.l), yO=Yv(c.o), yC=Yv(c.c);
-        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),2);
+        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),3);
         svg+='<g class="cv-candle" data-i="'+i+'">';
         svg+='<rect x="'+(cx-step/2).toFixed(1)+'" y="'+padT+'" width="'+step.toFixed(1)+'" height="'+plotH+'" fill="transparent"/>';
-        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="1.4"/>';
-        svg+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="'+col+'"/>';
+        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="2"/>';
+        svg+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="2" fill="'+col+'" stroke="'+col+'" stroke-width="0.5"/>';
         svg+='</g>';
       }
     }
@@ -910,17 +913,16 @@
       }
     }
 
-    // year counter — 12 pips, lit on actual month positions, count shows X of months-so-far
+    // year progress — 12 pips lit for months added, label shows current month / 12
     var yc=document.getElementById("yrCount");
-    var amSet=allowanceMonths(), pips="", nApplied=0;
-    var curMonthNum=+todayStr().slice(5,7);
+    var amSet=allowanceMonths(), pips="";
+    var curMonthNum=+todayStr().slice(5,7), yr=todayStr().slice(0,4);
     for(var pi=1;pi<=12;pi++){
-      var mk=todayStr().slice(0,4)+"-"+two(pi);
+      var mk=yr+"-"+two(pi);
       var on=!!amSet[mk];
-      if(on) nApplied++;
       pips+='<span class="pip'+(on?" on":"")+(pi>curMonthNum?" future":"")+'"></span>';
     }
-    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> / 12 months in '+todayStr().slice(0,4)+'</span>';
+    yc.innerHTML='<span class="pips">'+pips+'</span><span>Month <b class="done-tag">'+curMonthNum+'</b> / 12 of '+yr+'</span>';
 
     // month select
     var sel=document.getElementById("monthSel");
@@ -1099,28 +1101,41 @@
 
   /* ---------------- events ---------------- */
   function bind(){
-    // theme switcher
+    // theme switcher — mono is the default
     var THEMES=[
-      {key:"dark",   label:"🌑 Dark"},
-      {key:"mono",   label:"⬛ Mono"},
-      {key:"emerald",label:"💚 Matrix"}
+      {key:"mono",   label:"⬛ Mono",   swatch:"#000000"},
+      {key:"dark",   label:"🌑 Dark",   swatch:"#0b0e14"},
+      {key:"emerald",label:"💚 Matrix", swatch:"#00ff88"}
     ];
     function applyTheme(key){
       document.documentElement.setAttribute("data-theme", key==="dark"?"":key);
       try{localStorage.setItem("mymoney_theme",key);}catch(e){}
+      // highlight active theme button
+      Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
+        b.classList.toggle("on", b.getAttribute("data-theme-key")===key);
+      });
     }
+    window.__applyTheme=applyTheme;
     (function(){
       var saved; try{saved=localStorage.getItem("mymoney_theme");}catch(e){}
-      applyTheme(saved||"dark");
+      applyTheme(saved||"mono");
     })();
 
     // Settings drawer
-    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render(); }
+    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
+      // re-highlight active theme when drawer opens
+      var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
+      Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){ b.classList.toggle("on", b.getAttribute("data-theme-key")===cur); });
+    }
     function closeSettings(){ document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
     document.getElementById("settingsBtn").addEventListener("click", openSettings);
     document.getElementById("settingsClose").addEventListener("click", closeSettings);
     document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
     document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeSettings(); });
+    // theme option buttons
+    Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
+      b.addEventListener("click", function(){ applyTheme(b.getAttribute("data-theme-key")); });
+    });
     Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
       b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
     });
@@ -1357,6 +1372,18 @@
     <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
     <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
   </div>
+
+  <!-- Theme picker -->
+  <div style="padding:18px 20px 0">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Appearance</div>
+    <div class="theme-grid">
+      <button class="theme-opt" data-theme-key="mono"><span class="tsw" style="background:#000;border:1px solid #444"></span>⬛ Mono</button>
+      <button class="theme-opt" data-theme-key="dark"><span class="tsw" style="background:#0b0e14;border:1px solid #f4b73f"></span>🌑 Dark</button>
+      <button class="theme-opt" data-theme-key="emerald"><span class="tsw" style="background:#00ff88"></span>💚 Matrix</button>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
 
   <!-- Monthly allowance in drawer -->
   <div style="padding:18px 20px 0">
