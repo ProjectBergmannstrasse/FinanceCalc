@@ -13,11 +13,57 @@
     --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --hero-grad:linear-gradient(160deg,#151b28,#10151f);
+    --hero-glow:rgba(244,183,63,.13);
   }
+  /* Theme: Mono — black bg, white text, green/red P&L kept */
+  [data-theme="mono"]{
+    --bg:#000000; --panel:#111111; --card:#1a1a1a; --card2:#222222;
+    --bd:#333333; --bd2:#444444;
+    --tx:#ffffff; --mut:#888888;
+    --amber:#ffffff; --amber-dim:#aaaaaa;
+    --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
+    --hero-grad:linear-gradient(160deg,#111111,#000000);
+    --hero-glow:rgba(255,255,255,.05);
+  }
+  [data-theme="mono"] .hero .big .cur{color:#ffffff}
+  [data-theme="mono"] .seg button.on{background:#ffffff;color:#000000}
+  [data-theme="mono"] .btn.primary{background:#ffffff;color:#000000}
+  [data-theme="mono"] .yr-count .pip.on{background:#ffffff}
+  [data-theme="mono"] .done-tag{color:#3ddc84}
+  [data-theme="mono"] .catbar span{background:linear-gradient(90deg,#ffffff,#888888)}
+  [data-theme="mono"] a{color:#aaaaaa}
+  [data-theme="mono"] input:focus,[data-theme="mono"] select:focus{border-color:#ffffff;box-shadow:0 0 0 3px rgba(255,255,255,.10)}
+  [data-theme="mono"] .dot{background:#ffffff;box-shadow:0 0 0 5px rgba(255,255,255,.10)}
+  [data-theme="mono"] .badge{background:#1a1a1a;color:#888888;border-color:#333333}
+
+  /* Theme: Emerald — deep green terminal */
+  [data-theme="emerald"]{
+    --bg:#030d07; --panel:#071410; --card:#0b1e14; --card2:#102519;
+    --bd:#1a3d26; --bd2:#235234;
+    --tx:#d4f5e2; --mut:#5a8a6e;
+    --amber:#00ff88; --amber-dim:#007a40;
+    --up:#00ff88; --down:#ff4466; --cool:#00ccff;
+    --hero-grad:linear-gradient(160deg,#071a0f,#030d07);
+    --hero-glow:rgba(0,255,136,.10);
+  }
+  [data-theme="emerald"] .seg button.on{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .btn.primary{background:#00ff88;color:#030d07}
+  [data-theme="emerald"] .yr-count .pip.on{background:#00ff88}
+  [data-theme="emerald"] .done-tag{color:#00ff88}
+  [data-theme="emerald"] .catbar span{background:linear-gradient(90deg,#00ff88,#007a40)}
+  [data-theme="emerald"] a{color:#00ff88}
+  [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
+  [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+
+  /* Theme switcher button */
+  .theme-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);border-radius:9px;font-size:12px;font-weight:700;padding:5px 11px;cursor:pointer;letter-spacing:.3px;transition:.15s}
+  .theme-btn:hover{color:var(--tx);border-color:var(--bd2)}
+
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%}
-  body{padding:16px 14px 60px;max-width:780px;margin:0 auto;line-height:1.45}
-  h1,h2,h3{margin:0;font-weight:650}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-text-size-adjust:100%;font-size:16px}
+  body{padding:20px 18px 70px;max-width:860px;margin:0 auto;line-height:1.5}
+  h1,h2,h3{margin:0;font-weight:700}
   .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.2px}
   .mut{color:var(--mut)}
   button{font-family:var(--sans);cursor:pointer}
@@ -25,149 +71,156 @@
   a{color:var(--amber)}
 
   /* Header */
-  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(244,183,63,.12)}
-  .brand h1{font-size:16px;letter-spacing:.3px}
-  .brand .sub{font-size:11px;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
-  #saved{font-size:11px;color:var(--mut);display:flex;align-items:center;gap:6px}
-  #saved .s-dot{width:6px;height:6px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 5px rgba(244,183,63,.15)}
+  .brand h1{font-size:20px;letter-spacing:.3px}
+  .brand .sub{font-size:13px;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
+  #saved{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px}
+  #saved .s-dot{width:7px;height:7px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
   #saved.flash .s-dot{opacity:1}
 
   /* Balance hero */
-  .hero{background:linear-gradient(160deg,#151b28,#10151f);border:1px solid var(--bd);border-radius:16px;padding:18px 18px 16px;margin-bottom:12px;position:relative;overflow:hidden}
-  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,rgba(244,183,63,.10),transparent 60%);pointer-events:none}
-  .hero .lbl{font-size:11px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut)}
-  .hero .big{font-size:clamp(34px,10vw,52px);font-weight:600;line-height:1.05;margin-top:6px}
-  .hero .big .cur{font-size:.5em;color:var(--amber);vertical-align:top;margin-right:2px;font-weight:600}
-  .hero .cap{font-size:12px;color:var(--mut);margin-top:6px}
+  .hero{background:var(--hero-grad,linear-gradient(160deg,#151b28,#10151f));border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 92% -10%,var(--hero-glow,rgba(244,183,63,.13)),transparent 60%);pointer-events:none}
+  .hero .lbl{font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .hero .big{font-size:64px;font-weight:700;line-height:1.0;margin-top:8px;letter-spacing:-2px}
+  .hero .big .cur{font-size:.45em;color:var(--amber);vertical-align:top;margin-right:3px;font-weight:700;letter-spacing:0}
+  .hero .cap{font-size:14px;color:var(--mut);margin-top:8px}
 
   /* stat trio */
-  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 12px}
-  .stat .k{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
-  .stat .v{font-size:16px;margin-top:5px;font-weight:600}
+  .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+  .stat .k{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .stat .v{font-size:20px;margin-top:6px;font-weight:700}
 
   /* generic panel */
-  .panel{background:var(--panel);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden}
-  .p-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;gap:10px}
-  .p-head h2{font-size:13px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  .panel{background:var(--panel);border:1px solid var(--bd);border-radius:16px;margin-bottom:14px;overflow:hidden}
+  .p-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:10px}
+  .p-head h2{font-size:15px;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
   .p-head h2 .tick{color:var(--amber)}
-  .p-body{padding:0 14px 14px}
+  .p-body{padding:0 18px 18px}
 
   /* segmented toggle */
-  .seg{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:2px}
-  .seg button{border:0;background:transparent;color:var(--mut);font-size:11.5px;padding:5px 11px;border-radius:7px;font-weight:600;transition:.15s}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:3px}
+  .seg button{border:0;background:transparent;color:var(--mut);font-size:13px;padding:6px 14px;border-radius:8px;font-weight:600;transition:.15s}
   .seg button.on{background:var(--amber);color:#20160a}
-  .icon-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);width:30px;height:28px;border-radius:8px;font-size:13px;display:inline-flex;align-items:center;justify-content:center}
+  .icon-btn{border:1px solid var(--bd);background:var(--card);color:var(--mut);width:34px;height:32px;border-radius:9px;font-size:14px;display:inline-flex;align-items:center;justify-content:center}
   .icon-btn:hover{color:var(--tx);border-color:var(--bd2)}
 
   /* chart */
-  #chartWrap{padding:4px 6px 2px}
-  svg.chart{width:100%;height:auto;aspect-ratio:720/196;display:block}
-  .chart-empty{color:var(--mut);font-size:12px;text-align:center;padding:26px 0}
+  #chartWrap{padding:6px 8px 4px}
+  svg.chart{width:100%;height:auto;aspect-ratio:720/220;display:block}
+  .chart-empty{color:var(--mut);font-size:13px;text-align:center;padding:30px 0}
 
   /* entry form */
-  form.entry{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .fld{display:flex;flex-direction:column;gap:4px}
+  form.entry{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fld{display:flex;flex-direction:column;gap:5px}
   .fld.full{grid-column:1/-1}
-  .fld label{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
-  input,select{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 10px;font-size:14px;width:100%}
+  .fld label{font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  input,select{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:11px 13px;font-size:15px;width:100%}
   input:focus,select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(244,183,63,.12)}
-  .btn{border:0;border-radius:9px;padding:10px 14px;font-size:13.5px;font-weight:650}
+  .btn{border:0;border-radius:10px;padding:12px 16px;font-size:14.5px;font-weight:700}
   .btn.primary{background:var(--amber);color:#20160a}
   .btn.primary:hover{filter:brightness(1.05)}
   .btn.ghost{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
   .btn.ghost:hover{border-color:var(--bd2)}
-  .btn.sm{padding:7px 11px;font-size:12px}
+  .btn.sm{padding:8px 13px;font-size:13px}
 
   /* automation */
-  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .split-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--bd)}
+  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .split-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd)}
   .split-row:last-of-type{border-bottom:0}
-  .split-row .nm{display:flex;align-items:center;gap:8px;font-size:13px}
-  .pill{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;letter-spacing:.3px}
+  .split-row .nm{display:flex;align-items:center;gap:9px;font-size:14px}
+  .pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;letter-spacing:.3px}
   .pill.debt{background:rgba(255,93,93,.14);color:#ff9a9a}
   .pill.trade{background:rgba(93,169,230,.16);color:#9cccf2}
   .pill.save{background:rgba(61,220,132,.14);color:#8ff0bc}
-  .split-row input{width:110px;text-align:right}
-  .auto-note{font-size:11.5px;color:var(--mut);margin:8px 0 10px}
+  .split-row input{width:120px;text-align:right}
+  .auto-note{font-size:13px;color:var(--mut);margin:9px 0 11px}
   .auto-note b{color:var(--tx)}
 
   /* month summary */
   .msel{display:flex;align-items:center;gap:10px}
-  .msel select{width:auto;min-width:150px}
-  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .msel select{width:auto;min-width:160px}
+  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
   @media(min-width:560px){.metrics{grid-template-columns:repeat(4,1fr)}}
-  .metric{background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:10px 11px}
-  .metric .k{font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
-  .metric .v{font-size:15.5px;font-weight:600;margin-top:4px}
-  .cats{margin-top:12px}
-  .cats .cttl{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:7px}
-  .catrow{display:flex;align-items:center;gap:8px;margin:5px 0}
-  .catrow .cn{font-size:12.5px;width:96px;color:var(--tx)}
-  .catbar{flex:1;height:7px;background:var(--card);border-radius:6px;overflow:hidden}
+  .metric{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+  .metric .k{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);font-weight:600}
+  .metric .v{font-size:18px;font-weight:700;margin-top:5px}
+  .cats{margin-top:14px}
+  .cats .cttl{font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:9px;font-weight:600}
+  .catrow{display:flex;align-items:center;gap:10px;margin:6px 0}
+  .catrow .cn{font-size:13.5px;width:100px;color:var(--tx)}
+  .catbar{flex:1;height:8px;background:var(--card);border-radius:6px;overflow:hidden}
   .catbar span{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-dim))}
-  .catrow .cv{font-size:12px;color:var(--mut);width:78px;text-align:right}
+  .catrow .cv{font-size:13px;color:var(--mut);width:86px;text-align:right}
 
   /* ledger */
   .led{display:flex;flex-direction:column}
-  .lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd)}
   .lrow:last-child{border-bottom:0}
-  .ldate{font-size:11px;color:var(--mut);width:52px;flex:none;line-height:1.2}
-  .ldate b{display:block;color:var(--tx);font-size:13px;font-weight:600}
+  .ldate{font-size:12px;color:var(--mut);width:58px;flex:none;line-height:1.3}
+  .ldate b{display:block;color:var(--tx);font-size:15px;font-weight:700}
   .lmid{flex:1;min-width:0}
-  .badge{font-size:10px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
-  .lnote{font-size:12px;color:var(--mut);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .lamt{font-size:14px;font-weight:650;flex:none;text-align:right}
-  .lamt .tag{display:block;font-size:9.5px;color:var(--mut);font-weight:600;letter-spacing:.3px}
+  .badge{font-size:11px;font-weight:700;letter-spacing:.3px;padding:3px 8px;border-radius:7px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+  .lnote{font-size:13px;color:var(--mut);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lamt{font-size:16px;font-weight:700;flex:none;text-align:right}
+  .lamt .tag{display:block;font-size:10.5px;color:var(--mut);font-weight:600;letter-spacing:.3px}
   .up{color:var(--up)} .down{color:var(--down)} .neu{color:var(--mut)} .cool{color:var(--cool)}
-  .del{border:0;background:transparent;color:var(--mut);font-size:16px;padding:2px 4px;line-height:1;flex:none}
+  .del{border:0;background:transparent;color:var(--mut);font-size:18px;padding:2px 5px;line-height:1;flex:none}
   .del:hover{color:var(--down)}
-  .empty{color:var(--mut);font-size:12.5px;text-align:center;padding:22px 6px}
+  .empty{color:var(--mut);font-size:14px;text-align:center;padding:26px 6px}
   .empty b{color:var(--tx)}
 
   /* details/setup */
-  details{background:var(--panel);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px}
-  details>summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:13px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
+  details{background:var(--panel);border:1px solid var(--bd);border-radius:16px;margin-bottom:14px}
+  details>summary{list-style:none;cursor:pointer;padding:16px 18px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
   details>summary::-webkit-details-marker{display:none}
   details>summary .chev{color:var(--mut);transition:.2s}
   details[open]>summary .chev{transform:rotate(180deg)}
-  .d-body{padding:0 14px 14px}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .hint{font-size:11.5px;color:var(--mut);margin:2px 0 12px}
-  .data-btns{display:flex;flex-wrap:wrap;gap:8px}
-  textarea{width:100%;min-height:120px;background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:10px;font-family:var(--mono);font-size:11.5px;margin-top:8px}
+  .d-body{padding:0 18px 18px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:13px;color:var(--mut);margin:2px 0 14px}
+  .data-btns{display:flex;flex-wrap:wrap;gap:10px}
+  textarea{width:100%;min-height:120px;background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:12px;font-family:var(--mono);font-size:13px;margin-top:10px}
   .warn{color:#ff9a9a}
-  hr.sep{border:0;border-top:1px solid var(--bd);margin:14px 0}
-  .foot{font-size:11px;color:var(--mut);text-align:center;margin-top:18px;line-height:1.6}
+  hr.sep{border:0;border-top:1px solid var(--bd);margin:16px 0}
+  .foot{font-size:13px;color:var(--mut);text-align:center;margin-top:20px;line-height:1.7}
 
   /* helper hint under a panel head */
-  .subhint{font-size:12px;color:var(--mut);margin:-2px 0 12px}
+  .subhint{font-size:13px;color:var(--mut);margin:-2px 0 14px}
   .subhint b{color:var(--tx)}
 
   /* photo attach */
   .photo-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  #fPhotoPrev{height:40px;border-radius:6px;border:1px solid var(--bd);object-fit:cover}
-  .photo-chip{border:1px solid var(--bd);background:var(--card2);color:var(--mut);border-radius:7px;font-size:12px;padding:3px 7px;flex:none;line-height:1;display:inline-flex;align-items:center;gap:4px}
+  #fPhotoPrev{height:48px;border-radius:7px;border:1px solid var(--bd);object-fit:cover}
+  .photo-chip{border:1px solid var(--bd);background:var(--card2);color:var(--mut);border-radius:8px;font-size:13px;padding:4px 9px;flex:none;line-height:1;display:inline-flex;align-items:center;gap:5px}
   .photo-chip:hover{color:var(--tx);border-color:var(--amber)}
 
   /* allowance counter + disabled button */
-  .yr-count{font-size:11.5px;color:var(--mut);margin-top:10px;display:flex;align-items:center;gap:7px}
-  .yr-count .pips{display:inline-flex;gap:3px}
-  .yr-count .pip{width:9px;height:9px;border-radius:2px;background:var(--bd2)}
+  .yr-count{font-size:13px;color:var(--mut);margin-top:12px;display:flex;align-items:center;gap:8px}
+  .yr-count .pips{display:inline-flex;gap:4px}
+  .yr-count .pip{width:10px;height:10px;border-radius:2px;background:var(--bd2)}
   .yr-count .pip.on{background:var(--amber)}
+  .yr-count .pip.future{opacity:0.25}
   .btn:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(.3)}
   .done-tag{color:var(--up)}
 
   /* image viewer */
-  .viewer{position:fixed;inset:0;background:rgba(6,9,14,.86);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
-  .viewer-inner{background:var(--panel);border:1px solid var(--bd2);border-radius:14px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
-  .viewer-bar{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-bottom:1px solid var(--bd);font-size:13px;font-weight:650}
-  .viewer-body{padding:12px;overflow:auto;text-align:center;background:#0d1119}
+  .viewer{position:fixed;inset:0;background:rgba(6,9,14,.88);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+  .viewer-inner{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;max-width:640px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  .viewer-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--bd);font-size:14px;font-weight:700}
+  .viewer-body{padding:14px;overflow:auto;text-align:center;background:#0d1119}
   .viewer-body img{max-width:100%;border-radius:8px}
-  .viewer-foot{padding:10px 12px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
-  .viewer-note{color:var(--mut);font-size:12.5px;padding:22px 10px}
+  .viewer-foot{padding:12px 16px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px}
+  .viewer-note{color:var(--mut);font-size:14px;padding:26px 12px}
+  /* eye icon on ledger rows */
+  .eye-btn{font-size:17px;cursor:pointer;flex:none;opacity:0.55;transition:opacity .15s;line-height:1;padding:2px 5px;user-select:none}
+  .eye-btn:hover{opacity:1}
+  .lrow.has-proof{cursor:pointer}
+  .lrow.has-proof:hover{background:rgba(244,183,63,.04);border-radius:8px;margin:0 -4px;padding:13px 4px}
+  .lrow.has-proof:hover .eye-btn{opacity:1}
 </style>
 </head>
 <body>
@@ -181,6 +234,7 @@
     </div>
   </div>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
 
 <!-- Balance hero -->
@@ -268,35 +322,6 @@
   </div>
 </div>
 
-<!-- Salary automation -->
-<div class="panel">
-  <div class="p-head">
-    <h2><span class="tick">⟳</span> Monthly allowance</h2>
-    <button class="btn ghost sm" id="applyAlw">Add this month</button>
-  </div>
-  <div class="p-body">
-    <div class="subhint">Set your <b>monthly amount</b> and how it splits. You can add it <b>once per month</b> (up to 12 times a year). Any other money you get, log it as <b>Money in</b> instead.</div>
-    <div class="auto-note" id="autoSummary"></div>
-    <div class="split-row">
-      <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
-      <input type="number" id="sDebt" step="0.01" inputmode="decimal">
-    </div>
-    <div class="split-row">
-      <div class="nm"><span class="pill trade">TRADING</span> To trading money</div>
-      <input type="number" id="sTrade" step="0.01" inputmode="decimal">
-    </div>
-    <div class="split-row">
-      <div class="nm"><span class="pill save">SAVINGS</span> To savings</div>
-      <input type="number" id="sSave" step="0.01" inputmode="decimal">
-    </div>
-    <div class="split-row" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:10px">
-      <div class="nm"><b>Monthly amount</b></div>
-      <input type="number" id="sAlw" step="0.01" inputmode="decimal">
-    </div>
-    <div class="yr-count" id="yrCount"></div>
-  </div>
-</div>
-
 <!-- Month summary -->
 <div class="panel">
   <div class="p-head">
@@ -315,38 +340,6 @@
   <div class="p-body"><div class="led" id="ledger"></div></div>
 </div>
 
-<!-- Setup -->
-<details>
-  <summary>Setup &amp; starting numbers <span class="chev">▾</span></summary>
-  <div class="d-body">
-    <div class="hint">Set where you’re starting from today. Everything above builds on these.</div>
-    <div class="row2">
-      <div class="fld"><label>Starting money (now)</label><input type="number" id="oBal" step="0.01" inputmode="decimal"></div>
-      <div class="fld"><label>Debt to Dad</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
-      <div class="fld"><label>Savings</label><input type="number" id="oSav" step="0.01" inputmode="decimal"></div>
-      <div class="fld"><label>Currency symbol</label><input type="text" id="oCur" maxlength="3"></div>
-    </div>
-    <div style="margin-top:12px"><button class="btn primary sm" id="saveSetup">Save starting numbers</button></div>
-  </div>
-</details>
-
-<!-- Data -->
-<details>
-  <summary>Back up &amp; data <span class="chev">▾</span></summary>
-  <div class="d-body">
-    <div class="hint">Your data saves automatically <b>on this device</b> (it’s not in the cloud). To keep it safe or move it to another device, export a backup file — it includes your photos. Import pastes it back.</div>
-    <div class="data-btns">
-      <button class="btn ghost sm" id="expCopy">Copy backup</button>
-      <button class="btn ghost sm" id="expFile">Download backup</button>
-      <button class="btn ghost sm" id="impToggle">Import backup</button>
-      <button class="btn ghost sm warn" id="resetBtn" style="margin-left:auto">Reset everything</button>
-    </div>
-    <div id="impWrap" style="display:none">
-      <textarea id="impBox" placeholder="Paste your backup here, then press Load"></textarea>
-      <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
-    </div>
-  </div>
-</details>
 
 <div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
 
@@ -363,7 +356,7 @@
 "use strict";
 (function(){
   /* ---------------- constants ---------------- */
-  var STORE_KEY = "mymoney_v2";
+  var STORE_KEY = "mymoney_v12";
   var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
       GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798";
   var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -381,7 +374,7 @@
     settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0},
     chartType:"candle", chartCollapsed:false,
     selectedMonth:null,
-    transactions:[{"date":"2025-01-15","type":"income","amount":40.84,"note":"January allowance (150 AED)","id":1},{"date":"2025-01-15","type":"spend","amount":8.17,"note":"Spent (30 AED)","cat":"Other","id":2},{"date":"2025-02-15","type":"income","amount":40.84,"note":"February allowance (150 AED)","id":3},{"date":"2025-03-15","type":"income","amount":40.84,"note":"March allowance (150 AED)","id":4},{"date":"2025-03-15","type":"income","amount":190.61,"note":"Birthday money (700 AED)","id":5},{"date":"2025-04-15","type":"spend","amount":136.15,"note":"Broke a lamp (500 AED)","cat":"Other","id":6},{"date":"2025-09-15","type":"income","amount":40.84,"note":"September allowance (150 AED)","id":7},{"date":"2025-09-15","type":"trade_win","amount":39.21,"note":"Stocks profit (+144 AED)","id":8},{"date":"2025-10-15","type":"income","amount":40.84,"note":"October allowance (150 AED)","id":9},{"date":"2025-10-15","type":"spend","amount":108.92,"note":"Broke shelf: two plants (400 AED)","cat":"Other","id":10},{"date":"2025-10-15","type":"spend","amount":136.15,"note":"Broke shelf: one vase (500 AED)","cat":"Other","id":11},{"date":"2025-11-15","type":"income","amount":40.84,"note":"November allowance (150 AED)","id":12},{"date":"2025-11-15","type":"spend","amount":4.08,"note":"Toy gun (15 AED)","cat":"Toys","id":13},{"date":"2025-12-15","type":"income","amount":40.84,"note":"December allowance (150 AED)","id":14},{"date":"2025-12-15","type":"income","amount":16.34,"note":"Reading money (60 AED)","id":15},{"date":"2025-12-15","type":"trade_loss","amount":141.59,"note":"Stocks loss (−520 AED)","id":16},{"date":"2026-01-15","type":"income","amount":40.84,"note":"January allowance (150 AED)","id":17},{"date":"2026-01-15","type":"income","amount":24.51,"note":"Reading money (90 AED)","id":18},{"date":"2026-01-15","type":"income","amount":2.72,"note":"Dad reading bonus (10 AED)","id":19},{"date":"2026-01-15","type":"income","amount":136.15,"note":"Gift — Ramla Khala (500 AED)","id":20},{"date":"2026-02-15","type":"income","amount":40.84,"note":"February allowance (150 AED)","id":21},{"date":"2026-02-15","type":"trade_win","amount":272.29,"note":"Bitcoin & Google trades (~+1000 AED)","id":22},{"date":"2026-02-15","type":"spend","amount":19.06,"note":"Pencil cases — Dad covered 20 (70 AED)","cat":"Stationery","id":23},{"date":"2026-02-15","type":"spend","amount":20.42,"note":"Cheetos & Doritos (75 AED)","cat":"Snacks","id":24},{"date":"2026-02-15","type":"income","amount":21.78,"note":"School — paid own, reimbursed (80 AED)","id":25},{"date":"2026-02-15","type":"trade_win","amount":47.65,"note":"Stocks (+175 AED)","id":26},{"date":"2026-02-15","type":"income","amount":5.45,"note":"School (+20 AED)","id":27},{"date":"2026-02-15","type":"spend","amount":76.24,"note":"Temu order (280 AED)","cat":"Shopping","id":28},{"date":"2026-02-15","type":"trade_win","amount":50.0,"note":"Trade (+$50)","id":29},{"date":"2026-02-15","type":"trade_win","amount":24.0,"note":"Trade (+$24)","id":30},{"date":"2026-02-15","type":"trade_loss","amount":46.0,"note":"Trade (−$46)","id":31},{"date":"2026-03-15","type":"income","amount":40.84,"note":"March allowance (150 AED)","id":32},{"date":"2026-03-15","type":"income","amount":50.65,"note":"Bet with Dad (+186 AED)","id":33},{"date":"2026-03-15","type":"income","amount":23.42,"note":"Temu refund (+86 AED)","id":34},{"date":"2026-03-15","type":"trade_win","amount":18.24,"note":"Gold (+67 AED)","id":35},{"date":"2026-03-15","type":"trade_loss","amount":499.93,"note":"Bitcoin (−1836 AED)","id":36},{"date":"2026-03-15","type":"trade_win","amount":35.4,"note":"Gold (+130 AED)","id":37},{"date":"2026-03-15","type":"spend","amount":17.43,"note":"Amazon (64 AED)","cat":"Shopping","id":38},{"date":"2026-03-15","type":"trade_win","amount":42.0,"note":"Crude oil (+$42)","id":39},{"date":"2026-03-15","type":"trade_win","amount":3.3,"note":"Crude oil (+$3.30)","id":40},{"date":"2026-03-15","type":"trade_win","amount":23.0,"note":"Gold (+$23)","id":41},{"date":"2026-03-15","type":"trade_loss","amount":120.0,"note":"Gold (−$120)","id":42},{"date":"2026-03-15","type":"trade_loss","amount":6.0,"note":"Gold (−$6, no proof)","id":43},{"date":"2026-03-15","type":"trade_win","amount":15.0,"note":"Trade (+$15)","id":44},{"date":"2026-03-15","type":"trade_loss","amount":1.02,"note":"Trade (−$1.02)","id":45},{"date":"2026-03-15","type":"trade_win","amount":11.6,"note":"Trade (+$11.60)","id":46},{"date":"2026-03-15","type":"income","amount":54.46,"note":"EID money (200 AED)","id":47},{"date":"2026-03-15","type":"trade_loss","amount":51.46,"note":"MetaTrader loss (−189 AED)","id":48},{"date":"2026-03-15","type":"borrow","amount":2300.0,"note":"Lost ~$2300 in bitcoin (8445 AED) — carried as debt to Dad","id":49},{"date":"2026-03-28","type":"adjust","amount":-123.56,"note":"Switched to USD — reset trading capital (loss carried as debt)","id":50},{"date":"2026-04-15","type":"alw_debt","amount":30,"note":"April allowance → debt (2300→2270)","auto":true,"id":51},{"date":"2026-04-15","type":"alw_savings","amount":10,"note":"April allowance → savings","auto":true,"id":52},{"date":"2026-04-15","type":"income","amount":20.0,"note":"Old $20 (previously untracked)","id":53},{"date":"2026-04-15","type":"trade_win","amount":20.0,"note":"Early trading (+$20)","id":54},{"date":"2026-04-15","type":"trade_loss","amount":1.7,"note":"Trade (−$1.7)","id":55},{"date":"2026-04-15","type":"trade_loss","amount":0.22,"note":"Trade (−$0.22)","id":56},{"date":"2026-04-15","type":"trade_loss","amount":6.57,"note":"Trade (−$6.57)","id":57},{"date":"2026-04-15","type":"trade_win","amount":13.06,"note":"Trade (+$13.06)","id":58},{"date":"2026-04-15","type":"trade_win","amount":0.91,"note":"Trade (+$0.91)","id":59},{"date":"2026-04-15","type":"trade_loss","amount":10.56,"note":"Trade (−$10.56)","id":60},{"date":"2026-04-15","type":"trade_loss","amount":3.64,"note":"Trade (−$3.64)","id":61},{"date":"2026-04-15","type":"trade_loss","amount":8.37,"note":"Trade (−$8.37)","id":62},{"date":"2026-04-15","type":"trade_loss","amount":2.33,"note":"Trade (−$2.33)","id":63},{"date":"2026-04-15","type":"trade_loss","amount":0.42,"note":"Trade (−$0.42)","id":64},{"date":"2026-04-15","type":"trade_win","amount":6.5,"note":"Trade split with Dad (+$6.50)","id":65},{"date":"2026-04-15","type":"trade_win","amount":1.24,"note":"Trade (+$1.24)","id":66},{"date":"2026-04-15","type":"trade_loss","amount":0.33,"note":"Trade (−$0.33)","id":67},{"date":"2026-04-15","type":"trade_loss","amount":2.58,"note":"Trade (−$2.58)","id":68},{"date":"2026-04-15","type":"trade_loss","amount":1.4,"note":"Trade (−$1.4)","id":69},{"date":"2026-04-15","type":"trade_loss","amount":2.6,"note":"Trade (−$2.6)","id":70},{"date":"2026-04-15","type":"trade_loss","amount":6.06,"note":"Trade (−$6.06)","id":71},{"date":"2026-04-15","type":"trade_win","amount":5.74,"note":"Trade (+$5.74)","id":72},{"date":"2026-04-15","type":"trade_loss","amount":0.98,"note":"Trade (−$0.98)","id":73},{"date":"2026-04-15","type":"trade_loss","amount":23.0,"note":"ACCOUNT BLOWN (−$23)","id":74},{"date":"2026-04-15","type":"withdraw","amount":10.0,"note":"Withdrew savings to keep trading","id":75},{"date":"2026-04-15","type":"trade_loss","amount":3.5,"note":"Trade (−$3.5)","id":76},{"date":"2026-04-15","type":"trade_loss","amount":1.06,"note":"Trade (−$1.06)","id":77},{"date":"2026-04-15","type":"trade_win","amount":1.5,"note":"Trade (+$1.5)","id":78},{"date":"2026-04-15","type":"trade_loss","amount":5.23,"note":"Trade (−$5.23)","id":79},{"date":"2026-04-15","type":"trade_win","amount":0.66,"note":"Trade (+$0.66)","id":80},{"date":"2026-04-15","type":"trade_loss","amount":3.09,"note":"Trade (−$3.09)","id":81},{"date":"2026-04-15","type":"trade_loss","amount":3.6,"note":"Trade (−$3.6)","id":82},{"date":"2026-05-15","type":"alw_debt","amount":30,"note":"May allowance → debt (2270→2240)","auto":true,"id":83},{"date":"2026-05-15","type":"alw_trading","amount":11,"note":"May allowance → trading","auto":true,"id":84},{"date":"2026-05-15","type":"income","amount":8.17,"note":"Mom — for the SPF trip (+$8.17)","id":85},{"date":"2026-05-15","type":"trade_loss","amount":4.08,"note":"Trade (−$4.08)","id":86},{"date":"2026-05-15","type":"trade_win","amount":2.95,"note":"Trade (+$2.95)","id":87},{"date":"2026-05-15","type":"trade_loss","amount":0.85,"note":"Trade (−$0.85)","id":88},{"date":"2026-05-15","type":"trade_loss","amount":3.73,"note":"Trade (−$3.73)","id":89},{"date":"2026-05-15","type":"trade_loss","amount":2.6,"note":"Trade (−$2.6)","id":90},{"date":"2026-05-15","type":"trade_loss","amount":0.49,"note":"Trade (−$0.49)","id":91},{"date":"2026-05-15","type":"trade_win","amount":1.54,"note":"Trade (+$1.54)","id":92},{"date":"2026-05-15","type":"trade_win","amount":6.75,"note":"Trade (+$6.75)","id":93},{"date":"2026-05-15","type":"trade_win","amount":1.54,"note":"Trade (+$1.54)","id":94},{"date":"2026-05-15","type":"trade_win","amount":2.0,"note":"Trade (+$2)","id":95},{"date":"2026-05-15","type":"trade_win","amount":2.75,"note":"Trade (+$2.75)","id":96},{"date":"2026-05-15","type":"trade_loss","amount":7.15,"note":"Trade (−$7.15)","id":97},{"date":"2026-05-15","type":"trade_loss","amount":6.22,"note":"Trade (−$6.22)","id":98},{"date":"2026-05-15","type":"trade_loss","amount":1.65,"note":"Trade (−$1.65)","id":99},{"date":"2026-05-15","type":"trade_loss","amount":6.6,"note":"Trade (−$6.6)","id":100},{"date":"2026-05-15","type":"trade_loss","amount":4.12,"note":"Trade (−$4.12)","id":101},{"date":"2026-05-15","type":"trade_win","amount":0.93,"note":"Trade (+$0.93)","id":102},{"date":"2026-05-15","type":"trade_win","amount":1.28,"note":"Trade (+$1.28)","id":103},{"date":"2026-05-15","type":"trade_loss","amount":1.7,"note":"Trade (−$1.7)","id":104},{"date":"2026-05-15","type":"trade_win","amount":1.75,"note":"Trade (+$1.75)","id":105},{"date":"2026-05-15","type":"trade_loss","amount":9.95,"note":"Trade (−$9.95)","id":106},{"date":"2026-06-15","type":"alw_debt","amount":30,"note":"June allowance → debt (2240→2210)","auto":true,"id":107},{"date":"2026-06-15","type":"alw_trading","amount":11,"note":"June allowance → trading","auto":true,"id":108},{"date":"2026-06-15","type":"trade_win","amount":16.38,"note":"Trade (+$16.38)","id":109},{"date":"2026-06-15","type":"trade_win","amount":1.0,"note":"Trade (+$1)","id":110},{"date":"2026-06-15","type":"trade_win","amount":10.84,"note":"Trade (+$10.84)","id":111},{"date":"2026-06-15","type":"trade_loss","amount":6.85,"note":"Trade (−$6.85)","id":112},{"date":"2026-06-15","type":"trade_win","amount":2.86,"note":"Trade (+$2.86)","id":113},{"date":"2026-06-15","type":"trade_loss","amount":2.5,"note":"Trade (−$2.5)","id":114},{"date":"2026-06-15","type":"trade_loss","amount":15.03,"note":"Trade (−$15.03)","id":115},{"date":"2026-06-15","type":"trade_win","amount":1.05,"note":"Trade (+$1.05)","id":116},{"date":"2026-06-15","type":"trade_win","amount":2.38,"note":"Trade (+$2.38)","id":117},{"date":"2026-06-15","type":"trade_win","amount":2.89,"note":"Trade (+$2.89)","id":118},{"date":"2026-06-15","type":"trade_win","amount":1.84,"note":"Trade (+$1.84)","id":119},{"date":"2026-06-15","type":"trade_win","amount":3.93,"note":"Trade (+$3.93)","id":120},{"date":"2026-06-15","type":"trade_loss","amount":3.21,"note":"Trade (−$3.21)","id":121},{"date":"2026-06-15","type":"trade_win","amount":5.36,"note":"Trade (+$5.36)","id":122},{"date":"2026-06-15","type":"trade_loss","amount":14.56,"note":"Trade (−$14.56)","id":123},{"date":"2026-06-15","type":"trade_loss","amount":6.59,"note":"Trade (−$6.59)","id":124},{"date":"2026-06-15","type":"trade_win","amount":2.85,"note":"Trade (+$2.85)","id":125},{"date":"2026-06-15","type":"trade_win","amount":24.23,"note":"Trade (+$24.23)","id":126},{"date":"2026-06-15","type":"trade_loss","amount":4.44,"note":"Trade (−$4.44)","id":127},{"date":"2026-06-15","type":"trade_win","amount":3.44,"note":"Trade (+$3.44)","id":128},{"date":"2026-06-15","type":"trade_loss","amount":2.81,"note":"Trade (−$2.81)","id":129},{"date":"2026-06-15","type":"trade_win","amount":2.82,"note":"Trade (+$2.82)","id":130},{"date":"2026-06-15","type":"trade_win","amount":21.2,"note":"Trade (+$21.2)","id":131},{"date":"2026-06-15","type":"trade_loss","amount":32.71,"note":"Trade (−$32.71)","id":132},{"date":"2026-06-15","type":"trade_win","amount":1.37,"note":"Trade (+$1.37)","id":133},{"date":"2026-06-15","type":"trade_loss","amount":1.58,"note":"Trade (−$1.58)","id":134},{"date":"2026-06-15","type":"trade_win","amount":9.67,"note":"Trade (+$9.67)","id":135},{"date":"2026-06-15","type":"trade_loss","amount":1.94,"note":"Trade (−$1.94)","id":136},{"date":"2026-06-15","type":"trade_win","amount":3.64,"note":"Trade (+$3.64)","id":137},{"date":"2026-06-15","type":"trade_loss","amount":5.88,"note":"Trade (−$5.88)","id":138},{"date":"2026-06-15","type":"trade_loss","amount":7.8,"note":"Session net (−$7.80)","id":139},{"date":"2026-06-15","type":"trade_win","amount":21.73,"note":"Trade (+$21.73)","id":140},{"date":"2026-06-15","type":"trade_win","amount":20.76,"note":"Trade (+$20.76)","id":141},{"date":"2026-06-15","type":"trade_loss","amount":22.7,"note":"Trade (−$22.7)","id":142},{"date":"2026-06-15","type":"trade_loss","amount":24.88,"note":"Trade (−$24.88)","id":143},{"date":"2026-06-15","type":"trade_win","amount":58.42,"note":"Trade (+$58.42)","id":144},{"date":"2026-06-15","type":"trade_loss","amount":11.86,"note":"Trade (−$11.86)","id":145},{"date":"2026-06-15","type":"trade_loss","amount":3.73,"note":"Trade split with Dad (−$3.73)","id":146},{"date":"2026-06-15","type":"trade_win","amount":13.11,"note":"Trade (+$13.11)","id":147},{"date":"2026-06-15","type":"trade_loss","amount":7.51,"note":"Trade (−$7.51)","id":148},{"date":"2026-06-15","type":"spend","amount":5.45,"note":"Squish toy — Dragon Mart","cat":"Toys","id":149},{"date":"2026-06-15","type":"spend","amount":3.03,"note":"Staplers (11.13 AED)","cat":"Stationery","id":150},{"date":"2026-06-15","type":"trade_loss","amount":14.89,"note":"Trade (−$14.89)","id":151},{"date":"2026-06-15","type":"trade_win","amount":11.29,"note":"Trade (+$11.29)","id":152},{"date":"2026-06-15","type":"trade_loss","amount":15.02,"note":"Trade (−$15.02)","id":153},{"date":"2026-06-15","type":"trade_loss","amount":31.19,"note":"Trade (−$31.19)","id":154},{"date":"2026-06-15","type":"income","amount":27.23,"note":"Added (100 AED)","id":155},{"date":"2026-06-15","type":"trade_loss","amount":7.66,"note":"XAUUSD session net (−$7.66)","id":156},{"date":"2026-06-15","type":"trade_loss","amount":72.0,"note":"Trade (−$72)","id":157},{"date":"2026-06-15","type":"income","amount":72.0,"note":"Dad covered my loss (+$72)","id":158},{"date":"2026-06-15","type":"trade_loss","amount":27.0,"note":"Lody (−$27)","id":159},{"date":"2026-06-15","type":"trade_loss","amount":1.28,"note":"Trade (−$1.28)","id":160},{"date":"2026-07-15","type":"alw_debt","amount":30,"note":"July allowance → debt (2210→2180)","auto":true,"id":161},{"date":"2026-07-15","type":"alw_trading","amount":11,"note":"July allowance → trading","auto":true,"id":162},{"date":"2026-07-15","type":"trade_loss","amount":8.33,"note":"Trade (−$8.33)","id":163},{"date":"2026-07-15","type":"trade_win","amount":17.97,"note":"Trade (+$17.97)","id":164},{"date":"2026-07-15","type":"trade_win","amount":3.02,"note":"Trade (+$3.02)","id":165},{"date":"2026-07-15","type":"trade_win","amount":1.32,"note":"Trade (+$1.32)","id":166},{"date":"2026-07-15","type":"trade_win","amount":5.42,"note":"Trade (+$5.42)","id":167},{"date":"2026-07-15","type":"trade_win","amount":0.34,"note":"Trade (+$0.34)","id":168}]
+    transactions:[{"id":1,"date":"2025-01-15","type":"income","amount":40.8441,"note":"Jan allowance 150 AED"},{"id":2,"date":"2025-01-15","type":"spend","amount":8.1688,"note":"Spent 30 AED","cat":"Other"},{"id":3,"date":"2025-02-15","type":"income","amount":40.8441,"note":"Feb allowance 150 AED"},{"id":4,"date":"2025-03-15","type":"income","amount":40.8441,"note":"Mar allowance 150 AED"},{"id":5,"date":"2025-03-15","type":"income","amount":190.6059,"note":"Birthday money 700 AED"},{"id":6,"date":"2025-04-15","type":"spend","amount":136.147,"note":"Broke a lamp 500 AED","cat":"Other"},{"id":7,"date":"2025-09-15","type":"income","amount":40.8441,"note":"Sep allowance 150 AED"},{"id":8,"date":"2025-09-15","type":"trade_win","amount":39.2103,"note":"Stocks profit +144 AED"},{"id":9,"date":"2025-10-15","type":"income","amount":40.8441,"note":"Oct allowance 150 AED"},{"id":10,"date":"2025-10-18","type":"spend","amount":108.9176,"note":"Broken shelf \u2013 two plants 400 AED","cat":"Other"},{"id":11,"date":"2025-10-18","type":"spend","amount":136.147,"note":"Broken shelf \u2013 one vase 500 AED","cat":"Other"},{"id":12,"date":"2025-11-15","type":"income","amount":40.8441,"note":"Nov allowance 150 AED"},{"id":13,"date":"2025-11-15","type":"spend","amount":4.0844,"note":"Toy gun 15 AED","cat":"Toys"},{"id":14,"date":"2025-12-15","type":"income","amount":40.8441,"note":"Dec allowance 150 AED"},{"id":15,"date":"2025-12-15","type":"income","amount":16.3376,"note":"Reading money 60 AED"},{"id":16,"date":"2025-12-15","type":"trade_loss","amount":141.5929,"note":"Stocks loss \u2212520 AED"},{"id":17,"date":"2026-01-15","type":"income","amount":40.8441,"note":"Jan allowance 150 AED"},{"id":18,"date":"2026-01-15","type":"income","amount":24.5065,"note":"Reading money 90 AED"},{"id":19,"date":"2026-01-15","type":"income","amount":2.7229,"note":"Dad reading bonus 10 AED"},{"id":20,"date":"2026-01-15","type":"income","amount":136.147,"note":"Gift \u2013 Ramla Khala 500 AED"},{"id":21,"date":"2026-02-15","type":"income","amount":40.8441,"note":"Feb allowance 150 AED"},{"id":22,"date":"2026-02-06","type":"trade_win","amount":183.2539,"note":"BTC 0.1 @ 65533\u219267367 +673 AED"},{"id":23,"date":"2026-02-06","type":"trade_win","amount":128.7951,"note":"BTC 0.1 @ 66072\u219267366 +473 AED"},{"id":24,"date":"2026-02-10","type":"trade_loss","amount":31.3138,"note":"Alphabet 4sh buy\u2192loss \u2212115 AED (Plus500)"},{"id":25,"date":"2026-02-17","type":"trade_win","amount":50.0,"note":"BTC 16-17 Feb +$50 (\u2248175 AED)"},{"id":26,"date":"2026-02-20","type":"spend","amount":19.0606,"note":"Pencil cases 90 AED \u2013 Dad covers 20 = 70 AED net","cat":"Stationery"},{"id":27,"date":"2026-02-20","type":"spend","amount":20.4221,"note":"24x Cheetos + 24x Doritos packs 75 AED","cat":"Snacks"},{"id":28,"date":"2026-02-20","type":"income","amount":21.7835,"note":"School reimbursement +80 AED"},{"id":29,"date":"2026-02-22","type":"trade_win","amount":47.6515,"note":"Stocks +175 AED"},{"id":30,"date":"2026-02-22","type":"income","amount":5.4459,"note":"Made 20 AED in school"},{"id":31,"date":"2026-02-22","type":"spend","amount":76.2423,"note":"Temu order 280 AED","cat":"Shopping"},{"id":32,"date":"2026-02-25","type":"trade_win","amount":50.0,"note":"Trade +$50"},{"id":33,"date":"2026-02-25","type":"trade_win","amount":24.0,"note":"Trade +$24"},{"id":34,"date":"2026-02-25","type":"trade_loss","amount":46.0,"note":"Trade \u2212$46"},{"id":35,"date":"2026-03-01","type":"income","amount":40.8441,"note":"Mar allowance 150 AED"},{"id":36,"date":"2026-03-01","type":"income","amount":50.6467,"note":"Bet with Dad +186 AED"},{"id":37,"date":"2026-03-01","type":"income","amount":23.4173,"note":"Temu refund +86 AED"},{"id":38,"date":"2026-03-01","type":"trade_win","amount":18.2437,"note":"Gold +67 AED"},{"id":39,"date":"2026-03-01","type":"trade_loss","amount":499.9319,"note":"Bitcoin \u22121836 AED"},{"id":40,"date":"2026-03-01","type":"trade_win","amount":35.3982,"note":"Gold +130 AED"},{"id":41,"date":"2026-03-10","type":"spend","amount":17.4268,"note":"Amazon (mini bag sealer) 64 AED","cat":"Shopping"},{"id":42,"date":"2026-03-10","type":"trade_win","amount":42.0,"note":"Crude oil +$42"},{"id":43,"date":"2026-03-10","type":"trade_win","amount":3.3,"note":"Crude oil +$3.30 (12 AED)"},{"id":44,"date":"2026-03-11","type":"trade_win","amount":23.0,"note":"Gold +$23 (80 AED)"},{"id":45,"date":"2026-03-11","type":"trade_loss","amount":120.0,"note":"Gold \u2212$120 (440 AED)"},{"id":46,"date":"2026-03-11","type":"trade_loss","amount":6.0,"note":"Gold \u2212$6 (21.04 AED, no proof)"},{"id":47,"date":"2026-03-11","type":"trade_win","amount":15.0,"note":"Trade +$15 (55 AED)"},{"id":48,"date":"2026-03-11","type":"trade_loss","amount":1.02,"note":"Trade \u2212$1.02 (4 AED)"},{"id":49,"date":"2026-03-11","type":"trade_win","amount":11.6,"note":"Trade +$11.60 (42.60 AED)"},{"id":50,"date":"2026-03-20","type":"income","amount":54.4588,"note":"EID money 200 AED"},{"id":51,"date":"2026-03-20","type":"trade_loss","amount":51.4636,"note":"MetaTrader \u2212189 AED (EID money)"},{"id":52,"date":"2026-03-25","type":"borrow","amount":2300.0,"note":"~$2300 bitcoin loss \u2192 debt to Dad (8445 AED)"},{"id":53,"date":"2026-03-28","type":"adjust","amount":-182.027,"note":"Currency switch \u2014 reset balance to zero (loss in debt)"},{"id":54,"date":"2026-04-01","type":"alw_debt","amount":30.0,"note":"Apr allowance \u2192 debt 2300\u21922270","auto":true},{"id":55,"date":"2026-04-01","type":"alw_savings","amount":10.0,"note":"Apr allowance \u2192 savings","auto":true},{"id":56,"date":"2026-04-01","type":"income","amount":20.0,"note":"Got $20 long ago (unlisted in note)"},{"id":57,"date":"2026-04-01","type":"trade_win","amount":20.0,"note":"Made $20 trading \u2014 capital 20+20=40"},{"id":58,"date":"2026-04-11","type":"trade_loss","amount":1.7,"note":"BTC Apr 11 \u2014 net \u2212$1.70 (dad's 88.5 his)"},{"id":59,"date":"2026-04-12","type":"trade_loss","amount":0.22,"note":"BTC Apr 12 \u2014 lost 22 cents"},{"id":60,"date":"2026-04-12","type":"trade_loss","amount":6.57,"note":"BTC Apr 12 \u2014 lost $6.57"},{"id":61,"date":"2026-04-13","type":"trade_win","amount":13.06,"note":"XAUUSD Apr 13 \u2014 +$13.06"},{"id":62,"date":"2026-04-13","type":"trade_win","amount":0.91,"note":"XAUUSD Apr 13 \u2014 +$0.91"},{"id":63,"date":"2026-04-13","type":"trade_loss","amount":10.56,"note":"XAUUSD Apr 13 \u2014 \u2212$10.56"},{"id":64,"date":"2026-04-13","type":"trade_loss","amount":3.64,"note":"XAUUSD Apr 13 \u2014 \u2212$3.64"},{"id":65,"date":"2026-04-13","type":"trade_loss","amount":8.37,"note":"XAUUSD Apr 13/14 \u2014 \u2212$8.37"},{"id":66,"date":"2026-04-14","type":"trade_loss","amount":2.33,"note":"XAUUSD Apr 14 \u2014 \u2212$2.33"},{"id":67,"date":"2026-04-15","type":"trade_loss","amount":0.42,"note":"XAUUSD Apr 15 \u2014 \u2212$0.42"},{"id":68,"date":"2026-04-15","type":"trade_win","amount":6.5,"note":"XAUUSD Apr 15 \u2014 +$6.50 (split with Dad)"},{"id":69,"date":"2026-04-15","type":"trade_win","amount":1.24,"note":"XAUUSD Apr 15 \u2014 +$1.24 (split)"},{"id":70,"date":"2026-04-15","type":"trade_loss","amount":0.33,"note":"XAUUSD Apr 15 \u2014 \u2212$0.33 (split)"},{"id":71,"date":"2026-04-15","type":"trade_loss","amount":2.58,"note":"XAUUSD Apr 15 \u2014 \u2212$2.58"},{"id":72,"date":"2026-04-16","type":"trade_loss","amount":1.4,"note":"XAUUSD Apr 16 \u2014 \u2212$1.40 (split)"},{"id":73,"date":"2026-04-16","type":"trade_loss","amount":2.6,"note":"XAUUSD Apr 16 \u2014 \u2212$2.60"},{"id":74,"date":"2026-04-16","type":"trade_loss","amount":6.06,"note":"XAUUSD Apr 16 \u2014 \u2212$6.06"},{"id":75,"date":"2026-04-16","type":"trade_win","amount":5.74,"note":"XAUUSD Apr 16 \u2014 +$5.74"},{"id":76,"date":"2026-04-16","type":"trade_loss","amount":0.98,"note":"XAUUSD Apr 16 \u2014 \u2212$0.98"},{"id":77,"date":"2026-04-17","type":"trade_loss","amount":23.0,"note":"ACCOUNT BLOWN \u2014 \u2212$23"},{"id":78,"date":"2026-04-17","type":"withdraw","amount":10.0,"note":"Withdrew savings after account blown"},{"id":79,"date":"2026-04-17","type":"trade_loss","amount":3.5,"note":"XAUUSD Apr 17 \u2014 \u2212$3.50"},{"id":80,"date":"2026-04-18","type":"trade_loss","amount":1.06,"note":"BTC Apr 18 \u2014 \u2212$1.06"},{"id":81,"date":"2026-04-21","type":"trade_win","amount":1.5,"note":"XAUUSD Apr 21 \u2014 +$1.50"},{"id":82,"date":"2026-04-21","type":"trade_loss","amount":5.23,"note":"XAUUSD Apr 21 \u2014 \u2212$5.23"},{"id":83,"date":"2026-04-21","type":"trade_win","amount":0.66,"note":"XAUUSD Apr 21 \u2014 +$0.66"},{"id":84,"date":"2026-04-22","type":"trade_loss","amount":3.09,"note":"XAUUSD Apr 22 \u2014 \u2212$3.09"},{"id":85,"date":"2026-04-23","type":"trade_loss","amount":3.6,"note":"XAUUSD Apr 23 \u2014 \u2212$3.60"},{"id":86,"date":"2026-05-01","type":"alw_debt","amount":30.0,"note":"May allowance \u2192 debt 2270\u21922240","auto":true},{"id":87,"date":"2026-05-01","type":"alw_trading","amount":11.0,"note":"May allowance \u2192 trading","auto":true},{"id":88,"date":"2026-05-01","type":"income","amount":8.17,"note":"Mom gave $8.17 for going to SPF with her"},{"id":89,"date":"2026-04-27","type":"trade_loss","amount":4.08,"note":"XAUUSD late Apr \u2014 \u2212$4.08"},{"id":90,"date":"2026-05-04","type":"trade_win","amount":2.95,"note":"XAUUSD May 4 \u2014 +$2.95"},{"id":91,"date":"2026-05-07","type":"trade_loss","amount":0.85,"note":"XAUUSD/SP500 May 7 \u2014 \u2212$0.85"},{"id":92,"date":"2026-05-07","type":"trade_loss","amount":3.73,"note":"XAUUSD May 7 \u2014 \u2212$3.73"},{"id":93,"date":"2026-05-07","type":"trade_loss","amount":2.6,"note":"XAUUSD May 7 \u2014 \u2212$2.60"},{"id":94,"date":"2026-05-13","type":"trade_loss","amount":0.49,"note":"XAUUSD May 13 \u2014 \u2212$0.49"},{"id":95,"date":"2026-05-14","type":"trade_win","amount":1.54,"note":"SP0626 May 14 \u2014 +$1.54"},{"id":96,"date":"2026-05-15","type":"trade_win","amount":6.75,"note":"XAUUSD May 15 \u2014 +$6.75"},{"id":97,"date":"2026-05-15","type":"trade_win","amount":1.54,"note":"XAUUSD May 15 \u2014 +$1.54"},{"id":98,"date":"2026-05-15","type":"trade_win","amount":2.0,"note":"XAUUSD May 15 \u2014 +$2.00"},{"id":99,"date":"2026-05-15","type":"trade_win","amount":2.75,"note":"XAUUSD May 15 \u2014 +$2.75"},{"id":100,"date":"2026-05-15","type":"trade_loss","amount":7.15,"note":"XAUUSD May 15 \u2014 \u2212$7.15"},{"id":101,"date":"2026-05-15","type":"trade_loss","amount":6.22,"note":"XAUUSD May 15 \u2014 \u2212$6.22"},{"id":102,"date":"2026-05-15","type":"trade_loss","amount":1.65,"note":"XAUUSD May 15 \u2014 \u2212$1.65"},{"id":103,"date":"2026-05-19","type":"trade_loss","amount":6.62,"note":"XAUUSD May 19 \u2014 \u2212$6.62"},{"id":104,"date":"2026-05-19","type":"trade_loss","amount":4.12,"note":"XAUUSD May 19 \u2014 \u2212$4.12"},{"id":105,"date":"2026-05-21","type":"trade_win","amount":0.93,"note":"XAUUSD May 21 \u2014 +$0.93"},{"id":106,"date":"2026-05-21","type":"trade_win","amount":1.28,"note":"XAUUSD May 21 \u2014 +$1.28"},{"id":107,"date":"2026-05-21","type":"trade_loss","amount":1.7,"note":"XAUUSD/BTC May 21-22 \u2014 \u2212$1.70"},{"id":108,"date":"2026-05-22","type":"trade_win","amount":1.75,"note":"XAUUSD May 22 \u2014 +$1.75"},{"id":109,"date":"2026-05-22","type":"trade_loss","amount":9.95,"note":"XAUUSD May 22 \u2014 \u2212$9.95"},{"id":110,"date":"2026-06-01","type":"alw_debt","amount":30.0,"note":"Jun allowance \u2192 debt 2240\u21922210","auto":true},{"id":111,"date":"2026-06-01","type":"alw_trading","amount":11.0,"note":"Jun allowance \u2192 trading","auto":true},{"id":112,"date":"2026-05-22","type":"trade_win","amount":16.38,"note":"XAUUSD May 22 \u2014 +$16.38 (trade moment of the month)"},{"id":113,"date":"2026-05-22","type":"trade_win","amount":1.0,"note":"XAUUSD May 22 \u2014 +$1.00"},{"id":114,"date":"2026-06-01","type":"trade_win","amount":10.84,"note":"XAUUSD \u2014 +$10.84"},{"id":115,"date":"2026-06-05","type":"trade_win","amount":0.67,"note":"SP0626 sell 7570.42\u21927569.09 +$0.67"},{"id":116,"date":"2026-06-05","type":"trade_win","amount":0.5,"note":"XAUUSD buy 4322\u21924322.50 +$0.50"},{"id":117,"date":"2026-06-05","type":"trade_win","amount":5.96,"note":"XAUUSD buy 4317.71\u21924323.67 +$5.96"},{"id":118,"date":"2026-06-05","type":"trade_win","amount":1.14,"note":"XAUUSD buy 4315.55\u21924316.69 +$1.14"},{"id":119,"date":"2026-06-05","type":"trade_loss","amount":4.1,"note":"XAUUSD buy 4337.67\u21924333.57 \u2212$4.10"},{"id":120,"date":"2026-06-06","type":"trade_loss","amount":1.17,"note":"BTCUSD sell 60499\u219261667 \u2212$1.17"},{"id":121,"date":"2026-06-06","type":"trade_loss","amount":0.87,"note":"BTCUSD sell 60809\u219261675 \u2212$0.87"},{"id":122,"date":"2026-06-06","type":"trade_loss","amount":1.07,"note":"BTCUSD sell 60605\u219261677 \u2212$1.07"},{"id":123,"date":"2026-06-07","type":"trade_loss","amount":0.36,"note":"BTCUSD sell 62466\u219262827 \u2212$0.36"},{"id":124,"date":"2026-06-07","type":"trade_loss","amount":2.32,"note":"BTCUSD sell 61792\u219262024 \u2212$2.32"},{"id":125,"date":"2026-06-07","type":"trade_loss","amount":2.1,"note":"BTCUSD sell 61829\u219262039 \u2212$2.10"},{"id":126,"date":"2026-06-07","type":"trade_loss","amount":0.33,"note":"BTCUSD sell 61964\u219261997 \u2212$0.33"},{"id":127,"date":"2026-06-08","type":"trade_win","amount":0.29,"note":"XAUUSD sell 4328.95\u21924328.66 +$0.29"},{"id":128,"date":"2026-06-08","type":"trade_win","amount":2.02,"note":"XAUUSD buy 4325.78\u21924327.80 +$2.02"},{"id":129,"date":"2026-06-08","type":"trade_win","amount":3.08,"note":"XAUUSD buy 4325.62\u21924328.70 +$3.08"},{"id":130,"date":"2026-06-08","type":"trade_loss","amount":2.53,"note":"XAUUSD sell 4326.99\u21924329.52 \u2212$2.53"},{"id":131,"date":"2026-06-08","type":"trade_loss","amount":1.86,"note":"XAUUSD sell 4329.56\u21924331.42 \u2212$1.86"},{"id":132,"date":"2026-06-08","type":"trade_loss","amount":4.75,"note":"XAUUSD buy 4331.06\u21924326.31 \u2212$4.75"},{"id":133,"date":"2026-06-08","type":"trade_win","amount":21.73,"note":"XAUUSD Jun 8 \u2014 +$21.73"},{"id":134,"date":"2026-06-09","type":"trade_win","amount":20.76,"note":"XAUUSD Jun 9 \u2014 +$20.76"},{"id":135,"date":"2026-06-09","type":"trade_loss","amount":22.7,"note":"XAUUSD Jun 9 \u2014 \u2212$22.70"},{"id":136,"date":"2026-06-12","type":"trade_loss","amount":24.88,"note":"XAUUSD Jun 12 \u2014 \u2212$24.88"},{"id":137,"date":"2026-06-11","type":"trade_win","amount":58.42,"note":"XAUUSD Jun 11 \u2014 +$58.42"},{"id":138,"date":"2026-06-12","type":"trade_loss","amount":11.86,"note":"XAUUSD Jun 12 \u2014 \u2212$11.86"},{"id":139,"date":"2026-06-12","type":"trade_loss","amount":3.73,"note":"XAUUSD Jun 12 \u2014 \u2212$3.73 (split with Dad)"},{"id":140,"date":"2026-06-12","type":"trade_win","amount":13.11,"note":"XAUUSD Jun 12 \u2014 +$13.11"},{"id":141,"date":"2026-06-15","type":"trade_loss","amount":7.51,"note":"XAUUSD Jun 15 \u2014 \u2212$7.51"},{"id":142,"date":"2026-06-15","type":"spend","amount":5.45,"note":"Squish toy \u2013 Dragon Mart $5.45","cat":"Toys"},{"id":143,"date":"2026-06-15","type":"spend","amount":3.03,"note":"Staplers (Amazon AED 11.13) $3.03","cat":"Stationery"},{"id":144,"date":"2026-06-15","type":"trade_loss","amount":14.89,"note":"XAUUSD Jun 15 \u2014 \u2212$14.89"},{"id":145,"date":"2026-06-15","type":"trade_win","amount":11.29,"note":"XAUUSD Jun 15 \u2014 +$11.29"},{"id":146,"date":"2026-06-15","type":"trade_loss","amount":15.02,"note":"XAUUSD Jun 15 \u2014 \u2212$15.02"},{"id":147,"date":"2026-06-16","type":"trade_loss","amount":31.19,"note":"XAUUSD Jun 16 \u2014 \u2212$31.19"},{"id":148,"date":"2026-06-16","type":"income","amount":27.23,"note":"Added 100 AED (Dad) = $27.23"},{"id":149,"date":"2026-06-17","type":"trade_loss","amount":3.03,"note":"XAUUSD sell 4333.41\u21924336.44 \u2212$3.03"},{"id":150,"date":"2026-06-17","type":"trade_loss","amount":1.77,"note":"XAUUSD buy  4336.21\u21924334.44 \u2212$1.77"},{"id":151,"date":"2026-06-17","type":"trade_win","amount":0.24,"note":"XAUUSD sell 4333.99\u21924333.75 +$0.24"},{"id":152,"date":"2026-06-17","type":"trade_loss","amount":0.6,"note":"XAUUSD sell 4338.05\u21924338.65 \u2212$0.60"},{"id":153,"date":"2026-06-17","type":"trade_win","amount":0.27,"note":"XAUUSD sell 4343.78\u21924343.51 +$0.27"},{"id":154,"date":"2026-06-17","type":"trade_win","amount":0.07,"note":"XAUUSD sell 4343.83\u21924343.76 +$0.07"},{"id":155,"date":"2026-06-17","type":"trade_win","amount":0.43,"note":"XAUUSD buy  4343.47\u21924343.90 +$0.43"},{"id":156,"date":"2026-06-17","type":"trade_win","amount":0.55,"note":"XAUUSD sell 4343.81\u21924343.26 +$0.55"},{"id":157,"date":"2026-06-17","type":"trade_win","amount":0.19,"note":"XAUUSD sell 4343.02\u21924342.83 +$0.19"},{"id":158,"date":"2026-06-17","type":"trade_win","amount":0.18,"note":"XAUUSD sell 4343.53\u21924343.35 +$0.18"},{"id":159,"date":"2026-06-17","type":"trade_win","amount":0.6,"note":"XAUUSD sell 4342.80\u21924342.20 +$0.60"},{"id":160,"date":"2026-06-17","type":"trade_loss","amount":0.17,"note":"XAUUSD sell 4342.50\u21924342.67 \u2212$0.17"},{"id":161,"date":"2026-06-17","type":"trade_loss","amount":0.61,"note":"XAUUSD sell 4343.10\u21924343.71 \u2212$0.61"},{"id":162,"date":"2026-06-17","type":"trade_win","amount":0.49,"note":"XAUUSD sell 4344.16\u21924343.67 +$0.49"},{"id":163,"date":"2026-06-17","type":"trade_loss","amount":1.53,"note":"XAUUSD sell 4343.28\u21924344.81 \u2212$1.53"},{"id":164,"date":"2026-06-17","type":"trade_loss","amount":5.1,"note":"XAUUSD sell 4340.08\u21924345.18 \u2212$5.10"},{"id":165,"date":"2026-06-17","type":"trade_win","amount":3.36,"note":"XAUUSD buy  4341.04\u21924344.40 +$3.36"},{"id":166,"date":"2026-06-17","type":"trade_win","amount":5.25,"note":"XAUUSD sell 4357.40\u21924352.15 +$5.25"},{"id":167,"date":"2026-06-17","type":"trade_loss","amount":72.0,"note":"XAUUSD Jun 17 \u2014 \u2212$72.00"},{"id":168,"date":"2026-06-17","type":"income","amount":72.0,"note":"Dad covered $72 loss"},{"id":169,"date":"2026-06-19","type":"trade_loss","amount":27.0,"note":"XAUUSD Jun 19 \u2014 \u2212$27.00 (Lody)"},{"id":170,"date":"2026-06-26","type":"trade_loss","amount":1.28,"note":"XAUUSD Jun 26 \u2014 \u2212$1.28"},{"id":171,"date":"2026-07-01","type":"alw_debt","amount":30.0,"note":"Jul allowance \u2192 debt 2210\u21922180","auto":true},{"id":172,"date":"2026-07-01","type":"alw_trading","amount":11.0,"note":"Jul allowance \u2192 trading","auto":true},{"id":173,"date":"2026-07-02","type":"trade_loss","amount":8.83,"note":"XAUUSD Jul 2-3 \u2014 \u2212$8.83 (split with Dad)"},{"id":174,"date":"2026-07-08","type":"trade_win","amount":17.965,"note":"XAUUSD Jul 8 \u2014 +$17.965"},{"id":175,"date":"2026-07-08","type":"trade_win","amount":3.02,"note":"XAUUSD Jul 8 \u2014 +$3.02"},{"id":176,"date":"2026-07-08","type":"trade_win","amount":1.315,"note":"XAUUSD Jul 8 \u2014 +$1.315 (split)"},{"id":177,"date":"2026-07-09","type":"trade_win","amount":5.42,"note":"XAUUSD Jul 9 \u2014 +$5.42 (split)"},{"id":178,"date":"2026-07-10","type":"trade_win","amount":0.335,"note":"XAUUSD Jul 10 \u2014 +$0.335 (50/50 split)"}]
   };
 
   var state = clone(DEFAULTS);
@@ -482,6 +475,9 @@
     return out;
   }
 
+  // Currency switch date — trades before this were AED-era, reset to zero, don't count in P/L
+  var USD_ERA_START = "2026-04-01";
+
   function summaryFor(scope){ // scope = 'all' or 'YYYY-MM'
     var r={spent:0,tradePL:0,moneyIn:0,debtPaid:0,saved:0,net:0,cats:{}};
     state.transactions.forEach(function(t){
@@ -489,9 +485,9 @@
       var a=num(t.amount);
       r.net+=balDelta(t);
       if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
-      else if(t.type==="trade_win"){ r.tradePL+=a; }
-      else if(t.type==="trade_loss"){ r.tradePL-=a; }
-      else if(t.type==="income" || t.type==="alw_trading"){ r.moneyIn+=a; }
+      else if(t.type==="trade_win"&&t.date>=USD_ERA_START){ r.tradePL+=a; }
+      else if(t.type==="trade_loss"&&t.date>=USD_ERA_START){ r.tradePL-=a; }
+      else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
       if(t.type==="pay_debt_balance"||t.type==="alw_debt") r.debtPaid+=a;
       r.saved+=savDelta(t);
     });
@@ -555,28 +551,17 @@
     try{ window.localStorage.removeItem(photoKey(id)); }catch(e){}
   }
   // shrink an image file to keep storage small; falls back to raw if it can't decode (e.g. HEIC)
+  // Store every photo exactly as attached — no resize, no recompression, no quality loss ever
   function processImage(file, cb){
     var nm=file.name||"photo";
     var reader=new FileReader();
-    reader.onload=function(){
-      var dataUrl=reader.result;
-      var img=new Image();
-      img.onload=function(){
-        try{
-          var max=1100, w=img.width, h=img.height;
-          if(w>max||h>max){ var s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s); }
-          var c=document.createElement("canvas"); c.width=w; c.height=h;
-          var ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
-          var out=c.toDataURL("image/jpeg",0.72);
-          cb({dataUrl:(out&&out.length<dataUrl.length)?out:dataUrl, name:nm});
-        }catch(e){ cb({dataUrl:dataUrl, name:nm}); }
-      };
-      img.onerror=function(){ cb({dataUrl:dataUrl, name:nm, raw:true}); };
-      img.src=dataUrl;
-    };
+    reader.onload=function(){ cb({dataUrl:reader.result, name:nm}); };
     reader.onerror=function(){ alert("Couldn't read that photo — try a different one."); };
     reader.readAsDataURL(file);
   }
+
+  var SCREENSHOT_IMGS={};
+  var PAGE_IMGS={};
 
   /* ---------------- storage ---------------- */
   var saveTimer=null;
@@ -635,7 +620,7 @@
     }catch(e){}
   }
 
-  /* ---------------- chart rendering ---------------- */
+  /* ---------------- chart rendering (TradingView-style crosshair) ---------------- */
   function buildChart(){
     var wrap=document.getElementById("chartWrap");
     if(state.chartCollapsed){ wrap.style.display="none"; document.getElementById("chartToggle").textContent="▸"; return; }
@@ -643,68 +628,218 @@
 
     var candles=computeMonthly();
     var sym=state.currency;
-    var W=720, H=196, padL=46, padR=12, padT=14, padB=24;
+    var W=720, H=210, padL=52, padR=14, padT=16, padB=28;
     var n=candles.length;
     var plotW=W-padL-padR, plotH=H-padT-padB;
 
-    var lo=0, hi=0, i;
-    for(i=0;i<n;i++){ if(candles[i].l<lo)lo=candles[i].l; if(candles[i].h>hi)hi=candles[i].h; }
-    if(hi===lo){ hi=lo+1; }
-    var range=hi-lo, pad=range*0.10; hi+=pad; lo-=pad; range=hi-lo;
-    function Y(v){ return padT + plotH*(1-(v-lo)/range); }
+    var lo=Infinity, hi=-Infinity, i;
+    for(i=0;i<n;i++){
+      if(candles[i].l<lo) lo=candles[i].l;
+      if(candles[i].h>hi) hi=candles[i].h;
+    }
+    if(!isFinite(lo)||!isFinite(hi)||hi===lo){ lo=lo-1; hi=hi+1; }
+    var range=hi-lo, pad=range*0.12; hi+=pad; lo-=pad; range=hi-lo;
+    function Yv(v){ return padT + plotH*(1-(v-lo)/range); }
     var step=plotW/n;
-    function X(i){ return padL + step*i + step/2; }
+    function Xc(idx){ return padL + step*idx + step/2; }
 
-    var svg='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img">';
+    // Build static SVG parts (background, grid, candles/line, x-labels)
+    var svg='';
 
-    // gridlines: hi, 0 (if in range), lo, plus mid
-    var lines=[hi, lo, (hi+lo)/2];
-    if(lo<0 && hi>0) lines.push(0);
-    lines.forEach(function(gv){
-      var y=Y(gv), isZero=(Math.abs(gv)<1e-9);
-      svg+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'" stroke="'+(isZero?ZERO:GRID)+'" stroke-width="1" '+(isZero?'':'stroke-dasharray="2 4"')+'/>';
-      svg+='<text x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="'+AXTX+'">'+fmtShort(gv,sym)+'</text>';
+    // gridlines
+    var gridVals=[hi, lo, (hi+lo)/2];
+    if(lo<0 && hi>0) gridVals.push(0);
+    gridVals.forEach(function(gv){
+      var y=Yv(gv), isZero=(Math.abs(gv)<0.001);
+      svg+='<line x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+
+           '" stroke="'+(isZero?ZERO:GRID)+'" stroke-width="'+(isZero?1.5:1)+'" '+
+           (isZero?'':'stroke-dasharray="3 5"')+'" opacity="0.7"/>';
+      svg+='<text x="'+(padL-5)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end" '+
+           'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+fmtShort(gv,sym)+'</text>';
     });
 
-    var labelEvery = n>16?3:(n>10?2:1);
+    var labelEvery = n>18?3:(n>10?2:1);
+    var isLine = state.chartType==="line";
 
-    if(state.chartType==="line"){
-      var pts=""; 
-      for(i=0;i<n;i++){ pts+=X(i).toFixed(1)+","+Y(candles[i].c).toFixed(1)+" "; }
-      // soft area
-      var area="M "+padL+" "+Y(lo)+" ";
-      // build area along closes then back
-      area="M "+X(0).toFixed(1)+" "+Y(candles[0].c).toFixed(1)+" ";
-      for(i=1;i<n;i++){ area+="L "+X(i).toFixed(1)+" "+Y(candles[i].c).toFixed(1)+" "; }
-      area+="L "+X(n-1).toFixed(1)+" "+Y(lo).toFixed(1)+" L "+X(0).toFixed(1)+" "+Y(lo).toFixed(1)+" Z";
-      svg+='<path d="'+area+'" fill="rgba(244,183,63,.08)"/>';
-      svg+='<polyline points="'+pts.trim()+'" fill="none" stroke="'+AMBER+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    if(isLine){
+      // gradient area
+      var apts="M "+Xc(0).toFixed(1)+" "+Yv(candles[0].c).toFixed(1)+" ";
+      for(i=1;i<n;i++) apts+="L "+Xc(i).toFixed(1)+" "+Yv(candles[i].c).toFixed(1)+" ";
+      apts+="L "+Xc(n-1).toFixed(1)+" "+(padT+plotH)+" L "+Xc(0).toFixed(1)+" "+(padT+plotH)+" Z";
+      svg+='<defs><linearGradient id="lgrad" x1="0" y1="0" x2="0" y2="1">'+
+           '<stop offset="0%" stop-color="'+AMBER+'" stop-opacity="0.18"/>'+
+           '<stop offset="100%" stop-color="'+AMBER+'" stop-opacity="0.01"/></linearGradient></defs>';
+      svg+='<path d="'+apts+'" fill="url(#lgrad)"/>';
+      // line
+      var lpts="";
+      for(i=0;i<n;i++) lpts+=Xc(i).toFixed(1)+","+Yv(candles[i].c).toFixed(1)+" ";
+      svg+='<polyline points="'+lpts.trim()+'" fill="none" stroke="'+AMBER+'" stroke-width="2.2" '+
+           'stroke-linejoin="round" stroke-linecap="round"/>';
+      // dots (invisible large hit areas + visible small dots)
       for(i=0;i<n;i++){
-        svg+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(candles[i].c).toFixed(1)+'" r="2.4" fill="'+AMBER+'">'
-            +'<title>'+monthLong(candles[i].key)+'  •  '+fmt(candles[i].c,sym)+'</title></circle>';
+        var cx2=Xc(i).toFixed(1), cy2=Yv(candles[i].c).toFixed(1);
+        svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'"/>';
       }
     } else {
-      var bw=Math.max(3, Math.min(step*0.55, 16));
+      var bw=Math.max(4, Math.min(step*0.55, 18));
       for(i=0;i<n;i++){
-        var c=candles[i], cx=X(i), up=c.c>=c.o, col=(Math.abs(c.c-c.o)<1e-9)?DOJI:(up?UP:DOWN);
-        var yH=Y(c.h), yL=Y(c.l), yO=Y(c.o), yC=Y(c.c);
-        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),1.5);
-        svg+='<g><title>'+monthLong(c.key)+'\nOpen '+fmt(c.o,sym)+'   Close '+fmt(c.c,sym)+'\nHigh '+fmt(c.h,sym)+'   Low '+fmt(c.l,sym)+'</title>';
-        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="1.3"/>';
+        var c=candles[i], cx=Xc(i);
+        var isUp=c.c>=c.o;
+        var col=(Math.abs(c.c-c.o)<0.001)?DOJI:(isUp?UP:DOWN);
+        var yH=Yv(c.h), yL=Yv(c.l), yO=Yv(c.o), yC=Yv(c.c);
+        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),2);
+        svg+='<g class="cv-candle" data-i="'+i+'">';
+        svg+='<rect x="'+(cx-step/2).toFixed(1)+'" y="'+padT+'" width="'+step.toFixed(1)+'" height="'+plotH+'" fill="transparent"/>';
+        svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="1.4"/>';
         svg+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1.5" fill="'+col+'"/>';
         svg+='</g>';
       }
     }
 
-    // x labels
+    // x-axis labels
     for(i=0;i<n;i++){
       if(i%labelEvery!==0 && i!==n-1) continue;
-      svg+='<text x="'+X(i).toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="'+AXTX+'">'+monthLabel(candles[i].key)+'</text>';
+      svg+='<text x="'+Xc(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" '+
+           'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+monthLabel(candles[i].key)+'</text>';
     }
 
-    svg+='</svg>';
+    // Crosshair elements (hidden by default, shown on hover via JS)
+    svg+='<line id="cvVLine" x1="0" y1="'+padT+'" x2="0" y2="'+(padT+plotH)+'" '+
+         'stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    svg+='<line id="cvHLine" x1="'+padL+'" y1="0" x2="'+(W-padR)+'" y2="0" '+
+         'stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>';
+    // price label on y-axis
+    svg+='<rect id="cvYBg" x="0" y="0" width="'+padL+'" height="15" rx="3" fill="'+AMBER+'" style="display:none"/>';
+    svg+='<text id="cvYTxt" x="'+(padL-4)+'" y="10" text-anchor="end" font-size="9" font-family="'+MFONT+'" font-weight="700" fill="#20160a" style="display:none"></text>';
+    // month label on x-axis
+    svg+='<rect id="cvXBg" x="0" y="'+(H-padB+1)+'" width="54" height="14" rx="3" fill="'+AMBER+'" style="display:none"/>';
+    svg+='<text id="cvXTxt" x="0" y="'+(H-padB+10)+'" text-anchor="middle" font-size="9" font-family="'+MFONT+'" font-weight="700" fill="#20160a" style="display:none"></text>';
+    // Tooltip box (OHLC for candles, value for line)
+    svg+='<rect id="cvTipBg" x="60" y="6" rx="5" ry="5" fill="#1b2230" stroke="#2c3648" stroke-width="1" style="display:none"/>';
+    svg+='<text id="cvTipTxt" x="68" y="18" font-size="9.5" font-family="'+MFONT+'" fill="#e6ebf2" style="display:none"></text>';
+    // Highlight circle (line mode)
+    svg+='<circle id="cvDot" r="5" fill="'+AMBER+'" stroke="#0b0e14" stroke-width="2" style="display:none"/>';
+
+    // Invisible mouse capture overlay
+    svg+='<rect id="cvOverlay" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent" style="cursor:crosshair"/>';
+
+    svg='<svg id="chartSvg" class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+svg+'</svg>';
     wrap.innerHTML=svg;
+
+    // ---- crosshair interaction ----
+    var svgEl=document.getElementById("chartSvg");
+    var overlay=document.getElementById("cvOverlay");
+    var vLine=document.getElementById("cvVLine");
+    var hLine=document.getElementById("cvHLine");
+    var yBg=document.getElementById("cvYBg");
+    var yTxt=document.getElementById("cvYTxt");
+    var xBg=document.getElementById("cvXBg");
+    var xTxt=document.getElementById("cvXTxt");
+    var tipBg=document.getElementById("cvTipBg");
+    var tipTxt=document.getElementById("cvTipTxt");
+    var dotEl=document.getElementById("cvDot");
+
+    function getSVGPoint(e){
+      var rect=svgEl.getBoundingClientRect();
+      var clientX=e.touches?e.touches[0].clientX:e.clientX;
+      var clientY=e.touches?e.touches[0].clientY:e.clientY;
+      var sx=(clientX-rect.left)/rect.width*W;
+      var sy=(clientY-rect.top)/rect.height*H;
+      return {x:sx, y:sy};
+    }
+
+    function showCrosshair(e){
+      var pt=getSVGPoint(e);
+      var mx=pt.x, my=pt.y;
+      if(mx<padL||mx>W-padR||my<padT||my>padT+plotH){ hideCrosshair(); return; }
+      // find nearest candle index
+      var idx=Math.round((mx-padL)/step - 0.5);
+      idx=Math.max(0,Math.min(n-1,idx));
+      var cx=Xc(idx);
+      var c=candles[idx];
+      var valY=isLine?Yv(c.c):my;
+      var priceAtCursor=isLine?c.c:(lo + (1-(my-padT)/plotH)*range);
+
+      // vertical line snapped to candle center
+      vLine.setAttribute("x1",cx.toFixed(1)); vLine.setAttribute("x2",cx.toFixed(1));
+      vLine.style.display="";
+      // horizontal line at cursor y
+      hLine.setAttribute("y1",valY.toFixed(1)); hLine.setAttribute("y2",valY.toFixed(1));
+      hLine.style.display="";
+
+      // y-axis price label
+      var dispPrice=isLine?c.c:priceAtCursor;
+      var yLabelY=(valY-6).toFixed(1);
+      yBg.setAttribute("y",yLabelY); yBg.setAttribute("width",padL); yBg.style.display="";
+      yTxt.setAttribute("y",(parseFloat(yLabelY)+10).toFixed(1));
+      yTxt.textContent=sym+(dispPrice>=0?"":"-")+Math.abs(dispPrice).toFixed(2);
+      yTxt.style.display="";
+
+      // x-axis month label
+      var tipW=56;
+      xBg.setAttribute("x",(cx-tipW/2).toFixed(1)); xBg.setAttribute("width",tipW);
+      xBg.style.display="";
+      xTxt.setAttribute("x",cx.toFixed(1));
+      xTxt.textContent=monthLong(c.key);
+      xTxt.style.display="";
+
+      // highlight dot (line mode)
+      if(isLine){
+        dotEl.setAttribute("cx",cx.toFixed(1));
+        dotEl.setAttribute("cy",Yv(c.c).toFixed(1));
+        dotEl.style.display="";
+      } else { dotEl.style.display="none"; }
+
+      // tooltip box
+      var lines2, maxLen;
+      if(isLine){
+        lines2=[monthLong(c.key)+"  "+sym+c.c.toFixed(2)];
+        maxLen=lines2[0].length;
+      } else {
+        lines2=[
+          monthLong(c.key),
+          "O "+sym+c.o.toFixed(2)+"  C "+sym+c.c.toFixed(2),
+          "H "+sym+c.h.toFixed(2)+"  L "+sym+c.l.toFixed(2)
+        ];
+        maxLen=Math.max(lines2[0].length,lines2[1].length,lines2[2].length);
+      }
+      var tw=maxLen*5.8+16, th=lines2.length*14+8;
+      var tx=cx+10; if(tx+tw>W-padR) tx=cx-tw-10;
+      var ty=padT+4; if(isLine) ty=Math.max(padT+4,Yv(c.c)-th-8);
+      tipBg.setAttribute("x",tx.toFixed(1)); tipBg.setAttribute("y",ty.toFixed(1));
+      tipBg.setAttribute("width",tw.toFixed(1)); tipBg.setAttribute("height",th.toFixed(1));
+      tipBg.style.display="";
+      // clear old tspans
+      while(tipTxt.firstChild) tipTxt.removeChild(tipTxt.firstChild);
+      lines2.forEach(function(ln,li){
+        var ts=document.createElementNS("http://www.w3.org/2000/svg","tspan");
+        ts.setAttribute("x",(tx+8).toFixed(1));
+        ts.setAttribute("dy",li===0?((ty+12).toFixed(1)):"13");
+        if(li===0){ ts.setAttribute("y",(ty+12).toFixed(1)); ts.removeAttribute("dy"); }
+        else ts.setAttribute("dy","13");
+        ts.setAttribute("fill",li===0?AMBER:"#e6ebf2");
+        ts.textContent=ln;
+        tipTxt.appendChild(ts);
+      });
+      tipTxt.style.display="";
+    }
+
+    function hideCrosshair(){
+      [vLine,hLine,yBg,yTxt,xBg,xTxt,tipBg,tipTxt,dotEl].forEach(function(el){ el.style.display="none"; });
+    }
+
+    overlay.addEventListener("mousemove", showCrosshair);
+    overlay.addEventListener("touchmove", function(e){ e.preventDefault(); showCrosshair(e); }, {passive:false});
+    overlay.addEventListener("mouseleave", hideCrosshair);
+    overlay.addEventListener("touchend", hideCrosshair);
+    // also attach to candle/dot hit areas
+    var MFONT="ui-monospace,Menlo,monospace";
+    svgEl.querySelectorAll(".cv-candle,.cv-dot").forEach(function(el){
+      el.addEventListener("mousemove", showCrosshair);
+      el.addEventListener("mouseleave", hideCrosshair);
+    });
   }
+  var MFONT="ui-monospace,Menlo,monospace";
 
   /* ---------------- render ---------------- */
   function render(){
@@ -740,18 +875,52 @@
     if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
     au.innerHTML=msg;
 
-    // allowance button state (once per month)
+    // allowance button state — shows next un-added month, allows up to 3 months advance
     var btn=document.getElementById("applyAlw");
-    var done=appliedThisMonth(), thisMonthName=monthLong(curM);
-    if(done){ btn.disabled=true; btn.textContent="Added for "+thisMonthName+" ✓"; }
-    else if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
-    else { btn.disabled=false; btn.textContent="Add for "+MONTHS[(+curM.split("-")[1])-1]; }
+    var amSet2=allowanceMonths();
+    // find next unadded month starting from current month
+    var nextUnadded=null;
+    var curYr=+todayStr().slice(0,4), curMo=+todayStr().slice(5,7);
+    for(var mi=curMo;mi<=12;mi++){
+      var mk2=curYr+"-"+two(mi);
+      if(!amSet2[mk2]){ nextUnadded=mk2; break; }
+    }
+    // how many advance months already taken (months added AFTER current month)
+    var advanceTaken=0;
+    for(var ak in amSet2){
+      if(ak > curM) advanceTaken++;
+    }
+    var canAdvance=advanceTaken<3;
+    if(used<=0){ btn.disabled=true; btn.textContent="Set amounts first"; }
+    else if(!nextUnadded){ btn.disabled=true; btn.textContent="All 12 months added ✓"; }
+    else if(nextUnadded<=curM){
+      // current or past month not yet added — always allow
+      btn.disabled=false;
+      btn.textContent="Add "+monthLong(nextUnadded);
+    } else {
+      // would be an advance month
+      if(canAdvance){
+        btn.disabled=false;
+        btn.textContent="Advance: "+monthLong(nextUnadded)+" ("+(3-advanceTaken)+" left)";
+        btn.style.borderColor="var(--amber)";
+        btn.style.color="var(--amber)";
+      } else {
+        btn.disabled=true;
+        btn.textContent="Max advance taken (3 months)";
+      }
+    }
 
-    // year counter (12 pips)
+    // year counter — 12 pips, lit on actual month positions, count shows X of months-so-far
     var yc=document.getElementById("yrCount");
-    var nApplied=allowanceCountThisYear(), pips="";
-    for(var pi=0;pi<12;pi++){ pips+='<span class="pip'+(pi<nApplied?" on":"")+'"></span>'; }
-    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> of 12 months in '+todayStr().slice(0,4)+'</span>';
+    var amSet=allowanceMonths(), pips="", nApplied=0;
+    var curMonthNum=+todayStr().slice(5,7);
+    for(var pi=1;pi<=12;pi++){
+      var mk=todayStr().slice(0,4)+"-"+two(pi);
+      var on=!!amSet[mk];
+      if(on) nApplied++;
+      pips+='<span class="pip'+(on?" on":"")+(pi>curMonthNum?" future":"")+'"></span>';
+    }
+    yc.innerHTML='<span class="pips">'+pips+'</span><span>Added <b class="done-tag">'+nApplied+'</b> / 12 months in '+todayStr().slice(0,4)+'</span>';
 
     // month select
     var sel=document.getElementById("monthSel");
@@ -802,7 +971,25 @@
     syncInput("oBal", state.opening.balance);
     syncInput("oDebt", state.opening.debt);
     syncInput("oSav", state.opening.savings);
-    syncInput("oCur", state.currency);
+    // sync currency select
+    (function(){
+      var sel=document.getElementById("oCurSelect");
+      if(!sel) return;
+      var cur=state.currency||"$";
+      var found=false;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===cur){ sel.selectedIndex=i; found=true; break; }
+      }
+      if(!found){
+        sel.value="custom";
+        var ci=document.getElementById("oCurCustom");
+        if(ci){ ci.style.display="block"; ci.value=cur; }
+      }
+      // update note
+      var notes={"AED":"Pegged 1:1 to USD at 3.6725 — ultra-stable for the Gulf.","CHF":"Swiss Franc — near-zero inflation, world\'s top wealth preserver. Backed by gold reserves and strict fiscal policy.","SGD":"Singapore Dollar — Asia\'s primary reserve haven. Backed by massive monetary reserves and AAA fiscal policy."};
+      var nd=document.getElementById("curNote");
+      if(nd) nd.textContent=notes[cur]||"";
+    })();
 
     // chart seg active
     Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
@@ -831,28 +1018,35 @@
       } else if(ds!==0){ amtHtml='<span class="cool">'+(ds>0?"+":"−")+fmt(Math.abs(ds),sym)+'</span>'; tag="savings"; }
       else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
       var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
-      var photoBtn = t.photo? '<button class="photo-chip" data-photo="'+t.id+'" title="View photo">📎</button>' : '';
-      html+='<div class="lrow">'
+      var hasProof = !!(t.photo || t.screenshot);
+      var eyeBtn = hasProof ? '<span class="eye-btn" title="Click row to view screenshot">\u{1F441}</span>' : '';
+      html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
           +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
           +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'
-          + (note? '<div class="lnote">'+note+'</div>':'') +'</div>'
-          + photoBtn
-          +'<div class="lamt">'+amtHtml+ (tag?'<span class="tag">'+tag+'</span>':'') +'</div>'
-          +'<button class="del" data-id="'+t.id+'" title="Delete">×</button>'
+          +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
+          +eyeBtn
+          +'<div class="lamt">'+amtHtml+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'
+          +'<button class="del" data-id="'+t.id+'" title="Delete">\xd7</button>'
           +'</div>';
     });
     led.innerHTML=html;
     Array.prototype.forEach.call(led.querySelectorAll(".del"), function(b){
-      b.addEventListener("click", function(){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
         var id=+b.getAttribute("data-id");
-        var tx=state.transactions.filter(function(x){ return x.id===id; })[0];
-        if(tx && tx.photo) delPhoto(tx.photo);
+        var tx2=state.transactions.filter(function(x){ return x.id===id; })[0];
+        if(tx2 && tx2.photo) delPhoto(tx2.photo);
         state.transactions=state.transactions.filter(function(x){ return x.id!==id; });
         persist(); render();
       });
     });
-    Array.prototype.forEach.call(led.querySelectorAll(".photo-chip"), function(b){
-      b.addEventListener("click", function(){ openViewer(+b.getAttribute("data-photo")); });
+    Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
+      row.addEventListener("click", function(e){
+        if(e.target.classList.contains("del")) return;
+        var id=+row.getAttribute("data-id");
+        var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
+        if(tx3 && (tx3.photo || tx3.screenshot)) openViewer(id);
+      });
     });
   }
 
@@ -860,22 +1054,40 @@
   var viewingId=null;
   function openViewer(txId){
     var tx=state.transactions.filter(function(x){ return x.id===txId; })[0];
-    if(!tx || !tx.photo) return;
+    if(!tx) return;
     viewingId=txId;
     var body=document.getElementById("viewerBody");
-    document.getElementById("viewerTitle").textContent = tx.note || (tx.cat||"Photo");
-    body.innerHTML='<div class="viewer-note">Loading…</div>';
+    document.getElementById("viewerTitle").textContent=(tx.note||tx.cat||"Screenshot").slice(0,55);
+    body.innerHTML='<div class="viewer-note">Loading\u2026</div>';
     document.getElementById("viewer").style.display="flex";
-    loadPhoto(tx.photo, function(data){
-      if(!data){ body.innerHTML='<div class="viewer-note">Couldn’t find this photo.</div>'; return; }
-      var img=new Image();
-      img.onload=function(){ body.innerHTML=""; body.appendChild(img); };
-      img.onerror=function(){
-        body.innerHTML='<div class="viewer-note">This photo type can’t preview here.<br><a href="'+data+'" download="receipt">Download it</a> to open.</div>';
-      };
-      img.src=data; img.alt="attachment";
-    });
+    if(tx.photo){
+      loadPhoto(tx.photo, function(data){
+        if(!data){ body.innerHTML='<div class="viewer-note">Photo not found. Re-attach it with the \ud83d\udcce button.</div>'; return; }
+        var img=new Image();
+        img.style.cssText="max-width:100%;border-radius:8px";
+        img.onload=function(){ body.innerHTML=""; body.appendChild(img); };
+        img.onerror=function(){ body.innerHTML='<div class="viewer-note">Can\'t preview this format in browser.<br><a href="'+data+'" download="receipt">Download to view</a></div>'; };
+        img.src=data; img.alt="receipt";
+      });
+    } else if(tx.screenshot){
+      var pgData=SCREENSHOT_IMGS[tx.screenshot]||PAGE_IMGS[tx.screenshot];
+      if(pgData){
+        body.innerHTML='';
+        var pgImg=new Image();
+        pgImg.style.cssText="max-width:100%;display:block;border-radius:6px";
+        pgImg.alt="Page "+tx.screenshot;
+        pgImg.onload=function(){ body.innerHTML=''; body.appendChild(pgImg); };
+        pgImg.onerror=function(){ body.innerHTML='<div class="viewer-note">Could not load screenshot.</div>'; };
+        pgImg.src=pgData;
+      } else {
+        body.innerHTML='<div class="viewer-note">No screenshot for this entry.<br>'
+          +'<span style="font-size:12px;color:#7c8798">Attach one with the \ud83d\udcce button above.</span></div>';
+      }
+    } else {
+      body.innerHTML='<div class="viewer-note">No screenshot attached.</div>';
+    }
   }
+
   function closeViewer(){ document.getElementById("viewer").style.display="none"; viewingId=null; }
 
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
@@ -887,7 +1099,28 @@
 
   /* ---------------- events ---------------- */
   function bind(){
-    // chart toggle type
+    // theme switcher
+    var THEMES=[
+      {key:"dark",   label:"🌑 Dark"},
+      {key:"mono",   label:"⬛ Mono"},
+      {key:"emerald",label:"💚 Matrix"}
+    ];
+    function applyTheme(key){
+      document.documentElement.setAttribute("data-theme", key==="dark"?"":key);
+      try{localStorage.setItem("mymoney_theme",key);}catch(e){}
+    }
+    (function(){
+      var saved; try{saved=localStorage.getItem("mymoney_theme");}catch(e){}
+      applyTheme(saved||"dark");
+    })();
+
+    // Settings drawer
+    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render(); }
+    function closeSettings(){ document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("settingsClose").addEventListener("click", closeSettings);
+    document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeSettings(); });
     Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
       b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
     });
@@ -918,7 +1151,7 @@
         var nm=res.name||"photo";
         document.getElementById("fPhotoName").textContent = nm.length>22? nm.slice(0,20)+"…" : nm;
         var prev=document.getElementById("fPhotoPrev");
-        if(!res.raw){ prev.src=res.dataUrl; prev.style.display="block"; } else { prev.style.display="none"; }
+        prev.src=res.dataUrl; prev.style.display="block";
         document.getElementById("fPhotoClear").style.display="inline-block";
       });
     });
@@ -962,26 +1195,66 @@
       });
     });
 
-    // apply allowance — only once per calendar month (max 12 a year)
+    // apply allowance — adds next unadded month, up to 3 months advance outstanding at once
     document.getElementById("applyAlw").addEventListener("click", function(){
-      if(appliedThisMonth()) return;
       var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
       if(sd+stt+ss<=0) return;
-      var today=todayStr(), curM=monthKey(today), base=Date.now();
-      if(sd>0) state.transactions.push({id:base+1,date:today,type:"alw_debt",amount:sd,note:"Allowance → debt",auto:true});
-      if(stt>0) state.transactions.push({id:base+2,date:today,type:"alw_trading",amount:stt,note:"Allowance → trading",auto:true});
-      if(ss>0) state.transactions.push({id:base+3,date:today,type:"alw_savings",amount:ss,note:"Allowance → savings",auto:true});
-      state.selectedMonth=curM;
+      var amSetNow=allowanceMonths();
+      // find next unadded month from current month onwards (current year only)
+      var cYr=+todayStr().slice(0,4), cMo=+todayStr().slice(5,7);
+      var targetMonth=null;
+      for(var mi=cMo;mi<=12;mi++){
+        var mk3=cYr+"-"+two(mi);
+        if(!amSetNow[mk3]){ targetMonth=mk3; break; }
+      }
+      if(!targetMonth) return;
+      // count advances = months strictly ahead of today that are already logged
+      var curM2=monthKey(todayStr()), advNow=0;
+      for(var ak2 in amSetNow){ if(ak2>curM2) advNow++; }
+      var isAdvance=targetMonth>curM2;
+      if(isAdvance && advNow>=3){
+        alert("You already have 3 months advance outstanding ("+advNow+" ahead). Wait until those months arrive before taking more.");
+        return;
+      }
+      // confirm if advance
+      if(isAdvance){
+        var advLeft=3-advNow;
+        if(!confirm("Take advance allowance for "+monthLong(targetMonth)+"? You have "+advNow+" of 3 advance slots used. After this: "+(advNow+1)+"/3 — "+advLeft+" slot"+(advLeft===1?"":"s")+" remaining."))
+          return;
+      }
+      var dateStr=targetMonth+"-01";
+      var base2=Date.now();
+      var advTag=isAdvance?" (advance: "+monthLong(targetMonth)+")":"";
+      if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,auto:true});
+      if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true});
+      if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag,auto:true});
+      state.selectedMonth=targetMonth;
       persist(); render();
-      flashSaved("added");
+      flashSaved(isAdvance?"advance added":"added");
     });
 
+    // currency select interaction
+    var curSel=document.getElementById("oCurSelect");
+    var curCustom=document.getElementById("oCurCustom");
+    var curNoteEl=document.getElementById("curNote");
+    var CUR_NOTES={"AED":"Pegged 1:1 to USD at 3.6725 — ultra-stable for the Gulf.","CHF":"Swiss Franc — near-zero inflation, world\'s top wealth preserver. Backed by gold reserves.","SGD":"Singapore Dollar — Asia\'s primary reserve haven. Massive monetary reserves, AAA fiscal policy."};
+    if(curSel){
+      curSel.addEventListener("change", function(){
+        var v=curSel.value;
+        curCustom.style.display = (v==="custom") ? "block" : "none";
+        if(curNoteEl) curNoteEl.textContent = CUR_NOTES[v]||"";
+      });
+    }
     // setup save
     document.getElementById("saveSetup").addEventListener("click", function(){
       state.opening.balance=num(document.getElementById("oBal").value);
       state.opening.debt=num(document.getElementById("oDebt").value);
       state.opening.savings=num(document.getElementById("oSav").value);
-      var c=document.getElementById("oCur").value.trim(); state.currency=c||"$";
+      var selVal=curSel?curSel.value:"$";
+      var c = selVal==="custom"
+        ? (curCustom?curCustom.value.trim():"")
+        : selVal;
+      state.currency=c||"$";
       persist(); render(); flashSaved("saved");
     });
 
@@ -1076,5 +1349,88 @@
   else init();
 })();
 </script>
+
+<!-- Settings drawer -->
+<div id="settingsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100"></div>
+<div id="settingsDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:101;overflow-y:auto;padding:0 0 40px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1">
+    <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
+    <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
+  </div>
+
+  <!-- Monthly allowance in drawer -->
+  <div style="padding:18px 20px 0">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly Allowance</div>
+    <div class="subhint" style="margin-bottom:12px">Once per calendar month. Tap the button to add current month. You can take up to <b>3 months advance</b> from today — but only 3 total outstanding at any time.</div>
+    <div class="auto-note" id="autoSummary"></div>
+    <div class="split-row">
+      <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
+      <input type="number" id="sDebt" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill trade">TRADING</span> To trading money</div>
+      <input type="number" id="sTrade" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row">
+      <div class="nm"><span class="pill save">SAVINGS</span> To savings</div>
+      <input type="number" id="sSave" step="0.01" inputmode="decimal">
+    </div>
+    <div class="split-row" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:10px">
+      <div class="nm"><b>Monthly amount</b></div>
+      <input type="number" id="sAlw" step="0.01" inputmode="decimal">
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn ghost sm" id="applyAlw" style="width:100%">Add this month</button>
+    </div>
+    <div class="yr-count" id="yrCount" style="margin-top:12px"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Setup & starting numbers in drawer -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Setup &amp; Starting Numbers</div>
+    <div class="hint">Set where you're starting from. Everything builds on these.</div>
+    <div class="row2">
+      <div class="fld"><label>Starting money (now)</label><input type="number" id="oBal" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Debt to Dad</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label>Savings</label><input type="number" id="oSav" step="0.01" inputmode="decimal"></div>
+      <div class="fld full">
+        <label>Currency</label>
+        <select id="oCurSelect">
+          <option value="$">🇺🇸 USD — US Dollar ($)</option>
+          <option value="AED">🇦🇪 AED — UAE Dirham (AED)</option>
+          <option value="CHF">🇨🇭 CHF — Swiss Franc · near-zero inflation, top wealth preserver</option>
+          <option value="SGD">🇸🇬 SGD — Singapore Dollar · Asia's primary reserve haven</option>
+          <option value="£">🇬🇧 GBP — British Pound (£)</option>
+          <option value="€">🇪🇺 EUR — Euro (€)</option>
+          <option value="¥">🇯🇵 JPY — Japanese Yen (¥)</option>
+          <option value="custom">✏️ Custom symbol…</option>
+        </select>
+        <input type="text" id="oCurCustom" maxlength="6" placeholder="e.g. ₿ or kr" style="display:none;margin-top:8px">
+        <div id="curNote" class="hint" style="margin-top:6px;margin-bottom:0;font-style:italic"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px"><button class="btn primary sm" id="saveSetup">Save starting numbers</button></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Back up & data in drawer -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Back Up &amp; Data</div>
+    <div class="hint">Export a backup file that works in any browser on any device. Import it back to restore.</div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="expCopy">Copy backup</button>
+      <button class="btn ghost sm" id="expFile">Download backup</button>
+      <button class="btn ghost sm" id="impToggle">Import backup</button>
+      <button class="btn ghost sm warn" id="resetBtn" style="margin-left:auto">Reset</button>
+    </div>
+    <div id="impWrap" style="display:none">
+      <textarea id="impBox" placeholder="Paste your backup here, then press Load"></textarea>
+      <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
