@@ -206,7 +206,8 @@
   .catrow .cv{font-size:13px;color:var(--mut);width:86px;text-align:right}
 
   /* ledger */
-  .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut)}
+  .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut);flex-wrap:wrap;justify-content:flex-end}
+  #ledSearch{font-size:12.5px;padding:6px 9px}
   .sel-all{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
   .sel-all input{width:auto;margin:0;accent-color:var(--amber)}
   .led{display:flex;flex-direction:column}
@@ -223,6 +224,8 @@
   .up{color:var(--up)} .down{color:var(--down)} .neu{color:var(--mut)} .cool{color:var(--cool)}
   .del{border:0;background:transparent;color:var(--mut);font-size:18px;padding:2px 5px;line-height:1;flex:none}
   .edit{border:0;background:transparent;color:var(--mut);font-size:14px;padding:2px 6px;line-height:1;flex:none;opacity:.75}
+  .dup{border:0;background:transparent;color:var(--mut);font-size:15px;padding:2px 6px;line-height:1;flex:none;opacity:.75;cursor:pointer}
+  .dup:hover,.edit:hover{opacity:1}
   .edit:hover{opacity:1}
   .del:hover{color:var(--down)}
   .empty{color:var(--mut);font-size:14px;text-align:center;padding:26px 6px}
@@ -441,6 +444,7 @@
   <div class="p-head">
     <h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2>
     <div class="led-tools">
+      <input type="search" id="ledSearch" placeholder="🔍 Search notes, category, type…" style="flex:1;min-width:150px;max-width:260px">
       <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
       <button class="btn ghost sm" id="exportSelBtn" disabled>Export</button>
     </div>
@@ -1488,6 +1492,8 @@
     ACTIVE_PID=pid;
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
+    searchQuery=""; 
+    var sEl=document.getElementById("ledSearch"); if(sEl) sEl.value="";
     persist();
     render();
     renderPortfolioUI();
@@ -2156,13 +2162,42 @@
     return b;
   }
 
+  // Copies an entry to today's date as a brand new, independent entry. Any attached
+  // photo is copied too (its own file), so editing/deleting one never affects the other.
+  function duplicateTransaction(id){
+    var src=state.transactions.filter(function(t){ return t.id===id; })[0];
+    if(!src) return;
+    var copy=clone(src);
+    copy.id=freshIdBase();
+    copy.date=todayStr();
+    delete copy.auto; delete copy.advance; delete copy.forMonth;
+    function finish(){
+      state.transactions.push(copy);
+      state.selectedMonths=[monthKey(copy.date)];
+      persist(); render();
+      flashSaved("duplicated");
+    }
+    if(src.photo){
+      copy.photo=copy.id;
+      loadPhoto(src.photo, function(dataUrl){
+        if(dataUrl) savePhoto(copy.id, dataUrl, finish);
+        else { delete copy.photo; finish(); }
+      });
+    } else finish();
+  }
+
   function renderLedger(){
     var sym=state.currency, allSel=isAllSelected(), activeM=activeMonths(), activeSet={};
     activeM.forEach(function(k){ activeSet[k]=1; });
-    var list=sortedTx().reverse().filter(function(t){ return allSel || activeSet[monthKey(t.date)]; });
+    var list=sortedTx().reverse().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) && matchesSearch(t); });
     var led=document.getElementById("ledger");
     document.getElementById("ledCount").textContent = list.length? "· "+list.length : "";
     if(list.length===0){
+      if(searchQuery){
+        led.innerHTML='<div class="empty"><b>No entries match “'+esc(searchQuery)+'”.</b><br>Try a different search, or clear it to see everything.</div>';
+        updateExportBtn();
+        return;
+      }
       var emptyWhy = allSel ? "" : (activeM.length===0 ? " — no months are ticked" : " for "+scopeLabel(activeM));
       led.innerHTML='<div class="empty"><b>Nothing logged'+emptyWhy+' yet.</b><br>'+(activeM.length===0&&!allSel ? "Tick a month above." : "Add your first entry above.")+'</div>';
       updateExportBtn();
@@ -2185,6 +2220,7 @@
       var checked = selectedIds[t.id] ? " checked" : "";
       // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
       var editBtn = t.auto ? '' : '<button class="edit" data-id="'+t.id+'" title="Edit">\u270f\ufe0f</button>';
+      var dupBtn = t.auto ? '' : '<button class="dup" data-id="'+t.id+'" title="Duplicate to today">\u29c9</button>';
       html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
           +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
           +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
@@ -2192,6 +2228,7 @@
           +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
           +eyeBtn
           +'<div class="lamt">'+amtHtml+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'
+          +dupBtn
           +editBtn
           +'<button class="del" data-id="'+t.id+'" title="Delete">\xd7</button>'
           +'</div>';
@@ -2203,6 +2240,12 @@
         var id=+b.getAttribute("data-id");
         if(editingId===id) cancelEdit(); // don't leave a deleted entry loaded in the form
         deleteWithUndo(id);
+      });
+    });
+    Array.prototype.forEach.call(led.querySelectorAll(".dup"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        duplicateTransaction(+b.getAttribute("data-id"));
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".edit"), function(b){
@@ -2221,7 +2264,7 @@
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("lchk")) return;
+        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("dup") || e.target.classList.contains("lchk")) return;
         var id=+row.getAttribute("data-id");
         var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
         if(tx3 && tx3.photo) openViewer(id);
@@ -2318,9 +2361,18 @@
   function currentVisibleIds(){
     var allSel=isAllSelected(), activeSet={};
     activeMonths().forEach(function(k){ activeSet[k]=1; });
-    return sortedTx().filter(function(t){ return allSel || activeSet[monthKey(t.date)]; }).map(function(t){ return t.id; });
+    return sortedTx().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) && matchesSearch(t); }).map(function(t){ return t.id; });
   }
   function selectedCount(){ var n=0; for(var k in selectedIds){ if(selectedIds[k]) n++; } return n; }
+
+  /* ---- ledger search: matches note, category, and the type's display label ---- */
+  var searchQuery="";
+  function matchesSearch(t){
+    if(!searchQuery) return true;
+    var meta=TYPE_META[t.type]||{label:t.type};
+    var hay=((t.note||"")+" "+(t.cat||"")+" "+(meta.label||"")+" "+(t.date||"")).toLowerCase();
+    return hay.indexOf(searchQuery)>=0;
+  }
   function updateExportBtn(){
     var btn=document.getElementById("exportSelBtn"), chk=document.getElementById("selAllChk");
     if(!btn||!chk) return;
@@ -2631,6 +2683,12 @@
       applyMonthCheckboxes();
     });
 
+    // ledger search
+    document.getElementById("ledSearch").addEventListener("input", function(e){
+      searchQuery=e.target.value.trim().toLowerCase();
+      renderLedger();
+    });
+
     // select-all + export selected entries as their own .json (separate from the full backup)
     document.getElementById("selAllChk").addEventListener("change", function(e){ toggleSelectAll(e.target.checked); });
     document.getElementById("exportSelBtn").addEventListener("click", exportSelectedClick);
@@ -2773,6 +2831,38 @@
           flashSaved("downloaded");
         }catch(e){ alert("Couldn't download here — use Copy backup instead."); }
       });
+    });
+    // CSV export — uses the Print Transactions date range if one is set
+    document.getElementById("expCsv").addEventListener("click", function(){
+      var from=document.getElementById("printFrom").value||null;
+      var to=document.getElementById("printTo").value||null;
+      var list=sortedTx().filter(function(t){
+        if(from && t.date<from) return false;
+        if(to && t.date>to) return false;
+        return true;
+      });
+      function csvCell(v){
+        v=String(v==null?"":v);
+        return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+      }
+      var lines=["Date,Type,Category,Note,Balance change,Debt change,Savings change,Currency"];
+      list.forEach(function(t){
+        var meta=TYPE_META[t.type]||{label:t.type};
+        lines.push([
+          csvCell(t.date), csvCell(meta.label), csvCell(t.cat||""), csvCell(t.note||""),
+          balDelta(t).toFixed(2), debtDelta(t).toFixed(2), savDelta(t).toFixed(2), csvCell(state.currency)
+        ].join(","));
+      });
+      try{
+        // BOM so Excel opens UTF-8 notes (e.g. — and ’) correctly instead of mojibake
+        var blob=new Blob(["\ufeff"+lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+        var url=URL.createObjectURL(blob);
+        var pName=((activePortfolio()&&activePortfolio().name)||"portfolio").replace(/[^a-z0-9]+/gi,"-").toLowerCase();
+        var a=document.createElement("a"); a.href=url; a.download="my-money-"+pName+"-"+todayStr()+".csv";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+        flashSaved("CSV downloaded");
+      }catch(e){ alert("Couldn't download the CSV here."); }
     });
     // import
     document.getElementById("impToggle").addEventListener("click", function(){
@@ -3003,6 +3093,7 @@
     <div class="data-btns">
       <button class="btn ghost sm" id="expCopy">Copy backup</button>
       <button class="btn ghost sm" id="expFile">Download backup</button>
+      <button class="btn ghost sm" id="expCsv">Download CSV</button>
       <button class="btn ghost sm" id="impToggle">Import backup</button>
       <button class="btn ghost sm warn" id="resetBtn" style="margin-left:auto">Reset</button>
     </div>
