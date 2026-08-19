@@ -395,6 +395,13 @@
         <label for="fAmt"><span id="amtLbl">Amount</span></label>
         <input type="number" id="fAmt" step="0.01" inputmode="decimal" placeholder="0.00">
       </div>
+      <div class="fld">
+        <label for="fSplit">Split between (people)</label>
+        <input type="number" id="fSplit" min="1" max="20" step="1" value="1" inputmode="numeric">
+      </div>
+      <div class="fld full" id="splitHint" style="display:none">
+        <div class="hint" id="splitHintTxt"></div>
+      </div>
       <div class="fld full">
         <label for="fNote">Note (optional)</label>
         <input type="text" id="fNote" placeholder="e.g. birthday money, gold trade, pencil case">
@@ -2233,6 +2240,8 @@
     typeUI();
     if(tx.type==="spend") document.getElementById("fCat").value=tx.cat||"Other";
     document.getElementById("fAmt").value=tx.amount;
+    document.getElementById("fSplit").value="1";
+    var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
     pendingPhoto=null; photoCleared=false;
     if(tx.photo){
@@ -2502,6 +2511,20 @@
     var typeSel=document.getElementById("fType");
     typeSel.addEventListener("change", typeUI); typeUI();
 
+    // split-between live preview
+    function hideSplitHint(){ document.getElementById("splitHint").style.display="none"; }
+    function updateSplitHint(){
+      var n=parseInt(document.getElementById("fSplit").value,10);
+      var total=num(document.getElementById("fAmt").value);
+      var hintEl=document.getElementById("splitHint"), txtEl=document.getElementById("splitHintTxt");
+      if(!n || n<2 || !total){ hintEl.style.display="none"; return; }
+      var share=Math.round((Math.abs(total)/n)*100)/100;
+      txtEl.textContent="Recorded as your share only: "+fmt(share)+" (of "+fmt(Math.abs(total))+" total, split "+n+" ways). A note is added automatically.";
+      hintEl.style.display="block";
+    }
+    document.getElementById("fSplit").addEventListener("input", updateSplitHint);
+    document.getElementById("fAmt").addEventListener("input", updateSplitHint);
+
     // photo picker
     var fPhoto=document.getElementById("fPhoto");
     document.getElementById("fPhotoBtn").addEventListener("click", function(){ fPhoto.click(); });
@@ -2527,7 +2550,15 @@
       var raw=num(document.getElementById("fAmt").value);
       if(type!=="adjust") raw=Math.abs(raw);
       if(!raw){ shake(document.getElementById("fAmt")); return; }
+      var splitN=parseInt(document.getElementById("fSplit").value,10);
+      if(!splitN || splitN<1) splitN=1;
+      var totalRaw=raw;
+      if(splitN>1) raw=Math.round((totalRaw/splitN)*100)/100;
       var note=document.getElementById("fNote").value.trim();
+      if(splitN>1){
+        var splitNote="Split "+splitN+" ways — "+fmt(totalRaw)+" total, your share "+fmt(raw);
+        note = note ? (note+" ("+splitNote+")") : splitNote;
+      }
 
       if(editingId!=null){
         var tx=state.transactions.filter(function(t){ return t.id===editingId; })[0];
@@ -2554,6 +2585,8 @@
         state.selectedMonths=[monthKey(date)];
         persist(); render();
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
+        document.getElementById("fSplit").value="1";
+        hideSplitHint();
         clearPhotoPick();
         document.getElementById("fAmt").focus();
       }
