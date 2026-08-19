@@ -56,6 +56,20 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  /* Portfolio switcher */
+  .pf-panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:111;overflow-y:auto;padding:0 0 20px}
+  .pf-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1;font-size:16px;font-weight:700}
+  .pf-hint{padding:14px 20px 4px;font-size:12.5px;color:var(--mut);line-height:1.5}
+  .pf-list{padding:10px 14px}
+  .pf-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;background:var(--card);cursor:pointer}
+  .pf-row.pf-on{border-color:var(--amber)}
+  .pf-main{flex:1;min-width:0}
+  .pf-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pf-sub{font-size:12px;color:var(--mut);margin-top:2px}
+  .pf-acts{display:flex;gap:4px;flex:none}
+  .pf-acts .icon-btn{width:30px;height:30px;font-size:14px}
+  .pf-foot{padding:10px 20px 0}
+
   /* Theme picker in settings */
   .theme-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   .theme-opt{display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font-size:13px;font-weight:700;padding:11px 8px;cursor:pointer;transition:.15s}
@@ -290,6 +304,7 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
+  <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
   <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
   <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
@@ -455,6 +470,20 @@
 <div id="undoToast" class="undo-toast" style="display:none">
   <span id="undoToastMsg">Entry deleted</span>
   <button type="button" id="undoToastBtn">Undo</button>
+</div>
+
+<!-- portfolio switcher -->
+<div id="portfolioPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
+<div id="portfolioPanel" class="pf-panel" style="display:none">
+  <div class="pf-bar">
+    <span>📁 Portfolios</span>
+    <button type="button" class="icon-btn" id="portfolioPanelClose">✕</button>
+  </div>
+  <div class="pf-hint">Each portfolio has its own balances, settings and transaction history. Duplicating one makes a fully independent copy — including its own copies of any attached photos.</div>
+  <div id="portfolioList" class="pf-list"></div>
+  <div class="pf-foot">
+    <button type="button" class="btn primary sm" id="portfolioAddBtn" style="width:100%">+ New portfolio</button>
+  </div>
 </div>
 
 <script>
@@ -957,6 +986,19 @@
 
   var state = clone(DEFAULTS);
 
+  /* ---------------- portfolios ----------------
+     Multiple independent portfolios can live side by side. Each has its own
+     opening balances, settings, currency and transaction history. `state`
+     above always holds the CURRENTLY ACTIVE portfolio's flat data (exactly
+     the shape it always has), so every existing function that reads/writes
+     `state` keeps working unchanged. PORTFOLIOS is the in-memory registry;
+     it — and which portfolio is active — is what actually gets persisted. */
+  var PORTFOLIOS = [{id:"default", name:"Main Portfolio", createdAt:Date.now(), data:clone(DEFAULTS)}];
+  var ACTIVE_PID = "default";
+  function genPid(){ return "p"+Date.now()+Math.floor(Math.random()*1000); }
+  function findPortfolio(pid){ return PORTFOLIOS.filter(function(p){ return p.id===pid; })[0]; }
+  function activePortfolio(){ return findPortfolio(ACTIVE_PID); }
+
   /* ---------------- pure helpers ---------------- */
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
@@ -1355,11 +1397,17 @@
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(function(){ doPersist(); }, 250);
   }
+  function buildRoot(){
+    var p=activePortfolio();
+    if(!p){ p={id:ACTIVE_PID, name:"Portfolio", createdAt:Date.now()}; PORTFOLIOS.push(p); }
+    p.data=state;
+    return {version:2, activePortfolioId:ACTIVE_PID, portfolios:PORTFOLIOS};
+  }
   function doPersist(){
     var done=false;
     try{
       if(window.storage && typeof window.storage.set==="function"){
-        var json=JSON.stringify(state);
+        var json=JSON.stringify(buildRoot());
         var p=window.storage.set(STORE_KEY, json, false);
         if(p && typeof p.then==="function"){
           p.then(function(){ flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
@@ -1370,7 +1418,7 @@
     if(!done) doPersistViaManager();
   }
   function doPersistViaManager(){
-    StorageManager.write(state).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
+    StorageManager.write(buildRoot()).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
       .catch(function(){ showStorageWarning(); });
   }
   function loadData(cb){
@@ -1393,18 +1441,178 @@
       cb();
     }).catch(function(){ refreshStorageBadge(); cb(); });
   }
+  function applyPortfolioData(obj){
+    obj = obj || {};
+    state=Object.assign(clone(DEFAULTS), obj);
+    state.opening=Object.assign(clone(DEFAULTS.opening), obj.opening||{});
+    state.settings=Object.assign(clone(DEFAULTS.settings), obj.settings||{});
+    if(!Array.isArray(state.transactions)) state.transactions=[];
+    // migrate an old single-month save (from before multi-month picking existed)
+    if(!Array.isArray(state.selectedMonths) && typeof obj.selectedMonth==="string"){
+      state.selectedMonths = obj.selectedMonth==="all" ? ["all"] : [obj.selectedMonth];
+    }
+  }
   function applyLoaded(str){
     try{
       var obj=JSON.parse(str); if(!obj||typeof obj!=="object") return;
-      state=Object.assign(clone(DEFAULTS), obj);
-      state.opening=Object.assign(clone(DEFAULTS.opening), obj.opening||{});
-      state.settings=Object.assign(clone(DEFAULTS.settings), obj.settings||{});
-      if(!Array.isArray(state.transactions)) state.transactions=[];
-      // migrate an old single-month save (from before multi-month picking existed)
-      if(!Array.isArray(state.selectedMonths) && typeof obj.selectedMonth==="string"){
-        state.selectedMonths = obj.selectedMonth==="all" ? ["all"] : [obj.selectedMonth];
+      if(Array.isArray(obj.portfolios) && obj.portfolios.length){
+        // current multi-portfolio format
+        PORTFOLIOS = obj.portfolios;
+        ACTIVE_PID = (obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
+        applyPortfolioData(activePortfolio().data);
+      } else {
+        // legacy save from before multiple portfolios existed — wrap it as
+        // the one and only portfolio so nobody's existing data is touched.
+        ACTIVE_PID = "default";
+        PORTFOLIOS = [{id:"default", name:"Main Portfolio", createdAt:Date.now(), data:obj}];
+        applyPortfolioData(obj);
       }
     }catch(e){}
+  }
+
+  /* ---------------- portfolio actions ---------------- */
+  function flushActiveIntoRegistry(){
+    var p=activePortfolio();
+    if(p) p.data=state; else PORTFOLIOS.push({id:ACTIVE_PID, name:"Portfolio", createdAt:Date.now(), data:state});
+  }
+  function switchPortfolio(pid){
+    if(pid===ACTIVE_PID || !findPortfolio(pid)) { renderPortfolioUI(); return; }
+    flushActiveIntoRegistry();
+    ACTIVE_PID=pid;
+    applyPortfolioData(clone(findPortfolio(pid).data||{}));
+    photoCache={};
+    persist();
+    render();
+    renderPortfolioUI();
+    closePortfolioPanel();
+  }
+  function createPortfolio(){
+    var name=prompt("Name this portfolio:", "New Portfolio");
+    if(name===null) return;
+    name=name.trim()||"New Portfolio";
+    flushActiveIntoRegistry();
+    var pid=genPid();
+    PORTFOLIOS.push({id:pid, name:name, createdAt:Date.now(), data:clone(DEFAULTS)});
+    ACTIVE_PID=pid;
+    applyPortfolioData(clone(DEFAULTS));
+    photoCache={};
+    persist();
+    render();
+    renderPortfolioUI();
+  }
+  function renamePortfolio(pid){
+    var p=findPortfolio(pid); if(!p) return;
+    var name=prompt("Rename portfolio:", p.name);
+    if(name===null) return;
+    name=name.trim(); if(!name) return;
+    p.name=name;
+    if(pid===ACTIVE_PID) flushActiveIntoRegistry();
+    persist();
+    renderPortfolioUI();
+  }
+  function deletePortfolio(pid){
+    if(PORTFOLIOS.length<=1){ alert("You need at least one portfolio — create another before deleting this one."); return; }
+    var p=findPortfolio(pid); if(!p) return;
+    if(!confirm("Delete portfolio \""+p.name+"\"? This permanently removes all of its transactions and photos. This can't be undone.")) return;
+    var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
+    txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+    var wasActive=(pid===ACTIVE_PID);
+    PORTFOLIOS=PORTFOLIOS.filter(function(x){ return x.id!==pid; });
+    if(wasActive){
+      ACTIVE_PID=PORTFOLIOS[0].id;
+      applyPortfolioData(clone(PORTFOLIOS[0].data||{}));
+      photoCache={};
+      render();
+    }
+    persist();
+    renderPortfolioUI();
+  }
+  // Duplicates a portfolio (any of them, not just the active one) into a brand
+  // new, fully independent copy — including its own copies of every photo, so
+  // editing/deleting things in the copy never touches the original.
+  function duplicatePortfolio(pid){
+    var src=findPortfolio(pid); if(!src) return;
+    if(pid===ACTIVE_PID) flushActiveIntoRegistry();
+    var name=prompt("Name the copy:", src.name+" copy");
+    if(name===null) return;
+    name=name.trim()||(src.name+" copy");
+    var dataCopy=clone(src.data||{});
+    var txs=Array.isArray(dataCopy.transactions)?dataCopy.transactions:[];
+    var newPid=genPid();
+    var photoJobs=[];
+    txs.forEach(function(t){
+      var oldPhoto=t.photo;
+      t.id=freshIdBase();
+      if(oldPhoto){ t.photo=t.id; photoJobs.push({oldId:oldPhoto, newId:t.id}); }
+    });
+    PORTFOLIOS.push({id:newPid, name:name, createdAt:Date.now(), data:dataCopy});
+    var remaining=photoJobs.length;
+    function finish(){ switchPortfolio(newPid); }
+    if(remaining===0){ finish(); return; }
+    photoJobs.forEach(function(job){
+      loadPhoto(job.oldId, function(dataUrl){
+        if(dataUrl){ savePhoto(job.newId, dataUrl, function(){ remaining--; if(remaining<=0) finish(); }); }
+        else { remaining--; if(remaining<=0) finish(); }
+      });
+    });
+  }
+  function portfolioStats(p){
+    var d=p.data||{}, txs=Array.isArray(d.transactions)?d.transactions:[];
+    return {count:txs.length, sym:d.currency||"$"};
+  }
+  function openPortfolioPanel(){
+    var el=document.getElementById("portfolioPanel"); if(!el) return;
+    renderPortfolioUI();
+    el.style.display="block";
+    document.getElementById("portfolioPanelOverlay").style.display="block";
+  }
+  function closePortfolioPanel(){
+    var el=document.getElementById("portfolioPanel"); if(el) el.style.display="none";
+    var ov=document.getElementById("portfolioPanelOverlay"); if(ov) ov.style.display="none";
+  }
+  function renderPortfolioUI(){
+    var btn=document.getElementById("portfolioBtn");
+    var p=activePortfolio();
+    if(btn) btn.textContent="📁 "+((p&&p.name)||"Portfolio");
+    var list=document.getElementById("portfolioList");
+    if(!list) return;
+    var html="";
+    PORTFOLIOS.forEach(function(pf){
+      var st=portfolioStats(pf);
+      var on=pf.id===ACTIVE_PID;
+      html+='<div class="pf-row'+(on?' pf-on':'')+'" data-pid="'+esc(pf.id)+'">'
+        +'<div class="pf-main" data-act="switch">'
+          +'<div class="pf-name">'+(on?'✓ ':'')+esc(pf.name)+'</div>'
+          +'<div class="pf-sub">'+st.count+' '+(st.count===1?'entry':'entries')+'</div>'
+        +'</div>'
+        +'<div class="pf-acts">'
+          +'<button type="button" class="icon-btn" data-act="dup" title="Duplicate">⧉</button>'
+          +'<button type="button" class="icon-btn" data-act="ren" title="Rename">✎</button>'
+          +'<button type="button" class="icon-btn" data-act="del" title="Delete">🗑</button>'
+        +'</div>'
+      +'</div>';
+    });
+    list.innerHTML=html;
+  }
+  function bindPortfolioUI(){
+    var btn=document.getElementById("portfolioBtn");
+    if(btn) btn.addEventListener("click", openPortfolioPanel);
+    var closeBtn=document.getElementById("portfolioPanelClose");
+    if(closeBtn) closeBtn.addEventListener("click", closePortfolioPanel);
+    var ov=document.getElementById("portfolioPanelOverlay");
+    if(ov) ov.addEventListener("click", closePortfolioPanel);
+    var addBtn=document.getElementById("portfolioAddBtn");
+    if(addBtn) addBtn.addEventListener("click", createPortfolio);
+    var list=document.getElementById("portfolioList");
+    if(list) list.addEventListener("click", function(e){
+      var row=e.target.closest(".pf-row"); if(!row) return;
+      var pid=row.getAttribute("data-pid");
+      var act=e.target.closest("[data-act]"); act=act?act.getAttribute("data-act"):null;
+      if(act==="dup") duplicatePortfolio(pid);
+      else if(act==="ren") renamePortfolio(pid);
+      else if(act==="del") deletePortfolio(pid);
+      else switchPortfolio(pid);
+    });
   }
 
   /* ---------------- storage tier badge + health dashboard ---------------- */
@@ -2572,7 +2780,8 @@
     setInterval(function(){ refreshStorageBadge(); }, 5*60*1000);
     setInterval(function(){ StorageManager.tryAutoHeal().then(function(healed){ if(healed) refreshStorageBadge(); }); }, 30000);
     bind();
-    loadData(function(){ render(); refreshStorageBadge(); });
+    bindPortfolioUI();
+    loadData(function(){ render(); renderPortfolioUI(); refreshStorageBadge(); });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
