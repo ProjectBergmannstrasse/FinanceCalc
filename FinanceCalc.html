@@ -56,6 +56,21 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  /* In-app modal — replaces the browser's native prompt/confirm */
+  .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+  .mdl{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;width:min(420px,100%);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;animation:mdlIn .16s ease-out}
+  @keyframes mdlIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .mdl-hd{padding:18px 20px 0;font-size:16px;font-weight:700}
+  .mdl-bd{padding:10px 20px 4px;font-size:13.5px;color:var(--mut);line-height:1.55;white-space:pre-line}
+  .mdl-bd b{color:var(--tx)}
+  .mdl-in{padding:12px 20px 4px}
+  .mdl-in input{width:100%}
+  .mdl-err{padding:2px 20px 0;font-size:12px;color:var(--down);min-height:16px}
+  .mdl-ft{padding:14px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
+  .mdl-ft .btn{min-width:84px}
+  .btn.danger{background:var(--down);border-color:var(--down);color:#fff}
+  .btn.danger:disabled{opacity:.4}
+
   /* Portfolio switcher */
   .pf-panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:111;overflow-y:auto;padding:0 0 20px}
   .pf-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1;font-size:16px;font-weight:700}
@@ -224,8 +239,7 @@
   .up{color:var(--up)} .down{color:var(--down)} .neu{color:var(--mut)} .cool{color:var(--cool)}
   .del{border:0;background:transparent;color:var(--mut);font-size:18px;padding:2px 5px;line-height:1;flex:none}
   .edit{border:0;background:transparent;color:var(--mut);font-size:14px;padding:2px 6px;line-height:1;flex:none;opacity:.75}
-  .dup{border:0;background:transparent;color:var(--mut);font-size:15px;padding:2px 6px;line-height:1;flex:none;opacity:.75;cursor:pointer}
-  .dup:hover,.edit:hover{opacity:1}
+  .edit:hover{opacity:1}
   .edit:hover{opacity:1}
   .del:hover{color:var(--down)}
   .empty{color:var(--mut);font-size:14px;text-align:center;padding:26px 6px}
@@ -444,7 +458,15 @@
   <div class="p-head">
     <h2><span class="tick">≡</span> Entries <span class="mut" id="ledCount" style="font-weight:500"></span></h2>
     <div class="led-tools">
-      <input type="search" id="ledSearch" placeholder="🔍 Search notes, category, type…" style="flex:1;min-width:150px;max-width:260px">
+      <input type="search" id="ledSearch" placeholder="🔍 Search notes, category, type…" style="flex:1;min-width:140px;max-width:230px">
+      <select id="ledSort" title="Sort entries" style="flex:none;width:auto">
+        <option value="latest">Latest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="profit">Profit → Loss</option>
+        <option value="loss">Loss → Profit</option>
+        <option value="biggest">Biggest amount</option>
+        <option value="smallest">Smallest amount</option>
+      </select>
       <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
       <button class="btn ghost sm" id="exportSelBtn" disabled>Export</button>
     </div>
@@ -1420,7 +1442,13 @@
     var p=activePortfolio();
     if(!p){ p={id:ACTIVE_PID, name:"Portfolio", createdAt:Date.now()}; PORTFOLIOS.push(p); }
     p.data=state;
-    return {version:2, activePortfolioId:ACTIVE_PID, portfolios:PORTFOLIOS};
+    return {version:2, savedAt:Date.now(), activePortfolioId:ACTIVE_PID, portfolios:PORTFOLIOS};
+  }
+  // Structural changes (creating/deleting/renaming/switching portfolios) skip the debounce.
+  // Losing a 250ms window on a typo is fine; losing a whole portfolio is not.
+  function persistNow(){
+    if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
+    doPersist();
   }
   function doPersist(){
     var done=false;
@@ -1440,22 +1468,40 @@
     StorageManager.write(buildRoot()).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
       .catch(function(){ showStorageWarning(); });
   }
+  // Two things can write (window.storage, and the StorageManager tier chain), and a
+  // failed write to one silently falls through to the other. So never trust one store
+  // blindly — read both and take whichever was written most recently.
   function loadData(cb){
-    try{
-      if(window.storage && typeof window.storage.get==="function"){
-        var p=window.storage.get(STORE_KEY, false);
-        if(p && typeof p.then==="function"){
-          p.then(function(res){ if(res && res.value){ applyLoaded(res.value); cb(); } else { loadDataViaManager(cb); } })
-           .catch(function(){ loadDataViaManager(cb); });
-          return;
-        }
-      }
-    }catch(e){}
-    loadDataViaManager(cb);
-  }
-  function loadDataViaManager(cb){
-    StorageManager.init().then(function(){ return StorageManager.read(); }).then(function(res){
-      if(res && res.core) applyLoaded(JSON.stringify(res.core));
+    var got=false;
+    function fromWindowStorage(){
+      return new Promise(function(resolve){
+        try{
+          if(window.storage && typeof window.storage.get==="function"){
+            var p=window.storage.get(STORE_KEY, false);
+            if(p && typeof p.then==="function"){
+              p.then(function(res){ resolve(res && res.value ? res.value : null); })
+               .catch(function(){ resolve(null); });
+              return;
+            }
+          }
+        }catch(e){}
+        resolve(null);
+      });
+    }
+    function fromManager(){
+      return StorageManager.init().then(function(){ return StorageManager.read(); })
+        .then(function(res){ return (res && res.core) ? JSON.stringify(res.core) : null; })
+        .catch(function(){ return null; });
+    }
+    function stamp(str){
+      try{ var o=JSON.parse(str); return (o && typeof o.savedAt==="number") ? o.savedAt : 0; }
+      catch(e){ return -1; } // unparseable — rank below anything usable
+    }
+    Promise.all([fromWindowStorage(), fromManager()]).then(function(r){
+      var a=r[0], b=r[1], pick=null;
+      if(a && b) pick = stamp(a)>=stamp(b) ? a : b;
+      else pick = a || b;
+      if(pick){ applyLoaded(pick); got=true; }
       refreshStorageBadge();
       cb();
     }).catch(function(){ refreshStorageBadge(); cb(); });
@@ -1489,6 +1535,146 @@
     }catch(e){}
   }
 
+  /* ---------------- in-app modal ----------------
+     Replaces prompt()/confirm(), which look like the browser rather than the app and
+     can't be styled, themed, or made to require a typed confirmation. Callback-style
+     so it drops straight into the existing code without going async everywhere. */
+  var _mdlEsc=null;
+  function closeModal(){
+    var ov=document.getElementById("mdlOv");
+    if(ov) ov.remove();
+    if(_mdlEsc){ document.removeEventListener("keydown", _mdlEsc); _mdlEsc=null; }
+  }
+  function appModal(o){
+    closeModal();
+    o=o||{};
+    var ov=document.createElement("div");
+    ov.className="mdl-ov"; ov.id="mdlOv";
+    var wantsInput = !!o.input || !!o.requireWord;
+    ov.innerHTML='<div class="mdl" role="dialog" aria-modal="true">'
+      +'<div class="mdl-hd">'+esc(o.title||"")+'</div>'
+      +(o.message?'<div class="mdl-bd">'+o.message+'</div>':'')
+      +(wantsInput?'<div class="mdl-in"><input type="text" id="mdlInput" autocomplete="off" spellcheck="false" placeholder="'+esc((o.input&&o.input.placeholder)||"")+'"></div><div class="mdl-err" id="mdlErr"></div>':'')
+      +'<div class="mdl-ft">'
+        +'<button type="button" class="btn ghost sm" id="mdlCancel">'+esc(o.cancelText||"Cancel")+'</button>'
+        +'<button type="button" class="btn '+(o.danger?"danger":"primary")+' sm" id="mdlOk">'+esc(o.confirmText||"OK")+'</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+
+    var inp=document.getElementById("mdlInput");
+    var okBtn=document.getElementById("mdlOk");
+    var errEl=document.getElementById("mdlErr");
+    if(inp && o.input && o.input.value!=null) inp.value=o.input.value;
+
+    // A destructive action guarded by a typed word stays disabled until it matches,
+    // so the confirm button can't be muscle-memoried through.
+    function validate(){
+      if(!o.requireWord) return true;
+      return inp.value.trim().toUpperCase()===o.requireWord.toUpperCase();
+    }
+    function sync(){ if(o.requireWord) okBtn.disabled=!validate(); }
+    if(o.requireWord){ okBtn.disabled=true; }
+    if(inp) inp.addEventListener("input", function(){ if(errEl) errEl.textContent=""; sync(); });
+
+    function done(val){ closeModal(); if(o.onConfirm) o.onConfirm(val); }
+    function attempt(){
+      if(o.requireWord && !validate()){
+        if(errEl) errEl.textContent="Type "+o.requireWord+" exactly to continue.";
+        return;
+      }
+      if(o.input && o.requireNonEmpty!==false && !o.requireWord){
+        var v=inp.value.trim();
+        if(!v){ if(errEl) errEl.textContent="Please enter something."; inp.focus(); return; }
+        done(v); return;
+      }
+      done(inp?inp.value.trim():true);
+    }
+    okBtn.addEventListener("click", attempt);
+    document.getElementById("mdlCancel").addEventListener("click", function(){ closeModal(); if(o.onCancel) o.onCancel(); });
+    ov.addEventListener("click", function(e){ if(e.target===ov){ closeModal(); if(o.onCancel) o.onCancel(); } });
+    if(inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); attempt(); } });
+    _mdlEsc=function(e){ if(e.key==="Escape"){ closeModal(); if(o.onCancel) o.onCancel(); } };
+    document.addEventListener("keydown", _mdlEsc);
+    setTimeout(function(){ if(inp){ inp.focus(); inp.select(); } else okBtn.focus(); }, 30);
+  }
+  function appConfirm(title, message, opts, cb){
+    opts=opts||{};
+    appModal({title:title, message:message, danger:opts.danger, confirmText:opts.confirmText||"Continue", onConfirm:function(){ cb(); }});
+  }
+
+  /* ---------------- copying & mirroring between portfolios ----------------
+     Copies always get fresh transaction ids and fresh photo ids, for the same reason
+     imports do: photos live in one global namespace keyed by transaction id, so reusing
+     a source id would let two portfolios fight over the same photo file. */
+  function copyEntriesInto(srcTx, cb){
+    var jobs=[];
+    srcTx.forEach(function(t){
+      var copy=clone(t);
+      var oldPhoto=copy.photo;
+      copy.id=freshIdBase();
+      if(oldPhoto){ copy.photo=copy.id; jobs.push({oldId:oldPhoto, rec:copy}); }
+      state.transactions.push(copy);
+    });
+    var n=srcTx.length, remaining=jobs.length;
+    if(!remaining){ cb(n); return; }
+    jobs.forEach(function(j){
+      loadPhoto(j.oldId, function(dataUrl){
+        // if the source photo has gone missing, drop the reference rather than leave
+        // the copy pointing at a file that was never written
+        if(dataUrl) savePhoto(j.rec.photo, dataUrl, function(){ if(--remaining<=0) cb(n); });
+        else { delete j.rec.photo; if(--remaining<=0) cb(n); }
+      });
+    });
+  }
+  // Called whenever a new entry lands in the active portfolio. Any portfolio set to
+  // mirror the active one receives its own independent copy.
+  function mirrorNewTransaction(tx){
+    var targets=PORTFOLIOS.filter(function(p){ return p.mirrorFrom===ACTIVE_PID && p.id!==ACTIVE_PID; });
+    if(!targets.length) return;
+    targets.forEach(function(p){
+      if(!p.data) p.data=clone(DEFAULTS);
+      if(!Array.isArray(p.data.transactions)) p.data.transactions=[];
+      var copy=clone(tx);
+      copy.id=freshIdBase();
+      if(copy.photo){
+        var oldP=copy.photo; copy.photo=copy.id;
+        loadPhoto(oldP, function(d){ if(d) savePhoto(copy.photo, d); else { delete copy.photo; persistNow(); } });
+      }
+      p.data.transactions.push(copy);
+    });
+    persistNow();
+    flashSaved("mirrored to "+targets.length);
+  }
+  function refreshAdvancedUI(){
+    var wrap=document.getElementById("advWrap");
+    if(!wrap || wrap.style.display!=="block") return;
+    var others=PORTFOLIOS.filter(function(p){ return p.id!==ACTIVE_PID; });
+    var copySel=document.getElementById("copyFromSel");
+    var mirSel=document.getElementById("mirrorSel");
+    var p=activePortfolio();
+    if(copySel){
+      copySel.innerHTML = others.length
+        ? others.map(function(o){ return '<option value="'+esc(o.id)+'">'+esc(o.name)+'</option>'; }).join("")
+        : '<option value="">No other portfolios</option>';
+    }
+    if(mirSel){
+      mirSel.innerHTML = '<option value="">Off — don\'t mirror</option>'
+        + others.map(function(o){
+            var sel=(p && p.mirrorFrom===o.id) ? " selected" : "";
+            return '<option value="'+esc(o.id)+'"'+sel+'>'+esc(o.name)+'</option>';
+          }).join("");
+    }
+    var st=document.getElementById("mirrorState");
+    if(st){
+      if(p && p.mirrorFrom){
+        var src=findPortfolio(p.mirrorFrom);
+        st.innerHTML = src
+          ? '✅ Mirroring <b>'+esc(src.name)+'</b>. New entries added there will appear here automatically. Entries added <i>here</i> do not go back the other way.'
+          : '⚠️ The portfolio this was mirroring no longer exists.';
+      } else st.textContent="";
+    }
+  }
+
   /* ---------------- portfolio actions ---------------- */
   function flushActiveIntoRegistry(){
     var p=activePortfolio();
@@ -1501,53 +1687,77 @@
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
     resetLedgerView();
-    persist();
+    persistNow();
     render();
     renderPortfolioUI();
     closePortfolioPanel();
   }
   function createPortfolio(){
-    var name=prompt("Name this portfolio:", "New Portfolio");
-    if(name===null) return;
-    name=name.trim()||"New Portfolio";
-    flushActiveIntoRegistry();
-    var pid=genPid();
-    PORTFOLIOS.push({id:pid, name:name, createdAt:Date.now(), data:clone(DEFAULTS)});
-    ACTIVE_PID=pid;
-    applyPortfolioData(clone(DEFAULTS));
-    photoCache={};
-    resetLedgerView();
-    persist();
-    render();
-    renderPortfolioUI();
+    appModal({
+      title:"New portfolio",
+      message:"Give it a name. It starts empty, with its own balances and settings.",
+      input:{value:"", placeholder:"e.g. Trading, Savings, Zuhayr"},
+      confirmText:"Create",
+      onConfirm:function(name){
+        flushActiveIntoRegistry();
+        var pid=genPid();
+        var blank=clone(DEFAULTS); blank.transactions=[]; blank.selectedMonths=null;
+        PORTFOLIOS.push({id:pid, name:name, createdAt:Date.now(), data:blank});
+        ACTIVE_PID=pid;
+        applyPortfolioData(clone(blank));
+        photoCache={};
+        resetLedgerView();
+        persistNow();
+        render();
+        renderPortfolioUI();
+      }
+    });
   }
   function renamePortfolio(pid){
     var p=findPortfolio(pid); if(!p) return;
-    var name=prompt("Rename portfolio:", p.name);
-    if(name===null) return;
-    name=name.trim(); if(!name) return;
-    p.name=name;
-    if(pid===ACTIVE_PID) flushActiveIntoRegistry();
-    persist();
-    renderPortfolioUI();
+    appModal({
+      title:"Rename portfolio",
+      input:{value:p.name},
+      confirmText:"Save",
+      onConfirm:function(name){
+        p.name=name;
+        if(pid===ACTIVE_PID) flushActiveIntoRegistry();
+        persistNow();
+        renderPortfolioUI();
+      }
+    });
   }
   function deletePortfolio(pid){
-    if(PORTFOLIOS.length<=1){ alert("You need at least one portfolio — create another before deleting this one."); return; }
-    var p=findPortfolio(pid); if(!p) return;
-    if(!confirm("Delete portfolio \""+p.name+"\"? This permanently removes all of its transactions and photos. This can't be undone.")) return;
-    var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
-    txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
-    var wasActive=(pid===ACTIVE_PID);
-    PORTFOLIOS=PORTFOLIOS.filter(function(x){ return x.id!==pid; });
-    if(wasActive){
-      ACTIVE_PID=PORTFOLIOS[0].id;
-      applyPortfolioData(clone(PORTFOLIOS[0].data||{}));
-      photoCache={};
-      resetLedgerView();
-      render();
+    if(PORTFOLIOS.length<=1){
+      appModal({title:"Can't delete", message:"This is your only portfolio. Create another one first.", confirmText:"OK", cancelText:"Close"});
+      return;
     }
-    persist();
-    renderPortfolioUI();
+    var p=findPortfolio(pid); if(!p) return;
+    var n=((p.data&&p.data.transactions)||[]).length;
+    appModal({
+      title:"Delete portfolio?",
+      message:"<b>"+esc(p.name)+"</b> and its "+n+" "+(n===1?"entry":"entries")+" will be permanently deleted, along with any attached photos.\n\nThis can't be undone. Type DELETE to confirm.",
+      requireWord:"DELETE",
+      confirmText:"Delete",
+      danger:true,
+      onConfirm:function(){
+        var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
+        txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        var wasActive=(pid===ACTIVE_PID);
+        PORTFOLIOS=PORTFOLIOS.filter(function(x){ return x.id!==pid; });
+        // any portfolio that was mirroring the deleted one has nothing to mirror now
+        PORTFOLIOS.forEach(function(x){ if(x.mirrorFrom===pid) delete x.mirrorFrom; });
+        if(wasActive){
+          ACTIVE_PID=PORTFOLIOS[0].id;
+          applyPortfolioData(clone(PORTFOLIOS[0].data||{}));
+          photoCache={};
+          resetLedgerView();
+          render();
+        }
+        persistNow();
+        renderPortfolioUI();
+      }
+    });
   }
   // Duplicates a portfolio (any of them, not just the active one) into a brand
   // new, fully independent copy — including its own copies of every photo, so
@@ -1555,27 +1765,33 @@
   function duplicatePortfolio(pid){
     var src=findPortfolio(pid); if(!src) return;
     if(pid===ACTIVE_PID) flushActiveIntoRegistry();
-    var name=prompt("Name the copy:", src.name+" copy");
-    if(name===null) return;
-    name=name.trim()||(src.name+" copy");
-    var dataCopy=clone(src.data||{});
-    var txs=Array.isArray(dataCopy.transactions)?dataCopy.transactions:[];
-    var newPid=genPid();
-    var photoJobs=[];
-    txs.forEach(function(t){
-      var oldPhoto=t.photo;
-      t.id=freshIdBase();
-      if(oldPhoto){ t.photo=t.id; photoJobs.push({oldId:oldPhoto, newId:t.id}); }
-    });
-    PORTFOLIOS.push({id:newPid, name:name, createdAt:Date.now(), data:dataCopy});
-    var remaining=photoJobs.length;
-    function finish(){ switchPortfolio(newPid); }
-    if(remaining===0){ finish(); return; }
-    photoJobs.forEach(function(job){
-      loadPhoto(job.oldId, function(dataUrl){
-        if(dataUrl){ savePhoto(job.newId, dataUrl, function(){ remaining--; if(remaining<=0) finish(); }); }
-        else { remaining--; if(remaining<=0) finish(); }
-      });
+    appModal({
+      title:"Duplicate portfolio",
+      message:"Creates an independent copy of <b>"+esc(src.name)+"</b>, including its own copies of any photos.",
+      input:{value:src.name+" copy"},
+      confirmText:"Duplicate",
+      onConfirm:function(name){
+        var dataCopy=clone(src.data||{});
+        var txs=Array.isArray(dataCopy.transactions)?dataCopy.transactions:[];
+        var newPid=genPid();
+        var photoJobs=[];
+        txs.forEach(function(t){
+          var oldPhoto=t.photo;
+          t.id=freshIdBase();
+          if(oldPhoto){ t.photo=t.id; photoJobs.push({oldId:oldPhoto, newId:t.id}); }
+        });
+        delete dataCopy.mirrorFrom;
+        PORTFOLIOS.push({id:newPid, name:name, createdAt:Date.now(), data:dataCopy});
+        var remaining=photoJobs.length;
+        function finish(){ switchPortfolio(newPid); }
+        if(remaining===0){ finish(); return; }
+        photoJobs.forEach(function(job){
+          loadPhoto(job.oldId, function(dataUrl){
+            if(dataUrl){ savePhoto(job.newId, dataUrl, function(){ remaining--; if(remaining<=0) finish(); }); }
+            else { remaining--; if(remaining<=0) finish(); }
+          });
+        });
+      }
     });
   }
   function portfolioStats(p){
@@ -1615,6 +1831,7 @@
       +'</div>';
     });
     list.innerHTML=html;
+    refreshAdvancedUI();
   }
   function bindPortfolioUI(){
     var btn=document.getElementById("portfolioBtn");
@@ -2174,34 +2391,10 @@
     return b;
   }
 
-  // Copies an entry to today's date as a brand new, independent entry. Any attached
-  // photo is copied too (its own file), so editing/deleting one never affects the other.
-  function duplicateTransaction(id){
-    var src=state.transactions.filter(function(t){ return t.id===id; })[0];
-    if(!src) return;
-    var copy=clone(src);
-    copy.id=freshIdBase();
-    copy.date=todayStr();
-    delete copy.auto; delete copy.advance; delete copy.forMonth;
-    function finish(){
-      state.transactions.push(copy);
-      state.selectedMonths=[monthKey(copy.date)];
-      persist(); render();
-      flashSaved("duplicated");
-    }
-    if(src.photo){
-      copy.photo=copy.id;
-      loadPhoto(src.photo, function(dataUrl){
-        if(dataUrl) savePhoto(copy.id, dataUrl, finish);
-        else { delete copy.photo; finish(); }
-      });
-    } else finish();
-  }
-
   function renderLedger(){
     var sym=state.currency, allSel=isAllSelected(), activeM=activeMonths(), activeSet={};
     activeM.forEach(function(k){ activeSet[k]=1; });
-    var list=sortedTx().reverse().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) && matchesSearch(t); });
+    var list=applySort(sortedTx().reverse().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) && matchesSearch(t); }));
     var led=document.getElementById("ledger");
     document.getElementById("ledCount").textContent = list.length? "· "+list.length : "";
     if(list.length===0){
@@ -2232,7 +2425,6 @@
       var checked = selectedIds[t.id] ? " checked" : "";
       // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
       var editBtn = t.auto ? '' : '<button class="edit" data-id="'+t.id+'" title="Edit">\u270f\ufe0f</button>';
-      var dupBtn = t.auto ? '' : '<button class="dup" data-id="'+t.id+'" title="Duplicate to today">\u29c9</button>';
       html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
           +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
           +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
@@ -2240,7 +2432,6 @@
           +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
           +eyeBtn
           +'<div class="lamt">'+amtHtml+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'
-          +dupBtn
           +editBtn
           +'<button class="del" data-id="'+t.id+'" title="Delete">\xd7</button>'
           +'</div>';
@@ -2252,12 +2443,6 @@
         var id=+b.getAttribute("data-id");
         if(editingId===id) cancelEdit(); // don't leave a deleted entry loaded in the form
         deleteWithUndo(id);
-      });
-    });
-    Array.prototype.forEach.call(led.querySelectorAll(".dup"), function(b){
-      b.addEventListener("click", function(e){
-        e.stopPropagation();
-        duplicateTransaction(+b.getAttribute("data-id"));
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".edit"), function(b){
@@ -2276,7 +2461,7 @@
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("dup") || e.target.classList.contains("lchk")) return;
+        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("lchk")) return;
         var id=+row.getAttribute("data-id");
         var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
         if(tx3 && tx3.photo) openViewer(id);
@@ -2379,11 +2564,27 @@
 
   /* ---- ledger search: matches note, category, and the type's display label ---- */
   var searchQuery="";
+  var sortMode="latest";
   function matchesSearch(t){
     if(!searchQuery) return true;
     var meta=TYPE_META[t.type]||{label:t.type};
     var hay=((t.note||"")+" "+(t.cat||"")+" "+(meta.label||"")+" "+(t.date||"")).toLowerCase();
     return hay.indexOf(searchQuery)>=0;
+  }
+  // Profit/loss here means effect on your balance — money in is profit, money out is a
+  // loss. Debt- and savings-only entries don't move the balance, so they sort as 0 and
+  // settle at the boundary between the two rather than being dropped.
+  function applySort(list){
+    var l=list.slice();
+    if(sortMode==="latest") return l; // already newest-first from the caller
+    if(sortMode==="oldest") return l.reverse();
+    function pl(t){ return balDelta(t); }
+    function amt(t){ var d=balDelta(t); return d!==0 ? Math.abs(d) : Math.max(Math.abs(debtDelta(t)), Math.abs(savDelta(t))); }
+    if(sortMode==="profit") l.sort(function(a,b){ return pl(b)-pl(a); });
+    else if(sortMode==="loss") l.sort(function(a,b){ return pl(a)-pl(b); });
+    else if(sortMode==="biggest") l.sort(function(a,b){ return amt(b)-amt(a); });
+    else if(sortMode==="smallest") l.sort(function(a,b){ return amt(a)-amt(b); });
+    return l;
   }
   function updateExportBtn(){
     var btn=document.getElementById("exportSelBtn"), chk=document.getElementById("selAllChk");
@@ -2539,7 +2740,7 @@
       }
       TierFSA.pickFolder()
         .then(function(){ return StorageManager.init(); })
-        .then(function(){ return StorageManager.write(state); })
+        .then(function(){ return StorageManager.write(buildRoot()); })
         .then(function(){ note.textContent="Folder connected."; flashSaved("folder connected"); return refreshStorageBadge(); })
         .catch(function(e){ note.textContent="Couldn't connect that folder: "+((e&&e.message)||e); });
     });
@@ -2647,6 +2848,7 @@
         if(pendingPhoto){ tx2.photo=tx2.id; savePhoto(tx2.id, pendingPhoto.dataUrl); }
         state.transactions.push(tx2);
         state.selectedMonths=[monthKey(date)];
+        mirrorNewTransaction(tx2);
         persist(); render();
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
         document.getElementById("fSplit").value="1";
@@ -2698,6 +2900,11 @@
     // ledger search
     document.getElementById("ledSearch").addEventListener("input", function(e){
       searchQuery=e.target.value.trim().toLowerCase();
+      renderLedger();
+    });
+    // ledger sort — a view preference, so it deliberately survives portfolio switches
+    document.getElementById("ledSort").addEventListener("change", function(e){
+      sortMode=e.target.value;
       renderLedger();
     });
 
@@ -2891,6 +3098,97 @@
         flashSaved("CSV downloaded");
       }catch(e){ alert("Couldn't download the CSV here."); }
     });
+    // ---- Danger zone: erase the active portfolio only ----
+    document.getElementById("eraseAllBtn").addEventListener("click", function(){
+      var pfN=(activePortfolio()&&activePortfolio().name)||"this portfolio";
+      var n=state.transactions.length;
+      appModal({
+        title:"Erase this portfolio?",
+        message:"All "+n+" "+(n===1?"entry":"entries")+" in <b>"+esc(pfN)+"</b> and their photos will be permanently deleted. Balances reset to zero.\n\nYour other portfolios are not affected. A backup of everything downloads first.\n\nType ERASE to confirm.",
+        requireWord:"ERASE",
+        confirmText:"Erase",
+        danger:true,
+        onConfirm:function(){
+          flashSaved("backing up…");
+          exportData(function(json){
+            try{
+              var blob=new Blob([json],{type:"application/json"});
+              var url=URL.createObjectURL(blob);
+              var a=document.createElement("a"); a.href=url; a.download="my-money-before-erase-"+todayStr()+".json";
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+            }catch(e){ /* best-effort — the erase proceeds either way */ }
+            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            var blank=clone(DEFAULTS); blank.transactions=[]; blank.selectedMonths=null;
+            applyPortfolioData(blank);
+            flushActiveIntoRegistry();
+            resetLedgerView();
+            persistNow(); render(); renderPortfolioUI();
+            flashSaved("erased — backup downloaded");
+          });
+        }
+      });
+    });
+
+    // ---- Advanced: hidden behind 7 taps on the version line ----
+    var advTaps=0, advTimer=null;
+    document.getElementById("advTap").addEventListener("click", function(){
+      if(document.getElementById("advWrap").style.display==="block") return;
+      advTaps++;
+      if(advTimer) clearTimeout(advTimer);
+      advTimer=setTimeout(function(){ advTaps=0; }, 1500);
+      if(advTaps>=7){
+        advTaps=0;
+        document.getElementById("advWrap").style.display="block";
+        refreshAdvancedUI();
+        flashSaved("advanced unlocked");
+      }
+    });
+
+    document.getElementById("copyFromBtn").addEventListener("click", function(){
+      var pid=document.getElementById("copyFromSel").value;
+      var src=findPortfolio(pid);
+      if(!src || pid===ACTIVE_PID){
+        appModal({title:"Pick a portfolio", message:"Choose a different portfolio to copy from.", confirmText:"OK", cancelText:"Close"});
+        return;
+      }
+      var srcTx=((src.data&&src.data.transactions)||[]);
+      if(!srcTx.length){
+        appModal({title:"Nothing to copy", message:"<b>"+esc(src.name)+"</b> has no entries.", confirmText:"OK", cancelText:"Close"});
+        return;
+      }
+      var here=(activePortfolio()&&activePortfolio().name)||"this portfolio";
+      appModal({
+        title:"Copy entries",
+        message:"Copy all "+srcTx.length+" "+(srcTx.length===1?"entry":"entries")+" from <b>"+esc(src.name)+"</b> into <b>"+esc(here)+"</b>?\n\nThey're added alongside what's already here — nothing is removed, and "+esc(src.name)+" is unchanged.",
+        confirmText:"Copy",
+        onConfirm:function(){
+          copyEntriesInto(srcTx, function(n){
+            persistNow(); render();
+            flashSaved("copied "+n);
+          });
+        }
+      });
+    });
+
+    document.getElementById("mirrorBtn").addEventListener("click", function(){
+      var pid=document.getElementById("mirrorSel").value;
+      var p=activePortfolio(); if(!p) return;
+      if(!pid){ delete p.mirrorFrom; persistNow(); refreshAdvancedUI(); flashSaved("mirroring off"); return; }
+      if(pid===ACTIVE_PID){
+        appModal({title:"Pick a portfolio", message:"A portfolio can't mirror itself.", confirmText:"OK", cancelText:"Close"});
+        return;
+      }
+      // Mirror chains would let one entry fan out endlessly, so only one hop is allowed.
+      var src=findPortfolio(pid);
+      if(src && src.mirrorFrom){
+        appModal({title:"Can't mirror that", message:"<b>"+esc(src.name)+"</b> is already mirroring another portfolio. Chaining mirrors isn't supported.", confirmText:"OK", cancelText:"Close"});
+        return;
+      }
+      p.mirrorFrom=pid;
+      persistNow(); refreshAdvancedUI();
+      flashSaved("mirroring on");
+    });
     // import
     document.getElementById("impToggle").addEventListener("click", function(){
       var w=document.getElementById("impWrap"); w.style.display=(w.style.display==="none"?"block":"none");
@@ -3028,6 +3326,12 @@
     setInterval(function(){ StorageManager.tryAutoHeal().then(function(healed){ if(healed) refreshStorageBadge(); }); }, 30000);
     bind();
     bindPortfolioUI();
+    // A debounced save that never fires because the tab closed is a lost entry.
+    // pagehide covers iOS Safari, where beforeunload is unreliable.
+    window.addEventListener("pagehide", function(){ if(saveTimer) persistNow(); });
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState==="hidden" && saveTimer) persistNow();
+    });
     loadData(function(){ render(); renderPortfolioUI(); refreshStorageBadge(); });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
@@ -3147,6 +3451,46 @@
       <button class="btn ghost sm" id="printAllBtn">Any date (all time)</button>
       <button class="btn primary sm" id="printGoBtn" style="margin-left:auto">🖨️ Print</button>
     </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Danger zone -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--down);margin-bottom:12px">Danger Zone</div>
+    <div class="hint">Wipes every entry in the portfolio you're currently in. Your other portfolios are untouched. A full backup downloads automatically first.</div>
+    <div class="data-btns" style="margin-top:10px">
+      <button class="btn ghost sm" id="eraseAllBtn" style="border-color:var(--down);color:var(--down)">Erase this portfolio…</button>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
+  <div style="padding:0 20px 4px">
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v11.9</div>
+  </div>
+  <div id="advWrap" style="display:none;padding:0 20px 4px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
+
+    <div class="hint">Copy every entry from another portfolio into this one, once. Nothing in the source portfolio changes.</div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:flex-end">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mut);display:block;margin-bottom:4px">Copy from</label>
+        <select id="copyFromSel" style="width:100%"></select>
+      </div>
+      <button class="btn ghost sm" id="copyFromBtn" style="flex:none">Copy now</button>
+    </div>
+
+    <div class="hint" style="margin-top:16px">Or keep this portfolio permanently mirroring another: every new entry added to the source is copied here automatically as you add it.</div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:flex-end">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mut);display:block;margin-bottom:4px">Mirror from</label>
+        <select id="mirrorSel" style="width:100%"></select>
+      </div>
+      <button class="btn ghost sm" id="mirrorBtn" style="flex:none">Apply</button>
+    </div>
+    <div id="mirrorState" class="hint" style="margin-top:8px"></div>
   </div>
 
   <hr class="sep" style="margin:20px">
