@@ -1794,12 +1794,52 @@
     }
   }
 
+  // OpenAI, OpenRouter and xAI all speak the same wire format, so one adapter covers
+  // all three — only the base URL, key shape and default model differ.
+  function openAiCompatible(o){
+    return {
+      label:o.label, model:o.model, keyUrl:o.keyUrl, keyHint:o.keyHint, canList:true,
+      base:o.base, extraHeaders:o.extraHeaders||{},
+      _headers(key){
+        return Object.assign({"Content-Type":"application/json","Authorization":"Bearer "+key}, this.extraHeaders);
+      },
+      async listModels(key){
+        var r=await aiFetch(this.label, this.base+"/models",{headers:this._headers(key)});
+        if(!r.ok) throw await aiHttpErr(this.label,r);
+        var j=await r.json();
+        var list=(j.data||j.models||[]).map(function(m){ return {id:m.id, display:m.name||m.id}; });
+        if(o.filter) list=list.filter(function(m){ return o.filter(m.id); });
+        return list.sort(function(a,b){ return a.id<b.id?1:-1; });
+      },
+      async run(key, prompt, images, model){
+        var content=[{type:"text",text:prompt}];
+        images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
+        var body={model:model||this.model, temperature:0, messages:[{role:"user",content:content}]};
+        // json mode isn't universal across OpenRouter's catalogue — drop it and retry
+        var attempts=[Object.assign({response_format:{type:"json_object"}}, body), body];
+        var lastErr=null;
+        for(var i=0;i<attempts.length;i++){
+          var r=await aiFetch(this.label, this.base+"/chat/completions",{
+            method:"POST", headers:this._headers(key), body:JSON.stringify(attempts[i])
+          });
+          if(!r.ok){ lastErr=await aiHttpErr(this.label,r); continue; }
+          var j=await r.json();
+          if(j.error) { lastErr=new Error(this.label+": "+(j.error.message||"error")); continue; }
+          var c=j.choices&&j.choices[0];
+          if(!c) { lastErr=new Error(this.label+" returned no answer."); continue; }
+          return c.message.content;
+        }
+        throw lastErr;
+      }
+    };
+  }
+
   var AI_PROVIDERS={
     gemini:{
       label:"Gemini",
       model:"gemini-2.0-flash", // only a starting guess — real list comes from listModels()
       keyUrl:"https://aistudio.google.com/apikey",
-      keyHint:"Google AI Studio → Get API key → Create API key. Free tier is generous.",
+      keyHint:"Google AI Studio → Get API key. Make sure the Generative Language API is enabled on the project.",
       canList:true,
       // Model IDs churn constantly, so ask the API what this key can actually use rather
       // than trusting a name baked in months ago. Doubles as a key test: a good key with
@@ -1857,32 +1897,25 @@
         throw lastErr || new Error("Gemini call failed.");
       }
     },
-    openai:{
-      label:"OpenAI",
-      model:"gpt-4o-mini",
+    openai:openAiCompatible({
+      label:"OpenAI", base:"https://api.openai.com/v1", model:"gpt-4o-mini",
       keyUrl:"https://platform.openai.com/api-keys",
-      keyHint:"platform.openai.com → API keys → Create new secret key. Needs billing set up.",
-      canList:true,
-      async listModels(key){
-        var r=await aiFetch("OpenAI","https://api.openai.com/v1/models",{headers:{"Authorization":"Bearer "+key}});
-        if(!r.ok) throw await aiHttpErr("OpenAI",r);
-        var j=await r.json();
-        return (j.data||[]).map(function(m){ return {id:m.id, display:m.id}; })
-          .filter(function(m){ return /^(gpt-|o\d|chatgpt)/i.test(m.id) && !/audio|realtime|tts|whisper|embed|moderation|image|dall/i.test(m.id); })
-          .sort(function(a,b){ return a.id<b.id?1:-1; });
-      },
-      async run(key, prompt, images, model){
-        var content=[{type:"text",text:prompt}];
-        images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
-        var r=await aiFetch("OpenAI","https://api.openai.com/v1/chat/completions",{
-          method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-          body:JSON.stringify({model:model||this.model, temperature:0, response_format:{type:"json_object"}, messages:[{role:"user",content:content}]})
-        });
-        if(!r.ok) throw await aiHttpErr("OpenAI",r);
-        var j=await r.json();
-        return j.choices[0].message.content;
-      }
-    },
+      keyHint:"platform.openai.com → API keys. Needs billing set up.",
+      filter:function(id){ return /^(gpt-|o\d|chatgpt)/i.test(id) && !/audio|realtime|tts|whisper|embed|moderation|image|dall/i.test(id); }
+    }),
+    openrouter:openAiCompatible({
+      label:"OpenRouter", base:"https://openrouter.ai/api/v1", model:"google/gemini-2.0-flash-001",
+      keyUrl:"https://openrouter.ai/keys",
+      keyHint:"openrouter.ai → Keys. One key reaches Gemini, GPT, Claude, Grok and more — the easiest option by far.",
+      extraHeaders:{"HTTP-Referer":"https://my-money-tracker.local","X-Title":"My Money Tracker"},
+      filter:function(id){ return !/embed|tts|whisper|moderation/i.test(id); }
+    }),
+    xai:openAiCompatible({
+      label:"Grok (xAI)", base:"https://api.x.ai/v1", model:"grok-2-vision-1212",
+      keyUrl:"https://console.x.ai",
+      keyHint:"console.x.ai → API keys. Use a vision-capable Grok model.",
+      filter:function(id){ return !/embed/i.test(id); }
+    }),
     anthropic:{
       label:"Claude",
       model:"claude-sonnet-4-6",
@@ -1915,6 +1948,33 @@
 
   // Keys live outside the portfolio blob on purpose: backups get shared, and a backup
   // that carries live API keys is a wallet with the PIN written on it.
+  // Every provider stamps its keys with a recognisable prefix. Checking the shape before
+  // sending turns the useless "invalid API key" (which really means "you sent Google an
+  // OpenRouter key") into something that actually tells you what went wrong.
+  // Order matters: sk-or-v1- and sk-ant- must be tested before the bare sk- of OpenAI.
+  var KEY_SHAPES=[
+    {prov:"openrouter", re:/^sk-or-v1-[A-Za-z0-9]{16,}$/,      looks:"an OpenRouter key"},
+    {prov:"anthropic",  re:/^sk-ant-[A-Za-z0-9\-_]{16,}$/,     looks:"a Claude key"},
+    {prov:"xai",        re:/^xai-[A-Za-z0-9]{16,}$/,           looks:"a Grok (xAI) key"},
+    {prov:"gemini",     re:/^AIza[0-9A-Za-z\-_]{20,}$/,        looks:"a Gemini key"},
+    {prov:"openai",     re:/^sk-[A-Za-z0-9\-_]{16,}$/,         looks:"an OpenAI key"}
+  ];
+  function keyLooksLike(key){
+    for(var i=0;i<KEY_SHAPES.length;i++) if(KEY_SHAPES[i].re.test(key)) return KEY_SHAPES[i];
+    return null;
+  }
+  // Returns a warning string, or "" when the key is plausible for the chosen provider.
+  function keyMismatch(prov, key){
+    if(!key) return "";
+    var shape=keyLooksLike(key);
+    if(!shape) return "That doesn't match the shape of any provider's key. Check it copied whole.";
+    if(shape.prov===prov) return "";
+    var want=AI_PROVIDERS[prov];
+    return "This looks like "+shape.looks+", but the engine is set to "+(want?want.label:prov)
+      +". Sending it there will always come back “invalid”. Either switch the engine to "
+      +(AI_PROVIDERS[shape.prov]?AI_PROVIDERS[shape.prov].label:shape.prov)+", or paste a "+(want?want.label:prov)+" key.";
+  }
+
   var AI_KEY="mymoney_ai_cfg";
   var aiCfg={provA:"gemini", keyA:"", modelA:"", verA:"", provB:"", keyB:"", modelB:"", verB:""};
   function loadAiCfg(){
@@ -2425,6 +2485,11 @@ AI_TYPES.join(", "),
         : "⚠️ With one engine there's nothing to check its answer against, so mistakes can pass silently. Adding a second is what makes this trustworthy.";
       ch.style.color = aiCrossChecking() ? "var(--up)" : "var(--amber)";
     }
+    [["A",aiCfg.provA,aiCfg.keyA],["B",aiCfg.provB,aiCfg.keyB]].forEach(function(sl){
+      var el=document.getElementById("aiWarn"+sl[0]); if(!el) return;
+      var m=(sl[1]&&sl[2]) ? keyMismatch(sl[1], sl[2]) : "";
+      el.textContent=m; el.style.display=m?"block":"none";
+    });
     var ow=document.getElementById("aiOriginWarn");
     if(ow){
       if(location.protocol==="file:"){
@@ -2455,8 +2520,12 @@ AI_TYPES.join(", "),
     }).join("\n\n");
     appModal({
       title:"Getting API keys",
-      message:"AI mode calls these services with your own key, so the cost and the data are yours, not routed through anything of mine.\n\n"+rows
-        +"\n\nUse <b>two different companies</b> for A and B. Two keys from the same provider tend to make the same mistake on the same image, which defeats the point of checking.",
+      message:"<b>The key must match the engine.</b> An OpenRouter key sent to Gemini will always come back “invalid” — that's the single most common reason keys look broken.\n\n"
+        +"Each provider stamps its keys:\n"
+        +"Gemini <b>AIza…</b>  ·  OpenAI <b>sk-…</b>  ·  OpenRouter <b>sk-or-v1-…</b>  ·  Claude <b>sk-ant-…</b>  ·  Grok <b>xai-…</b>\n\n"
+        +"<b>Easiest route:</b> OpenRouter. One key reaches Gemini, GPT, Claude and Grok, so you can point engine A and engine B at two different companies' models with a single key.\n\n"
+        +rows
+        +"\n\nFor cross-checking, pick models from <b>two different companies</b>. Two models from the same lab tend to misread the same image the same way, which defeats the point.",
       confirmText:"Got it", cancelText:"Close"
     });
   }
@@ -2600,6 +2669,8 @@ AI_TYPES.join(", "),
         var slot=slots[si], name=slot[0], pk=slot[1], key=slot[2];
         if(!pk||!key){ msgs.push("Engine "+name+": not set"); continue; }
         var prov=AI_PROVIDERS[pk], tag="Engine "+name+" ("+prov.label+")";
+        var mm=keyMismatch(pk, key);
+        if(mm){ msgs.push(tag+": ❌ "+mm); continue; }
         // Step 1 proves the KEY. Step 2 proves the MODEL. Collapsing them is why a dead
         // model name reads as "my key never works".
         var keyOk=false;
@@ -4291,6 +4362,7 @@ AI_TYPES.join(", "),
       <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
       <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
     </div>
+    <div class="subhint" id="aiWarnA" style="display:none;color:var(--down);margin:-4px 0 10px"></div>
 
     <div class="split-row">
       <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
@@ -4301,6 +4373,7 @@ AI_TYPES.join(", "),
       <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
       <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
     </div>
+    <div class="subhint" id="aiWarnB" style="display:none;color:var(--down);margin:-4px 0 8px"></div>
 
     <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
     <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
@@ -4328,7 +4401,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.2</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.3</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
