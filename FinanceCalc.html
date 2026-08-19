@@ -1615,6 +1615,54 @@
     });
   }
 
+  /* ---------------- print transactions ---------------- */
+  function printTransactions(fromDate, toDate){
+    var sym=state.currency;
+    var list=sortedTx().filter(function(t){
+      if(fromDate && t.date<fromDate) return false;
+      if(toDate && t.date>toDate) return false;
+      return true;
+    });
+    var pName=(activePortfolio()&&activePortfolio().name)||"Portfolio";
+    var rangeLabel=(fromDate||toDate) ? ((fromDate?niceDate(fromDate):"Start")+" \u2192 "+(toDate?niceDate(toDate):"Today")) : "All time";
+    var rows="", totalNet=0;
+    list.forEach(function(t){
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var db=balDelta(t), dd2=debtDelta(t), ds=savDelta(t);
+      var amt, cls;
+      if(db!==0){ amt=(db>0?"+":"")+fmt(db,sym); cls=db>0?"pt-up":"pt-down"; totalNet+=db; }
+      else if(dd2!==0){ amt=(dd2<0?"\u2212":"+")+fmt(Math.abs(dd2),sym)+" (debt)"; cls=dd2<0?"pt-up":"pt-down"; }
+      else if(ds!==0){ amt=(ds>0?"+":"\u2212")+fmt(Math.abs(ds),sym)+" (savings)"; cls="pt-cool"; }
+      else { amt=fmt(0,sym); cls=""; }
+      var note=t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      rows+="<tr><td>"+esc(t.date)+"</td><td>"+esc(meta.label)+"</td><td>"+note+"</td><td class='"+cls+"' style='text-align:right;white-space:nowrap'>"+amt+"</td></tr>";
+    });
+    var html="<!DOCTYPE html><html><head><meta charset='utf-8'><title>"+esc(pName)+" \u2014 Transactions</title><style>"
+      +"body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#111;padding:24px;max-width:820px;margin:0 auto}"
+      +"h1{font-size:20px;margin:0 0 2px}"
+      +".sub{color:#666;font-size:13px;margin-bottom:18px}"
+      +"table{width:100%;border-collapse:collapse;font-size:13px}"
+      +"th,td{padding:7px 8px;border-bottom:1px solid #ddd;text-align:left}"
+      +"th{background:#f4f4f4;font-size:11px;text-transform:uppercase;letter-spacing:.3px}"
+      +".pt-up{color:#0a8a4a}.pt-down{color:#c22}.pt-cool{color:#1a6ea8}"
+      +".tot{margin-top:14px;font-weight:700;font-size:14px}"
+      +"@media print{ body{padding:0} }"
+      +"</style></head><body>"
+      +"<h1>"+esc(pName)+" \u2014 Transactions</h1>"
+      +"<div class='sub'>"+esc(rangeLabel)+" \u00b7 "+list.length+" "+(list.length===1?"entry":"entries")+" \u00b7 printed "+esc(fullDateStr())+"</div>"
+      +"<table><thead><tr><th>Date</th><th>Type</th><th>Note</th><th style='text-align:right'>Amount</th></tr></thead><tbody>"
+      +(rows||"<tr><td colspan='4' style='text-align:center;color:#999;padding:20px'>No transactions in this range.</td></tr>")
+      +"</tbody></table>"
+      +"<div class='tot'>Net balance change: "+(totalNet>=0?"+":"")+fmt(totalNet,sym)+"</div>"
+      +"</body></html>";
+    var w=window.open("", "_blank");
+    if(!w){ alert("Please allow pop-ups for this page to print."); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    function go(){ try{ w.focus(); w.print(); }catch(e){} }
+    w.onload=go;
+    setTimeout(go, 300); // Safari/iOS sometimes fires onload before layout settles
+  }
+
   /* ---------------- storage tier badge + health dashboard ---------------- */
   var TIER_ICONS={opfs:"🗄️",fsa:"💾",webkitfs:"🍎",idb:"🧱",ls:"⚠️"};
   var TIER_LABELS={opfs:"On-device storage",fsa:"Folder on disk",webkitfs:"Safari sandboxed storage",idb:"Browser database",ls:"Emergency (browser cache)"};
@@ -2647,6 +2695,17 @@
     });
 
     // build a backup string that also bundles photos
+    // Print transactions
+    document.getElementById("printAllBtn").addEventListener("click", function(){
+      document.getElementById("printFrom").value="";
+      document.getElementById("printTo").value="";
+    });
+    document.getElementById("printGoBtn").addEventListener("click", function(){
+      var from=document.getElementById("printFrom").value||null;
+      var to=document.getElementById("printTo").value||null;
+      printTransactions(from, to);
+    });
+
     function exportData(cb){
       var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });
       var photos={}, i=0;
@@ -2878,6 +2937,28 @@
       <button class="btn ghost sm" id="tierHealthCheck">Run health check</button>
     </div>
     <div id="tierNote" class="hint" style="margin-top:10px;margin-bottom:0"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Print transactions -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Print Transactions</div>
+    <div class="hint">Print (or save as PDF) a clean list of transactions for this portfolio. Leave both dates blank to print everything.</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mut);display:block;margin-bottom:4px">From</label>
+        <input type="date" id="printFrom" style="width:100%">
+      </div>
+      <div style="flex:1">
+        <label style="font-size:11px;color:var(--mut);display:block;margin-bottom:4px">To</label>
+        <input type="date" id="printTo" style="width:100%">
+      </div>
+    </div>
+    <div class="data-btns" style="margin-top:10px">
+      <button class="btn ghost sm" id="printAllBtn">Any date (all time)</button>
+      <button class="btn primary sm" id="printGoBtn" style="margin-left:auto">🖨️ Print</button>
+    </div>
   </div>
 
   <hr class="sep" style="margin:20px">
