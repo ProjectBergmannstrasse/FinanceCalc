@@ -588,31 +588,6 @@
   <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
 </div>
 
-<!-- Trading — its own card so the stat grid stays an even 3 -->
-<div class="panel wr-card" id="wrCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">📊</span> Trading</h2>
-    <div class="seg" id="wrPeriod">
-      <button type="button" data-p="30" class="on">30d</button>
-      <button type="button" data-p="90">90d</button>
-      <button type="button" data-p="365">1y</button>
-      <button type="button" data-p="all">All</button>
-    </div>
-  </div>
-  <div class="p-body wr-body">
-    <div class="wr-left">
-      <div class="wr-big mono" id="stWr">—</div>
-      <div class="wr-lbl">win rate</div>
-    </div>
-    <div class="wr-right">
-      <div class="wr-cell"><div class="wr-k">Trades</div><div class="wr-v mono" id="wrN">—</div></div>
-      <div class="wr-cell"><div class="wr-k">Net P&amp;L</div><div class="wr-v mono" id="wrNet">—</div></div>
-      <div class="wr-cell"><div class="wr-k">Per trade</div><div class="wr-v mono" id="wrExp">—</div></div>
-    </div>
-  </div>
-  <div class="wr-foot" id="wrFoot"></div>
-</div>
-
 <!-- Chart -->
 <div class="panel">
   <div class="p-head">
@@ -813,7 +788,7 @@
 <!-- image viewer -->
 <div id="viewer" class="viewer" style="display:none">
   <div class="viewer-inner">
-    <div class="viewer-bar"><span id="viewerTitle">Photo</span><button class="icon-btn" id="viewerClose">✕</button></div>
+    <div class="viewer-bar"><span id="viewerTitle">Photo</span><button class="icon-btn" id="viewerClose" aria-label="Close" title="Close">✕</button></div>
     <div class="viewer-body" id="viewerBody"></div>
     <div class="viewer-foot"><button class="btn ghost sm warn" id="viewerDel">Remove photo</button></div>
   </div>
@@ -822,7 +797,7 @@
 <!-- month picker — tick any combination of months -->
 <div id="monthPicker" class="mpick" style="display:none">
   <div class="mpick-inner">
-    <div class="mpick-bar"><span>Choose months</span><button class="icon-btn" id="monthPickClose">✕</button></div>
+    <div class="mpick-bar"><span>Choose months</span><button class="icon-btn" id="monthPickClose" aria-label="Close" title="Close">✕</button></div>
     <div class="mpick-actions">
       <button type="button" class="btn ghost sm" id="monthPickAll">Select all</button>
       <button type="button" class="btn ghost sm" id="monthPickClear">Clear</button>
@@ -843,7 +818,7 @@
 <div id="aiPanel" class="pf-panel" style="display:none;width:min(560px,100vw)">
   <div class="pf-bar">
     <span>🤖 AI auto-fill</span>
-    <button type="button" class="icon-btn" id="aiPanelClose">✕</button>
+    <button type="button" class="icon-btn" id="aiPanelClose" aria-label="Close" title="Close">✕</button>
   </div>
   <div class="pf-hint">Add photos of receipts, statements or trade screenshots. Each image is read in full — one image can hold several transactions, or none.</div>
   <div style="padding:10px 20px">
@@ -873,7 +848,7 @@
 <div id="portfolioPanel" class="pf-panel" style="display:none">
   <div class="pf-bar">
     <span>📁 Portfolios</span>
-    <button type="button" class="icon-btn" id="portfolioPanelClose">✕</button>
+    <button type="button" class="icon-btn" id="portfolioPanelClose" aria-label="Close" title="Close">✕</button>
   </div>
   <div class="pf-hint">Each portfolio has its own balances, settings and transaction history. Duplicating one makes a fully independent copy — including its own copies of any attached photos.</div>
   <div id="portfolioList" class="pf-list"></div>
@@ -887,9 +862,23 @@
 (function(){
   /* ---------------- constants ---------------- */
   var STORE_KEY = "mymoney_v14";
+  // Fallbacks only. The chart paints from the live theme (chartColors) — these were
+  // hardcoded, so Emerald's candles used the default green instead of the theme's, and
+  // the grid stayed navy against the near-black Mono background.
   var UP="#3ddc84", DOWN="#ff5d5d", AMBER="#f4b73f", COOL="#5aa9e6",
       GRID="#232c3d", ZERO="#3a465e", AXTX="#7c8798", DOJI="#7c8798",
       MFONT="ui-monospace,Menlo,monospace";
+  function cssVar(name, fallback){
+    try{
+      var v=(getComputedStyle(document.documentElement).getPropertyValue(name)||"").trim();
+      return v || fallback;
+    }catch(e){ return fallback; }
+  }
+  function chartColors(){
+    return { up:cssVar("--up",UP), down:cssVar("--down",DOWN), amber:cssVar("--amber",AMBER),
+             cool:cssVar("--cool",COOL), grid:cssVar("--bd",GRID), zero:cssVar("--bd2",ZERO),
+             ax:cssVar("--mut",AXTX), doji:cssVar("--mut",DOJI) };
+  }
 
   /* ============================================================
      STORAGE MANAGER — multi-tier with automatic detection & fallback
@@ -1387,6 +1376,7 @@
     budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
     recurring:[], // [{id,type,amount,cat,note,freq,day,startDate,lastRun,paused}]
     goals:[],     // [{id,name,target,by,createdAt}] — measured against the savings pot
+    trash:[],     // [{tx,at}] deleted entries, recoverable for 30 days
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -1614,6 +1604,27 @@
     state.settings.toDebt=roundMoney(convertAmount(state.settings.toDebt, fromCode, toCode));
     state.settings.toTrading=roundMoney(convertAmount(state.settings.toTrading, fromCode, toCode));
     state.settings.toSavings=roundMoney(convertAmount(state.settings.toSavings, fromCode, toCode));
+
+    // Everything below holds money too. Missing any of them leaves that feature quietly
+    // denominated in the OLD currency — a $200 cap becomes a €200 cap, a restored entry
+    // comes back at the wrong value, and a rent rule keeps charging the old number.
+    if(state.budgets && typeof state.budgets==="object"){
+      Object.keys(state.budgets).forEach(function(k){
+        var v=num(state.budgets[k]);
+        if(v>0) state.budgets[k]=roundMoney(convertAmount(v, fromCode, toCode));
+      });
+    }
+    if(Array.isArray(state.recurring)){
+      state.recurring.forEach(function(r){ r.amount=roundMoney(convertAmount(num(r.amount), fromCode, toCode)); });
+    }
+    if(Array.isArray(state.goals)){
+      state.goals.forEach(function(g){ if(g && g.target!=null) g.target=roundMoney(convertAmount(num(g.target), fromCode, toCode)); });
+    }
+    if(Array.isArray(state.trash)){
+      state.trash.forEach(function(item){
+        if(item && item.tx) item.tx.amount=roundMoney(convertAmount(num(item.tx.amount), fromCode, toCode));
+      });
+    }
     return true;
   }
 
@@ -1745,12 +1756,18 @@
     if(!txs.length) return;
     var total=0; txs.forEach(function(t){ total+=num(t.amount); });
     var n=txs.length;
-    if(!confirm("Remove the advance taken for "+monthLong(forMonth)+" ("+fmt(total)+")? This deletes "+n+" linked "+(n===1?"entry":"entries")+" and frees up that advance slot.")) return;
-    var ids=txs.map(function(t){ return t.id; });
-    txs.forEach(toTrash);   // recoverable, like any other delete
-    state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
-    ids.forEach(function(id){ delete selectedIds[id]; });
-    persistNow(); render(); flashSaved("advance removed");
+    appModal({
+      title:"Remove the advance for "+monthLong(forMonth)+"?",
+      message:"That deletes <b>"+n+"</b> linked "+(n===1?"entry":"entries")+" totalling <b>"+fmt(total)+"</b> and frees the advance slot again.\n\nThey go to Recently deleted, so this is reversible.",
+      confirmText:"Remove", danger:true,
+      onConfirm:function(){
+        var ids=txs.map(function(t){ return t.id; });
+        txs.forEach(toTrash);   // recoverable, like any other delete
+        state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
+        ids.forEach(function(id){ delete selectedIds[id]; });
+        persistNow(); render(); flashSaved("advance removed");
+      }
+    });
   }
 
   /* ---------------- photo store — routes through StorageManager ----------------
@@ -2858,7 +2875,7 @@ AI_TYPES.join(", "),
       +"<div class='tot'>Net balance change: "+(totalNet>=0?"+":"")+fmt(totalNet,sym)+"</div>"
       +"</body></html>";
     var w=window.open("", "_blank");
-    if(!w){ alert("Please allow pop-ups for this page to print."); return; }
+    if(!w){ appModal({title:"Pop-ups are blocked", message:"Allow pop-ups for this page and try printing again.", confirmText:"OK", cancelText:"Close"}); return; }
     w.document.open(); w.document.write(html); w.document.close();
     // onload may or may not still fire after document.close() — belt-and-braces, but
     // guarded so the user never gets two print dialogs stacked on top of each other
@@ -3339,7 +3356,6 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageDash") renderWrCard();
     if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
     if(page==="pageTrading") renderTradingPage();
   }
@@ -3351,60 +3367,6 @@ AI_TYPES.join(", "),
       var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on);
     });
     setTimeout(function(){ var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on); }, 60);
-  }
-  /* ---------------- win rate card (dashboard) ---------------- */
-  var wrPeriod="30";
-  function wrPeriodList(){
-    var list=tradeList();
-    if(wrPeriod==="all") return list;
-    var days=parseInt(wrPeriod,10);
-    var cut=new Date(); cut.setDate(cut.getDate()-days);
-    var cutStr=cut.getFullYear()+"-"+two(cut.getMonth()+1)+"-"+two(cut.getDate());
-    return list.filter(function(t){ return t.date>=cutStr; });
-  }
-  function renderWrCard(){
-    var card=document.getElementById("wrCard");
-    if(!card) return;
-    var all=tradeList();
-    // no trades ever -> the card never appears at all
-    if(!all.length){ card.style.display="none"; return; }
-    card.style.display="";
-    var list=wrPeriodList(), sym=state.currency;
-    var big=document.getElementById("stWr");
-    var foot=document.getElementById("wrFoot");
-    if(!list.length){
-      big.textContent="—"; big.className="wr-big mono";
-      document.getElementById("wrN").textContent="0";
-      document.getElementById("wrNet").textContent=fmt(0,sym);
-      document.getElementById("wrExp").textContent=fmt(0,sym);
-      foot.textContent="No trades in this period. Try a longer one.";
-      return;
-    }
-    var s=tradeStats(list);
-    big.textContent=(s.winRate*100).toFixed(1)+"%";
-    // expectancy decides the colour, not win rate — a 90% win rate that loses money
-    // must not render green
-    big.className="wr-big mono "+(s.expectancy>=0?"up":"down");
-    document.getElementById("wrN").textContent=s.wins+"W/"+s.losses+"L";
-    var netEl=document.getElementById("wrNet");
-    netEl.textContent=fmt(s.net,sym); netEl.className="wr-v mono "+(s.net>=0?"up":"down");
-    var expEl=document.getElementById("wrExp");
-    expEl.textContent=(s.expectancy>=0?"+":"")+fmt(s.expectancy,sym);
-    expEl.className="wr-v mono "+(s.expectancy>=0?"up":"down");
-    if(s.winRate>=0.5 && s.expectancy<0) foot.innerHTML="⚠️ Winning more often than losing, but the losses are bigger — expectancy is negative.";
-    else if(s.winRate<0.5 && s.expectancy>0) foot.innerHTML="Losing more often than winning, but the winners carry it. Tap for the full breakdown.";
-    else foot.textContent="Tap for the full breakdown.";
-  }
-  function bindWrCard(){
-    Array.prototype.forEach.call(document.querySelectorAll("#wrPeriod button"), function(b){
-      b.addEventListener("click", function(e){
-        e.stopPropagation();
-        wrPeriod=b.getAttribute("data-p");
-        Array.prototype.forEach.call(document.querySelectorAll("#wrPeriod button"), function(x){ x.classList.toggle("on", x===b); });
-        renderWrCard();
-      });
-    });
-    document.getElementById("wrCard").addEventListener("click", function(){ setTab("pageTrading"); });
   }
 
   /* ================= CSV IMPORT =================
@@ -4423,6 +4385,8 @@ AI_TYPES.join(", "),
 
   /* ---------------- chart rendering (TradingView-style crosshair) ---------------- */
   function buildChart(){
+    var CC=chartColors();   // resolved per build, so a theme switch repaints correctly
+    var UP=CC.up, DOWN=CC.down, GRID=CC.grid, ZERO=CC.zero, AXTX=CC.ax, DOJI=CC.doji, AMBER=CC.amber, COOL=CC.cool;
     var wrap=document.getElementById("chartWrap");
     if(state.chartCollapsed){ wrap.style.display="none"; document.getElementById("chartToggle").textContent="▸"; return; }
     wrap.style.display="block"; document.getElementById("chartToggle").textContent="▾";
@@ -4675,7 +4639,6 @@ AI_TYPES.join(", "),
     if(taxUsed) document.getElementById("stTax").textContent=fmt(t.tax,sym);
 
     // win rate lives in its own dashboard card now — the stat grid stays an even 3
-    renderWrCard();
     var netEl=document.getElementById("stNet");
     netEl.textContent=fmt(t.net,sym);
     netEl.className="v mono "+(t.net>=0?"up":"down");
@@ -4693,7 +4656,7 @@ AI_TYPES.join(", "),
     if(alw<=0 && used<=0){
       msg="No fixed monthly amount set. That's fine — just add entries manually as money comes in.";
     } else {
-      msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to debt, <b>"+fmt(stt,sym)+"</b> to trading, <b>"+fmt(ss,sym)+"</b> to savings.";
+      msg="Splitting <b>"+fmt(alw,sym)+"</b>: <b>"+fmt(sd,sym)+"</b> to "+esc(L("debt").toLowerCase())+", <b>"+fmt(stt,sym)+"</b> to "+esc(L("trading").toLowerCase())+", <b>"+fmt(ss,sym)+"</b> to "+esc(L("savings").toLowerCase())+".";
       if(Math.abs(left)>=0.01) msg+=" <span class='warn'>("+(left>0?fmt(left,sym)+" not assigned":"over by "+fmt(-left,sym))+")</span>";
     }
     au.innerHTML=msg;
@@ -5189,7 +5152,7 @@ AI_TYPES.join(", "),
         selectedIds={};
         renderLedger();
         flashSaved("exported");
-      }catch(e){ alert("Couldn't download here — try again."); }
+      }catch(e){ appModal({title:"Couldn't download", message:"Your browser blocked the download. Try again, or use Copy backup.", confirmText:"OK", cancelText:"Close"}); }
     });
   }
 
@@ -5260,6 +5223,9 @@ AI_TYPES.join(", "),
       Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
         b.classList.toggle("on", b.getAttribute("data-theme-key")===key);
       });
+      // The chart is SVG with colours baked in as literal hex at build time — CSS alone
+      // can't restyle it, so a theme switch left it painted in the old theme's colours.
+      try{ if(typeof buildChart==="function" && document.getElementById("chartWrap")) buildChart(); }catch(e){}
     }
     window.__applyTheme=applyTheme;
     (function(){
@@ -5525,26 +5491,33 @@ AI_TYPES.join(", "),
       for(var ak2 in amSetNow){ if(ak2>curM2) advNow++; }
       var isAdvance=targetMonth>curM2;
       if(isAdvance && advNow>=3){
-        alert("You already have 3 months advance outstanding ("+advNow+" ahead). Wait until those months arrive before taking more.");
+        appModal({title:"No advance slots left", message:"You already have <b>3 months</b> advance outstanding ("+advNow+" ahead). Wait for those months to arrive before taking more.", confirmText:"OK", cancelText:"Close"});
         return;
       }
-      // confirm if advance
+      function doApply(){
+        // non-advance (current/past month): dated the 1st of that month, as before.
+        // true advance: dated *today* — the day it was actually taken — not the future month.
+        var dateStr=isAdvance?todayStr():(targetMonth+"-01");
+        var base2=freshIdBase();
+        var advTag=isAdvance?" (advance for "+monthLong(targetMonth)+", taken "+niceDate(todayStr())+")":"";
+        if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,   auto:true, forMonth:targetMonth, advance:isAdvance});
+        if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true, forMonth:targetMonth, advance:isAdvance});
+        if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag, auto:true, forMonth:targetMonth, advance:isAdvance});
+        state.selectedMonths=[targetMonth];
+        persist(); render();
+        flashSaved(isAdvance?"advance added":"added");
+      }
       if(isAdvance){
         var advLeft=3-advNow;
-        if(!confirm("Take advance allowance for "+monthLong(targetMonth)+"? It'll be logged today ("+niceDate(todayStr())+") and marked as an advance for "+monthLong(targetMonth)+" — you can remove it later if you change your mind. You have "+advNow+" of 3 advance slots used. After this: "+(advNow+1)+"/3 — "+advLeft+" slot"+(advLeft===1?"":"s")+" remaining."))
-          return;
+        appModal({
+          title:"Take "+monthLong(targetMonth)+" early?",
+          message:"It gets logged <b>today</b> ("+esc(niceDate(todayStr()))+") and marked as an advance for "+monthLong(targetMonth)+".\n\nSlots: <b>"+(advNow+1)+" of 3</b> used after this — "+advLeft+" left. You can remove it later.",
+          confirmText:"Take it early",
+          onConfirm:doApply
+        });
+        return;
       }
-      // non-advance (current/past month): dated the 1st of that month, as before.
-      // true advance: dated *today* — the day it was actually taken — not the future month.
-      var dateStr=isAdvance?todayStr():(targetMonth+"-01");
-      var base2=freshIdBase();
-      var advTag=isAdvance?" (advance for "+monthLong(targetMonth)+", taken "+niceDate(todayStr())+")":"";
-      if(sd>0)  state.transactions.push({id:base2+1,date:dateStr,type:"alw_debt",    amount:sd, note:"Allowance - debt"+advTag,   auto:true, forMonth:targetMonth, advance:isAdvance});
-      if(stt>0) state.transactions.push({id:base2+2,date:dateStr,type:"alw_trading", amount:stt,note:"Allowance - trading"+advTag,auto:true, forMonth:targetMonth, advance:isAdvance});
-      if(ss>0)  state.transactions.push({id:base2+3,date:dateStr,type:"alw_savings", amount:ss, note:"Allowance - savings"+advTag, auto:true, forMonth:targetMonth, advance:isAdvance});
-      state.selectedMonths=[targetMonth];
-      persist(); render();
-      flashSaved(isAdvance?"advance added":"added");
+      doApply();
     });
 
     // currency select interaction — switching to a KNOWN currency converts every stored
@@ -5563,15 +5536,27 @@ AI_TYPES.join(", "),
         if(from===to) return;
         var fromCode=SYMBOL_TO_CODE[from], toCode=SYMBOL_TO_CODE[to];
         var willConvert = !!(fromCode && toCode && fromCode!==toCode);
-        if(willConvert){
-          var rate=convertAmount(1, fromCode, toCode);
-          var ok=confirm("Switch to "+(CURRENCY_META[toCode]?CURRENCY_META[toCode].name:to)+"? Every amount converts right now, offline, using the built-in rate (1 "+fromCode+" = "+rate.toFixed(4)+" "+toCode+"). Switching back later won't be pixel-perfect due to rounding \u2014 grab a backup first if you want the exact originals kept somewhere.");
-          if(!ok){ syncCurrencySelect(); return; }
-          convertStateCurrency(from, to);
+        function applySwitch(){
+          if(willConvert) convertStateCurrency(from, to);
+          state.currency=v;
+          persistNow(); render();
+          flashSaved(willConvert ? "converted to "+v : "saved");
         }
-        state.currency=v;
-        persist(); render();
-        flashSaved(willConvert ? "converted to "+v : "saved");
+        if(willConvert){
+          // Rewrites every amount you own. It was gated by a browser confirm() — the one
+          // dialog style this app had otherwise removed, and untestable to boot.
+          var rate=convertAmount(1, fromCode, toCode);
+          var n=state.transactions.length;
+          appModal({
+            title:"Convert everything to "+(CURRENCY_META[toCode]?CURRENCY_META[toCode].name:to)+"?",
+            message:"All <b>"+n+"</b> entr"+(n===1?"y":"ies")+" and your opening numbers get rewritten now, offline, at the built-in rate:\n\n<b>1 "+esc(fromCode)+" = "+rate.toFixed(4)+" "+esc(toCode)+"</b>\n\nSwitching back later won't land on the exact original figures, because of rounding. Download a backup first if you want the originals kept.",
+            confirmText:"Convert", danger:true,
+            onConfirm:applySwitch,
+            onCancel:function(){ syncCurrencySelect(); }
+          });
+          return;
+        }
+        applySwitch();
       });
     }
     // setup save — opening numbers, plus finalizing a custom currency symbol if one was typed
@@ -5656,7 +5641,7 @@ AI_TYPES.join(", "),
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
           setTimeout(function(){ URL.revokeObjectURL(url); },1000);
           flashSaved("downloaded");
-        }catch(e){ alert("Couldn't download here — use Copy backup instead."); }
+        }catch(e){ appModal({title:"Couldn't download", message:"Your browser blocked it. Use <b>Copy backup</b> instead.", confirmText:"OK", cancelText:"Close"}); }
       });
     });
     // CSV export — uses the Print Transactions date range if one is set
@@ -5689,7 +5674,7 @@ AI_TYPES.join(", "),
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function(){ URL.revokeObjectURL(url); },1000);
         flashSaved("CSV downloaded");
-      }catch(e){ alert("Couldn't download the CSV here."); }
+      }catch(e){ appModal({title:"Couldn't download the CSV", message:"Your browser blocked the download.", confirmText:"OK", cancelText:"Close"}); }
     });
     // ---- Danger zone: erase the active portfolio only ----
     document.getElementById("eraseAllBtn").addEventListener("click", function(){
@@ -5897,7 +5882,16 @@ AI_TYPES.join(", "),
     // reset — clears the ACTIVE portfolio only; other portfolios are left alone
     document.getElementById("resetBtn").addEventListener("click", function(){
       var pfN=(activePortfolio()&&activePortfolio().name)||"this portfolio";
-      if(!confirm("Reset clears every entry in \u201c"+pfN+"\u201d and its attached photos, permanently — this can't be undone. Your other portfolios are not affected.\n\nA safety backup of ALL portfolios will download automatically first. Continue?")) return;
+      var n=state.transactions.length;
+      appModal({
+        title:"Reset “"+esc(pfN)+"”?",
+        message:"Clears all <b>"+n+"</b> entr"+(n===1?"y":"ies")+" in <b>"+esc(pfN)+"</b> and their photos, permanently. Your other portfolios are untouched.\n\nA backup of <b>every</b> portfolio downloads first.\n\nType RESET to confirm.",
+        requireWord:"RESET", confirmText:"Reset", danger:true,
+        onConfirm:doReset
+      });
+    });
+    function doReset(){
+      var pfN=(activePortfolio()&&activePortfolio().name)||"this portfolio";
       flashSaved("backing up…");
       exportData(function(json){
         try{
@@ -5910,9 +5904,9 @@ AI_TYPES.join(", "),
         state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
         state=clone(DEFAULTS); state.selectedMonths=null;
         flushActiveIntoRegistry();
-        persist(); render(); renderPortfolioUI(); flashSaved("reset — backup downloaded");
+        persistNow(); render(); renderPortfolioUI(); flashSaved("reset — backup downloaded");
       });
-    });
+    }
 
     // image viewer
     document.getElementById("viewerClose").addEventListener("click", closeViewer);
@@ -5963,7 +5957,6 @@ AI_TYPES.join(", "),
     bindTrash();
     bindCopyRows();
     bindTabs();
-    bindWrCard();
     refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
@@ -6335,7 +6328,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.3</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.5</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
