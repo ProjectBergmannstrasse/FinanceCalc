@@ -56,6 +56,50 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  /* ---- touch bar ---- */
+  .page{animation:pageIn .22s cubic-bezier(.22,1,.36,1)}
+  @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    z-index:90;display:flex;gap:2px;padding:5px;border-radius:18px;
+    background:color-mix(in srgb, var(--panel) 88%, transparent);
+    border:1px solid var(--bd2);box-shadow:0 12px 34px rgba(0,0,0,.5);
+    backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+    width:min(420px,calc(100vw - 24px))}
+  .tab{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;border:0;background:transparent;color:var(--mut);cursor:pointer;
+    padding:8px 4px;min-height:50px;border-radius:14px;font:inherit;
+    -webkit-tap-highlight-color:transparent;transition:color .2s ease,transform .12s ease}
+  .tab:active{transform:scale(.93)}
+  .tab.on{color:var(--amber)}
+  .tab-ic{font-size:17px;line-height:1;transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+  .tab.on .tab-ic{transform:translateY(-1px) scale(1.16)}
+  .tab-t{font-size:10.5px;font-weight:700;letter-spacing:.2px}
+  /* the pill slides between tabs rather than each tab painting its own background */
+  .tab-pill{position:absolute;top:5px;bottom:5px;z-index:0;border-radius:14px;
+    background:var(--card2);border:1px solid var(--bd2);
+    transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);pointer-events:none}
+  @media (prefers-reduced-motion:reduce){
+    .page{animation:none}
+    .tab-pill,.tab,.tab-ic{transition:none}
+  }
+
+  .page-head{padding:6px 0 14px}
+  .page-head h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
+
+  /* ---- win rate card ---- */
+  .wr-body{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .wr-left{flex:none;min-width:118px}
+  .wr-big{font-size:40px;font-weight:800;line-height:1;letter-spacing:-1px}
+  .wr-lbl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+  .wr-right{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-width:200px}
+  .wr-cell{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:8px 9px}
+  .wr-k{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+  .wr-v{font-size:14px;font-weight:700;margin-top:2px}
+  .wr-foot{padding:0 16px 14px;font-size:11.5px;color:var(--mut)}
+  .wr-card{cursor:pointer;transition:border-color .15s}
+  .wr-card:hover{border-color:var(--bd2)}
+
   .cp-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;-webkit-user-select:none}
   .cp-row:hover{border-color:var(--bd2)}
   .cp-row:active{background:var(--card2)}
@@ -382,14 +426,12 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
-  <button type="button" id="trBtn" class="tier-badge" title="Trading stats">📊 Trading</button>
   <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
   <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
-  <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
-  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
 
+<main id="pageDash" class="page">
 <!-- Live date, always computed from the device clock — never hand-typed -->
 <div class="datebar" id="dateBar">—</div>
 
@@ -420,8 +462,32 @@
   <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
   <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
-  <div class="stat" id="stWrWrap" style="display:none;cursor:pointer" title="Tap for full trading stats"><div class="k">Win rate</div><div class="v mono" id="stWr">—</div><div class="stat-sub" id="stWrSub"></div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
+</div>
+
+<!-- Trading — its own card so the stat grid stays an even 3 -->
+<div class="panel wr-card" id="wrCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">📊</span> Trading</h2>
+    <div class="seg" id="wrPeriod">
+      <button type="button" data-p="30" class="on">30d</button>
+      <button type="button" data-p="90">90d</button>
+      <button type="button" data-p="365">1y</button>
+      <button type="button" data-p="all">All</button>
+    </div>
+  </div>
+  <div class="p-body wr-body">
+    <div class="wr-left">
+      <div class="wr-big mono" id="stWr">—</div>
+      <div class="wr-lbl">win rate</div>
+    </div>
+    <div class="wr-right">
+      <div class="wr-cell"><div class="wr-k">Trades</div><div class="wr-v mono" id="wrN">—</div></div>
+      <div class="wr-cell"><div class="wr-k">Net P&amp;L</div><div class="wr-v mono" id="wrNet">—</div></div>
+      <div class="wr-cell"><div class="wr-k">Per trade</div><div class="wr-v mono" id="wrExp">—</div></div>
+    </div>
+  </div>
+  <div class="wr-foot" id="wrFoot"></div>
 </div>
 
 <!-- Chart -->
@@ -439,6 +505,9 @@
   <div class="p-body" id="chartWrap"></div>
 </div>
 
+</main>
+
+<main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
   <div class="p-head">
@@ -547,7 +616,23 @@
 </div>
 
 
+</main>
+
 <div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
+
+<!-- touch bar -->
+<nav class="tabbar" id="tabbar" role="tablist">
+  <button type="button" class="tab on" data-page="pageDash" role="tab">
+    <span class="tab-ic">◎</span><span class="tab-t">Dashboard</span>
+  </button>
+  <button type="button" class="tab" data-page="pageLedger" role="tab">
+    <span class="tab-ic">≡</span><span class="tab-t">Entries</span>
+  </button>
+  <button type="button" class="tab" data-page="pageSettings" role="tab">
+    <span class="tab-ic">⚙</span><span class="tab-t">Settings</span>
+  </button>
+  <span class="tab-pill" id="tabPill"></span>
+</nav>
 
 <!-- image viewer -->
 <div id="viewer" class="viewer" style="display:none">
@@ -578,7 +663,7 @@
 </div>
 
 <!-- trading stats -->
-<div id="trPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:120"></div>
+<div id="trPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
 <div id="trPanel" class="pf-panel" style="display:none;width:min(460px,100vw)">
   <div class="pf-bar">
     <span>📊 Trading</span>
@@ -597,7 +682,7 @@
 </div>
 
 <!-- AI auto-fill panel -->
-<div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:120"></div>
+<div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
 <div id="aiPanel" class="pf-panel" style="display:none;width:min(560px,100vw)">
   <div class="pf-bar">
     <span>🤖 AI auto-fill</span>
@@ -2955,6 +3040,104 @@ AI_TYPES.join(", "),
     });
   }
 
+  /* ---------------- touch bar routing ----------------
+     Settings stays the existing drawer rather than becoming a third <main>: it's already
+     built, bound and tested, and re-parenting ~400 lines of it to win a structural purity
+     point is exactly how the bugs in this file got made. The tab opens it and lights up;
+     closing it returns the pill to wherever you were. */
+  var currentPage="pageDash", lastContentPage="pageDash";
+  function movePill(btn){
+    var pill=document.getElementById("tabPill"), bar=document.getElementById("tabbar");
+    if(!pill||!btn||!bar) return;
+    var b=btn.getBoundingClientRect(), r=bar.getBoundingClientRect();
+    pill.style.left=(b.left-r.left)+"px";
+    pill.style.width=b.width+"px";
+  }
+  function setTab(page){
+    var btns=document.querySelectorAll("#tabbar .tab");
+    Array.prototype.forEach.call(btns, function(b){
+      var on=b.getAttribute("data-page")===page;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on?"true":"false");
+      if(on) movePill(b);
+    });
+    lastContentPage=page; currentPage=page;
+    ["pageDash","pageLedger","pageSettings"].forEach(function(id){
+      var el=document.getElementById(id); if(!el) return;
+      if(id===page){
+        el.style.display="";
+        // retrigger the entrance animation on every switch
+        el.style.animation="none"; void el.offsetWidth; el.style.animation="";
+      } else el.style.display="none";
+    });
+    try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
+    if(page==="pageDash") renderWrCard();
+    if(page==="pageSettings") render(); // repaint settings-owned values on arrival
+  }
+  function bindTabs(){
+    Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(b){
+      b.addEventListener("click", function(){ setTab(b.getAttribute("data-page")); });
+    });
+    window.addEventListener("resize", function(){
+      var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on);
+    });
+    setTimeout(function(){ var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on); }, 60);
+  }
+  /* ---------------- win rate card (dashboard) ---------------- */
+  var wrPeriod="30";
+  function wrPeriodList(){
+    var list=tradeList();
+    if(wrPeriod==="all") return list;
+    var days=parseInt(wrPeriod,10);
+    var cut=new Date(); cut.setDate(cut.getDate()-days);
+    var cutStr=cut.getFullYear()+"-"+two(cut.getMonth()+1)+"-"+two(cut.getDate());
+    return list.filter(function(t){ return t.date>=cutStr; });
+  }
+  function renderWrCard(){
+    var card=document.getElementById("wrCard");
+    if(!card) return;
+    var all=tradeList();
+    // no trades ever -> the card never appears at all
+    if(!all.length){ card.style.display="none"; return; }
+    card.style.display="";
+    var list=wrPeriodList(), sym=state.currency;
+    var big=document.getElementById("stWr");
+    var foot=document.getElementById("wrFoot");
+    if(!list.length){
+      big.textContent="—"; big.className="wr-big mono";
+      document.getElementById("wrN").textContent="0";
+      document.getElementById("wrNet").textContent=fmt(0,sym);
+      document.getElementById("wrExp").textContent=fmt(0,sym);
+      foot.textContent="No trades in this period. Try a longer one.";
+      return;
+    }
+    var s=tradeStats(list);
+    big.textContent=(s.winRate*100).toFixed(1)+"%";
+    // expectancy decides the colour, not win rate — a 90% win rate that loses money
+    // must not render green
+    big.className="wr-big mono "+(s.expectancy>=0?"up":"down");
+    document.getElementById("wrN").textContent=s.wins+"W/"+s.losses+"L";
+    var netEl=document.getElementById("wrNet");
+    netEl.textContent=fmt(s.net,sym); netEl.className="wr-v mono "+(s.net>=0?"up":"down");
+    var expEl=document.getElementById("wrExp");
+    expEl.textContent=(s.expectancy>=0?"+":"")+fmt(s.expectancy,sym);
+    expEl.className="wr-v mono "+(s.expectancy>=0?"up":"down");
+    if(s.winRate>=0.5 && s.expectancy<0) foot.innerHTML="⚠️ Winning more often than losing, but the losses are bigger — expectancy is negative.";
+    else if(s.winRate<0.5 && s.expectancy>0) foot.innerHTML="Losing more often than winning, but the winners carry it. Tap for the full breakdown.";
+    else foot.textContent="Tap for the full breakdown.";
+  }
+  function bindWrCard(){
+    Array.prototype.forEach.call(document.querySelectorAll("#wrPeriod button"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        wrPeriod=b.getAttribute("data-p");
+        Array.prototype.forEach.call(document.querySelectorAll("#wrPeriod button"), function(x){ x.classList.toggle("on", x===b); });
+        renderWrCard();
+      });
+    });
+    document.getElementById("wrCard").addEventListener("click", openTrPanel);
+  }
+
   /* ---------------- trading stats UI ---------------- */
   function openTrPanel(){
     document.getElementById("trPanel").style.display="block";
@@ -3058,8 +3241,6 @@ AI_TYPES.join(", "),
     box.innerHTML=html;
   }
   function bindTrUI(){
-    document.getElementById("trBtn").addEventListener("click", openTrPanel);
-    document.getElementById("stWrWrap").addEventListener("click", openTrPanel);
     document.getElementById("trPanelClose").addEventListener("click", closeTrPanel);
     document.getElementById("trPanelOverlay").addEventListener("click", closeTrPanel);
     document.getElementById("trScope").addEventListener("change", renderTrPanel);
@@ -3098,12 +3279,16 @@ AI_TYPES.join(", "),
     }
   }
   async function refreshStorageBadge(){
+    // The header badge is gone (Settings owns storage now), but this must still refresh
+    // the Storage list on the settings page — an early return here would silently leave
+    // that section blank.
     var badge=document.getElementById("tierBadge");
-    if(!badge) return;
-    var active=StorageManager.active();
-    if(active){
-      badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
-      badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
+    if(badge){
+      var active=StorageManager.active();
+      if(active){
+        badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
+        badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
+      }
     }
     await renderTierList();
   }
@@ -3357,19 +3542,8 @@ AI_TYPES.join(", "),
     taxWrap.style.display = taxUsed ? "" : "none";
     if(taxUsed) document.getElementById("stTax").textContent=fmt(t.tax,sym);
 
-    // Win rate rides on the main screen automatically once you've logged a trade, and
-    // stays out of the way entirely if you never do. Expectancy decides the colour, not
-    // win rate: a 90% win rate that loses money shouldn't be showing green.
-    var trs=tradeList();
-    var wrWrap=document.getElementById("stWrWrap");
-    if(trs.length){
-      var ts=tradeStats(trs);
-      wrWrap.style.display="";
-      var wrEl=document.getElementById("stWr");
-      wrEl.textContent=(ts.winRate*100).toFixed(1)+"%";
-      wrEl.className="v mono "+(ts.expectancy>=0?"up":"down");
-      document.getElementById("stWrSub").textContent=ts.wins+"W/"+ts.losses+"L · "+(ts.expectancy>=0?"+":"")+fmt(ts.expectancy,sym)+"/trade";
-    } else wrWrap.style.display="none";
+    // win rate lives in its own dashboard card now — the stat grid stays an even 3
+    renderWrCard();
     var netEl=document.getElementById("stNet");
     netEl.textContent=fmt(t.net,sym);
     netEl.className="v mono "+(t.net>=0?"up":"down");
@@ -3936,15 +4110,14 @@ AI_TYPES.join(", "),
 
     // Settings drawer
     _openSettings=openSettings;
-    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
+    function openSettings(){ setTab("pageSettings");
       // re-highlight active theme when drawer opens
       var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
       Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){ b.classList.toggle("on", b.getAttribute("data-theme-key")===cur); });
       refreshStorageBadge();
     }
-    function closeSettings(){ document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
-    document.getElementById("settingsBtn").addEventListener("click", openSettings);
-    document.getElementById("tierBadge").addEventListener("click", openSettings);
+    function closeSettings(){ setTab(lastContentPage==="pageSettings"?"pageDash":lastContentPage); }
+
     document.getElementById("storageWarnDismiss").addEventListener("click", hideStorageWarning);
     document.getElementById("tierHealthCheck").addEventListener("click", function(){
       var note=document.getElementById("tierNote");
@@ -3978,8 +4151,7 @@ AI_TYPES.join(", "),
       try{ window.localStorage.setItem("mymoney_dismissed_prompt", monthKey(todayStr())); }catch(e){}
       document.getElementById("allowancePrompt").style.display="none";
     });
-    document.getElementById("settingsClose").addEventListener("click", closeSettings);
-    document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+
     // theme option buttons
     Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
       b.addEventListener("click", function(){ applyTheme(b.getAttribute("data-theme-key")); });
@@ -4566,7 +4738,7 @@ AI_TYPES.join(", "),
       if(e.key!=="Escape") return;
       if(document.getElementById("viewer").style.display!=="none") closeViewer();
       else if(document.getElementById("monthPicker").style.display!=="none") closeMonthPicker();
-      else if(document.getElementById("settingsDrawer").style.display!=="none") closeSettings();
+      else if(currentPage==="pageSettings") closeSettings();
     });
   }
 
@@ -4593,6 +4765,8 @@ AI_TYPES.join(", "),
     bindAiUI();
     bindTrUI();
     bindCopyRows();
+    bindTabs();
+    bindWrCard();
     refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
@@ -4608,11 +4782,9 @@ AI_TYPES.join(", "),
 </script>
 
 <!-- Settings drawer -->
-<div id="settingsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100"></div>
-<div id="settingsDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:101;overflow-y:auto;padding:0 0 40px">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1">
-    <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
-    <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
+<main id="pageSettings" class="page" style="display:none">
+  <div class="page-head">
+    <h1>⚙️ Settings</h1>
   </div>
 
   <!-- Theme picker -->
@@ -4816,7 +4988,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.4</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
@@ -4859,6 +5031,6 @@ AI_TYPES.join(", "),
       <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
     </div>
   </div>
-</div>
+</main>
 </body>
 </html>
