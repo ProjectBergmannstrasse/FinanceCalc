@@ -115,6 +115,22 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .pf-switch{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 12px;padding:10px 13px;
+    border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);
+    font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;
+    -webkit-tap-highlight-color:transparent;transition:border-color .13s,background .13s,transform .1s}
+  .pf-switch:hover{border-color:var(--bd2)}
+  .pf-switch:active{background:var(--card2);transform:scale(.995)}
+  .pf-switch-ic{flex:none;font-size:14px}
+  .pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pf-switch-ch{flex:none;color:var(--mut);font-size:11px}
+  .ai-launch{position:absolute;top:14px;right:16px;z-index:2;border:1px solid var(--bd2);border-radius:8px;
+    background:var(--card2);color:var(--tx);font:inherit;font-size:11.5px;font-weight:700;
+    padding:6px 10px;cursor:pointer;transition:border-color .13s,transform .1s;-webkit-tap-highlight-color:transparent}
+  .ai-launch:hover{border-color:var(--amber)}
+  .ai-launch:active{transform:scale(.94)}
+  #pageLedger .panel:first-of-type{position:relative}
+
   .tr-controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
   .tr-controls .seg{flex:none}
   .tr-controls select{flex:1;max-width:220px}
@@ -355,8 +371,6 @@
      the one thing you're looking at the hardest thing to read. */
   .lrow-sel{background:var(--card2);box-shadow:inset 3px 0 0 var(--amber);padding-left:9px;padding-right:6px;margin:0 -6px}
   .lrow-sel .lnote{color:var(--tx)}
-  .eye-btn{border:0;background:transparent;padding:4px 6px;font-size:15px;line-height:1;cursor:pointer;opacity:.55;flex:none;border-radius:6px;transition:opacity .13s,background .13s}
-  .eye-btn:hover,.eye-btn:active{opacity:1;background:var(--card2)}
   .del,.edit{min-width:34px;min-height:34px;border-radius:7px;transition:background .13s,opacity .13s}
   .del:active,.edit:active{background:var(--card2)}
   .lchk{width:20px;height:20px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
@@ -420,8 +434,8 @@
   .viewer-foot{padding:12px 16px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:10px}
   .viewer-note{color:var(--mut);font-size:14px;padding:26px 12px}
   /* eye icon on ledger rows */
-  .eye-btn{font-size:17px;cursor:pointer;flex:none;opacity:0.55;transition:opacity .15s;line-height:1;padding:2px 5px;user-select:none}
-  .eye-btn:hover{opacity:1}
+  .eye-btn{border:0;background:transparent;font-size:17px;cursor:pointer;flex:none;opacity:.55;line-height:1;padding:6px 8px;border-radius:6px;user-select:none;-webkit-user-select:none;transition:opacity .15s,background .13s}
+  .eye-btn:hover,.eye-btn:active{opacity:1;background:var(--card2)}
   .lrow:hover{background:rgba(244,183,63,.045)}
   .lrow:hover .eye-btn{opacity:.9}
 
@@ -452,8 +466,6 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
-  <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
-  <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
 </header>
 
@@ -475,6 +487,13 @@
     <button type="button" class="adv-remove" id="allowancePromptDismiss">Not now</button>
   </span>
 </div>
+
+<!-- portfolio switcher: moved off the header, where it was competing with the app title -->
+<button type="button" id="portfolioBtn" class="pf-switch" title="Switch or manage portfolios">
+  <span class="pf-switch-ic">📁</span>
+  <span class="pf-switch-nm">Main Portfolio</span>
+  <span class="pf-switch-ch">▾</span>
+</button>
 
 <!-- Balance hero -->
 <div class="hero">
@@ -537,6 +556,7 @@
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
+  <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from a photo</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1266,7 +1286,7 @@
   var MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
   var WEEKDAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-  var LABEL_FALLBACK={debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Trading"};
+  var LABEL_FALLBACK={debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"};
   function L(k){
     var v=state && state.labels && state.labels[k];
     return (typeof v==="string" && v.trim()) ? v.trim() : LABEL_FALLBACK[k];
@@ -1286,7 +1306,7 @@
     settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
-    labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Trading"},
+    labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -2611,7 +2631,9 @@ AI_TYPES.join(", "),
   function renderPortfolioUI(){
     var btn=document.getElementById("portfolioBtn");
     var p=activePortfolio();
-    if(btn) btn.textContent="📁 "+((p&&p.name)||"Portfolio");
+    var nm=btn && btn.querySelector(".pf-switch-nm");
+    if(nm) nm.textContent=(p&&p.name)||"Portfolio";
+    else if(btn) btn.textContent="📁 "+((p&&p.name)||"Portfolio"); // fallback if markup changes
     var list=document.getElementById("portfolioList");
     if(!list) return;
     var html="";
@@ -2864,7 +2886,7 @@ AI_TYPES.join(", "),
         title:"Set up AI mode first",
         message:"AI auto-fill needs at least one API key. Open <b>Settings → AI Mode</b> to add one — it takes a couple of minutes and the free tiers are usually enough.\n\nTwo keys from different companies is strongly recommended: that's what lets the app catch its own mistakes instead of quietly getting things wrong.",
         confirmText:"Open settings",
-        onConfirm:function(){ if(_openSettings) _openSettings(); setTimeout(function(){ var s=document.getElementById("aiSection"); if(s) s.scrollIntoView({behavior:"smooth"}); },120); }
+        onConfirm:function(){ if(_openSettings) _openSettings(); setTimeout(function(){ var s=document.getElementById("aiSection"); try{ if(s&&s.scrollIntoView) s.scrollIntoView({behavior:"smooth"}); }catch(e){} },120); }
       });
       return;
     }
@@ -3259,8 +3281,8 @@ AI_TYPES.join(", "),
     setTxt("lblAlwSavings", "To "+L("savings").toLowerCase());
     var op=document.getElementById("optPayDebt");
     if(op) op.textContent="Pay down "+L("debt").toLowerCase();
-    var tw=document.getElementById("stTradeWrap");
-    if(tw){ var k=tw.querySelector(".k"); if(k) k.textContent=L("trading"); }
+    var tw=document.getElementById("stTrWrap");
+    if(tw){ var k=tw.querySelector(".k"); if(k) k.textContent=L("trading")+" account"; }
   }
   function bindLabelInputs(){
     [["lblDebt","debt"],["lblIncome","income"],["lblSavings","savings"],["lblTrading","trading"]].forEach(function(pair){
@@ -3501,17 +3523,8 @@ AI_TYPES.join(", "),
     }
   }
   async function refreshStorageBadge(){
-    // The header badge is gone (Settings owns storage now), but this must still refresh
-    // the Storage list on the settings page — an early return here would silently leave
-    // that section blank.
-    var badge=document.getElementById("tierBadge");
-    if(badge){
-      var active=StorageManager.active();
-      if(active){
-        badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
-        badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
-      }
-    }
+    // The header badge is gone — Settings owns storage now. This still exists because
+    // it's what refreshes the Storage list on the settings page.
     await renderTierList();
   }
 
@@ -5069,7 +5082,7 @@ AI_TYPES.join(", "),
       <input type="number" id="sDebt" step="0.01" inputmode="decimal">
     </div>
     <div class="split-row">
-      <div class="nm"><span class="pill trade">TRADING</span> <span id="lblAlwTrading">To trading</span></div>
+      <div class="nm"><span class="pill trade">MONEY</span> <span id="lblAlwTrading">To money</span></div>
       <input type="number" id="sTrade" step="0.01" inputmode="decimal">
     </div>
     <div class="split-row">
@@ -5243,7 +5256,7 @@ AI_TYPES.join(", "),
     <div class="fld"><label for="lblDebt">Debt is called</label><input type="text" id="lblDebt" maxlength="28" placeholder="Debt"></div>
     <div class="fld"><label for="lblIncome">Money coming in is called</label><input type="text" id="lblIncome" maxlength="28" placeholder="Monthly income"></div>
     <div class="fld"><label for="lblSavings">Savings is called</label><input type="text" id="lblSavings" maxlength="28" placeholder="Savings"></div>
-    <div class="fld"><label for="lblTrading">Trading money is called</label><input type="text" id="lblTrading" maxlength="28" placeholder="Trading"></div>
+    <div class="fld"><label for="lblTrading">Spending money is called</label><input type="text" id="lblTrading" maxlength="28" placeholder="Money"></div>
   </div>
 
   <hr class="sep" style="margin:20px">
@@ -5277,7 +5290,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.7</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.8</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
