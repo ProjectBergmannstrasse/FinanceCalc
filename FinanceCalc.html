@@ -4319,64 +4319,95 @@ AI_TYPES.join(", "),
       });
     }
 
+    // Import confirmations go through appModal like every other destructive action:
+    // native confirm() can't be styled, can't require a typed word, and is the one
+    // path that silently replaces portfolios.
+    function finishImport(){
+      resetLedgerView();
+      persistNow(); render(); renderPortfolioUI();
+      document.getElementById("impWrap").style.display="none";
+      flashSaved("loaded");
+    }
     document.getElementById("impLoad").addEventListener("click", function(){
       var txt=document.getElementById("impBox").value.trim(); if(!txt) return;
       var obj;
       try{ obj=JSON.parse(txt); }
-      catch(e){ alert("That backup didn't look right — it isn't valid JSON. Check you pasted the whole thing."); return; }
-      if(!obj || typeof obj!=="object"){ alert("That backup didn't look right. Check you pasted the whole thing."); return; }
+      catch(e){ appModal({title:"That isn't valid JSON", message:"The backup didn't parse. Check you pasted the whole thing.", confirmText:"OK", cancelText:"Close"}); return; }
+      if(!obj || typeof obj!=="object"){ appModal({title:"That didn't look right", message:"Check you pasted the whole backup.", confirmText:"OK", cancelText:"Close"}); return; }
 
       if(obj.__mymoney===2 && Array.isArray(obj.portfolios) && obj.portfolios.length){
-        // full multi-portfolio backup — this genuinely replaces everything
+        // full multi-portfolio backup — this genuinely replaces everything, so it needs
+        // the same typed confirmation as any other total wipe
         var pc=obj.portfolios.length;
         var tc=0; obj.portfolios.forEach(function(p){ tc+=((p.data&&p.data.transactions)||[]).length; });
-        if(!confirm("This is a full backup: "+pc+" portfolio"+(pc===1?"":"s")+", "+tc+" "+(tc===1?"entry":"entries")+" in total.\n\nLoading it REPLACES every portfolio currently in the app. Continue?")) return;
-        if(obj.photos){ for(var pidA in obj.photos){ savePhoto(pidA, obj.photos[pidA]); } }
-        PORTFOLIOS=obj.portfolios;
-        ACTIVE_PID=(obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
-        applyPortfolioData(clone(activePortfolio().data||{}));
-        state.selectedMonths=null;
-        photoCache={};
+        appModal({
+          title:"Restore full backup?",
+          message:"This backup holds <b>"+pc+" portfolio"+(pc===1?"":"s")+"</b> and <b>"+tc+" "+(tc===1?"entry":"entries")+"</b>.\n\nLoading it REPLACES every portfolio currently in the app. Anything not in this backup is gone.\n\nType RESTORE to confirm.",
+          requireWord:"RESTORE", confirmText:"Restore", danger:true,
+          onConfirm:function(){
+            if(obj.photos){ for(var pidA in obj.photos){ savePhoto(pidA, obj.photos[pidA]); } }
+            PORTFOLIOS=obj.portfolios;
+            ACTIVE_PID=(obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
+            applyPortfolioData(clone(activePortfolio().data||{}));
+            state.selectedMonths=null;
+            photoCache={};
+            finishImport();
+          }
+        });
       } else if(obj.__mymoney && obj.state && Array.isArray(obj.state.transactions)){
         // older single-portfolio backup (made before portfolios existed). It only ever
         // described ONE ledger, so it replaces the ACTIVE portfolio — the others are
         // untouched. Wiping them here would be silent, unrecoverable data loss.
         var n0=obj.state.transactions.length;
         var pfName=(activePortfolio()&&activePortfolio().name)||"this portfolio";
-        if(!confirm("This is an older backup with "+n0+" "+(n0===1?"entry":"entries")+".\n\nIt will replace everything in \u201c"+pfName+"\u201d. Your other portfolios are not affected. Continue?")) return;
-        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
-        var incoming=clone(obj.state);
-        incoming.transactions=adoptTransactions(obj.state.transactions, obj.photos);
-        applyPortfolioData(incoming);
-        state.selectedMonths=null;
-        flushActiveIntoRegistry();
+        appModal({
+          title:"Load older backup?",
+          message:"This is an older backup with <b>"+n0+" "+(n0===1?"entry":"entries")+"</b>.\n\nIt replaces everything in <b>"+esc(pfName)+"</b>. Your other portfolios are not affected.",
+          confirmText:"Replace "+esc(pfName), danger:true,
+          onConfirm:function(){
+            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            var incoming=clone(obj.state);
+            incoming.transactions=adoptTransactions(obj.state.transactions, obj.photos);
+            applyPortfolioData(incoming);
+            state.selectedMonths=null;
+            flushActiveIntoRegistry();
+            finishImport();
+          }
+        });
       } else if(obj.__mymoneyExport && Array.isArray(obj.transactions)){
-        // a "selected entries" export — a subset, so merge it in rather than replace anything
+        // a "selected entries" export — a subset, so merge rather than replace
         var n=obj.transactions.length;
-        if(!confirm("This is a partial export with "+n+" "+(n===1?"entry":"entries")+". Add "+(n===1?"it":"them")+" to your current ledger? Nothing existing is removed.")) return;
-        adoptTransactions(obj.transactions, obj.photos).forEach(function(copy){
-          state.transactions.push(copy);
+        appModal({
+          title:"Add these entries?",
+          message:"A partial export with <b>"+n+" "+(n===1?"entry":"entries")+"</b>. They're added to your current ledger — nothing existing is removed.",
+          confirmText:"Add "+n,
+          onConfirm:function(){
+            adoptTransactions(obj.transactions, obj.photos).forEach(function(copy){
+              state.transactions.push(copy);
+            });
+            finishImport();
+          }
         });
       } else if(Array.isArray(obj.transactions)){
-        // a bare state-shaped object (hand-edited, or from an older version) — replaces
-        // the ACTIVE portfolio only, for the same reason as the older-backup branch above
+        // a bare state-shaped object (hand-edited, or from an older version)
         var pfName2=(activePortfolio()&&activePortfolio().name)||"this portfolio";
-        if(!confirm("This replaces everything in \u201c"+pfName2+"\u201d with "+obj.transactions.length+" entries. Your other portfolios are not affected. Continue?")) return;
-        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
-        var incoming2=clone(obj);
-        incoming2.transactions=adoptTransactions(obj.transactions, obj.photos);
-        applyPortfolioData(incoming2);
-        state.selectedMonths=null;
-        flushActiveIntoRegistry();
+        appModal({
+          title:"Replace this portfolio?",
+          message:"This replaces everything in <b>"+esc(pfName2)+"</b> with <b>"+obj.transactions.length+" entries</b>. Your other portfolios are not affected.",
+          confirmText:"Replace", danger:true,
+          onConfirm:function(){
+            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            var incoming2=clone(obj);
+            incoming2.transactions=adoptTransactions(obj.transactions, obj.photos);
+            applyPortfolioData(incoming2);
+            state.selectedMonths=null;
+            flushActiveIntoRegistry();
+            finishImport();
+          }
+        });
       } else {
-        alert("That doesn't look like a My Money backup or export — no transactions list found. Check you pasted the whole thing.");
-        return;
+        appModal({title:"Not a My Money backup", message:"No transactions list found in that file.", confirmText:"OK", cancelText:"Close"});
       }
-
-      resetLedgerView();
-      persist(); render(); renderPortfolioUI();
-      document.getElementById("impWrap").style.display="none";
-      flashSaved("loaded");
     });
     // reset — clears the ACTIVE portfolio only; other portfolios are left alone
     document.getElementById("resetBtn").addEventListener("click", function(){
@@ -4635,7 +4666,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.5</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.6</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
