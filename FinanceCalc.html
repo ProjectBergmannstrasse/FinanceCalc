@@ -485,8 +485,8 @@
 
 <!-- stat trio -->
 <div class="trio">
-  <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
-  <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
+  <div class="stat"><div class="k" id="kDebt">Debt</div><div class="v mono down" id="stDebt">—</div></div>
+  <div class="stat"><div class="k" id="kSave">Savings</div><div class="v mono up" id="stSav">—</div></div>
   <div class="stat" id="stTrWrap" style="display:none"><div class="k">Trading account</div><div class="v mono cool" id="stTr">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
@@ -551,11 +551,11 @@
       <div class="fld">
         <label for="fType">What happened</label>
         <select id="fType">
-          <option value="income">Money in (not allowance)</option>
+          <option value="income" id="optIncome">Money in (one-off)</option>
           <option value="spend">Spent on something</option>
           <option value="trade_win">Trade — made money</option>
           <option value="trade_loss">Trade — lost money</option>
-          <option value="pay_debt_balance">Pay Dad (from my money)</option>
+          <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
           <option value="borrow">Borrowed / debt went up</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
@@ -1266,6 +1266,11 @@
   var MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
   var WEEKDAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
+  var LABEL_FALLBACK={debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Trading"};
+  function L(k){
+    var v=state && state.labels && state.labels[k];
+    return (typeof v==="string" && v.trim()) ? v.trim() : LABEL_FALLBACK[k];
+  }
   var TYPE_META = {
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
@@ -1279,6 +1284,9 @@
     currency:"$",
     opening:{balance:0, debt:0, savings:0, tax:0, trading:0},
     settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false},
+    // Wording is the user's, not ours. Defaults are deliberately neutral — this app
+    // started life as a pocket-money tracker with one household's vocabulary hardcoded.
+    labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Trading"},
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -3170,7 +3178,7 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
-    if(page==="pageSettings") render(); // repaint settings-owned values on arrival
+    if(page==="pageSettings"){ render(); fillLabelInputs(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -3235,6 +3243,42 @@ AI_TYPES.join(", "),
       });
     });
     document.getElementById("wrCard").addEventListener("click", function(){ setTab("pageTrading"); });
+  }
+
+  /* ---------------- user wording ----------------
+     Everything the user renamed gets painted here, in one place, so a new label can't be
+     added to the model and then quietly not show up somewhere. */
+  function applyLabels(){
+    function setTxt(id, v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+    setTxt("kDebt", L("debt"));
+    setTxt("kSave", L("savings"));
+    setTxt("lblODebt", L("debt"));
+    setTxt("secIncome", L("income"));
+    setTxt("lblAlwDebt", "To "+L("debt").toLowerCase());
+    setTxt("lblAlwTrading", "To "+L("trading").toLowerCase());
+    setTxt("lblAlwSavings", "To "+L("savings").toLowerCase());
+    var op=document.getElementById("optPayDebt");
+    if(op) op.textContent="Pay down "+L("debt").toLowerCase();
+    var tw=document.getElementById("stTradeWrap");
+    if(tw){ var k=tw.querySelector(".k"); if(k) k.textContent=L("trading"); }
+  }
+  function bindLabelInputs(){
+    [["lblDebt","debt"],["lblIncome","income"],["lblSavings","savings"],["lblTrading","trading"]].forEach(function(pair){
+      var el=document.getElementById(pair[0]); if(!el) return;
+      el.addEventListener("input", function(){
+        if(!state.labels) state.labels={};
+        state.labels[pair[1]]=el.value;
+        applyLabels();   // repaints the wording immediately; no full re-render needed
+        persist();
+      });
+    });
+  }
+  function fillLabelInputs(){
+    [["lblDebt","debt"],["lblIncome","income"],["lblSavings","savings"],["lblTrading","trading"]].forEach(function(pair){
+      var el=document.getElementById(pair[0]); if(!el) return;
+      var v=state.labels && state.labels[pair[1]];
+      el.value=(typeof v==="string" && v!==LABEL_FALLBACK[pair[1]])?v:"";
+    });
   }
 
   /* ---------------- trading page ----------------
@@ -3903,6 +3947,7 @@ AI_TYPES.join(", "),
     // hero label must say what it's actually counting
     var hl=document.getElementById("heroLbl");
     if(hl) hl.textContent = sepTrading() ? "Spendable cash right now" : "Money I have right now";
+    applyLabels();
     // the transfer types are meaningless while it's one pot
     Array.prototype.forEach.call(document.querySelectorAll("#fType .sep-only"), function(o){
       o.style.display = sepTrading() ? "" : "none";
@@ -4978,6 +5023,7 @@ AI_TYPES.join(", "),
     fillProviderSelects();
     bindAiUI();
     bindTradingPage();
+    bindLabelInputs();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -5015,19 +5061,19 @@ AI_TYPES.join(", "),
 
   <!-- Monthly allowance in drawer -->
   <div style="padding:18px 20px 0">
-    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly Allowance</div>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px" id="secIncome">Monthly income</div>
     <div class="subhint" style="margin-bottom:12px">Once per calendar month. Tap the button to add current month. You can take up to <b>3 months advance</b> from today — but only 3 total outstanding at any time. An advance is logged on the day you actually take it, not the future month — and can be removed below if you change your mind.</div>
     <div class="auto-note" id="autoSummary"></div>
     <div class="split-row">
-      <div class="nm"><span class="pill debt">DEBT</span> Pay down debt</div>
+      <div class="nm"><span class="pill debt">DEBT</span> <span id="lblAlwDebt">To debt</span></div>
       <input type="number" id="sDebt" step="0.01" inputmode="decimal">
     </div>
     <div class="split-row">
-      <div class="nm"><span class="pill trade">TRADING</span> To trading money</div>
+      <div class="nm"><span class="pill trade">TRADING</span> <span id="lblAlwTrading">To trading</span></div>
       <input type="number" id="sTrade" step="0.01" inputmode="decimal">
     </div>
     <div class="split-row">
-      <div class="nm"><span class="pill save">SAVINGS</span> To savings</div>
+      <div class="nm"><span class="pill save">SAVINGS</span> <span id="lblAlwSavings">To savings</span></div>
       <input type="number" id="sSave" step="0.01" inputmode="decimal">
     </div>
     <div class="split-row" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:10px">
@@ -5049,7 +5095,7 @@ AI_TYPES.join(", "),
     <div class="hint">Set where you're starting from. Everything builds on these.</div>
     <div class="row2">
       <div class="fld"><label>Starting money (now)</label><input type="number" id="oBal" step="0.01" inputmode="decimal"></div>
-      <div class="fld"><label>Debt to Dad</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
+      <div class="fld"><label id="lblODebt">Debt</label><input type="number" id="oDebt" step="0.01" inputmode="decimal"></div>
       <div class="fld"><label>Savings</label><input type="number" id="oSav" step="0.01" inputmode="decimal"></div>
       <div class="fld full">
         <label>Currency</label>
@@ -5190,6 +5236,18 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Wording -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Wording</div>
+    <div class="hint">Call things whatever you actually call them. Leave a box empty to use the default.</div>
+    <div class="fld"><label for="lblDebt">Debt is called</label><input type="text" id="lblDebt" maxlength="28" placeholder="Debt"></div>
+    <div class="fld"><label for="lblIncome">Money coming in is called</label><input type="text" id="lblIncome" maxlength="28" placeholder="Monthly income"></div>
+    <div class="fld"><label for="lblSavings">Savings is called</label><input type="text" id="lblSavings" maxlength="28" placeholder="Savings"></div>
+    <div class="fld"><label for="lblTrading">Trading money is called</label><input type="text" id="lblTrading" maxlength="28" placeholder="Trading"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Support -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Support</div>
@@ -5219,7 +5277,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.6</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.7</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
