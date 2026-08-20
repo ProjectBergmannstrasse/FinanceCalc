@@ -84,9 +84,6 @@
     .tab-pill,.tab,.tab-ic{transition:none}
   }
 
-  .page-head{padding:6px 0 14px}
-  .page-head h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
-
   /* ---- win rate card ---- */
   .wr-body{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .wr-left{flex:none;min-width:118px}
@@ -162,20 +159,6 @@
   .mdl-bd b{color:var(--tx)}
   .mdl-in{padding:12px 20px 4px}
   .mdl-in input{width:100%}
-  .mdl-picklist{max-height:300px;overflow-y:auto;margin-top:8px;white-space:normal}
-  .mdl-pick{display:flex;gap:10px;align-items:center;padding:10px 8px;border:1px solid var(--bd);
-    border-radius:9px;margin-bottom:6px;cursor:pointer;background:var(--card);
-    transition:border-color .13s,background .13s}
-  .mdl-pick:hover{border-color:var(--bd2)}
-  .mdl-pick:active{background:var(--card2)}
-  .mdl-pick input{width:18px;height:18px;flex:none;accent-color:var(--amber);cursor:pointer}
-  .mdl-pick-main{flex:1;min-width:0}
-  /* explicit colour — do NOT inherit the modal's muted prose colour */
-  .mdl-pick-id{display:block;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--tx);word-break:break-all;line-height:1.35}
-  .mdl-pick-name{display:block;font-size:11px;color:var(--mut);margin-top:1px}
-  .mdl-pick-tag{flex:none;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
-    color:var(--up);border:1px solid var(--up);border-radius:5px;padding:2px 5px}
-  .mdl-pick-rec{border-color:var(--up)}
   .mdl-err{padding:2px 20px 0;font-size:12px;color:var(--down);min-height:16px}
   .mdl-ft{padding:14px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
   .mdl-ft .btn{min-width:84px}
@@ -440,9 +423,12 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
+  <button type="button" id="trBtn" class="tier-badge" title="Trading stats">📊 Trading</button>
   <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
   <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+  <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
+  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
 
 <main id="pageDash" class="page">
@@ -2657,44 +2643,34 @@ AI_TYPES.join(", "),
       if(!models.length){ out.style.color="var(--down)"; out.textContent="No usable models came back for this key."; return; }
       models.sort(function(a,b){ return aiRankModel(b.id)-aiRankModel(a.id); });
       out.textContent="";
-      // Styled with its own classes rather than inheriting .mdl-bd, which is muted
-      // prose text — on the Mono theme that rendered the model names near-invisible.
       var body=models.slice(0,40).map(function(m,i){
-        var nice=(m.display && m.display!==m.id) ? m.display : "";
-        return '<label class="mdl-pick'+(i===0?" mdl-pick-rec":"")+'">'
+        return '<label style="display:flex;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--bd);cursor:pointer">'
           +'<input type="radio" name="mdlPick" value="'+esc(m.id)+'" data-ver="'+esc(m.ver||"")+'"'+(i===0?" checked":"")+'>'
-          +'<span class="mdl-pick-main">'
-            +'<span class="mdl-pick-id">'+esc(m.id)+'</span>'
-            +(nice?'<span class="mdl-pick-name">'+esc(nice)+'</span>':'')
-          +'</span>'
-          +(i===0?'<span class="mdl-pick-tag">recommended</span>':'')
-          +'</label>';
+          +'<span style="font-family:var(--mono);font-size:11.5px">'+esc(m.id)+(i===0?' <span style="color:var(--up)">· recommended</span>':'')+'</span></label>';
       }).join("");
-      // Track the choice as it's made, rather than reading the DOM at confirm time:
-      // appModal's own handler closes (and removes) the modal before ours would run,
-      // so any read-on-confirm returns null and silently does nothing.
-      var chosen={id:models[0].id, ver:models[0].ver||""};
       appModal({
         title:prov.label+" models",
-        message:'<div class="mdl-picklist">'+body+'</div>',
+        message:'<div style="max-height:280px;overflow-y:auto;margin-top:6px">'+body+'</div>',
         confirmText:"Use this one",
-        onConfirm:function(){
-          if(isB){ aiCfg.modelB=chosen.id; aiCfg.verB=chosen.ver; }
-          else   { aiCfg.modelA=chosen.id; aiCfg.verA=chosen.ver; }
-          saveAiCfg();
-          document.getElementById(isB?"aiModelB":"aiModelA").value=chosen.id;
-          out.style.color="var(--up)";
-          out.textContent="Engine "+slot+" set to "+chosen.id;
-          refreshAiVisibility();
-        }
+        onConfirm:function(){}
       });
+      // wire after the modal exists
       setTimeout(function(){
-        Array.prototype.forEach.call(document.querySelectorAll('input[name="mdlPick"]'), function(r){
-          r.addEventListener("change", function(){
-            chosen={id:r.value, ver:r.getAttribute("data-ver")||""};
-          });
-        });
-      }, 30);
+        var ok=document.getElementById("mdlOk");
+        if(!ok) return;
+        ok.onclick=function(){
+          var sel=document.querySelector('input[name="mdlPick"]:checked');
+          if(!sel) return;
+          if(isB){ aiCfg.modelB=sel.value; aiCfg.verB=sel.getAttribute("data-ver")||""; }
+          else   { aiCfg.modelA=sel.value; aiCfg.verA=sel.getAttribute("data-ver")||""; }
+          saveAiCfg();
+          document.getElementById(isB?"aiModelB":"aiModelA").value=sel.value;
+          closeModal();
+          out.style.color="var(--up)";
+          out.textContent="Engine "+slot+" set to "+sel.value;
+          refreshAiVisibility();
+        };
+      }, 40);
     }).catch(function(e){
       out.style.color="var(--down)";
       out.innerHTML="<b>Couldn't list models.</b><br>"+esc(e.message)
@@ -3085,8 +3061,9 @@ AI_TYPES.join(", "),
       b.setAttribute("aria-selected", on?"true":"false");
       if(on) movePill(b);
     });
+    if(page==="pageSettings"){ if(_openSettings) _openSettings(); return; }
     lastContentPage=page; currentPage=page;
-    ["pageDash","pageLedger","pageSettings"].forEach(function(id){
+    ["pageDash","pageLedger"].forEach(function(id){
       var el=document.getElementById(id); if(!el) return;
       if(id===page){
         el.style.display="";
@@ -3096,7 +3073,6 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
-    if(page==="pageSettings") render(); // repaint settings-owned values on arrival
   }
   function bindTabs(){
     Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(b){
@@ -3107,6 +3083,16 @@ AI_TYPES.join(", "),
     });
     setTimeout(function(){ var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on); }, 60);
   }
+  // called when the settings drawer closes, so the pill doesn't stay stuck on Settings
+  function tabBackFromSettings(){
+    var btns=document.querySelectorAll("#tabbar .tab");
+    Array.prototype.forEach.call(btns, function(b){
+      var on=b.getAttribute("data-page")===lastContentPage;
+      b.classList.toggle("on", on);
+      if(on) movePill(b);
+    });
+  }
+
   /* ---------------- win rate card (dashboard) ---------------- */
   var wrPeriod="30";
   function wrPeriodList(){
@@ -3265,6 +3251,7 @@ AI_TYPES.join(", "),
     box.innerHTML=html;
   }
   function bindTrUI(){
+    document.getElementById("trBtn").addEventListener("click", openTrPanel);
     document.getElementById("trPanelClose").addEventListener("click", closeTrPanel);
     document.getElementById("trPanelOverlay").addEventListener("click", closeTrPanel);
     document.getElementById("trScope").addEventListener("change", renderTrPanel);
@@ -3303,16 +3290,12 @@ AI_TYPES.join(", "),
     }
   }
   async function refreshStorageBadge(){
-    // The header badge is gone (Settings owns storage now), but this must still refresh
-    // the Storage list on the settings page — an early return here would silently leave
-    // that section blank.
     var badge=document.getElementById("tierBadge");
-    if(badge){
-      var active=StorageManager.active();
-      if(active){
-        badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
-        badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
-      }
+    if(!badge) return;
+    var active=StorageManager.active();
+    if(active){
+      badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
+      badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
     }
     await renderTierList();
   }
@@ -4134,14 +4117,15 @@ AI_TYPES.join(", "),
 
     // Settings drawer
     _openSettings=openSettings;
-    function openSettings(){ setTab("pageSettings");
+    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
       // re-highlight active theme when drawer opens
       var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
       Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){ b.classList.toggle("on", b.getAttribute("data-theme-key")===cur); });
       refreshStorageBadge();
     }
-    function closeSettings(){ setTab(lastContentPage==="pageSettings"?"pageDash":lastContentPage); }
-
+    function closeSettings(){ tabBackFromSettings(); document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("tierBadge").addEventListener("click", openSettings);
     document.getElementById("storageWarnDismiss").addEventListener("click", hideStorageWarning);
     document.getElementById("tierHealthCheck").addEventListener("click", function(){
       var note=document.getElementById("tierNote");
@@ -4175,7 +4159,8 @@ AI_TYPES.join(", "),
       try{ window.localStorage.setItem("mymoney_dismissed_prompt", monthKey(todayStr())); }catch(e){}
       document.getElementById("allowancePrompt").style.display="none";
     });
-
+    document.getElementById("settingsClose").addEventListener("click", closeSettings);
+    document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
     // theme option buttons
     Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
       b.addEventListener("click", function(){ applyTheme(b.getAttribute("data-theme-key")); });
@@ -4762,7 +4747,7 @@ AI_TYPES.join(", "),
       if(e.key!=="Escape") return;
       if(document.getElementById("viewer").style.display!=="none") closeViewer();
       else if(document.getElementById("monthPicker").style.display!=="none") closeMonthPicker();
-      else if(currentPage==="pageSettings") closeSettings();
+      else if(document.getElementById("settingsDrawer").style.display!=="none") closeSettings();
     });
   }
 
@@ -4806,9 +4791,11 @@ AI_TYPES.join(", "),
 </script>
 
 <!-- Settings drawer -->
-<main id="pageSettings" class="page" style="display:none">
-  <div class="page-head">
-    <h1>⚙️ Settings</h1>
+<div id="settingsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100"></div>
+<div id="settingsDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:101;overflow-y:auto;padding:0 0 40px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1">
+    <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
+    <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
   </div>
 
   <!-- Theme picker -->
@@ -5012,7 +4999,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.5</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.2</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
@@ -5055,6 +5042,6 @@ AI_TYPES.join(", "),
       <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
     </div>
   </div>
-</main>
+</div>
 </body>
 </html>
