@@ -56,6 +56,17 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  .cp-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;-webkit-user-select:none}
+  .cp-row:hover{border-color:var(--bd2)}
+  .cp-row:active{background:var(--card2)}
+  .cp-row.cp-ok{border-color:var(--up)}
+  .cp-row.cp-ok .cp-tag{color:var(--up);border-color:var(--up)}
+  .cp-ic{flex:none;font-size:16px;width:20px;text-align:center}
+  .cp-main{flex:1;min-width:0}
+  .cp-k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+  .cp-v{font-size:13px;font-weight:600;margin-top:2px;word-break:break-all;line-height:1.35}
+  .cp-v.mono-wrap{font-family:var(--mono);font-size:11.5px;font-weight:500}
+  .cp-tag{flex:none;font-size:10.5px;font-weight:700;color:var(--mut);border:1px solid var(--bd2);border-radius:5px;padding:3px 7px}
   .stat-sub{font-size:10px;color:var(--mut);margin-top:2px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
@@ -2876,6 +2887,66 @@ AI_TYPES.join(", "),
     });
   }
 
+  /* ---------------- copy to clipboard ----------------
+     navigator.clipboard only exists in a secure context (https / localhost). Opened as a
+     local file it's simply undefined, so the modern API alone would silently do nothing
+     on exactly the setup this app is most often used in. Hence the execCommand fallback,
+     and hence never claiming success we haven't confirmed — a crypto address the user
+     THINKS they copied is worse than one they know they didn't. */
+  function copyText(text){
+    return new Promise(function(resolve){
+      try{
+        if(navigator.clipboard && window.isSecureContext){
+          navigator.clipboard.writeText(text).then(function(){ resolve(true); }, function(){ resolve(legacyCopy(text)); });
+          return;
+        }
+      }catch(e){}
+      resolve(legacyCopy(text));
+    });
+  }
+  function legacyCopy(text){
+    try{
+      var ta=document.createElement("textarea");
+      ta.value=text;
+      ta.setAttribute("readonly","");
+      ta.style.position="fixed"; ta.style.top="0"; ta.style.opacity="0";
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, text.length); // iOS needs the explicit range
+      var ok=false;
+      try{ ok=document.execCommand("copy"); }catch(e){ ok=false; }
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e){ return false; }
+  }
+  function bindCopyRows(){
+    [["cpEmail","cpEmailVal","Email"],["cpWallet","cpWalletVal","Wallet address"]].forEach(function(r){
+      var row=document.getElementById(r[0]); if(!row) return;
+      function go(){
+        // read the value straight off the DOM, so what gets copied is exactly what's
+        // displayed — no second copy of the address to drift out of sync
+        var val=document.getElementById(r[1]).textContent.trim();
+        var tag=row.querySelector(".cp-tag");
+        copyText(val).then(function(ok){
+          if(ok){
+            row.classList.add("cp-ok");
+            tag.textContent="Copied ✓";
+            flashSaved("copied");
+            setTimeout(function(){ row.classList.remove("cp-ok"); tag.textContent="Copy"; }, 1600);
+          } else {
+            // don't pretend — show it so it can be copied by hand
+            appModal({
+              title:"Couldn't reach the clipboard",
+              message:"Your browser blocked the copy. Select and copy it manually:\n\n<b>"+esc(val)+"</b>",
+              confirmText:"OK", cancelText:"Close"
+            });
+          }
+        });
+      }
+      row.addEventListener("click", go);
+      row.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+    });
+  }
+
   /* ---------------- trading stats UI ---------------- */
   function openTrPanel(){
     document.getElementById("trPanel").style.display="block";
@@ -4495,6 +4566,7 @@ AI_TYPES.join(", "),
     fillProviderSelects();
     bindAiUI();
     bindTrUI();
+    bindCopyRows();
     refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
@@ -4689,9 +4761,36 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Support -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Support</div>
+    <div class="subhint" style="margin-bottom:10px">Tap either one to copy it.</div>
+
+    <div class="cp-row" id="cpEmail" role="button" tabindex="0" title="Tap to copy">
+      <div class="cp-ic">✉️</div>
+      <div class="cp-main">
+        <div class="cp-k">Support email</div>
+        <div class="cp-v" id="cpEmailVal">67ace67a@gmail.com</div>
+      </div>
+      <div class="cp-tag">Copy</div>
+    </div>
+
+    <div class="cp-row" id="cpWallet" role="button" tabindex="0" title="Tap to copy">
+      <div class="cp-ic">◎</div>
+      <div class="cp-main">
+        <div class="cp-k">Crypto wallet</div>
+        <div class="cp-v mono-wrap" id="cpWalletVal">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</div>
+      </div>
+      <div class="cp-tag">Copy</div>
+    </div>
+    <div class="subhint" style="margin-top:8px">Always check the copied address matches what's shown before sending anything.</div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.8</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.9</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
