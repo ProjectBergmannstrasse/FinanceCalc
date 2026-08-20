@@ -2640,6 +2640,14 @@ AI_TYPES.join(", "),
     var dl=document.getElementById("instList");
     if(dl) dl.innerHTML=out.sort().map(function(i){ return '<option value="'+esc(i)+'">'; }).join("");
   }
+  // A trade's P&L is the same number whether or not the bank/trading split is on — the
+  // split only decides which POT it lands in. balDelta() answers "what happened to the
+  // bank balance", which is 0 for trades when the split is on, so using it here flattened
+  // the equity curve and made max drawdown read $0.00.
+  function tradePL(t){
+    var a=Math.abs(num(t.amount));
+    return t.type==="trade_win" ? a : -a;
+  }
   function tradeStats(list){
     var wins=[], losses=[];
     list.forEach(function(t){
@@ -2662,8 +2670,7 @@ AI_TYPES.join(", "),
     var eq=0, peak=0, maxDD=0, curW=0, curL=0, bestW=0, bestL=0;
     var curve=[];
     list.forEach(function(t){
-      var d=balDelta(t);
-      eq+=d;
+      eq+=tradePL(t);
       curve.push(eq);
       if(eq>peak) peak=eq;
       var dd=peak-eq;
@@ -6516,7 +6523,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.6</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.7</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
