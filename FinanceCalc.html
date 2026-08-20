@@ -1723,6 +1723,10 @@
       if(oldPhoto){ copy.photo=copy.id; jobs.push({oldId:oldPhoto, rec:copy}); }
       state.transactions.push(copy);
     });
+    // Entries arriving from elsewhere are usually dated in other months. The month
+    // filter defaults to the CURRENT month, so without this the copy lands correctly
+    // and shows nothing — indistinguishable from a no-op.
+    state.selectedMonths=["all"];
     var n=srcTx.length, remaining=jobs.length;
     if(!remaining){ cb(n); return; }
     jobs.forEach(function(j){
@@ -1742,6 +1746,9 @@
     targets.forEach(function(p){
       if(!p.data) p.data=clone(DEFAULTS);
       if(!Array.isArray(p.data.transactions)) p.data.transactions=[];
+      // same reason as copyEntriesInto: otherwise the mirrored entry is filtered out
+      // of view the moment you switch to the portfolio it was mirrored into
+      p.data.selectedMonths=["all"];
       var copy=clone(tx);
       copy.id=freshIdBase();
       if(copy.photo){
@@ -4349,7 +4356,7 @@ AI_TYPES.join(", "),
             PORTFOLIOS=obj.portfolios;
             ACTIVE_PID=(obj.activePortfolioId && findPortfolio(obj.activePortfolioId)) ? obj.activePortfolioId : PORTFOLIOS[0].id;
             applyPortfolioData(clone(activePortfolio().data||{}));
-            state.selectedMonths=null;
+            state.selectedMonths=["all"];
             photoCache={};
             finishImport();
           }
@@ -4369,7 +4376,7 @@ AI_TYPES.join(", "),
             var incoming=clone(obj.state);
             incoming.transactions=adoptTransactions(obj.state.transactions, obj.photos);
             applyPortfolioData(incoming);
-            state.selectedMonths=null;
+            state.selectedMonths=["all"];
             flushActiveIntoRegistry();
             finishImport();
           }
@@ -4385,6 +4392,7 @@ AI_TYPES.join(", "),
             adoptTransactions(obj.transactions, obj.photos).forEach(function(copy){
               state.transactions.push(copy);
             });
+            state.selectedMonths=["all"];
             finishImport();
           }
         });
@@ -4400,7 +4408,7 @@ AI_TYPES.join(", "),
             var incoming2=clone(obj);
             incoming2.transactions=adoptTransactions(obj.transactions, obj.photos);
             applyPortfolioData(incoming2);
-            state.selectedMonths=null;
+            state.selectedMonths=["all"];
             flushActiveIntoRegistry();
             finishImport();
           }
@@ -4666,7 +4674,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.6</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.7</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
