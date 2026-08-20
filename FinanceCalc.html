@@ -426,9 +426,12 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
+  <button type="button" id="trBtn" class="tier-badge" title="Trading stats">📊 Trading</button>
   <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
   <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
+  <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
+  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
 
 <main id="pageDash" class="page">
@@ -3241,6 +3244,7 @@ AI_TYPES.join(", "),
     box.innerHTML=html;
   }
   function bindTrUI(){
+    document.getElementById("trBtn").addEventListener("click", openTrPanel);
     document.getElementById("trPanelClose").addEventListener("click", closeTrPanel);
     document.getElementById("trPanelOverlay").addEventListener("click", closeTrPanel);
     document.getElementById("trScope").addEventListener("change", renderTrPanel);
@@ -3279,16 +3283,12 @@ AI_TYPES.join(", "),
     }
   }
   async function refreshStorageBadge(){
-    // The header badge is gone (Settings owns storage now), but this must still refresh
-    // the Storage list on the settings page — an early return here would silently leave
-    // that section blank.
     var badge=document.getElementById("tierBadge");
-    if(badge){
-      var active=StorageManager.active();
-      if(active){
-        badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
-        badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
-      }
+    if(!badge) return;
+    var active=StorageManager.active();
+    if(active){
+      badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
+      badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
     }
     await renderTierList();
   }
@@ -4117,7 +4117,8 @@ AI_TYPES.join(", "),
       refreshStorageBadge();
     }
     function closeSettings(){ setTab(lastContentPage==="pageSettings"?"pageDash":lastContentPage); }
-
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    document.getElementById("tierBadge").addEventListener("click", openSettings);
     document.getElementById("storageWarnDismiss").addEventListener("click", hideStorageWarning);
     document.getElementById("tierHealthCheck").addEventListener("click", function(){
       var note=document.getElementById("tierNote");
@@ -4988,7 +4989,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.4</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.3</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
