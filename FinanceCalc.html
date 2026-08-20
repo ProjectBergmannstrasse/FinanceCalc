@@ -115,6 +115,19 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .csv-note{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:9px 10px;margin-bottom:10px;line-height:1.5}
+  .csv-note b{color:var(--tx)}
+  .csv-tbl{border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-top:8px}
+  .csv-r{display:flex;gap:8px;padding:7px 9px;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:10.5px;background:var(--card)}
+  .csv-r:last-child{border-bottom:0}
+  .csv-r.hd{color:var(--mut);text-transform:uppercase;font-size:9px;letter-spacing:.3px;background:var(--card2)}
+  .csv-r.dupe{opacity:.5}
+  .csv-c1{flex:none;width:78px}
+  .csv-c2{flex:none;width:62px;text-align:right}
+  .csv-c3{flex:none;width:64px}
+  .csv-c4{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .csv-skip{color:var(--mut);font-size:10px}
+
   .pf-switch{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 12px;padding:10px 13px;
     border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);
     font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;
@@ -3267,6 +3280,252 @@ AI_TYPES.join(", "),
     document.getElementById("wrCard").addEventListener("click", function(){ setTab("pageTrading"); });
   }
 
+  /* ================= CSV IMPORT =================
+     Built for real exports (MT5 statements, bank CSVs), which means: quoted fields with
+     commas inside, escaped quotes, CRLF, semicolon/tab delimiters, and several date
+     formats. A naive text.split(",") corrupts all of those silently. */
+  function csvSplitLine(line, delim){
+    var out=[], cur="", q=false;
+    for(var i=0;i<line.length;i++){
+      var c=line[i];
+      if(q){
+        if(c==='"'){
+          if(line[i+1]==='"'){ cur+='"'; i++; }   // "" is a literal quote
+          else q=false;
+        } else cur+=c;
+      } else {
+        if(c==='"') q=true;
+        else if(c===delim){ out.push(cur); cur=""; }
+        else cur+=c;
+      }
+    }
+    out.push(cur);
+    return out.map(function(x){ return x.trim(); });
+  }
+  function csvDetectDelim(text){
+    var head=text.split(/\r?\n/).slice(0,5).join("\n");
+    var best=",", bestN=0;
+    [",",";","\t","|"].forEach(function(d){
+      var n=(head.split(d).length-1);
+      if(n>bestN){ bestN=n; best=d; }
+    });
+    return best;
+  }
+  function csvParse(text){
+    text=text.replace(/^\uFEFF/,"");                       // Excel's BOM
+    var delim=csvDetectDelim(text);
+    var lines=text.split(/\r?\n/).filter(function(l){ return l.trim()!==""; });
+    if(!lines.length) return {rows:[], delim:delim};
+    var rows=lines.map(function(l){ return csvSplitLine(l, delim); });
+    // drop ragged trailing junk some exporters append
+    var width=rows[0].length;
+    rows=rows.filter(function(r){ return r.length>=Math.min(2,width); });
+    return {rows:rows, delim:delim};
+  }
+  // Dates: exports use all of these. Ambiguous D/M vs M/D is resolved by looking for a
+  // value >12 anywhere in the column — guessing per-row would silently mangle 03/04.
+  function csvDateParser(samples){
+    var iso=/^(\d{4})-(\d{2})-(\d{2})/, dmy=/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/, ymd=/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})/;
+    var sawBig=false, sawBigSecond=false;
+    samples.forEach(function(v){
+      var m=dmy.exec(String(v).trim());
+      if(m){ if(+m[1]>12) sawBig=true; if(+m[2]>12) sawBigSecond=true; }
+    });
+    var dayFirst = sawBig || !sawBigSecond; // default to D/M (rest of world) unless proven otherwise
+    return function(v){
+      v=String(v||"").trim();
+      var m=iso.exec(v); if(m) return m[1]+"-"+m[2]+"-"+m[3];
+      m=ymd.exec(v);     if(m) return m[1]+"-"+two(+m[2])+"-"+two(+m[3]);
+      m=dmy.exec(v);
+      if(m){
+        var a=+m[1], b=+m[2];
+        var day=dayFirst?a:b, mon=dayFirst?b:a;
+        if(mon>12){ var t=day; day=mon; mon=t; }  // impossible month => it was the other way
+        return m[3]+"-"+two(mon)+"-"+two(day);
+      }
+      var d=new Date(v);
+      if(!isNaN(d.getTime())) return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate());
+      return null;
+    };
+  }
+  function csvNum(v){
+    if(v==null) return NaN;
+    var s=String(v).trim();
+    if(!s) return NaN;
+    var neg=/^\(.*\)$/.test(s) || /-/.test(s);      // (123.45) is negative in some exports
+    s=s.replace(/[()]/g,"").replace(/[^0-9.,-]/g,"");
+    // 1.234,56 (EU) vs 1,234.56 (US)
+    if(/,\d{2}$/.test(s) && /\./.test(s)) s=s.replace(/\./g,"").replace(",",".");
+    else s=s.replace(/,/g,"");
+    var n=parseFloat(s.replace(/-/g,""));
+    if(!isFinite(n)) return NaN;
+    return neg?-n:n;
+  }
+  var CSV_GUESS={
+    date:["time","date","open time","close time","opened","closed","datetime"],
+    amount:["profit","p/l","pnl","p&l","amount","value","net","gain","result"],
+    inst:["symbol","instrument","pair","ticker","market"],
+    note:["comment","note","description","details","memo","type"]
+  };
+  function csvGuessCol(headers, kind){
+    var want=CSV_GUESS[kind];
+    for(var w=0;w<want.length;w++){
+      for(var i=0;i<headers.length;i++){
+        if(String(headers[i]).toLowerCase().trim()===want[w]) return i;
+      }
+    }
+    for(var w2=0;w2<want.length;w2++){
+      for(var j=0;j<headers.length;j++){
+        if(String(headers[j]).toLowerCase().indexOf(want[w2])>=0) return j;
+      }
+    }
+    return -1;
+  }
+  // A trade already in the ledger shouldn't come back on a re-import. Same day, same
+  // amount, same type, same instrument = same trade.
+  function txSignature(t){
+    return [t.date, t.type, Math.abs(num(t.amount)).toFixed(2), (t.inst||"").toUpperCase()].join("|");
+  }
+
+  /* ---------------- CSV import: wiring ---------------- */
+  var csvRows=null, csvHasHeader=true, csvDate=null;
+  function csvColOptions(headers){
+    return '<option value="-1">— none —</option>'+headers.map(function(h,i){
+      return '<option value="'+i+'">'+esc(h||("Column "+(i+1)))+'</option>';
+    }).join("");
+  }
+  function csvLoadText(text){
+    var r=csvParse(text);
+    if(r.rows.length<2){
+      appModal({title:"Nothing to read", message:"That needs at least a header row and one row of data.", confirmText:"OK", cancelText:"Close"});
+      return;
+    }
+    csvRows=r.rows;
+    // header row = one where the "amount" cell isn't a number
+    var first=csvRows[0];
+    csvHasHeader=first.some(function(c){ return c && isNaN(csvNum(c)) && !/^\d/.test(c); });
+    var headers=csvHasHeader?first:first.map(function(_,i){ return "Column "+(i+1); });
+    ["csvColDate","csvColAmt","csvColInst","csvColNote"].forEach(function(id){
+      document.getElementById(id).innerHTML=csvColOptions(headers);
+    });
+    document.getElementById("csvColDate").value=String(csvGuessCol(headers,"date"));
+    document.getElementById("csvColAmt").value=String(csvGuessCol(headers,"amount"));
+    document.getElementById("csvColInst").value=String(csvGuessCol(headers,"inst"));
+    document.getElementById("csvColNote").value=String(csvGuessCol(headers,"note"));
+    var dn={",":"comma",";":"semicolon","\t":"tab","|":"pipe"}[r.delim]||r.delim;
+    document.getElementById("csvFound").innerHTML="Found <b>"+(csvRows.length-(csvHasHeader?1:0))+"</b> row"+((csvRows.length-(csvHasHeader?1:0))===1?"":"s")+", <b>"+headers.length+"</b> columns, "+dn+"-separated"+(csvHasHeader?", with a header row":", no header row");
+    document.getElementById("csvMapWrap").style.display="block";
+    csvPreview();
+  }
+  function csvBuild(){
+    if(!csvRows) return [];
+    var di=+document.getElementById("csvColDate").value;
+    var ai=+document.getElementById("csvColAmt").value;
+    var ii=+document.getElementById("csvColInst").value;
+    var ni=+document.getElementById("csvColNote").value;
+    var mode=document.getElementById("csvMode").value;
+    var body=csvHasHeader?csvRows.slice(1):csvRows;
+    if(di<0 || ai<0) return [];
+    csvDate=csvDateParser(body.slice(0,40).map(function(r){ return r[di]; }));
+    var have={};
+    state.transactions.forEach(function(t){ have[txSignature(t)]=1; });
+    var out=[];
+    body.forEach(function(r){
+      var date=csvDate(r[di]);
+      var amt=csvNum(r[ai]);
+      if(!date || !isFinite(amt) || amt===0) { out.push({skip:"unreadable", raw:r}); return; }
+      var type;
+      if(mode==="trade") type = amt>=0 ? "trade_win" : "trade_loss";
+      else if(mode==="spend") type="spend";
+      else type="income";
+      var tx={ date:date, type:type, amount:Math.abs(amt) };
+      if(ii>=0 && r[ii]) tx.inst=String(r[ii]).trim().toUpperCase();
+      if(ni>=0 && r[ni]) tx.note=String(r[ni]).trim().slice(0,120);
+      if(type==="spend") tx.cat="Other";
+      tx.dupe = !!have[txSignature(tx)];
+      out.push(tx);
+    });
+    return out;
+  }
+  function csvPreview(){
+    var rows=csvBuild();
+    var good=rows.filter(function(r){ return !r.skip && !r.dupe; });
+    var dupes=rows.filter(function(r){ return r.dupe; }).length;
+    var bad=rows.filter(function(r){ return r.skip; }).length;
+    var box=document.getElementById("csvPreview");
+    if(!rows.length){ box.innerHTML='<div class="csv-note">Pick a date column and an amount column.</div>'; return; }
+    var html='<div class="csv-tbl"><div class="csv-r hd"><span class="csv-c1">Date</span><span class="csv-c2">Amount</span><span class="csv-c3">Type</span><span class="csv-c4">Instrument / note</span></div>';
+    rows.slice(0,6).forEach(function(r){
+      if(r.skip){ html+='<div class="csv-r dupe"><span class="csv-c4 csv-skip">skipped — couldn\'t read a date and amount</span></div>'; return; }
+      var meta=TYPE_META[r.type]||{label:r.type};
+      html+='<div class="csv-r'+(r.dupe?" dupe":"")+'"><span class="csv-c1">'+esc(r.date)+'</span>'
+        +'<span class="csv-c2">'+fmt(r.amount,state.currency)+'</span>'
+        +'<span class="csv-c3">'+esc(meta.label)+'</span>'
+        +'<span class="csv-c4">'+esc(r.inst||"")+(r.dupe?' <span class="csv-skip">· already added</span>':'')+'</span></div>';
+    });
+    html+='</div>';
+    var bits=["<b>"+good.length+"</b> to import"];
+    if(dupes) bits.push("<b>"+dupes+"</b> already in your ledger (skipped)");
+    if(bad) bits.push("<b>"+bad+"</b> unreadable (skipped)");
+    html+='<div class="csv-note" style="margin-top:8px">'+bits.join(" · ")+(rows.length>6?" — showing first 6":"")+'</div>';
+    box.innerHTML=html;
+    var btn=document.getElementById("csvImportBtn");
+    btn.disabled=!good.length;
+    btn.textContent=good.length?("Import "+good.length):"Nothing to import";
+  }
+  function csvReset(){
+    csvRows=null;
+    document.getElementById("csvMapWrap").style.display="none";
+    document.getElementById("csvPasteWrap").style.display="none";
+    document.getElementById("csvBox").value="";
+    var f=document.getElementById("csvFile"); if(f) f.value="";
+  }
+  function bindCsvImport(){
+    document.getElementById("csvPickFile").addEventListener("click", function(){ document.getElementById("csvFile").click(); });
+    document.getElementById("csvFile").addEventListener("change", function(e){
+      var f=e.target.files && e.target.files[0]; if(!f) return;
+      var rd=new FileReader();
+      rd.onload=function(ev){ csvLoadText(String(ev.target.result||"")); };
+      rd.onerror=function(){ appModal({title:"Couldn't read that file", message:"Try pasting the rows instead.", confirmText:"OK", cancelText:"Close"}); };
+      rd.readAsText(f);
+    });
+    document.getElementById("csvPasteToggle").addEventListener("click", function(){
+      var wr=document.getElementById("csvPasteWrap");
+      wr.style.display = wr.style.display==="none" ? "block" : "none";
+    });
+    document.getElementById("csvParseBtn").addEventListener("click", function(){
+      var t=document.getElementById("csvBox").value.trim();
+      if(t) csvLoadText(t);
+    });
+    ["csvColDate","csvColAmt","csvColInst","csvColNote","csvMode"].forEach(function(id){
+      document.getElementById(id).addEventListener("change", csvPreview);
+    });
+    document.getElementById("csvCancelBtn").addEventListener("click", csvReset);
+    document.getElementById("csvImportBtn").addEventListener("click", function(){
+      var rows=csvBuild().filter(function(r){ return !r.skip && !r.dupe; });
+      if(!rows.length) return;
+      appModal({
+        title:"Import "+rows.length+" entr"+(rows.length===1?"y":"ies")+"?",
+        message:"They go into <b>"+esc((activePortfolio()&&activePortfolio().name)||"this portfolio")+"</b>. Nothing existing is touched, and you can delete them afterwards like any other entry.",
+        confirmText:"Import "+rows.length,
+        onConfirm:function(){
+          rows.forEach(function(r){
+            delete r.dupe;
+            r.id=freshIdBase()+Math.floor(Math.random()*1000);
+            state.transactions.push(r);
+          });
+          // imported rows are almost always dated outside the current month — without
+          // this they'd land correctly and show nothing, which reads as "it didn't work"
+          state.selectedMonths=["all"];
+          resetLedgerView();
+          persistNow(); render(); renderPortfolioUI();
+          csvReset();
+          flashSaved("imported "+rows.length);
+        }
+      });
+    });
+  }
+
   /* ---------------- user wording ----------------
      Everything the user renamed gets painted here, in one place, so a new label can't be
      added to the model and then quietly not show up somewhere. */
@@ -5037,6 +5296,7 @@ AI_TYPES.join(", "),
     bindAiUI();
     bindTradingPage();
     bindLabelInputs();
+    bindCsvImport();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -5249,6 +5509,43 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- CSV import -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Import trades from a file</div>
+    <div class="hint">Paste an MT4/MT5 statement or any CSV. It works out the columns, shows you what it found, and skips anything already in your ledger.</div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="csvPickFile">Choose a CSV…</button>
+      <button class="btn ghost sm" id="csvPasteToggle">Paste instead</button>
+    </div>
+    <input type="file" id="csvFile" accept=".csv,.tsv,.txt,text/csv" style="display:none">
+    <div id="csvPasteWrap" style="display:none;margin-top:10px">
+      <textarea id="csvBox" rows="5" placeholder="Paste CSV rows here…" style="width:100%;font-family:var(--mono);font-size:11px"></textarea>
+      <button class="btn ghost sm" id="csvParseBtn" style="margin-top:6px">Read it</button>
+    </div>
+
+    <div id="csvMapWrap" style="display:none;margin-top:14px">
+      <div class="csv-note" id="csvFound"></div>
+      <div class="fld"><label for="csvColDate">Date column</label><select id="csvColDate"></select></div>
+      <div class="fld"><label for="csvColAmt">Profit / amount column</label><select id="csvColAmt"></select></div>
+      <div class="fld"><label for="csvColInst">Instrument column <span class="mut">(optional)</span></label><select id="csvColInst"></select></div>
+      <div class="fld"><label for="csvColNote">Note column <span class="mut">(optional)</span></label><select id="csvColNote"></select></div>
+      <div class="fld"><label for="csvMode">Treat rows as</label>
+        <select id="csvMode">
+          <option value="trade">Trades — plus is a win, minus is a loss</option>
+          <option value="spend">Spending — every row is money out</option>
+          <option value="income">Money in — every row is money in</option>
+        </select>
+      </div>
+      <div id="csvPreview"></div>
+      <div class="data-btns" style="margin-top:10px">
+        <button class="btn primary sm" id="csvImportBtn">Import</button>
+        <button class="btn ghost sm" id="csvCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Wording -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Wording</div>
@@ -5290,7 +5587,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.8</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.9</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
