@@ -56,6 +56,8 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
+
   /* Trading stats */
   .tr-hero{text-align:center;padding:6px 0 12px}
   .tr-wr{font-family:var(--mono);font-size:44px;font-weight:800;line-height:1}
@@ -1707,10 +1709,6 @@
     document.addEventListener("keydown", _mdlEsc);
     setTimeout(function(){ if(inp){ inp.focus(); inp.select(); } else okBtn.focus(); }, 30);
   }
-  function appConfirm(title, message, opts, cb){
-    opts=opts||{};
-    appModal({title:title, message:message, danger:opts.danger, confirmText:opts.confirmText||"Continue", onConfirm:function(){ cb(); }});
-  }
 
   /* ---------------- copying & mirroring between portfolios ----------------
      Copies always get fresh transaction ids and fresh photo ids, for the same reason
@@ -2467,6 +2465,7 @@ AI_TYPES.join(", "),
       else if(ds!==0){ amt=(ds>0?"+":"\u2212")+fmt(Math.abs(ds),sym)+" (savings)"; cls="pt-cool"; }
       else { amt=fmt(0,sym); cls=""; }
       var note=t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      if(t.inst) note=(note?esc(t.inst)+" · "+note:esc(t.inst));
       rows+="<tr><td>"+esc(t.date)+"</td><td>"+esc(meta.label)+"</td><td>"+note+"</td><td class='"+cls+"' style='text-align:right;white-space:nowrap'>"+amt+"</td></tr>";
     });
     var html="<!DOCTYPE html><html><head><meta charset='utf-8'><title>"+esc(pName)+" \u2014 Transactions</title><style>"
@@ -3517,6 +3516,7 @@ AI_TYPES.join(", "),
       } else if(ds!==0){ amtHtml='<span class="cool">'+(ds>0?"+":"−")+fmt(Math.abs(ds),sym)+'</span>'; tag="savings"; }
       else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
       var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      var instTag = t.inst ? '<span class="inst-tag">'+esc(t.inst)+'</span>' : '';
       var hasProof = !!t.photo;
       var eyeBtn = hasProof ? '<span class="eye-btn" title="Click row to view screenshot">\u{1F441}</span>' : '';
       var checked = selectedIds[t.id] ? " checked" : "";
@@ -3525,7 +3525,7 @@ AI_TYPES.join(", "),
       html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
           +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
           +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
-          +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'
+          +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'+instTag
           +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
           +eyeBtn
           +'<div class="lamt">'+amtHtml+(tag?'<span class="tag">'+tag+'</span>':'')+'</div>'
@@ -3666,7 +3666,7 @@ AI_TYPES.join(", "),
   function matchesSearch(t){
     if(!searchQuery) return true;
     var meta=TYPE_META[t.type]||{label:t.type};
-    var hay=((t.note||"")+" "+(t.cat||"")+" "+(meta.label||"")+" "+(t.date||"")).toLowerCase();
+    var hay=((t.note||"")+" "+(t.cat||"")+" "+(t.inst||"")+" "+(meta.label||"")+" "+(t.date||"")).toLowerCase();
     return hay.indexOf(searchQuery)>=0;
   }
   // Profit/loss here means effect on your balance — money in is profit, money out is a
@@ -4188,11 +4188,11 @@ AI_TYPES.join(", "),
         v=String(v==null?"":v);
         return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
       }
-      var lines=["Date,Type,Category,Note,Balance change,Debt change,Savings change,Currency"];
+      var lines=["Date,Type,Instrument,Category,Note,Balance change,Debt change,Savings change,Currency"];
       list.forEach(function(t){
         var meta=TYPE_META[t.type]||{label:t.type};
         lines.push([
-          csvCell(t.date), csvCell(meta.label), csvCell(t.cat||""), csvCell(t.note||""),
+          csvCell(t.date), csvCell(meta.label), csvCell(t.inst||""), csvCell(t.cat||""), csvCell(t.note||""),
           balDelta(t).toFixed(2), debtDelta(t).toFixed(2), savDelta(t).toFixed(2), csvCell(state.currency)
         ].join(","));
       });
@@ -4635,7 +4635,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.4</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.5</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
