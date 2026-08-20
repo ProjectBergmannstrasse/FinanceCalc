@@ -115,6 +115,19 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .goal-row{padding:10px 0;border-bottom:1px solid var(--bd)}
+  .goal-row:last-child{border-bottom:0}
+  .goal-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .goal-n{font-size:13px;font-weight:700}
+  .goal-v{font-size:11.5px;color:var(--mut)}
+  .goal-bar{height:7px;border-radius:99px;background:var(--card2);overflow:hidden;margin:6px 0 4px}
+  .goal-bar span{display:block;height:100%;border-radius:99px;background:var(--cool);transition:width .35s cubic-bezier(.22,1,.36,1)}
+  .goal-done .goal-bar span{background:var(--up)}
+  .goal-late .goal-bar span{background:var(--amber)}
+  .goal-foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
+  .goal-done .goal-eta{color:var(--up);font-weight:700}
+  .goal-warn{margin-top:7px;font-size:11px;line-height:1.45;color:var(--tx);background:var(--card);border:1px solid color-mix(in srgb,var(--amber) 45%,var(--bd));border-radius:7px;padding:7px 8px}
+
   .rec-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--bd);border-radius:9px;background:var(--card);margin-bottom:7px}
   .rec-item.paused{opacity:.55}
   .rec-main{flex:1;min-width:0}
@@ -558,6 +571,12 @@
   <div class="stat" id="stTrWrap" style="display:none"><div class="k">Trading account</div><div class="v mono cool" id="stTr">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
+</div>
+
+<!-- Goals -->
+<div class="panel" id="goalCard" style="display:none">
+  <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
+  <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
 </div>
 
 <!-- Budgets -->
@@ -1367,6 +1386,7 @@
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
     budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
     recurring:[], // [{id,type,amount,cat,note,freq,day,startDate,lastRun,paused}]
+    goals:[],     // [{id,name,target,by,createdAt}] — measured against the savings pot
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -1727,9 +1747,10 @@
     var n=txs.length;
     if(!confirm("Remove the advance taken for "+monthLong(forMonth)+" ("+fmt(total)+")? This deletes "+n+" linked "+(n===1?"entry":"entries")+" and frees up that advance slot.")) return;
     var ids=txs.map(function(t){ return t.id; });
+    txs.forEach(toTrash);   // recoverable, like any other delete
     state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
     ids.forEach(function(id){ delete selectedIds[id]; });
-    persist(); render(); flashSaved("advance removed");
+    persistNow(); render(); flashSaved("advance removed");
   }
 
   /* ---------------- photo store — routes through StorageManager ----------------
@@ -3319,7 +3340,7 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); renderRecurList(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -3491,6 +3512,234 @@ AI_TYPES.join(", "),
   // amount, same type, same instrument = same trade.
   function txSignature(t){
     return [t.date, t.type, Math.abs(num(t.amount)).toFixed(2), (t.inst||"").toUpperCase()].join("|");
+  }
+
+  /* ================= TRASH =================
+     Deleting used to be permanent after a 5-second toast, photo and all. This app has
+     lost user data four times through bugs; a mis-tap shouldn't be a fifth way.
+     Photos deliberately survive in the bin — a restore that brings back the entry but
+     not its receipt isn't a restore. */
+  var TRASH_DAYS=30, TRASH_MAX=300;
+  function trashList(){ return Array.isArray(state.trash) ? state.trash : []; }
+  function trashAge(item){ return Math.floor((Date.now()-(item.at||0))/86400000); }
+  function trashDaysLeft(item){ return Math.max(0, TRASH_DAYS-trashAge(item)); }
+  function toTrash(tx){
+    if(!Array.isArray(state.trash)) state.trash=[];
+    state.trash.unshift({tx:clone(tx), at:Date.now()});
+    // hard cap: the oldest fall out early rather than letting this grow without bound
+    while(state.trash.length>TRASH_MAX){
+      var gone=state.trash.pop();
+      if(gone && gone.tx && gone.tx.photo) delPhoto(gone.tx.photo);
+    }
+  }
+  function purgeTrash(){
+    if(!Array.isArray(state.trash) || !state.trash.length) return 0;
+    var keep=[], n=0;
+    state.trash.forEach(function(item){
+      if(trashAge(item)>=TRASH_DAYS){
+        if(item.tx && item.tx.photo) delPhoto(item.tx.photo);   // only now is it really gone
+        n++;
+      } else keep.push(item);
+    });
+    if(n){ state.trash=keep; persistNow(); }
+    return n;
+  }
+  function restoreFromTrash(idx){
+    var item=trashList()[idx];
+    if(!item) return null;
+    state.trash.splice(idx,1);
+    var tx=item.tx;
+    // an id could have been reused by an import while this sat in the bin
+    var clash=state.transactions.some(function(t){ return t.id===tx.id; });
+    if(clash){
+      var oldPhoto=tx.photo;
+      tx.id=freshIdBase()+Math.floor(Math.random()*1000);
+      if(oldPhoto){
+        // re-key the photo to match the new id, or the restored entry points at nothing
+        loadPhoto(oldPhoto, function(data){
+          if(data){ savePhoto(tx.id, data); delPhoto(oldPhoto); }
+        });
+        tx.photo=tx.id;
+      }
+    }
+    state.transactions.push(tx);
+    state.selectedMonths=["all"];   // restored entries are usually old
+    persistNow();
+    return tx;
+  }
+  function emptyTrash(){
+    trashList().forEach(function(item){ if(item.tx && item.tx.photo) delPhoto(item.tx.photo); });
+    state.trash=[];
+    persistNow();
+  }
+
+  /* ---------------- trash: UI ---------------- */
+  function renderTrash(){
+    var box=document.getElementById("trashList");
+    if(!box) return;
+    var items=trashList(), sym=state.currency;
+    document.getElementById("trashBtns").style.display=items.length?"":"none";
+    if(!items.length){ box.innerHTML='<div class="tr-empty-msg">Nothing deleted recently.</div>'; return; }
+    box.innerHTML=items.slice(0,60).map(function(item,i){
+      var t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||"?"};
+      var nm=(t.note||t.cat||meta.label||"Entry");
+      var left=trashDaysLeft(item);
+      var when = left<=0 ? "going now" : (left===1 ? "1 day left" : left+" days left");
+      return '<div class="tr-item" data-i="'+i+'">'
+        +'<div class="tr-item-main"><div class="tr-item-nm">'+esc(nm)+'</div>'
+        +'<div class="tr-item-sub">'+esc(t.date||"")+' · '+esc(meta.label)+(t.photo?" · 📎":"")+' · <span class="'+(left<=5?"tr-soon":"")+'">'+when+'</span></div></div>'
+        +'<div class="tr-item-amt">'+fmt(num(t.amount),sym)+'</div>'
+        +'<button type="button" class="tr-item-btn" data-i="'+i+'">Restore</button>'
+        +'</div>';
+    }).join("")+(items.length>60?'<div class="tr-empty-msg">…and '+(items.length-60)+' more</div>':"");
+    Array.prototype.forEach.call(box.querySelectorAll(".tr-item-btn"), function(b){
+      b.addEventListener("click", function(){
+        var tx=restoreFromTrash(+b.getAttribute("data-i"));
+        if(tx){
+          resetLedgerView();
+          render(); renderTrash();
+          flashSaved("restored");
+        }
+      });
+    });
+  }
+  function bindTrash(){
+    var e=document.getElementById("trashEmpty");
+    if(!e) return;
+    e.addEventListener("click", function(){
+      var n=trashList().length;
+      if(!n) return;
+      appModal({
+        title:"Empty the bin?",
+        message:"<b>"+n+"</b> deleted entr"+(n===1?"y":"ies")+" — and any photos attached to them — go for good. This can't be undone.",
+        requireWord:"EMPTY", confirmText:"Empty", danger:true,
+        onConfirm:function(){ emptyTrash(); renderTrash(); flashSaved("bin emptied"); }
+      });
+    });
+  }
+
+  /* ================= SAVINGS GOALS =================
+     Measured against the real savings pot, never a separate number to drift out of sync.
+     The forecast uses your ACTUAL saving rate — the honest version of "will I make it?"
+     is arithmetic on what you've really been putting away, not a wish. */
+  function goalList(){ return Array.isArray(state.goals) ? state.goals : []; }
+  function savingsNow(){ return totals().savings; }
+  // Average saved per month over the window where you actually have history.
+  function savingRate(){
+    var months={}, first=null;
+    state.transactions.forEach(function(t){
+      var d=savDelta(t);
+      if(!d) return;
+      var k=monthKey(t.date);
+      months[k]=(months[k]||0)+d;
+      if(!first || k<first) first=k;
+    });
+    var keys=Object.keys(months);
+    if(!keys.length) return {perMonth:0, months:0};
+    // span from first activity to now, so idle months count against the rate honestly
+    var curK=monthKey(todayStr());
+    var span=monthsApart(first, curK)+1;
+    var total=keys.reduce(function(a,k){ return a+months[k]; },0);
+    return {perMonth: span>0 ? total/span : 0, months:span};
+  }
+  function monthsApart(a,b){
+    return (+b.slice(0,4)-+a.slice(0,4))*12 + (+b.slice(5,7)-+a.slice(5,7));
+  }
+  function goalProgress(g){
+    var now=savingsNow();
+    var target=Math.abs(num(g.target))||0;
+    var pct = target>0 ? Math.min(1, now/target) : 0;
+    var left=Math.max(0, target-now);
+    var rate=savingRate();
+    var monthsNeeded = (left>0 && rate.perMonth>0) ? left/rate.perMonth : (left<=0 ? 0 : null);
+    var eta=null;
+    if(monthsNeeded!=null && monthsNeeded>0 && isFinite(monthsNeeded)){
+      var d=new Date();
+      d.setMonth(d.getMonth()+Math.ceil(monthsNeeded));
+      eta=monthKey(d.getFullYear()+"-"+two(d.getMonth()+1)+"-01");
+    }
+    var byLate=null;
+    if(g.by && eta) byLate = eta > g.by;
+    return {done:left<=0, now:now, target:target, pct:pct, left:left,
+            perMonth:rate.perMonth, monthsNeeded:monthsNeeded, eta:eta, byLate:byLate, historyMonths:rate.months};
+  }
+  function renderGoals(){
+    var card=document.getElementById("goalCard");
+    if(!card) return;
+    var list=goalList();
+    if(!list.length){ card.style.display="none"; return; }
+    card.style.display="";
+    var sym=state.currency;
+    document.getElementById("goalList").innerHTML=list.map(function(g){
+      var p=goalProgress(g);
+      var cls = p.done ? "goal-done" : (p.byLate ? "goal-late" : "goal-on");
+      var width=Math.round(p.pct*100);
+      var right;
+      if(p.done) right="reached";
+      else if(p.perMonth<=0) right="not saving yet";
+      else if(p.eta) right="≈ "+monthLong(p.eta);
+      else right="—";
+      return '<div class="goal-row '+cls+'">'
+        +'<div class="goal-top"><span class="goal-n">'+esc(g.name||"Goal")+'</span>'
+        +'<span class="goal-v mono">'+fmt(p.now,sym)+' / '+fmt(p.target,sym)+'</span></div>'
+        +'<div class="goal-bar"><span style="width:'+width+'%"></span></div>'
+        +'<div class="goal-foot"><span class="mono">'+width+'%</span>'
+        +'<span class="goal-eta mono">'+esc(right)+(g.by&&!p.done?" · want "+monthLong(g.by):"")+'</span></div>'
+        +(p.byLate&&!p.done&&p.eta ? '<div class="goal-warn">At '+fmt(p.perMonth,sym)+'/month you reach it around '+monthLong(p.eta)+' — after '+monthLong(g.by)+'. You\'d need '+fmt(goalNeededRate(g),sym)+'/month to make it.</div>' : "")
+        +'</div>';
+    }).join("");
+  }
+  function goalNeededRate(g){
+    var p=goalProgress(g);
+    if(!g.by || p.left<=0) return 0;
+    var m=monthsApart(monthKey(todayStr()), g.by);
+    if(m<=0) return p.left;
+    return p.left/m;
+  }
+  function renderGoalSettings(){
+    var box=document.getElementById("goalSetList");
+    if(!box) return;
+    var list=goalList(), sym=state.currency;
+    if(!list.length){ box.innerHTML='<div class="rec-empty">No goals yet.</div>'; return; }
+    box.innerHTML=list.map(function(g){
+      var p=goalProgress(g);
+      return '<div class="rec-item" data-gid="'+esc(g.id)+'">'
+        +'<div class="rec-main"><div class="rec-t">'+esc(g.name||"Goal")+'</div>'
+        +'<div class="rec-sub">'+fmt(p.now,sym)+' of '+fmt(p.target,sym)+(g.by?" · by "+monthLong(g.by):"")+'</div></div>'
+        +'<button type="button" class="rec-btn" data-act="gdel">Delete</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll('[data-act="gdel"]'), function(b){
+      b.addEventListener("click", function(){
+        var id=b.parentNode.getAttribute("data-gid");
+        state.goals=goalList().filter(function(x){ return String(x.id)!==String(id); });
+        persistNow(); renderGoalSettings(); renderGoals();
+      });
+    });
+  }
+  function bindGoals(){
+    var add=document.getElementById("goalAddBtn");
+    if(!add) return;
+    add.addEventListener("click", function(){
+      document.getElementById("goalForm").style.display="block";
+      document.getElementById("goalName").value="";
+      document.getElementById("goalTarget").value="";
+      document.getElementById("goalBy").value="";
+    });
+    document.getElementById("goalCancelBtn").addEventListener("click", function(){
+      document.getElementById("goalForm").style.display="none";
+    });
+    document.getElementById("goalSaveBtn").addEventListener("click", function(){
+      var t=parseFloat(document.getElementById("goalTarget").value);
+      if(!isFinite(t) || t<=0){ shake(document.getElementById("goalTarget")); return; }
+      var nm=document.getElementById("goalName").value.trim();
+      if(!nm){ shake(document.getElementById("goalName")); return; }
+      var by=document.getElementById("goalBy").value;
+      if(!Array.isArray(state.goals)) state.goals=[];
+      state.goals.push({ id:"g"+Date.now()+Math.floor(Math.random()*1000), name:nm, target:t, by:by||null, createdAt:todayStr() });
+      persistNow();
+      document.getElementById("goalForm").style.display="none";
+      renderGoalSettings(); renderGoals(); flashSaved("saved");
+    });
   }
 
   /* ================= RECURRING ENTRIES =================
@@ -3721,7 +3970,6 @@ AI_TYPES.join(", "),
         else delete state.budgets[cat];   // blank/zero = no cap, not a cap of zero
         persist();
         renderBudgets();
-    checkRecurPrompt();
       });
     });
   }
@@ -3746,16 +3994,7 @@ AI_TYPES.join(", "),
     }
   }
 
-  // Warn as an entry is added, not after the fact — the useful moment is before you spend.
-  function budgetWarnFor(cat, addingAmount){
-    var cap=budgetFor(cat);
-    if(!cap) return null;
-    var already=spentThisMonth(cat);
-    var after=already+Math.abs(num(addingAmount));
-    if(after>cap) return {cat:cat, cap:cap, after:after, over:after-cap, wasUnder:already<=cap};
-    if(after>=cap*0.8) return {cat:cat, cap:cap, after:after, near:true, left:cap-after};
-    return null;
-  }
+
 
   /* ---------------- CSV import: wiring ---------------- */
   var csvRows=null, csvHasHeader=true, csvDate=null;
@@ -4591,6 +4830,8 @@ AI_TYPES.join(", "),
       cats.innerHTML=html;
     }
     renderBudgets();
+    renderGoals();
+    checkRecurPrompt();
 
     // ledger
     renderLedger();
@@ -4827,8 +5068,11 @@ AI_TYPES.join(", "),
   function finalizePendingDelete(){
     if(!pendingDelete) return;
     if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
-    if(pendingDelete.tx.photo) delPhoto(pendingDelete.tx.photo);
+    // the 5s toast expiring means "they didn't undo", not "destroy it" — it goes to the
+    // bin, photo intact, and only leaves for good after TRASH_DAYS
+    toTrash(pendingDelete.tx);
     pendingDelete=null;
+    persistNow();
     hideUndoToast();
   }
   function undoDelete(){
@@ -5715,6 +5959,8 @@ AI_TYPES.join(", "),
     bindCsvImport();
     bindPhotoQ();
     bindRecurring();
+    bindGoals();
+    bindTrash();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -5725,7 +5971,10 @@ AI_TYPES.join(", "),
     document.addEventListener("visibilitychange", function(){
       if(document.visibilityState==="hidden" && saveTimer) persistNow();
     });
-    loadData(function(){ render(); renderPortfolioUI(); refreshStorageBadge(); });
+    loadData(function(){
+      purgeTrash();   // drop anything past its 30 days before the first paint
+      render(); renderPortfolioUI(); refreshStorageBadge();
+    });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -5927,6 +6176,37 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Trash -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Recently deleted</div>
+    <div class="hint">Deleted entries wait here for <b>30 days</b> — photos and all — before they go for good. Restore anything that shouldn't have gone.</div>
+    <div id="trashList"></div>
+    <div class="data-btns" id="trashBtns" style="display:none">
+      <button class="btn ghost sm" id="trashEmpty">Empty the bin</button>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Goals -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Savings goals</div>
+    <div class="hint">Measured against your real savings pot. The forecast uses what you've <b>actually</b> been saving, not what you'd like to.</div>
+    <div id="goalSetList"></div>
+    <button class="btn ghost sm" id="goalAddBtn" style="width:100%;margin-top:8px">+ Add a goal</button>
+    <div id="goalForm" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bd2);border-radius:10px;background:var(--card)">
+      <div class="fld"><label for="goalName">What for</label><input type="text" id="goalName" maxlength="40" placeholder="e.g. new laptop"></div>
+      <div class="fld"><label for="goalTarget">Target amount</label><input type="number" id="goalTarget" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div>
+      <div class="fld"><label for="goalBy">Want it by <span class="mut">(optional)</span></label><input type="month" id="goalBy"></div>
+      <div class="data-btns">
+        <button class="btn primary sm" id="goalSaveBtn">Save</button>
+        <button class="btn ghost sm" id="goalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Recurring -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Repeats</div>
@@ -6055,7 +6335,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.1</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.3</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
