@@ -115,6 +115,16 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .rec-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--bd);border-radius:9px;background:var(--card);margin-bottom:7px}
+  .rec-item.paused{opacity:.55}
+  .rec-main{flex:1;min-width:0}
+  .rec-t{font-size:13px;font-weight:700}
+  .rec-sub{font-size:11px;color:var(--mut);margin-top:1px}
+  .rec-amt{flex:none;font-size:13px;font-weight:700}
+  .rec-btn{flex:none;border:1px solid var(--bd2);background:transparent;color:var(--mut);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:700;cursor:pointer;transition:border-color .13s,color .13s}
+  .rec-btn:hover{border-color:var(--amber);color:var(--tx)}
+  .rec-empty{font-size:12.5px;color:var(--mut);padding:10px 0}
+
   .bg-row{padding:9px 0;border-bottom:1px solid var(--bd)}
   .bg-row:last-child{border-bottom:0}
   .bg-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
@@ -524,6 +534,15 @@
   <span class="pf-switch-nm">Main Portfolio</span>
   <span class="pf-switch-ch">▾</span>
 </button>
+
+<!-- recurring due -->
+<div id="recPrompt" class="adv-note adv-out" style="display:none">
+  <span id="recPromptMsg"></span>
+  <div class="adv-actions">
+    <button type="button" class="adv-remove" id="recPromptAdd">Add them</button>
+    <button type="button" class="adv-remove" id="recPromptLater">Not now</button>
+  </div>
+</div>
 
 <!-- Balance hero -->
 <div class="hero">
@@ -1347,6 +1366,7 @@
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
     budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
+    recurring:[], // [{id,type,amount,cat,note,freq,day,startDate,lastRun,paused}]
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -3299,7 +3319,7 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); renderRecurList(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -3473,6 +3493,162 @@ AI_TYPES.join(", "),
     return [t.date, t.type, Math.abs(num(t.amount)).toFixed(2), (t.inst||"").toUpperCase()].join("|");
   }
 
+  /* ================= RECURRING ENTRIES =================
+     The hard parts are not the UI: (1) never double-add — every run is stamped per rule,
+     (2) catch up months you were away for by walking forward from lastRun rather than
+     asking "is it due today?", and (3) day 31 doesn't exist in February — clamp it, but
+     don't let the clamp permanently drag the day earlier. */
+  function recurList(){ return Array.isArray(state.recurring) ? state.recurring : []; }
+  function clampDay(y, m, day){ return Math.min(day, new Date(y, m, 0).getDate()); }  // m 1-based
+  function dateStr(y,m,d){ return y+"-"+two(m)+"-"+two(d); }
+  function nextAfter(r, fromS){
+    var y=+fromS.slice(0,4), m=+fromS.slice(5,7), d=+fromS.slice(8,10);
+    if(r.freq==="weekly"){
+      var dt=new Date(y, m-1, d); dt.setDate(dt.getDate()+7);
+      return dateStr(dt.getFullYear(), dt.getMonth()+1, dt.getDate());
+    }
+    if(r.freq==="yearly") return dateStr(y+1, m, clampDay(y+1, m, r.day||d));
+    var ny=y, nm=m+1;
+    if(nm>12){ nm=1; ny++; }
+    return dateStr(ny, nm, clampDay(ny, nm, r.day||d));   // r.day, not d — so Feb 28 -> Mar 31
+  }
+  function dueDates(r, todayS){
+    var out=[];
+    if(r.paused) return out;
+    var from=r.lastRun ? nextAfter(r, r.lastRun) : (r.startDate || todayS);
+    if(!from || from>todayS) return out;
+    var guard=0, cur=from;
+    while(cur<=todayS && guard++<600){
+      out.push(cur);
+      var nxt=nextAfter(r, cur);
+      if(!nxt || nxt<=cur) break;
+      cur=nxt;
+    }
+    return out;
+  }
+  function pendingRecur(){
+    var todayS=todayStr(), out=[];
+    recurList().forEach(function(r){
+      dueDates(r, todayS).forEach(function(ds){ out.push({rule:r, date:ds}); });
+    });
+    return out;
+  }
+  function applyRecur(list, cb){
+    var byRule={};
+    list.forEach(function(item){
+      var r=item.rule;
+      var tx={ id:freshIdBase()+Math.floor(Math.random()*10000), date:item.date,
+               type:r.type, amount:Math.abs(num(r.amount)) };
+      if(r.type==="spend") tx.cat=r.cat||"Other";
+      if(r.note) tx.note=r.note;
+      tx.rec=r.id;
+      state.transactions.push(tx);
+      byRule[r.id]=item.date;
+    });
+    recurList().forEach(function(r){ if(byRule[r.id]) r.lastRun=byRule[r.id]; });
+    state.selectedMonths=["all"];   // they land on real dates, usually not this month
+    resetLedgerView();
+    persistNow(); render();
+    if(cb) cb(list.length);
+  }
+  function checkRecurPrompt(){
+    var el=document.getElementById("recPrompt");
+    if(!el) return;
+    var pend=pendingRecur();
+    if(!pend.length){ el.style.display="none"; return; }
+    var total=pend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
+    document.getElementById("recPromptMsg").innerHTML=
+      "<b>"+pend.length+"</b> recurring entr"+(pend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
+    el.style.display="block";
+  }
+  function ordSuffix(n){
+    if(n>3 && n<21) return "th";
+    return ["th","st","nd","rd"][Math.min(n%10,4)] || "th";
+  }
+  function recurDescribe(r){
+    var f = r.freq==="weekly" ? "every week"
+          : r.freq==="yearly" ? "every year"
+          : "every month on the "+(r.day||1)+ordSuffix(r.day||1);
+    return f+" · "+(r.paused ? "paused" : "next "+(nextAfter(r, r.lastRun||r.startDate||todayStr())||"—"));
+  }
+  function renderRecurList(){
+    var box=document.getElementById("recList");
+    if(!box) return;
+    var list=recurList(), sym=state.currency;
+    if(!list.length){ box.innerHTML='<div class="rec-empty">Nothing repeats yet.</div>'; return; }
+    box.innerHTML=list.map(function(r){
+      var meta=TYPE_META[r.type]||{label:r.type};
+      var title=r.note ? esc(r.note) : esc(meta.label)+(r.cat?" · "+esc(r.cat):"");
+      return '<div class="rec-item'+(r.paused?" paused":"")+'" data-id="'+esc(r.id)+'">'
+        +'<div class="rec-main"><div class="rec-t">'+title+'</div><div class="rec-sub">'+esc(recurDescribe(r))+'</div></div>'
+        +'<div class="rec-amt mono">'+fmt(Math.abs(num(r.amount)),sym)+'</div>'
+        +'<button type="button" class="rec-btn" data-act="pause">'+(r.paused?"Resume":"Pause")+'</button>'
+        +'<button type="button" class="rec-btn" data-act="del">Delete</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll(".rec-btn"), function(b){
+      b.addEventListener("click", function(){
+        var id=b.parentNode.getAttribute("data-id");
+        var r=recurList().filter(function(x){ return String(x.id)===String(id); })[0];
+        if(!r) return;
+        if(b.getAttribute("data-act")==="pause"){
+          r.paused=!r.paused; persistNow(); renderRecurList(); checkRecurPrompt();
+        } else {
+          appModal({ title:"Delete this repeat?",
+            message:"It stops repeating. Entries it already created stay in your ledger — deleting the rule doesn't erase history.",
+            confirmText:"Delete", danger:true,
+            onConfirm:function(){
+              state.recurring=recurList().filter(function(x){ return String(x.id)!==String(id); });
+              persistNow(); renderRecurList(); checkRecurPrompt();
+            }});
+        }
+      });
+    });
+  }
+  function recurFormUI(){
+    document.getElementById("recCatFld").style.display = document.getElementById("recType").value==="spend" ? "flex" : "none";
+    document.getElementById("recDayFld").style.display = document.getElementById("recFreq").value==="weekly" ? "none" : "flex";
+  }
+  function bindRecurring(){
+    var add=document.getElementById("recAddBtn");
+    if(!add) return;
+    add.addEventListener("click", function(){
+      document.getElementById("recForm").style.display="block";
+      document.getElementById("recStart").value=todayStr();
+      document.getElementById("recDay").value=String(+todayStr().slice(8,10));
+      document.getElementById("recAmt").value="";
+      document.getElementById("recNote").value="";
+      recurFormUI();
+    });
+    document.getElementById("recType").addEventListener("change", recurFormUI);
+    document.getElementById("recFreq").addEventListener("change", recurFormUI);
+    document.getElementById("recCancelBtn").addEventListener("click", function(){
+      document.getElementById("recForm").style.display="none";
+    });
+    document.getElementById("recSaveBtn").addEventListener("click", function(){
+      var amt=parseFloat(document.getElementById("recAmt").value);
+      if(!isFinite(amt) || amt<=0){ shake(document.getElementById("recAmt")); return; }
+      var start=document.getElementById("recStart").value || todayStr();
+      var freq=document.getElementById("recFreq").value;
+      var r={ id:"r"+Date.now()+Math.floor(Math.random()*1000),
+        type:document.getElementById("recType").value, amount:amt,
+        note:document.getElementById("recNote").value.trim(), freq:freq,
+        day: freq==="weekly" ? +start.slice(8,10) : Math.max(1,Math.min(31,parseInt(document.getElementById("recDay").value,10)||1)),
+        startDate:start, lastRun:null, paused:false };
+      if(r.type==="spend") r.cat=document.getElementById("recCat").value;
+      if(!Array.isArray(state.recurring)) state.recurring=[];
+      state.recurring.push(r);
+      persistNow();
+      document.getElementById("recForm").style.display="none";
+      renderRecurList(); checkRecurPrompt(); flashSaved("saved");
+    });
+    var a2=document.getElementById("recPromptAdd"), n2=document.getElementById("recPromptLater");
+    if(a2) a2.addEventListener("click", function(){
+      var pend=pendingRecur();
+      if(pend.length) applyRecur(pend, function(n){ flashSaved("added "+n); checkRecurPrompt(); });
+    });
+    if(n2) n2.addEventListener("click", function(){ document.getElementById("recPrompt").style.display="none"; });
+  }
+
   /* ================= BUDGETS =================
      A cap is per calendar month, always measured against the CURRENT month — not against
      whatever months happen to be ticked in the filter. A budget you're "under" only
@@ -3545,6 +3721,7 @@ AI_TYPES.join(", "),
         else delete state.budgets[cat];   // blank/zero = no cap, not a cap of zero
         persist();
         renderBudgets();
+    checkRecurPrompt();
       });
     });
   }
@@ -5537,6 +5714,7 @@ AI_TYPES.join(", "),
     bindLabelInputs();
     bindCsvImport();
     bindPhotoQ();
+    bindRecurring();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -5749,6 +5927,38 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Recurring -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Repeats</div>
+    <div class="hint">Rent, salary, subscriptions. Nothing is ever added silently — when something's due you get asked on the dashboard first.</div>
+    <div id="recList"></div>
+    <button class="btn ghost sm" id="recAddBtn" style="width:100%;margin-top:8px">+ Add a repeat</button>
+    <div id="recForm" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bd2);border-radius:10px;background:var(--card)">
+      <div class="fld"><label for="recType">What</label>
+        <select id="recType">
+          <option value="spend">Spending</option>
+          <option value="income">Money in</option>
+          <option value="save">Move to savings</option>
+          <option value="pay_debt_balance">Pay down debt</option>
+        </select></div>
+      <div class="fld" id="recCatFld"><label for="recCat">Category</label>
+        <select id="recCat"><option>Snacks</option><option>Food</option><option>Toys</option><option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option></select></div>
+      <div class="fld"><label for="recAmt">Amount</label><input type="number" id="recAmt" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div>
+      <div class="fld"><label for="recNote">Note <span class="mut">(optional)</span></label><input type="text" id="recNote" maxlength="60" placeholder="e.g. rent"></div>
+      <div class="fld"><label for="recFreq">How often</label>
+        <select id="recFreq"><option value="monthly">Every month</option><option value="weekly">Every week</option><option value="yearly">Every year</option></select></div>
+      <div class="fld" id="recDayFld"><label for="recDay">Day of month</label><input type="number" id="recDay" min="1" max="31" step="1" value="1">
+        <div class="subhint" id="recDayHint">31 becomes the last day in shorter months.</div></div>
+      <div class="fld"><label for="recStart">Starting from</label><input type="date" id="recStart"></div>
+      <div class="data-btns">
+        <button class="btn primary sm" id="recSaveBtn">Save</button>
+        <button class="btn ghost sm" id="recCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Budgets -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly budgets</div>
@@ -5845,7 +6055,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.1</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
