@@ -84,6 +84,9 @@
     .tab-pill,.tab,.tab-ic{transition:none}
   }
 
+  .page-head{padding:6px 0 14px}
+  .page-head h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
+
   /* ---- win rate card ---- */
   .wr-body{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .wr-left{flex:none;min-width:118px}
@@ -112,6 +115,18 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .tr-controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+  .tr-controls .seg{flex:none}
+  .tr-controls select{flex:1;max-width:220px}
+  .tr-empty{padding:26px 18px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.6;border:1px dashed var(--bd2);border-radius:12px}
+  .tr-empty b{color:var(--tx)}
+  .ins{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border-radius:9px;margin-bottom:7px;
+    font-size:12.5px;line-height:1.5;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+  .ins b{color:var(--tx);font-weight:700}
+  .ins-ic{flex:none;font-size:13px;line-height:1.35}
+  .ins-good{border-color:color-mix(in srgb,var(--up) 45%,var(--bd))}
+  .ins-bad{border-color:color-mix(in srgb,var(--down) 55%,var(--bd))}
+  .ins-warn{border-color:color-mix(in srgb,var(--amber) 45%,var(--bd))}
   .tr-hero{text-align:center;padding:6px 0 12px}
   .tr-wr{font-family:var(--mono);font-size:44px;font-weight:800;line-height:1}
   .tr-wr-sub{font-size:12px;color:var(--mut);margin-top:4px}
@@ -159,6 +174,20 @@
   .mdl-bd b{color:var(--tx)}
   .mdl-in{padding:12px 20px 4px}
   .mdl-in input{width:100%}
+  .mdl-picklist{max-height:300px;overflow-y:auto;margin-top:8px;white-space:normal}
+  .mdl-pick{display:flex;gap:10px;align-items:center;padding:10px 8px;border:1px solid var(--bd);
+    border-radius:9px;margin-bottom:6px;cursor:pointer;background:var(--card);
+    transition:border-color .13s,background .13s}
+  .mdl-pick:hover{border-color:var(--bd2)}
+  .mdl-pick:active{background:var(--card2)}
+  .mdl-pick input{width:18px;height:18px;flex:none;accent-color:var(--amber);cursor:pointer}
+  .mdl-pick-main{flex:1;min-width:0}
+  /* explicit colour — do NOT inherit the modal's muted prose colour */
+  .mdl-pick-id{display:block;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--tx);word-break:break-all;line-height:1.35}
+  .mdl-pick-name{display:block;font-size:11px;color:var(--mut);margin-top:1px}
+  .mdl-pick-tag{flex:none;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    color:var(--up);border:1px solid var(--up);border-radius:5px;padding:2px 5px}
+  .mdl-pick-rec{border-color:var(--up)}
   .mdl-err{padding:2px 20px 0;font-size:12px;color:var(--down);min-height:16px}
   .mdl-ft{padding:14px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
   .mdl-ft .btn{min-width:84px}
@@ -423,12 +452,9 @@
       <div class="sub">personal tracker</div>
     </div>
   </div>
-  <button type="button" id="trBtn" class="tier-badge" title="Trading stats">📊 Trading</button>
   <button type="button" id="aiBtn" class="tier-badge" title="AI auto-fill from images">🤖 AI</button>
   <button type="button" id="portfolioBtn" class="tier-badge" title="Switch or manage portfolios" style="max-width:120px;overflow:hidden;text-overflow:ellipsis">📁 Main Portfolio</button>
   <div id="saved"><span class="s-dot"></span><span id="savedTxt">saved</span></div>
-  <button type="button" id="tierBadge" class="tier-badge" title="Storage — tap for details">⚙︎ —</button>
-  <button class="icon-btn" id="settingsBtn" title="Settings" style="font-size:18px;width:38px;height:38px">⚙️</button>
 </header>
 
 <main id="pageDash" class="page">
@@ -452,7 +478,7 @@
 
 <!-- Balance hero -->
 <div class="hero">
-  <div class="lbl">Money I have right now</div>
+  <div class="lbl" id="heroLbl">Money I have right now</div>
   <div class="big mono" id="heroBal">—</div>
   <div class="cap" id="heroCap"></div>
 </div>
@@ -461,6 +487,7 @@
 <div class="trio">
   <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
   <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
+  <div class="stat" id="stTrWrap" style="display:none"><div class="k">Trading account</div><div class="v mono cool" id="stTr">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
 </div>
@@ -532,6 +559,8 @@
           <option value="borrow">Borrowed / debt went up</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
+          <option value="to_trading" class="sep-only">Move bank → trading</option>
+          <option value="from_trading" class="sep-only">Move trading → bank</option>
           <option value="tax_set">Set aside for tax</option>
           <option value="tax_pay">Pay tax bill (from set-aside)</option>
           <option value="adjust">Adjustment (+ / −)</option>
@@ -618,6 +647,53 @@
 
 </main>
 
+<main id="pageTrading" class="page" style="display:none">
+  <div class="page-head">
+    <h1>📊 Trading</h1>
+  </div>
+  <div class="tr-empty" id="trEmpty" style="display:none">
+    <b>No trades logged yet.</b><br>
+    Add one on the <b>Entries</b> tab with “Trade — made money” or “Trade — lost money”.
+    Tag it with an instrument (XAUUSD, BTCUSD…) and this page fills in.
+  </div>
+  <div id="trWrap" style="display:none">
+    <div class="tr-controls">
+      <div class="seg" id="trPeriod">
+        <button type="button" data-p="30">30d</button>
+        <button type="button" data-p="90">90d</button>
+        <button type="button" data-p="365">1y</button>
+        <button type="button" data-p="all" class="on">All</button>
+      </div>
+      <select id="trInst" aria-label="Instrument"></select>
+    </div>
+
+    <div class="panel">
+      <div class="p-body">
+        <div class="tr-hero">
+          <div class="tr-wr mono" id="trWr">—</div>
+          <div class="tr-wr-sub" id="trWrSub"></div>
+        </div>
+        <div id="trCurve"></div>
+      </div>
+    </div>
+
+    <div class="tr-grid" id="trGrid"></div>
+
+    <div class="panel" id="trInstPanel" style="display:none">
+      <div class="p-head"><h2><span class="tick">◎</span> By instrument</h2></div>
+      <div class="p-body" style="padding-top:4px"><div class="tr-tbl" id="trTbl"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="p-head"><h2><span class="tick">🔍</span> What your numbers say</h2></div>
+      <div class="p-body" style="padding-top:4px">
+        <div class="hint" style="margin-bottom:10px">Computed from your own trades — not generic advice. Every line shows the maths behind it.</div>
+        <div id="trInsights"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
 <div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
 
 <!-- touch bar -->
@@ -627,6 +703,9 @@
   </button>
   <button type="button" class="tab" data-page="pageLedger" role="tab">
     <span class="tab-ic">≡</span><span class="tab-t">Entries</span>
+  </button>
+  <button type="button" class="tab" data-page="pageTrading" role="tab">
+    <span class="tab-ic">📊</span><span class="tab-t">Trading</span>
   </button>
   <button type="button" class="tab" data-page="pageSettings" role="tab">
     <span class="tab-ic">⚙</span><span class="tab-t">Settings</span>
@@ -662,27 +741,8 @@
   <button type="button" id="undoToastBtn">Undo</button>
 </div>
 
-<!-- trading stats -->
-<div id="trPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:120"></div>
-<div id="trPanel" class="pf-panel" style="display:none;width:min(460px,100vw)">
-  <div class="pf-bar">
-    <span>📊 Trading</span>
-    <button type="button" class="icon-btn" id="trPanelClose">✕</button>
-  </div>
-  <div style="padding:12px 16px">
-    <div style="display:flex;gap:6px;margin-bottom:12px">
-      <select id="trScope" style="flex:1">
-        <option value="all">All time</option>
-        <option value="months">Only ticked months</option>
-      </select>
-      <select id="trInst" style="flex:1"></select>
-    </div>
-    <div id="trBody"></div>
-  </div>
-</div>
-
 <!-- AI auto-fill panel -->
-<div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:120"></div>
+<div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
 <div id="aiPanel" class="pf-panel" style="display:none;width:min(560px,100vw)">
   <div class="pf-bar">
     <span>🤖 AI auto-fill</span>
@@ -1210,14 +1270,15 @@
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
     borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
   };
 
   var DEFAULTS = {
     currency:"$",
-    opening:{balance:0, debt:0, savings:0, tax:0},
-    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0},
+    opening:{balance:0, debt:0, savings:0, tax:0, trading:0},
+    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false},
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -1283,12 +1344,35 @@
     return (neg?"-":"")+sym+a.toLocaleString("en-US");
   }
 
+  // sepTrading splits the trading account out of your spendable cash.
+  //   OFF (default): everything lands in one balance — the original behaviour, so nobody's
+  //                  existing numbers move unless they ask for it.
+  //   ON:  trade P&L and allowance-to-trading hit the TRADING pot, and "Money I have right
+  //        now" becomes actual liquid bank cash. Moving money between the two is explicit.
+  // Every figure is derived from the transaction list, so this toggles freely in both
+  // directions and never rewrites or loses a single entry.
+  function sepTrading(){ return !!(state.settings && state.settings.sepTrading); }
   function balDelta(t){
+    var a=num(t.amount), sep=sepTrading();
+    switch(t.type){
+      case "income": case "withdraw": return a;
+      case "trade_win":   return sep ? 0 : a;
+      case "alw_trading": return sep ? 0 : a;
+      case "from_trading": return sep ? a : 0;   // meaningless when it's all one pot
+      case "to_trading":   return sep ? -a : 0;
+      case "adjust": return a; // may be negative
+      case "spend": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      case "trade_loss": return sep ? 0 : -a;
+      default: return 0;
+    }
+  }
+  // Capital sitting in the trading account. Only meaningful when it's been split out.
+  function tradingDelta(t){
+    if(!sepTrading()) return 0;
     var a=num(t.amount);
     switch(t.type){
-      case "income": case "trade_win": case "withdraw": case "alw_trading": return a;
-      case "adjust": return a; // may be negative
-      case "spend": case "trade_loss": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      case "trade_win": case "alw_trading": case "to_trading": return a;
+      case "trade_loss": case "from_trading": return -a;
       default: return 0;
     }
   }
@@ -1328,10 +1412,14 @@
   }
 
   function totals(){
-    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings), x=num(state.opening.tax);
-    state.transactions.forEach(function(t){ b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); x+=taxDelta(t); });
+    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings),
+        x=num(state.opening.tax), tr=sepTrading()?num(state.opening.trading):0;
+    state.transactions.forEach(function(t){
+      b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); x+=taxDelta(t); tr+=tradingDelta(t);
+    });
     // Tax set aside is deliberately NOT part of net worth — it was never really yours.
-    return {balance:b, debt:d, savings:s, tax:x, net:b+s-d};
+    // Trading capital IS yours, so it counts.
+    return {balance:b, debt:d, savings:s, tax:x, trading:tr, net:b+s+tr-d};
   }
 
   // Monthly OHLC of spendable balance. Continuous months from first tx (or current) to max(last tx, current).
@@ -2643,34 +2731,44 @@ AI_TYPES.join(", "),
       if(!models.length){ out.style.color="var(--down)"; out.textContent="No usable models came back for this key."; return; }
       models.sort(function(a,b){ return aiRankModel(b.id)-aiRankModel(a.id); });
       out.textContent="";
+      // Styled with its own classes rather than inheriting .mdl-bd, which is muted
+      // prose text — on the Mono theme that rendered the model names near-invisible.
       var body=models.slice(0,40).map(function(m,i){
-        return '<label style="display:flex;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--bd);cursor:pointer">'
+        var nice=(m.display && m.display!==m.id) ? m.display : "";
+        return '<label class="mdl-pick'+(i===0?" mdl-pick-rec":"")+'">'
           +'<input type="radio" name="mdlPick" value="'+esc(m.id)+'" data-ver="'+esc(m.ver||"")+'"'+(i===0?" checked":"")+'>'
-          +'<span style="font-family:var(--mono);font-size:11.5px">'+esc(m.id)+(i===0?' <span style="color:var(--up)">· recommended</span>':'')+'</span></label>';
+          +'<span class="mdl-pick-main">'
+            +'<span class="mdl-pick-id">'+esc(m.id)+'</span>'
+            +(nice?'<span class="mdl-pick-name">'+esc(nice)+'</span>':'')
+          +'</span>'
+          +(i===0?'<span class="mdl-pick-tag">recommended</span>':'')
+          +'</label>';
       }).join("");
+      // Track the choice as it's made, rather than reading the DOM at confirm time:
+      // appModal's own handler closes (and removes) the modal before ours would run,
+      // so any read-on-confirm returns null and silently does nothing.
+      var chosen={id:models[0].id, ver:models[0].ver||""};
       appModal({
         title:prov.label+" models",
-        message:'<div style="max-height:280px;overflow-y:auto;margin-top:6px">'+body+'</div>',
+        message:'<div class="mdl-picklist">'+body+'</div>',
         confirmText:"Use this one",
-        onConfirm:function(){}
-      });
-      // wire after the modal exists
-      setTimeout(function(){
-        var ok=document.getElementById("mdlOk");
-        if(!ok) return;
-        ok.onclick=function(){
-          var sel=document.querySelector('input[name="mdlPick"]:checked');
-          if(!sel) return;
-          if(isB){ aiCfg.modelB=sel.value; aiCfg.verB=sel.getAttribute("data-ver")||""; }
-          else   { aiCfg.modelA=sel.value; aiCfg.verA=sel.getAttribute("data-ver")||""; }
+        onConfirm:function(){
+          if(isB){ aiCfg.modelB=chosen.id; aiCfg.verB=chosen.ver; }
+          else   { aiCfg.modelA=chosen.id; aiCfg.verA=chosen.ver; }
           saveAiCfg();
-          document.getElementById(isB?"aiModelB":"aiModelA").value=sel.value;
-          closeModal();
+          document.getElementById(isB?"aiModelB":"aiModelA").value=chosen.id;
           out.style.color="var(--up)";
-          out.textContent="Engine "+slot+" set to "+sel.value;
+          out.textContent="Engine "+slot+" set to "+chosen.id;
           refreshAiVisibility();
-        };
-      }, 40);
+        }
+      });
+      setTimeout(function(){
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="mdlPick"]'), function(r){
+          r.addEventListener("change", function(){
+            chosen={id:r.value, ver:r.getAttribute("data-ver")||""};
+          });
+        });
+      }, 30);
     }).catch(function(e){
       out.style.color="var(--down)";
       out.innerHTML="<b>Couldn't list models.</b><br>"+esc(e.message)
@@ -3061,9 +3159,8 @@ AI_TYPES.join(", "),
       b.setAttribute("aria-selected", on?"true":"false");
       if(on) movePill(b);
     });
-    if(page==="pageSettings"){ if(_openSettings) _openSettings(); return; }
     lastContentPage=page; currentPage=page;
-    ["pageDash","pageLedger"].forEach(function(id){
+    ["pageDash","pageLedger","pageTrading","pageSettings"].forEach(function(id){
       var el=document.getElementById(id); if(!el) return;
       if(id===page){
         el.style.display="";
@@ -3073,6 +3170,8 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
+    if(page==="pageSettings") render(); // repaint settings-owned values on arrival
+    if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
     Array.prototype.forEach.call(document.querySelectorAll("#tabbar .tab"), function(b){
@@ -3083,16 +3182,6 @@ AI_TYPES.join(", "),
     });
     setTimeout(function(){ var on=document.querySelector("#tabbar .tab.on"); if(on) movePill(on); }, 60);
   }
-  // called when the settings drawer closes, so the pill doesn't stay stuck on Settings
-  function tabBackFromSettings(){
-    var btns=document.querySelectorAll("#tabbar .tab");
-    Array.prototype.forEach.call(btns, function(b){
-      var on=b.getAttribute("data-page")===lastContentPage;
-      b.classList.toggle("on", on);
-      if(on) movePill(b);
-    });
-  }
-
   /* ---------------- win rate card (dashboard) ---------------- */
   var wrPeriod="30";
   function wrPeriodList(){
@@ -3145,117 +3234,195 @@ AI_TYPES.join(", "),
         renderWrCard();
       });
     });
-    document.getElementById("wrCard").addEventListener("click", openTrPanel);
+    document.getElementById("wrCard").addEventListener("click", function(){ setTab("pageTrading"); });
   }
 
-  /* ---------------- trading stats UI ---------------- */
-  function openTrPanel(){
-    document.getElementById("trPanel").style.display="block";
-    document.getElementById("trPanelOverlay").style.display="block";
-    renderTrPanel();
-  }
-  function closeTrPanel(){
-    var p=document.getElementById("trPanel"); if(p) p.style.display="none";
-    var o=document.getElementById("trPanelOverlay"); if(o) o.style.display="none";
-  }
+  /* ---------------- trading page ----------------
+     No transaction list here on purpose — that's the Entries tab's job. Duplicating it
+     would mean two renderers to keep in sync and two places to disagree. */
+  var trPeriod="all";
   function trScopedList(){
     var list=tradeList();
-    if(document.getElementById("trScope").value==="months" && !isAllSelected()){
-      var act={}; activeMonths().forEach(function(k){ act[k]=1; });
-      list=list.filter(function(t){ return act[monthKey(t.date)]; });
+    if(trPeriod!=="all"){
+      var cut=new Date(); cut.setDate(cut.getDate()-parseInt(trPeriod,10));
+      var cutStr=cut.getFullYear()+"-"+two(cut.getMonth()+1)+"-"+two(cut.getDate());
+      list=list.filter(function(t){ return t.date>=cutStr; });
     }
-    var inst=document.getElementById("trInst").value;
+    var sel=document.getElementById("trInst");
+    var inst=sel?sel.value:"__all";
     if(inst && inst!=="__all") list=list.filter(function(t){ return (t.inst||"— untagged —")===inst; });
     return list;
   }
-  function equityCurveSvg(curve, sym){
+  function equityCurveSvg(curve){
     if(curve.length<2) return "";
-    var w=380, h=90, pad=4;
+    var w=680,h=110,pad=6;
     var min=Math.min.apply(null,curve.concat([0])), max=Math.max.apply(null,curve.concat([0]));
     var span=(max-min)||1;
     var pts=curve.map(function(v,i){
-      var x=pad+(i/(curve.length-1))*(w-pad*2);
-      var y=h-pad-((v-min)/span)*(h-pad*2);
-      return x.toFixed(1)+","+y.toFixed(1);
+      return (pad+(i/(curve.length-1))*(w-pad*2)).toFixed(1)+","+(h-pad-((v-min)/span)*(h-pad*2)).toFixed(1);
     });
-    var zeroY=h-pad-((0-min)/span)*(h-pad*2);
-    var last=curve[curve.length-1];
-    var col=last>=0?"var(--up)":"var(--down)";
-    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:90px;display:block">'
-      +'<line x1="0" y1="'+zeroY.toFixed(1)+'" x2="'+w+'" y2="'+zeroY.toFixed(1)+'" stroke="var(--bd2)" stroke-width="1" stroke-dasharray="3 3"/>'
-      +'<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
-      +'</svg>';
+    var zeroY=(h-pad-((0-min)/span)*(h-pad*2)).toFixed(1);
+    var col=curve[curve.length-1]>=0?"var(--up)":"var(--down)";
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="width:100%;height:110px;display:block">'
+      +'<line x1="0" y1="'+zeroY+'" x2="'+w+'" y2="'+zeroY+'" stroke="var(--bd2)" stroke-dasharray="3 3"/>'
+      +'<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/></svg>';
   }
-  function trStat(k,v,cls){
-    return '<div class="tr-cell"><div class="tr-k">'+k+'</div><div class="tr-v '+(cls||"")+'">'+v+'</div></div>';
+
+  /* Insight rules. Each one computes from the user's actual trades and states the number
+     it used, so nothing is a black box. They describe patterns; they never say what to
+     trade — that's his call, with his money. */
+  function tradeInsights(list, sym){
+    var out=[], s=tradeStats(list), n=list.length;
+    function add(kind, text){ out.push({kind:kind, text:text}); }
+
+    if(n<20) add("info","Only <b>"+n+" trade"+(n===1?"":"s")+"</b> in this period. Below ~20 the numbers below swing wildly on one result — treat them as rough.");
+
+    // break-even win rate implied by the actual R:R
+    if(s.avgWin>0 && s.avgLoss>0){
+      var rr=s.avgWin/s.avgLoss;
+      var be=1/(1+rr)*100;
+      var gap=(s.winRate*100)-be;
+      var line="Your average win is <b>"+fmt(s.avgWin,sym)+"</b> against an average loss of <b>"+fmt(s.avgLoss,sym)+"</b> — a reward:risk of <b>"+rr.toFixed(2)+"</b>. "
+        +"At that ratio you need <b>"+be.toFixed(1)+"%</b> to break even and you're at <b>"+(s.winRate*100).toFixed(1)+"%</b>";
+      if(gap>=0) add("good", line+", so you're <b>"+gap.toFixed(1)+" points clear</b>.");
+      else add("bad", line+" — <b>"+Math.abs(gap).toFixed(1)+" points short</b>. Either the win rate rises or the winners get bigger relative to the losers; nothing else closes that gap.");
+    }
+    // the classic trap
+    if(s.winRate>=0.5 && s.expectancy<0)
+      add("bad","You win <b>"+(s.winRate*100).toFixed(1)+"%</b> of the time and still lose money: expectancy is <b>"+fmt(s.expectancy,sym)+"</b> per trade. The win rate is flattering this.");
+    if(s.winRate<0.5 && s.expectancy>0)
+      add("good","You lose more often than you win, but expectancy is <b>+"+fmt(s.expectancy,sym).replace(/^./,"")+"</b> per trade — the winners are carrying it. That's a working edge.");
+
+    // concentration: is one trade doing all the work?
+    if(n>=5 && s.grossWin>0){
+      var biggest=s.best/s.grossWin;
+      if(biggest>0.4) add("warn","Your single best trade (<b>"+fmt(s.best,sym)+"</b>) is <b>"+(biggest*100).toFixed(0)+"%</b> of all your winnings. Strip it out and the picture changes — this record leans on one result.");
+    }
+    if(n>=5 && s.grossLoss>0){
+      var worst=s.worst/s.grossLoss;
+      if(worst>0.4) add("warn","One loss (<b>"+fmt(s.worst,sym)+"</b>) is <b>"+(worst*100).toFixed(0)+"%</b> of everything you've lost. Your damage is concentrated in single events, not slow bleed.");
+    }
+    // drawdown vs typical win
+    if(s.maxDD>0 && s.avgWin>0){
+      var back=s.maxDD/Math.max(s.expectancy>0?s.expectancy:s.avgWin,0.0001);
+      if(s.expectancy>0 && back>=10) add("warn","Worst drawdown was <b>"+fmt(s.maxDD,sym)+"</b>. At <b>"+fmt(s.expectancy,sym)+"</b>/trade that takes about <b>"+Math.ceil(back)+" trades</b> to climb back.");
+    }
+    // streaks — a real one, not folklore
+    if(s.bestLossStreak>=4) add("info","Longest losing run: <b>"+s.bestLossStreak+" trades</b>. Worth knowing before it happens again — it will.");
+
+    // after a loss, do you do worse? (revenge-trading, measured not assumed)
+    if(n>=12){
+      var after=[], rest=[];
+      for(var i=1;i<list.length;i++){
+        (list[i-1].type==="trade_loss"?after:rest).push(balDelta(list[i]));
+      }
+      if(after.length>=5 && rest.length>=5){
+        var avgA=after.reduce(function(a,b){return a+b;},0)/after.length;
+        var avgR=rest.reduce(function(a,b){return a+b;},0)/rest.length;
+        if(avgA<avgR-Math.abs(avgR*0.25)&&avgA<0)
+          add("bad","Trades taken straight after a loss average <b>"+fmt(avgA,sym)+"</b>, versus <b>"+fmt(avgR,sym)+"</b> otherwise (<b>"+after.length+"</b> vs <b>"+rest.length+"</b> trades). Your worst trades cluster right after your losses.");
+        else if(avgA>avgR)
+          add("good","Trades right after a loss average <b>"+fmt(avgA,sym)+"</b> vs <b>"+fmt(avgR,sym)+"</b> otherwise — no sign of tilt in the data.");
+      }
+    }
+    // stake discipline
+    var sizes=list.map(function(t){ return Math.abs(num(t.amount)); }).filter(function(x){ return x>0; });
+    if(sizes.length>=8){
+      var mean=sizes.reduce(function(a,b){return a+b;},0)/sizes.length;
+      var sd=Math.sqrt(sizes.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/sizes.length);
+      var cv=sd/mean;
+      if(cv>1) add("warn","Your trade sizes are all over the place — average <b>"+fmt(mean,sym)+"</b>, swing of <b>"+fmt(sd,sym)+"</b>. When size is inconsistent, one oversized trade decides your month rather than your edge.");
+      else if(cv<0.35) add("good","Trade sizing is consistent (average <b>"+fmt(mean,sym)+"</b>, swing <b>"+fmt(sd,sym)+"</b>) — results reflect your edge rather than your bet size.");
+    }
+    // instruments: best vs worst, only when each has a real sample
+    var byI=tradeByInstrument(list).filter(function(r){ return r.stats.n>=5 && r.inst!=="— untagged —"; });
+    if(byI.length>=2){
+      var best=byI[0], worst=byI[byI.length-1];
+      if(best.stats.net>0 && worst.stats.net<0)
+        add("info","<b>"+esc(best.inst)+"</b> is your earner (<b>"+fmt(best.stats.net,sym)+"</b> over "+best.stats.n+" trades). <b>"+esc(worst.inst)+"</b> is where it goes (<b>"+fmt(worst.stats.net,sym)+"</b> over "+worst.stats.n+"). Same you, different results.");
+    }
+    // recent form vs the whole record
+    if(trPeriod==="all" && tradeList().length>=25){
+      var all=tradeList(), recent=all.slice(-10), older=all.slice(0,-10);
+      if(older.length>=10){
+        var rs=tradeStats(recent), os=tradeStats(older);
+        var d=(rs.winRate-os.winRate)*100;
+        if(Math.abs(d)>=15)
+          add(d>0?"good":"warn","Last 10 trades: <b>"+(rs.winRate*100).toFixed(0)+"%</b> win rate against <b>"+(os.winRate*100).toFixed(0)+"%</b> before that — "+(d>0?"improving":"a real drop")+" of <b>"+Math.abs(d).toFixed(0)+" points</b>.");
+      }
+    }
+    if(!out.length) add("info","Nothing stands out in this period — no lopsided ratios, no concentration, no tilt pattern. That's usually a good sign.");
+    return out;
   }
-  function renderTrPanel(){
-    var sym=state.currency;
-    // instrument filter options rebuild from the full list, not the filtered one
-    var sel=document.getElementById("trInst");
-    var prev=sel.value;
-    var insts=tradeByInstrument(tradeList()).map(function(r){ return r.inst; });
-    sel.innerHTML='<option value="__all">All instruments</option>'
-      + insts.map(function(i){ return '<option value="'+esc(i)+'">'+esc(i)+'</option>'; }).join("");
-    sel.value = insts.indexOf(prev)>=0 ? prev : "__all";
+
+  function renderTradingPage(){
+    var all=tradeList(), sym=state.currency;
+    document.getElementById("trEmpty").style.display=all.length?"none":"";
+    document.getElementById("trWrap").style.display=all.length?"":"none";
+    if(!all.length) return;
+
+    var sel=document.getElementById("trInst"), prev=sel.value;
+    var insts=tradeByInstrument(all).map(function(r){ return r.inst; });
+    sel.innerHTML='<option value="__all">All instruments</option>'+insts.map(function(i){ return '<option value="'+esc(i)+'">'+esc(i)+'</option>'; }).join("");
+    sel.value=insts.indexOf(prev)>=0?prev:"__all";
 
     var list=trScopedList();
-    var box=document.getElementById("trBody");
+    var wrEl=document.getElementById("trWr"), subEl=document.getElementById("trWrSub");
     if(!list.length){
-      box.innerHTML='<div class="empty"><b>No trades yet.</b><br>Log one with <b>Trade — made money</b> or <b>Trade — lost money</b>. Add an instrument (like XAUUSD) and you\'ll get a per-instrument breakdown here.</div>';
+      wrEl.textContent="—"; wrEl.className="tr-wr mono";
+      subEl.textContent="No trades in this period.";
+      document.getElementById("trCurve").innerHTML="";
+      document.getElementById("trGrid").innerHTML="";
+      document.getElementById("trInstPanel").style.display="none";
+      document.getElementById("trInsights").innerHTML='<div class="ins ins-info">Nothing to read in this period — try a longer one.</div>';
       return;
     }
     var s=tradeStats(list);
-    var pfTxt = s.profitFactor===Infinity ? "∞" : s.profitFactor.toFixed(2);
-    var wrCls = s.winRate>=0.5?"up":"down";
-    var html='<div class="tr-hero">'
-      +'<div class="tr-wr '+wrCls+'">'+(s.winRate*100).toFixed(1)+'%</div>'
-      +'<div class="tr-wr-sub">win rate · '+s.wins+'W / '+s.losses+'L over '+s.n+' trade'+(s.n===1?"":"s")+'</div>'
-      +'</div>';
-    html+=equityCurveSvg(s.curve, sym);
-    html+='<div class="tr-grid">'
-      +trStat("Net P&amp;L", fmt(s.net,sym), s.net>=0?"up":"down")
-      +trStat("Expectancy / trade", fmt(s.expectancy,sym), s.expectancy>=0?"up":"down")
-      +trStat("Profit factor", pfTxt, s.profitFactor>=1?"up":"down")
-      +trStat("Max drawdown", fmt(s.maxDD,sym), s.maxDD>0?"down":"")
-      +trStat("Avg win", fmt(s.avgWin,sym), "up")
-      +trStat("Avg loss", fmt(s.avgLoss,sym), "down")
-      +trStat("Best trade", fmt(s.best,sym), "up")
-      +trStat("Worst trade", fmt(s.worst,sym), "down")
-      +trStat("Longest win streak", s.bestWinStreak)
-      +trStat("Longest loss streak", s.bestLossStreak)
-      +'</div>';
+    wrEl.textContent=(s.winRate*100).toFixed(1)+"%";
+    wrEl.className="tr-wr mono "+(s.expectancy>=0?"up":"down");
+    subEl.innerHTML="win rate · "+s.wins+"W / "+s.losses+"L over "+s.n+" trade"+(s.n===1?"":"s");
+    document.getElementById("trCurve").innerHTML=equityCurveSvg(s.curve);
 
-    // Expectancy is the honest headline — say so when win rate flatters a losing system.
-    if(s.winRate>=0.5 && s.expectancy<0){
-      html+='<div class="ai-banner warn" style="margin-top:10px">⚠️ You win more often than you lose, but expectancy is <b>negative</b> — the losses are bigger than the wins. Win rate is flattering this.</div>';
-    } else if(s.winRate<0.5 && s.expectancy>0){
-      html+='<div class="ai-banner good" style="margin-top:10px">You lose more often than you win, but expectancy is <b>positive</b> — the winners are big enough to carry it.</div>';
-    }
+    function cell(k,v,cls){ return '<div class="tr-cell"><div class="tr-k">'+k+'</div><div class="tr-v mono '+(cls||"")+'">'+v+'</div></div>'; }
+    var pf=s.profitFactor===Infinity?"∞":s.profitFactor.toFixed(2);
+    document.getElementById("trGrid").innerHTML=
+       cell("Net P&amp;L",fmt(s.net,sym),s.net>=0?"up":"down")
+      +cell("Expectancy / trade",fmt(s.expectancy,sym),s.expectancy>=0?"up":"down")
+      +cell("Profit factor",pf,s.profitFactor>=1?"up":"down")
+      +cell("Max drawdown",fmt(s.maxDD,sym),s.maxDD>0?"down":"")
+      +cell("Avg win",fmt(s.avgWin,sym),"up")
+      +cell("Avg loss",fmt(s.avgLoss,sym),"down")
+      +cell("Best trade",fmt(s.best,sym),"up")
+      +cell("Worst trade",fmt(s.worst,sym),"down")
+      +cell("Longest win streak",s.bestWinStreak)
+      +cell("Longest loss streak",s.bestLossStreak);
 
-    if(sel.value==="__all"){
-      var rows=tradeByInstrument(list);
-      if(rows.length>1){
-        html+='<div class="tr-sec">By instrument</div><div class="tr-tbl">';
-        rows.forEach(function(r){
-          var st=r.stats;
-          html+='<div class="tr-row">'
-            +'<div class="tr-i">'+esc(r.inst)+'<span class="tr-n">'+st.n+' trade'+(st.n===1?"":"s")+'</span></div>'
-            +'<div class="tr-wr2 '+(st.winRate>=0.5?"up":"down")+'">'+(st.winRate*100).toFixed(0)+'%</div>'
-            +'<div class="tr-pl '+(st.net>=0?"up":"down")+'">'+fmt(st.net,sym)+'</div>'
-            +'</div>';
-        });
-        html+='</div>';
-      }
-    }
-    box.innerHTML=html;
+    var rows=tradeByInstrument(list);
+    var ip=document.getElementById("trInstPanel");
+    if(rows.length>1 && sel.value==="__all"){
+      ip.style.display="";
+      document.getElementById("trTbl").innerHTML=rows.map(function(r){
+        var st=r.stats;
+        return '<div class="tr-row"><div class="tr-i">'+esc(r.inst)+'<span class="tr-n">'+st.n+' trade'+(st.n===1?"":"s")+'</span></div>'
+          +'<div class="tr-wr2 mono '+(st.winRate>=0.5?"up":"down")+'">'+(st.winRate*100).toFixed(0)+'%</div>'
+          +'<div class="tr-pl mono '+(st.net>=0?"up":"down")+'">'+fmt(st.net,sym)+'</div></div>';
+      }).join("");
+    } else ip.style.display="none";
+
+    var ICON={good:"✅",bad:"⚠️",warn:"⚡",info:"ℹ️"};
+    document.getElementById("trInsights").innerHTML=tradeInsights(list,sym).map(function(x){
+      return '<div class="ins ins-'+x.kind+'"><span class="ins-ic">'+ICON[x.kind]+'</span><span>'+x.text+'</span></div>';
+    }).join("");
   }
-  function bindTrUI(){
-    document.getElementById("trBtn").addEventListener("click", openTrPanel);
-    document.getElementById("trPanelClose").addEventListener("click", closeTrPanel);
-    document.getElementById("trPanelOverlay").addEventListener("click", closeTrPanel);
-    document.getElementById("trScope").addEventListener("change", renderTrPanel);
-    document.getElementById("trInst").addEventListener("change", renderTrPanel);
+  function bindTradingPage(){
+    Array.prototype.forEach.call(document.querySelectorAll("#trPeriod button"), function(b){
+      b.addEventListener("click", function(){
+        trPeriod=b.getAttribute("data-p");
+        Array.prototype.forEach.call(document.querySelectorAll("#trPeriod button"), function(x){ x.classList.toggle("on", x===b); });
+        renderTradingPage();
+      });
+    });
+    document.getElementById("trInst").addEventListener("change", renderTradingPage);
   }
 
   /* ---------------- storage tier badge + health dashboard ---------------- */
@@ -3290,12 +3457,16 @@ AI_TYPES.join(", "),
     }
   }
   async function refreshStorageBadge(){
+    // The header badge is gone (Settings owns storage now), but this must still refresh
+    // the Storage list on the settings page — an early return here would silently leave
+    // that section blank.
     var badge=document.getElementById("tierBadge");
-    if(!badge) return;
-    var active=StorageManager.active();
-    if(active){
-      badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
-      badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
+    if(badge){
+      var active=StorageManager.active();
+      if(active){
+        badge.textContent=(TIER_ICONS[active.name]||"⚙︎")+" "+(TIER_LABELS[active.name]||active.name);
+        badge.classList.toggle("emergency", StorageManager.emergencyActive || active.name==="ls");
+      }
     }
     await renderTierList();
   }
@@ -3542,6 +3713,11 @@ AI_TYPES.join(", "),
     document.getElementById("stDebt").textContent=fmt(t.debt,sym);
     document.getElementById("stDebt").className="v mono "+(t.debt>0?"down":"up");
     document.getElementById("stSav").textContent=fmt(t.savings,sym);
+    // trading account tile — only exists once you've split it out from your cash
+    var trWrap=document.getElementById("stTrWrap");
+    if(sepTrading()){ trWrap.style.display=""; document.getElementById("stTr").textContent=fmt(t.trading,sym); }
+    else trWrap.style.display="none";
+
     // the tax tile stays hidden until tax is actually in play, so it doesn't clutter
     // the row for people who never use it
     var taxWrap=document.getElementById("stTaxWrap");
@@ -3712,6 +3888,26 @@ AI_TYPES.join(", "),
     // sync inputs (only if not focused, to avoid disrupting typing)
     syncInput("sAlw", state.settings.allowance);
     syncInput("sTaxPct", state.settings.taxPct);
+    syncInput("oTrading", state.opening.trading);
+    var sepCb=document.getElementById("sSepTrading");
+    if(sepCb && document.activeElement!==sepCb) sepCb.checked=sepTrading();
+    var sepHint=document.getElementById("sepHint");
+    if(sepHint){
+      sepHint.innerHTML = sepTrading()
+        ? "✅ Split. The big number is your <b>spendable cash</b>. Trade P&L and allowance-to-trading go to the trading pot, and you can move money between them with the two <b>Move</b> entry types."
+        : "Currently mixed — trade wins and losses move the same number you'd spend from, so it isn't really “money you have”.";
+      sepHint.style.color = sepTrading() ? "var(--up)" : "var(--mut)";
+    }
+    var otr=document.getElementById("openTrRow");
+    if(otr) otr.style.display = sepTrading() ? "" : "none";
+    // hero label must say what it's actually counting
+    var hl=document.getElementById("heroLbl");
+    if(hl) hl.textContent = sepTrading() ? "Spendable cash right now" : "Money I have right now";
+    // the transfer types are meaningless while it's one pot
+    Array.prototype.forEach.call(document.querySelectorAll("#fType .sep-only"), function(o){
+      o.style.display = sepTrading() ? "" : "none";
+      o.disabled = !sepTrading();
+    });
     var tph=document.getElementById("taxPctHint");
     if(tph){
       var tp=num(state.settings.taxPct);
@@ -4117,15 +4313,14 @@ AI_TYPES.join(", "),
 
     // Settings drawer
     _openSettings=openSettings;
-    function openSettings(){ document.getElementById("settingsDrawer").style.display="block"; document.getElementById("settingsOverlay").style.display="block"; render();
+    function openSettings(){ setTab("pageSettings");
       // re-highlight active theme when drawer opens
       var cur=document.documentElement.getAttribute("data-theme")||"dark"; if(cur==="") cur="dark";
       Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){ b.classList.toggle("on", b.getAttribute("data-theme-key")===cur); });
       refreshStorageBadge();
     }
-    function closeSettings(){ tabBackFromSettings(); document.getElementById("settingsDrawer").style.display="none"; document.getElementById("settingsOverlay").style.display="none"; }
-    document.getElementById("settingsBtn").addEventListener("click", openSettings);
-    document.getElementById("tierBadge").addEventListener("click", openSettings);
+    function closeSettings(){ setTab(lastContentPage==="pageSettings"?"pageDash":lastContentPage); }
+
     document.getElementById("storageWarnDismiss").addEventListener("click", hideStorageWarning);
     document.getElementById("tierHealthCheck").addEventListener("click", function(){
       var note=document.getElementById("tierNote");
@@ -4159,8 +4354,7 @@ AI_TYPES.join(", "),
       try{ window.localStorage.setItem("mymoney_dismissed_prompt", monthKey(todayStr())); }catch(e){}
       document.getElementById("allowancePrompt").style.display="none";
     });
-    document.getElementById("settingsClose").addEventListener("click", closeSettings);
-    document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+
     // theme option buttons
     Array.prototype.forEach.call(document.querySelectorAll(".theme-opt"), function(b){
       b.addEventListener("click", function(){ applyTheme(b.getAttribute("data-theme-key")); });
@@ -4329,6 +4523,17 @@ AI_TYPES.join(", "),
       if(settingsRenderTimer) clearTimeout(settingsRenderTimer);
       settingsRenderTimer=setTimeout(function(){ render(); }, 200);
     }
+    document.getElementById("sSepTrading").addEventListener("change", function(e){
+      state.settings.sepTrading=e.target.checked;
+      // if a transfer type was selected, it may no longer exist — fall back to a safe one
+      var ft=document.getElementById("fType");
+      if(!e.target.checked && (ft.value==="to_trading"||ft.value==="from_trading")){ ft.value="spend"; typeUI(); }
+      persistNow(); render();
+      flashSaved(e.target.checked?"trading split out":"trading merged back");
+    });
+    document.getElementById("oTrading").addEventListener("input", function(e){
+      state.opening.trading=num(e.target.value); persist(); debouncedRender();
+    });
     [["sAlw","allowance"],["sDebt","toDebt"],["sTrade","toTrading"],["sSave","toSavings"],["sTaxPct","taxPct"]].forEach(function(pair){
       document.getElementById(pair[0]).addEventListener("input", function(e){
         state.settings[pair[1]]=num(e.target.value); persist(); debouncedRender();
@@ -4747,7 +4952,7 @@ AI_TYPES.join(", "),
       if(e.key!=="Escape") return;
       if(document.getElementById("viewer").style.display!=="none") closeViewer();
       else if(document.getElementById("monthPicker").style.display!=="none") closeMonthPicker();
-      else if(document.getElementById("settingsDrawer").style.display!=="none") closeSettings();
+      else if(currentPage==="pageSettings") closeSettings();
     });
   }
 
@@ -4772,7 +4977,7 @@ AI_TYPES.join(", "),
     loadAiCfg();
     fillProviderSelects();
     bindAiUI();
-    bindTrUI();
+    bindTradingPage();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -4791,11 +4996,9 @@ AI_TYPES.join(", "),
 </script>
 
 <!-- Settings drawer -->
-<div id="settingsOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100"></div>
-<div id="settingsDrawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--panel);border-left:1px solid var(--bd);z-index:101;overflow-y:auto;padding:0 0 40px">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:1">
-    <span style="font-size:16px;font-weight:700">⚙️ Settings</span>
-    <button class="icon-btn" id="settingsClose" style="font-size:16px">✕</button>
+<main id="pageSettings" class="page" style="display:none">
+  <div class="page-head">
+    <h1>⚙️ Settings</h1>
   </div>
 
   <!-- Theme picker -->
@@ -4906,6 +5109,23 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Bank vs trading -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Bank &amp; Trading</div>
+    <div class="subhint" style="margin-bottom:12px">By default your trading money and your bank money are one pot, so wins and losses move the same number you'd spend from. Split them and <b>“Money I have right now” becomes actual liquid cash</b>, with trading capital tracked separately.</div>
+    <label class="split-row" style="cursor:pointer">
+      <div class="nm">Keep trading money separate from bank</div>
+      <input type="checkbox" id="sSepTrading" style="width:20px;height:20px;accent-color:var(--amber)">
+    </label>
+    <div class="subhint" id="sepHint" style="margin-top:8px"></div>
+    <div class="split-row" id="openTrRow" style="display:none">
+      <div class="nm">Starting trading balance</div>
+      <input type="number" id="oTrading" step="0.01" inputmode="decimal">
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Tax -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Tax Set-Aside</div>
@@ -4999,7 +5219,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.1</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.6</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
@@ -5042,6 +5262,6 @@ AI_TYPES.join(", "),
       <div style="margin-top:8px"><button class="btn primary sm" id="impLoad">Load backup</button></div>
     </div>
   </div>
-</div>
+</main>
 </body>
 </html>
