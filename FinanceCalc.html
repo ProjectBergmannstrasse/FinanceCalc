@@ -115,6 +115,23 @@
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
+  .bg-row{padding:9px 0;border-bottom:1px solid var(--bd)}
+  .bg-row:last-child{border-bottom:0}
+  .bg-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .bg-cat{font-size:13px;font-weight:700}
+  .bg-nums{font-size:11.5px;color:var(--mut)}
+  .bg-bar{height:7px;border-radius:99px;background:var(--card2);overflow:hidden;margin:6px 0 4px}
+  .bg-bar span{display:block;height:100%;border-radius:99px;background:var(--up);transition:width .35s cubic-bezier(.22,1,.36,1)}
+  .bg-near .bg-bar span{background:var(--amber)}
+  .bg-over .bg-bar span{background:var(--down)}
+  .bg-foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
+  .bg-over .bg-left{color:var(--down);font-weight:700}
+  .bg-near .bg-left{color:var(--amber)}
+  .bg-set{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .bg-set label{flex:1;font-size:13px;display:flex;flex-direction:column;gap:1px}
+  .bg-set-sub{font-size:10.5px;color:var(--mut);font-family:var(--mono)}
+  .bg-set input{flex:none;width:110px;text-align:right}
+
   .csv-note{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:9px 10px;margin-bottom:10px;line-height:1.5}
   .csv-note b{color:var(--tx)}
   .csv-tbl{border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-top:8px}
@@ -522,6 +539,15 @@
   <div class="stat" id="stTrWrap" style="display:none"><div class="k">Trading account</div><div class="v mono cool" id="stTr">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
+</div>
+
+<!-- Budgets -->
+<div class="panel" id="budgetCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">◑</span> Budgets</h2>
+    <span class="mut" id="budgetMonth" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
 </div>
 
 <!-- Trading — its own card so the stat grid stays an even 3 -->
@@ -1316,10 +1342,11 @@
   var DEFAULTS = {
     currency:"$",
     opening:{balance:0, debt:0, savings:0, tax:0, trading:0},
-    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false},
+    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false, photoQ:"med"},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
+    budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
     transactions:[] // real history lives in storage now, not baked into the file — see Settings → Back Up & Data to restore from a backup
@@ -1764,11 +1791,70 @@
   // Per the spec: original bytes, zero re-encoding, zero resize, zero quality loss — ever.
   // (Storage headroom for large originals is now the multi-tier system's job, not this
   // function's — OPFS/File-System-Access/IndexedDB all hold far more than localStorage did.)
+  /* A phone photo is ~4000px and 3-4MB. A receipt needs none of that — it needs to be
+     legible. Storing the original is what turns a backup into 32MB of base64 that
+     "Copy backup" silently fails on. So: downscale on the way in, once, and keep the
+     original only if the browser can't do the work. */
+  var PHOTO_PRESETS={
+    high:{dim:2000, q:0.9,  label:"High"},
+    med: {dim:1400, q:0.82, label:"Balanced"},
+    low: {dim:900,  q:0.7,  label:"Small files"},
+    off: {dim:0,    q:1,    label:"Keep original"}
+  };
+  function photoPreset(){
+    var k=(state.settings && state.settings.photoQ) || "med";
+    return PHOTO_PRESETS[k] || PHOTO_PRESETS.med;
+  }
+  function kbTxt(b){
+    if(b<1024) return b+" B";
+    if(b<1024*1024) return Math.round(b/1024)+" KB";
+    return (b/1048576).toFixed(1)+" MB";
+  }
+  function dataUrlBytes(u){
+    if(!u) return 0;
+    var i=u.indexOf(",");
+    var b64=i>=0?u.slice(i+1):u;
+    return Math.floor(b64.length*3/4);   // base64 -> bytes
+  }
+  function downscaleDataUrl(dataUrl, cb){
+    var pre=photoPreset();
+    if(!pre.dim){ cb(dataUrl); return; }                      // user chose to keep originals
+    if(/^data:image\/(gif|svg)/i.test(dataUrl)){ cb(dataUrl); return; }  // animation/vector: leave alone
+    var img=new Image();
+    var done=false;
+    var bail=function(){ if(!done){ done=true; cb(dataUrl); } };  // any failure = keep original
+    img.onload=function(){
+      if(done) return;
+      try{
+        var w=img.width||0, h=img.height||0;
+        if(!w || !h){ bail(); return; }
+        var scale=Math.min(1, pre.dim/Math.max(w,h));
+        var nw=Math.max(1,Math.round(w*scale)), nh=Math.max(1,Math.round(h*scale));
+        var c=document.createElement("canvas");
+        c.width=nw; c.height=nh;
+        var ctx=c.getContext && c.getContext("2d");
+        if(!ctx || !c.toDataURL){ bail(); return; }             // old webview: no canvas
+        ctx.drawImage(img,0,0,nw,nh);
+        var out=c.toDataURL("image/jpeg", pre.q);
+        // if "compression" made it bigger (tiny PNGs do this), keep the original
+        done=true;
+        cb(out && dataUrlBytes(out)<dataUrlBytes(dataUrl) ? out : dataUrl);
+      }catch(e){ bail(); }
+    };
+    img.onerror=bail;
+    setTimeout(bail, 4000);   // never leave the user staring at nothing
+    try{ img.src=dataUrl; }catch(e){ bail(); }
+  }
   function processImage(file, cb){
     var nm=file.name||"photo";
     var reader=new FileReader();
-    reader.onload=function(){ cb({dataUrl:reader.result, name:nm}); };
-    reader.onerror=function(){ alert("Couldn't read that photo — try a different one."); };
+    reader.onload=function(){
+      var original=reader.result;
+      downscaleDataUrl(original, function(finalUrl){
+        cb({dataUrl:finalUrl, name:nm, wasBytes:dataUrlBytes(original), nowBytes:dataUrlBytes(finalUrl)});
+      });
+    };
+    reader.onerror=function(){ appModal({title:"Couldn't read that photo", message:"Try a different one.", confirmText:"OK", cancelText:"Close"}); };
     reader.readAsDataURL(file);
   }
 
@@ -3213,7 +3299,7 @@ AI_TYPES.join(", "),
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
     if(page==="pageDash") renderWrCard();
-    if(page==="pageSettings"){ render(); fillLabelInputs(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -3387,6 +3473,113 @@ AI_TYPES.join(", "),
     return [t.date, t.type, Math.abs(num(t.amount)).toFixed(2), (t.inst||"").toUpperCase()].join("|");
   }
 
+  /* ================= BUDGETS =================
+     A cap is per calendar month, always measured against the CURRENT month — not against
+     whatever months happen to be ticked in the filter. A budget you're "under" only
+     because you deselected a month would be actively misleading. */
+  var CAT_LIST=["Snacks","Food","Toys","Stationery","Shopping","Games","Other"];
+  function budgets(){ return (state.budgets && typeof state.budgets==="object") ? state.budgets : {}; }
+  function budgetFor(cat){
+    var v=budgets()[cat];
+    return (typeof v==="number" && isFinite(v) && v>0) ? v : 0;
+  }
+  function spentThisMonth(cat){
+    var mk=monthKey(todayStr());
+    var total=0;
+    state.transactions.forEach(function(t){
+      if(t.type!=="spend") return;
+      if(monthKey(t.date)!==mk) return;
+      if((t.cat||"Other")!==cat) return;
+      total+=Math.abs(num(t.amount));
+    });
+    return total;
+  }
+  function budgetRows(){
+    return CAT_LIST.map(function(c){
+      var cap=budgetFor(c);
+      if(!cap) return null;
+      var spent=spentThisMonth(c);
+      return {cat:c, cap:cap, spent:spent, pct:cap>0?(spent/cap):0, left:cap-spent};
+    }).filter(Boolean).sort(function(a,b){ return b.pct-a.pct; });
+  }
+  function renderBudgets(){
+    var card=document.getElementById("budgetCard");
+    if(!card) return;
+    var rows=budgetRows(), sym=state.currency;
+    if(!rows.length){ card.style.display="none"; return; }
+    card.style.display="";
+    document.getElementById("budgetMonth").textContent=monthLong(monthKey(todayStr()));
+    document.getElementById("budgetList").innerHTML=rows.map(function(r){
+      var state_= r.pct>=1 ? "over" : (r.pct>=0.8 ? "near" : "ok");
+      var width=Math.min(100, Math.round(r.pct*100));
+      var right = r.left>=0
+        ? fmt(r.left,sym)+" left"
+        : fmt(Math.abs(r.left),sym)+" over";
+      return '<div class="bg-row bg-'+state_+'">'
+        +'<div class="bg-top"><span class="bg-cat">'+esc(r.cat)+'</span>'
+        +'<span class="bg-nums mono">'+fmt(r.spent,sym)+' / '+fmt(r.cap,sym)+'</span></div>'
+        +'<div class="bg-bar"><span style="width:'+width+'%"></span></div>'
+        +'<div class="bg-foot"><span class="bg-pct mono">'+Math.round(r.pct*100)+'%</span>'
+        +'<span class="bg-left mono">'+right+'</span></div>'
+        +'</div>';
+    }).join("");
+  }
+  function renderBudgetSettings(){
+    var box=document.getElementById("budgetInputs");
+    if(!box) return;
+    var sym=state.currency;
+    box.innerHTML=CAT_LIST.map(function(c){
+      var cap=budgetFor(c);
+      var spent=spentThisMonth(c);
+      return '<div class="bg-set">'
+        +'<label for="bg_'+c+'">'+esc(c)+'<span class="bg-set-sub">'+fmt(spent,sym)+' this month</span></label>'
+        +'<input type="number" id="bg_'+c+'" data-cat="'+esc(c)+'" step="0.01" min="0" inputmode="decimal" placeholder="no cap" value="'+(cap||"")+'">'
+        +'</div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll("input"), function(inp){
+      inp.addEventListener("input", function(){
+        if(!state.budgets) state.budgets={};
+        var v=parseFloat(inp.value);
+        var cat=inp.getAttribute("data-cat");
+        if(isFinite(v) && v>0) state.budgets[cat]=v;
+        else delete state.budgets[cat];   // blank/zero = no cap, not a cap of zero
+        persist();
+        renderBudgets();
+      });
+    });
+  }
+  // Fires after the entry is added: it reports, it never blocks. Refusing to record
+  // money you've already spent would just make the ledger wrong.
+  function maybeWarnBudget(tx){
+    if(!tx || tx.type!=="spend") return;
+    if(monthKey(tx.date)!==monthKey(todayStr())) return;   // only the live month
+    var cat=tx.cat||"Other";
+    var cap=budgetFor(cat);
+    if(!cap) return;
+    var spent=spentThisMonth(cat);          // already includes this entry
+    var sym=state.currency;
+    if(spent>cap){
+      var before=spent-Math.abs(num(tx.amount));
+      if(before>cap) return;                // already over — don't nag on every entry
+      appModal({
+        title:"Over budget on "+cat,
+        message:"That puts <b>"+esc(cat)+"</b> at <b>"+fmt(spent,sym)+"</b> against a <b>"+fmt(cap,sym)+"</b> cap — <b>"+fmt(spent-cap,sym)+" over</b> for "+monthLong(monthKey(todayStr()))+".\n\nThe entry is saved either way.",
+        confirmText:"OK", cancelText:"Close"
+      });
+    }
+  }
+
+  // Warn as an entry is added, not after the fact — the useful moment is before you spend.
+  function budgetWarnFor(cat, addingAmount){
+    var cap=budgetFor(cat);
+    if(!cap) return null;
+    var already=spentThisMonth(cat);
+    var after=already+Math.abs(num(addingAmount));
+    if(after>cap) return {cat:cat, cap:cap, after:after, over:after-cap, wasUnder:already<=cap};
+    if(after>=cap*0.8) return {cat:cat, cap:cap, after:after, near:true, left:cap-after};
+    return null;
+  }
+
   /* ---------------- CSV import: wiring ---------------- */
   var csvRows=null, csvHasHeader=true, csvDate=null;
   function csvColOptions(headers){
@@ -3479,6 +3672,30 @@ AI_TYPES.join(", "),
     document.getElementById("csvPasteWrap").style.display="none";
     document.getElementById("csvBox").value="";
     var f=document.getElementById("csvFile"); if(f) f.value="";
+  }
+  function bindPhotoQ(){
+    var sel=document.getElementById("setPhotoQ");
+    if(!sel) return;
+    sel.addEventListener("change", function(){
+      if(!state.settings) state.settings={};
+      state.settings.photoQ=sel.value;
+      persistNow();
+      flashSaved("saved");
+      refreshPhotoQHint();
+    });
+  }
+  function fillPhotoQ(){
+    var sel=document.getElementById("setPhotoQ");
+    if(sel) sel.value=(state.settings && state.settings.photoQ) || "med";
+    refreshPhotoQHint();
+  }
+  function refreshPhotoQHint(){
+    var el=document.getElementById("photoQHint");
+    if(!el) return;
+    var n=state.transactions.filter(function(t){ return t.photo; }).length;
+    var base="Receipts only need to be legible. Originals from a phone are ~3\u00a0MB each and are what make backups too big to copy.";
+    if(!n){ el.innerHTML=base; return; }
+    el.innerHTML=base+" You have <b>"+n+"</b> photo"+(n===1?"":"s")+" attached — this setting applies to new ones as you add them.";
   }
   function bindCsvImport(){
     document.getElementById("csvPickFile").addEventListener("click", function(){ document.getElementById("csvFile").click(); });
@@ -4196,6 +4413,7 @@ AI_TYPES.join(", "),
       });
       cats.innerHTML=html;
     }
+    renderBudgets();
 
     // ledger
     renderLedger();
@@ -4708,10 +4926,19 @@ AI_TYPES.join(", "),
     fPhoto.addEventListener("change", function(){
       var f=fPhoto.files && fPhoto.files[0]; if(!f) return;
       document.getElementById("fPhotoName").textContent="reading…";
+      var nmEl=document.getElementById("fPhotoName");
+      if(nmEl) nmEl.textContent="reading photo…";
       processImage(f, function(res){
         pendingPhoto=res; photoCleared=false;
         var nm=res.name||"photo";
-        document.getElementById("fPhotoName").textContent = nm.length>22? nm.slice(0,20)+"…" : nm;
+        var short = nm.length>22? nm.slice(0,20)+"…" : nm;
+        // say what happened to the file — silent shrinking of someone's photo is rude
+        if(res.wasBytes && res.nowBytes && res.nowBytes < res.wasBytes*0.9){
+          short += " · "+kbTxt(res.wasBytes)+" → "+kbTxt(res.nowBytes);
+        } else if(res.wasBytes){
+          short += " · "+kbTxt(res.nowBytes||res.wasBytes);
+        }
+        document.getElementById("fPhotoName").textContent = short;
         var prev=document.getElementById("fPhotoPrev");
         prev.src=res.dataUrl; prev.style.display="block";
         document.getElementById("fPhotoClear").style.display="inline-block";
@@ -4771,6 +4998,7 @@ AI_TYPES.join(", "),
         mirrorNewTransaction(tx2);
         persist(); render();
         maybeSuggestTax(tx2);
+        maybeWarnBudget(tx2);
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
         document.getElementById("fSplit").value="1";
         document.getElementById("fInst").value="";
@@ -4980,6 +5208,17 @@ AI_TYPES.join(", "),
     document.getElementById("expCopy").addEventListener("click", function(){
       flashSaved("preparing…");
       exportData(function(json){
+        // A clipboard write of many MB fails on most browsers — and it fails quietly,
+        // which is the worst possible outcome for a backup.
+        if(json.length > 2*1024*1024){
+          appModal({
+            title:"That backup is "+kbTxt(json.length),
+            message:"Too big to copy reliably — clipboards choke well before this and often fail silently.\n\n<b>Download it instead</b>, or turn on photo compression in Settings and re-attach the big ones.",
+            confirmText:"Download instead",
+            onConfirm:function(){ document.getElementById("expFile").click(); }
+          });
+          return;
+        }
         if(navigator.clipboard && navigator.clipboard.writeText){
           navigator.clipboard.writeText(json).then(function(){ flashSaved("copied"); }, function(){ fallbackShow(json); });
         } else fallbackShow(json);
@@ -5297,6 +5536,7 @@ AI_TYPES.join(", "),
     bindTradingPage();
     bindLabelInputs();
     bindCsvImport();
+    bindPhotoQ();
     bindCopyRows();
     bindTabs();
     bindWrCard();
@@ -5509,6 +5749,15 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Budgets -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly budgets</div>
+    <div class="hint">Set a monthly cap per category. Leave one blank for no cap. Caps always measure the <b>current calendar month</b>, whatever months you have ticked elsewhere.</div>
+    <div id="budgetInputs"></div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- CSV import -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Import trades from a file</div>
@@ -5550,6 +5799,15 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Wording</div>
     <div class="hint">Call things whatever you actually call them. Leave a box empty to use the default.</div>
+    <div class="fld"><label for="setPhotoQ">Photo quality</label>
+      <select id="setPhotoQ">
+        <option value="high">High — 2000px</option>
+        <option value="med">Balanced — 1400px (recommended)</option>
+        <option value="low">Small files — 900px</option>
+        <option value="off">Keep original (large backups)</option>
+      </select>
+    </div>
+    <div class="hint" id="photoQHint" style="margin-top:-4px">Receipts only need to be legible. Originals from a phone are ~3&nbsp;MB each and are what make backups too big to copy.</div>
     <div class="fld"><label for="lblDebt">Debt is called</label><input type="text" id="lblDebt" maxlength="28" placeholder="Debt"></div>
     <div class="fld"><label for="lblIncome">Money coming in is called</label><input type="text" id="lblIncome" maxlength="28" placeholder="Monthly income"></div>
     <div class="fld"><label for="lblSavings">Savings is called</label><input type="text" id="lblSavings" maxlength="28" placeholder="Savings"></div>
@@ -5587,7 +5845,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
