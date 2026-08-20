@@ -279,8 +279,17 @@
   .sel-all{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
   .sel-all input{width:auto;margin:0;accent-color:var(--amber)}
   .led{display:flex;flex-direction:column}
-  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd)}
-  .lchk{width:16px;height:16px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
+  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd);cursor:pointer;border-radius:8px;transition:background .13s ease,box-shadow .13s ease;-webkit-tap-highlight-color:transparent}
+  .lrow:active{background:var(--card2);transform:scale(.995)}
+  /* Selected: a clear tint + accent rail, NOT dimming. Fading a row you've chosen makes
+     the one thing you're looking at the hardest thing to read. */
+  .lrow-sel{background:var(--card2);box-shadow:inset 3px 0 0 var(--amber);padding-left:9px;padding-right:6px;margin:0 -6px}
+  .lrow-sel .lnote{color:var(--tx)}
+  .eye-btn{border:0;background:transparent;padding:4px 6px;font-size:15px;line-height:1;cursor:pointer;opacity:.55;flex:none;border-radius:6px;transition:opacity .13s,background .13s}
+  .eye-btn:hover,.eye-btn:active{opacity:1;background:var(--card2)}
+  .del,.edit{min-width:34px;min-height:34px;border-radius:7px;transition:background .13s,opacity .13s}
+  .del:active,.edit:active{background:var(--card2)}
+  .lchk{width:20px;height:20px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
   .lrow:last-child{border-bottom:0}
   .ldate{font-size:12px;color:var(--mut);width:58px;flex:none;line-height:1.3}
   .ldate b{display:block;color:var(--tx);font-size:15px;font-weight:700}
@@ -343,9 +352,8 @@
   /* eye icon on ledger rows */
   .eye-btn{font-size:17px;cursor:pointer;flex:none;opacity:0.55;transition:opacity .15s;line-height:1;padding:2px 5px;user-select:none}
   .eye-btn:hover{opacity:1}
-  .lrow.has-proof{cursor:pointer}
-  .lrow.has-proof:hover{background:rgba(244,183,63,.04);border-radius:8px;margin:0 -4px;padding:13px 4px}
-  .lrow.has-proof:hover .eye-btn{opacity:1}
+  .lrow:hover{background:rgba(244,183,63,.045)}
+  .lrow:hover .eye-btn{opacity:.9}
 
   /* month picker — tick any combination of months */
   .mpick{position:fixed;inset:0;background:rgba(6,9,14,.88);z-index:55;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -3613,7 +3621,7 @@ AI_TYPES.join(", "),
       var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
       var instTag = t.inst ? '<span class="inst-tag">'+esc(t.inst)+'</span>' : '';
       var hasProof = !!t.photo;
-      var eyeBtn = hasProof ? '<span class="eye-btn" title="Click row to view screenshot">\u{1F441}</span>' : '';
+      var eyeBtn = hasProof ? '<button type="button" class="eye-btn" data-id="'+t.id+'" title="View photo">\u{1F441}</button>' : '';
       var checked = selectedIds[t.id] ? " checked" : "";
       // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
       var editBtn = t.auto ? '' : '<button class="edit" data-id="'+t.id+'" title="Edit">\u270f\ufe0f</button>';
@@ -3646,17 +3654,23 @@ AI_TYPES.join(", "),
     Array.prototype.forEach.call(led.querySelectorAll(".lchk"), function(cb){
       cb.addEventListener("click", function(e){ e.stopPropagation(); });
       cb.addEventListener("change", function(){
-        var id=+cb.getAttribute("data-id");
-        if(cb.checked) selectedIds[id]=true; else delete selectedIds[id];
-        updateExportBtn();
+        toggleSelect(+cb.getAttribute("data-id"), cb.checked);
+      });
+    });
+    // The whole row is the tap target for selection. A 14px checkbox is a miserable
+    // thing to hit on a phone, and it was the only way to select. The photo viewer moves
+    // to the eye icon, which is what it looks like it does anyway.
+    Array.prototype.forEach.call(led.querySelectorAll(".eye-btn"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        openViewer(+b.getAttribute("data-id"));
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.classList.contains("del") || e.target.classList.contains("edit") || e.target.classList.contains("lchk")) return;
+        if(e.target.closest(".del,.edit,.eye-btn")) return;
         var id=+row.getAttribute("data-id");
-        var tx3=state.transactions.filter(function(x){ return x.id===id; })[0];
-        if(tx3 && tx3.photo) openViewer(id);
+        toggleSelect(id, !selectedIds[id]);
       });
     });
     updateExportBtn();
@@ -3791,6 +3805,18 @@ AI_TYPES.join(", "),
     var checkedVisible=visible.filter(function(id){ return !!selectedIds[id]; }).length;
     chk.checked = checkedVisible===visible.length;
     chk.indeterminate = checkedVisible>0 && checkedVisible<visible.length;
+  }
+  // Single place that owns "is this row selected", so the row tap, the checkbox and the
+  // greyed style can never disagree about the answer.
+  function toggleSelect(id, on){
+    if(on) selectedIds[id]=true; else delete selectedIds[id];
+    var row=document.querySelector('.lrow[data-id="'+id+'"]');
+    if(row){
+      row.classList.toggle("lrow-sel", !!on);
+      var cb=row.querySelector(".lchk");
+      if(cb) cb.checked=!!on;
+    }
+    updateExportBtn();
   }
   function toggleSelectAll(checked){
     currentVisibleIds().forEach(function(id){ if(checked) selectedIds[id]=true; else delete selectedIds[id]; });
@@ -4790,7 +4816,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v13.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
