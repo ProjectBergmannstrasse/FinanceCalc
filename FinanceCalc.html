@@ -56,6 +56,7 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  .stat-sub{font-size:10px;color:var(--mut);margin-top:2px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
@@ -400,6 +401,7 @@
   <div class="stat"><div class="k">Debt to Dad</div><div class="v mono down" id="stDebt">—</div></div>
   <div class="stat"><div class="k">Savings</div><div class="v mono up" id="stSav">—</div></div>
   <div class="stat" id="stTaxWrap" style="display:none"><div class="k">Tax set aside</div><div class="v mono cool" id="stTax">—</div></div>
+  <div class="stat" id="stWrWrap" style="display:none;cursor:pointer" title="Tap for full trading stats"><div class="k">Win rate</div><div class="v mono" id="stWr">—</div><div class="stat-sub" id="stWrSub"></div></div>
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
 </div>
 
@@ -2978,6 +2980,7 @@ AI_TYPES.join(", "),
   }
   function bindTrUI(){
     document.getElementById("trBtn").addEventListener("click", openTrPanel);
+    document.getElementById("stWrWrap").addEventListener("click", openTrPanel);
     document.getElementById("trPanelClose").addEventListener("click", closeTrPanel);
     document.getElementById("trPanelOverlay").addEventListener("click", closeTrPanel);
     document.getElementById("trScope").addEventListener("change", renderTrPanel);
@@ -3274,6 +3277,20 @@ AI_TYPES.join(", "),
     var taxUsed = Math.abs(t.tax)>=0.01 || num(state.settings.taxPct)>0 || num(state.opening.tax)>0;
     taxWrap.style.display = taxUsed ? "" : "none";
     if(taxUsed) document.getElementById("stTax").textContent=fmt(t.tax,sym);
+
+    // Win rate rides on the main screen automatically once you've logged a trade, and
+    // stays out of the way entirely if you never do. Expectancy decides the colour, not
+    // win rate: a 90% win rate that loses money shouldn't be showing green.
+    var trs=tradeList();
+    var wrWrap=document.getElementById("stWrWrap");
+    if(trs.length){
+      var ts=tradeStats(trs);
+      wrWrap.style.display="";
+      var wrEl=document.getElementById("stWr");
+      wrEl.textContent=(ts.winRate*100).toFixed(1)+"%";
+      wrEl.className="v mono "+(ts.expectancy>=0?"up":"down");
+      document.getElementById("stWrSub").textContent=ts.wins+"W/"+ts.losses+"L · "+(ts.expectancy>=0?"+":"")+fmt(ts.expectancy,sym)+"/trade";
+    } else wrWrap.style.display="none";
     var netEl=document.getElementById("stNet");
     netEl.textContent=fmt(t.net,sym);
     netEl.className="v mono "+(t.net>=0?"up":"down");
@@ -4674,7 +4691,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.7</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v12.8</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
