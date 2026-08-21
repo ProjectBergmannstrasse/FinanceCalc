@@ -1021,6 +1021,22 @@
       </div>
     </div>
 
+    <!-- Bulk-tag: per-instrument stats are dead weight while every trade is untagged,
+         and editing 139 entries one at a time isn't a fix anybody would actually do. -->
+    <div class="panel" id="tagCard" style="display:none">
+      <div class="p-head"><h2><span class="tick">◇</span> Untagged trades</h2>
+        <span class="mut" id="tagCount" style="font-size:12px"></span></div>
+      <div class="p-body" style="padding-top:4px">
+        <div class="hint" id="tagWhy" style="margin-bottom:10px"></div>
+        <div class="fld"><label for="tagOnly">Only trades whose note contains (optional)</label>
+          <input type="text" id="tagOnly" placeholder="e.g. gold — leave blank for all" autocomplete="off"></div>
+        <div class="fld"><label for="tagInst">Set instrument to</label>
+          <input type="text" id="tagInst" list="instList" placeholder="e.g. XAUUSD" autocomplete="off" spellcheck="false" style="text-transform:uppercase"></div>
+        <div class="hint" id="tagPrev" style="margin:2px 0 10px"></div>
+        <button class="btn" id="tagGo" style="width:100%">Tag them</button>
+      </div>
+    </div>
+
     <div class="panel" id="trInstPanel" style="display:none">
       <div class="p-head"><h2><span class="tick">◎</span> By instrument</h2></div>
       <div class="p-body" style="padding-top:4px"><div class="tr-tbl" id="trTbl"></div></div>
@@ -1758,11 +1774,12 @@
     if(tab) tab.style.display = on ? "" : "none";
     var tb=document.getElementById("tabbar");
     if(tb) tb.setAttribute("data-tabs", on ? "4" : "3");
-    // trading-only controls on the entry form and in settings
-    ["fInstWrap","sepTradingWrap"].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el) el.style.display = on ? "" : "none";
-    });
+    // Settings' bank/trading section is trading-only. The instrument field is NOT listed
+    // here on purpose: typeUI() already shows it only for trade types, and a non-trader
+    // can't select one. (This used to name "fInstWrap", an id that doesn't exist, so it
+    // silently did nothing.)
+    var sw=document.getElementById("sepTradingWrap");
+    if(sw) sw.style.display = on ? "" : "none";
     var sel=document.getElementById("fType");
     if(sel) Array.prototype.forEach.call(sel.querySelectorAll("option"), function(o){
       if(/^(trade_win|trade_loss|to_trading|from_trading|alw_trading)$/.test(o.value)) o.hidden = !on;
@@ -2437,7 +2454,11 @@
     document.getElementById("mdlCancel").addEventListener("click", function(){ closeModal(); if(o.onCancel) o.onCancel(); });
     ov.addEventListener("click", function(e){ if(e.target===ov){ closeModal(); if(o.onCancel) o.onCancel(); } });
     if(inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); attempt(); } });
-    _mdlEsc=function(e){ if(e.key==="Escape"){ closeModal(); if(o.onCancel) o.onCancel(); } };
+    _mdlEsc=function(e){
+      if(e.key!=="Escape") return;
+      if(document.querySelector(".xsel-ov")) return;   // a select sheet is on top; it takes the Esc
+      closeModal(); if(o.onCancel) o.onCancel();
+    };
     document.addEventListener("keydown", _mdlEsc);
     setTimeout(function(){ if(inp){ inp.focus(); inp.select(); } else okBtn.focus(); }, 30);
   }
@@ -4408,6 +4429,18 @@ AI_TYPES.join(", "),
     sel._xsync=sync;
     sync();
     sel.addEventListener("change", sync);
+    /* Several selects start empty and are filled later — the copy/mirror pickers from the
+       portfolio list, the CSV column pickers from the uploaded file's headers. Hunting
+       down every rebuild site by hand doesn't work (I missed three), so watch the select
+       itself: any change to its options or its hidden/disabled state re-syncs the button.
+       MutationObserver fires on a microtask, i.e. after the rebuild AND the .value= that
+       follows it, which is exactly the moment the label needs re-reading. */
+    if(typeof MutationObserver!=="undefined"){
+      new MutationObserver(sync).observe(sel, {
+        childList:true, subtree:true, characterData:true,
+        attributes:true, attributeFilter:["hidden","disabled","value","selected"]
+      });
+    }
     btn.addEventListener("click", function(e){ e.preventDefault(); openXsel(sel, btn); });
   }
   function openXsel(sel, btn){
@@ -5281,6 +5314,7 @@ AI_TYPES.join(", "),
 
     renderTradeForecast(list, sym);
     renderPlan(tradeList(), sym);   // the plan is your whole record, not the ticked period
+    renderTagCard();
 
     var ICON={good:"✅",bad:"⚠️",warn:"⚡",info:"ℹ️"};
     // Seventeen rules can match at once. Fifteen paragraphs of advice is a wall nobody
@@ -5423,7 +5457,64 @@ AI_TYPES.join(", "),
     }).join("");
     document.getElementById("planFoot").textContent="Every rule is your own record played back — the numbers are shown so you can argue with them. It sets limits on how much and how often; it never says what to trade.";
   }
+  function untaggedTrades(filter){
+    var f=(filter||"").trim().toLowerCase();
+    return tradeList().filter(function(t){
+      if(t.inst) return false;
+      if(!f) return true;
+      return String(t.note||"").toLowerCase().indexOf(f)>=0;
+    });
+  }
+  function renderTagCard(){
+    var card=document.getElementById("tagCard");
+    if(!card) return;
+    var all=untaggedTrades("");
+    if(!all.length){ card.style.display="none"; return; }
+    card.style.display="";
+    var total=tradeList().length;
+    document.getElementById("tagCount").textContent=all.length+" of "+total;
+    document.getElementById("tagWhy").innerHTML=
+      "<b>"+all.length+"</b> of your <b>"+total+"</b> trades have no instrument on them — the field is optional, so anything typed without one saved blank. "
+      +"That's why <b>By instrument</b> shows a single “untagged” group, and why your plan can't tell you where your edge is. Tag them and both start working.";
+    updateTagPreview();
+  }
+  function updateTagPreview(){
+    var el=document.getElementById("tagPrev");
+    if(!el) return;
+    var only=document.getElementById("tagOnly").value;
+    var n=untaggedTrades(only).length;
+    var inst=document.getElementById("tagInst").value.trim().toUpperCase();
+    el.innerHTML = n
+      ? "Will tag <b>"+n+"</b> trade"+(n===1?"":"s")+(inst?" as <b>"+esc(inst)+"</b>":"")+"."
+      : "<b>No</b> untagged trades match that note.";
+    var go=document.getElementById("tagGo");
+    if(go) go.disabled = !n || !inst;
+  }
+  function bindTagCard(){
+    var only=document.getElementById("tagOnly"), inst=document.getElementById("tagInst"), go=document.getElementById("tagGo");
+    if(!go) return;
+    only.addEventListener("input", updateTagPreview);
+    inst.addEventListener("input", updateTagPreview);
+    go.addEventListener("click", function(){
+      var f=only.value, sym=inst.value.trim().toUpperCase();
+      var hits=untaggedTrades(f);
+      if(!hits.length || !sym) return;
+      appModal({
+        title:"Tag "+hits.length+" trade"+(hits.length===1?"":"s")+"?",
+        message:"They'll all be marked <b>"+esc(sym)+"</b>. You can still change any of them one by one afterwards.",
+        confirmText:"Tag them",
+        onConfirm:function(){
+          var ids={}; hits.forEach(function(t){ ids[t.id]=1; });
+          state.transactions.forEach(function(t){ if(ids[t.id]) t.inst=sym; });
+          persistNow(); only.value=""; inst.value="";
+          renderTradingPage(); render();
+          flashSaved("tagged "+hits.length);
+        }
+      });
+    });
+  }
   function bindTradingPage(){
+    bindTagCard();
     bindTradeForecast();
     Array.prototype.forEach.call(document.querySelectorAll("#trPeriod button"), function(b){
       b.addEventListener("click", function(){
@@ -7024,6 +7115,7 @@ AI_TYPES.join(", "),
     // one Escape handler for every overlay, closing only the topmost open one
     document.addEventListener("keydown", function(e){
       if(e.key!=="Escape") return;
+      if(document.querySelector(".xsel-ov")) return;    // select sheet is the topmost layer
       if(document.getElementById("viewer").style.display!=="none") closeViewer();
       else if(document.getElementById("monthPicker").style.display!=="none") closeMonthPicker();
       else if(currentPage==="pageSettings") closeSettings();
@@ -7458,7 +7550,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
