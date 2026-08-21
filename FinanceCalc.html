@@ -633,10 +633,10 @@
   /* ledger */
   .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut);flex-wrap:wrap;justify-content:flex-end}
   #ledSearch{font-size:12.5px;padding:6px 9px}
-  /* the checkbox is the only selector now, so it has to be hittable with a thumb */
-  .lchk{width:16px;height:16px;flex:none;cursor:pointer;accent-color:var(--amber);
-    padding:11px;margin:-11px -4px -11px -11px;box-sizing:content-box;background-clip:content-box}
-  .lrow{cursor:pointer}
+  /* the tick and the date are one selection zone, sized for a thumb */
+  .lsel{display:flex;align-items:center;gap:9px;flex:none;cursor:pointer;align-self:stretch;
+    padding:0 9px 0 11px;margin:0 0 0 -11px;border-radius:9px;transition:background .12s}
+  .lsel:hover{background:var(--card2)}
   .lrow:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
 
   .td-sheet{max-width:440px}
@@ -662,6 +662,26 @@
   .td-foot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--bd);background:var(--card2)}
   .td-foot .btn{flex:1}
 
+  .tg-h{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--mut);margin:2px 0 7px}
+  .tg-s{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;margin-bottom:6px;
+    background:var(--card2);border:1px solid var(--bd2);border-radius:10px;color:var(--tx);
+    font-family:inherit;text-align:left;cursor:pointer;transition:border-color .12s,background .12s}
+  .tg-s:hover{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 8%,var(--card2))}
+  .tg-s:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .tg-n{flex:none;min-width:30px;height:26px;display:flex;align-items:center;justify-content:center;
+    background:var(--bd2);border-radius:7px;font-size:12px;font-weight:800}
+  .tg-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:12.5px}
+  .tg-w{font-size:10px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tg-go{flex:none;color:var(--mut);font-size:13px}
+
+  .act-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+  .act-row:last-child{border-bottom:0}
+  .act-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .act-t b{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .act-w{font-size:10.5px;color:var(--mut);font-family:var(--mono)}
+  .act-u{flex:none}
+
   .sw-hint{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
     align-items:center;font-size:11px;color:var(--mut)}
   .sw-chip{padding:4px 9px;border:1px solid var(--bd2);background:var(--card2);color:var(--mut);
@@ -679,6 +699,7 @@
   .del,.edit{min-width:34px;min-height:34px;border-radius:7px;transition:background .13s,opacity .13s}
   .del:active,.edit:active{background:var(--card2)}
   .lchk{width:20px;height:20px;flex:none;margin:0;accent-color:var(--amber);cursor:pointer}
+  .lchk:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   .lrow:last-child{border-bottom:0}
   .ldate{font-size:12px;color:var(--mut);width:58px;flex:none;line-height:1.3}
   .ldate b{display:block;color:var(--tx);font-size:15px;font-weight:700}
@@ -1076,6 +1097,7 @@
         <span class="mut" id="tagCount" style="font-size:12px"></span></div>
       <div class="p-body" style="padding-top:4px">
         <div class="hint" id="tagWhy" style="margin-bottom:10px"></div>
+        <div id="tagSuggest" style="display:none"></div>
         <div class="fld"><label for="tagScope">Which trades</label>
           <select id="tagScope"></select></div>
         <div class="fld"><label for="tagOnly">Only trades whose note contains (optional)</label>
@@ -3826,7 +3848,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); renderActions(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -4469,7 +4491,7 @@ AI_TYPES.join(", "),
     {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
      ids:["aiSection"]},
     {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
-     has:["Back Up & Data","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
   ];
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
@@ -4704,6 +4726,7 @@ AI_TYPES.join(", "),
   function applyPreset(k){
     var p=LAYOUT_PRESETS.filter(function(x){ return x.k===k; })[0];
     if(!p) return;
+    recordAction("Layout: "+p.t);
     state.layout=clone(p.cfg);
     persistNow(); applyLayout(); render(); renderLayoutUI(); flashSaved(p.t);
   }
@@ -5733,6 +5756,86 @@ AI_TYPES.join(", "),
       return ws.some(function(x){ return note.indexOf(x)>=0 || inst.indexOf(x)>=0; });
     });
   }
+  /* Reading your own notes back to you.
+     Typing "gold" in one and "xauusd" in the next is what people actually do, so the
+     app can work out the instrument instead of asking you to. Aliases cover the common
+     markets; anything you've ALREADY tagged is also matched by name, so your own
+     vocabulary works without a list. Nothing is applied automatically — each suggestion
+     shows its count and waits to be tapped. */
+  var INST_ALIASES=[
+    {inst:"XAUUSD", words:["xauusd","xau","gold"]},
+    {inst:"XAGUSD", words:["xagusd","xag","silver"]},
+    {inst:"BTCUSD", words:["btcusd","btc","bitcoin"]},
+    {inst:"ETHUSD", words:["ethusd","eth","ether","ethereum"]},
+    {inst:"EURUSD", words:["eurusd","eur","euro","fiber"]},
+    {inst:"GBPUSD", words:["gbpusd","gbp","cable","sterling"]},
+    {inst:"USDJPY", words:["usdjpy","jpy","yen"]},
+    {inst:"AUDUSD", words:["audusd","aud","aussie"]},
+    {inst:"USDCAD", words:["usdcad","cad","loonie"]},
+    {inst:"NAS100", words:["nas100","nasdaq","nq","us100"]},
+    {inst:"US30",   words:["us30","dow","dj30"]},
+    {inst:"SPX500", words:["spx500","spx","sp500","us500","es"]},
+    {inst:"USOIL",  words:["usoil","oil","wti","crude","brent"]},
+    {inst:"GER40",  words:["ger40","dax","de40"]},
+    {inst:"UK100",  words:["uk100","ftse"]}
+  ];
+  function wordsIn(txt){
+    return String(txt||"").toLowerCase().split(/[^a-z0-9]+/).filter(function(x){ return x; });
+  }
+  function tagSuggestions(){
+    var untagged=tradeList().filter(function(t){ return !t.inst; });
+    if(!untagged.length) return [];
+    // your own instruments count as aliases of themselves
+    var mine=tradeByInstrument(tradeList()).map(function(r){ return r.inst; })
+      .filter(function(i){ return i && i!=="— untagged —"; });
+    var table=INST_ALIASES.slice();
+    mine.forEach(function(i){
+      var hit=table.filter(function(x){ return x.inst===i.toUpperCase(); })[0];
+      if(hit) return;
+      table.push({inst:i.toUpperCase(), words:[i.toLowerCase()]});
+    });
+    var out=[];
+    table.forEach(function(row){
+      var hits=[], seen={};
+      untagged.forEach(function(t){
+        var ws=wordsIn(t.note);
+        for(var i=0;i<row.words.length;i++){
+          if(ws.indexOf(row.words[i])>=0){ hits.push(t); seen[row.words[i]]=1; break; }
+        }
+      });
+      if(hits.length) out.push({inst:row.inst, n:hits.length, words:Object.keys(seen)});
+    });
+    // biggest win first; a suggestion for 2 trades is noise next to one for 60
+    out.sort(function(a,b){ return b.n-a.n; });
+    return out.slice(0,6);
+  }
+  function renderTagSuggest(){
+    var box=document.getElementById("tagSuggest");
+    if(!box) return;
+    var sg=tagSuggestions();
+    if(!sg.length){ box.innerHTML=""; box.style.display="none"; return; }
+    box.style.display="";
+    box.innerHTML='<div class="tg-h">From your notes</div>'
+      +sg.map(function(s){
+        return '<button type="button" class="tg-s" data-inst="'+esc(s.inst)+'" data-words="'+esc(s.words.join(","))+'">'
+          +'<span class="tg-n mono">'+s.n+'</span>'
+          +'<span class="tg-t">tag as <b>'+esc(s.inst)+'</b>'
+          +'<span class="tg-w">matched “'+esc(s.words.join("”, “"))+'”</span></span>'
+          +'<span class="tg-go">→</span></button>';
+      }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll(".tg-s"), function(b){
+      b.addEventListener("click", function(){
+        // fill the form rather than firing blind — you see the scope, the words and the
+        // count before anything changes
+        document.getElementById("tagScope").value="untagged";
+        var sel=document.getElementById("tagScope"); if(sel._xsync) sel._xsync();
+        document.getElementById("tagOnly").value=b.getAttribute("data-words").split(",").join(", ");
+        document.getElementById("tagInst").value=b.getAttribute("data-inst");
+        updateTagPreview();
+        document.getElementById("tagGo").focus();
+      });
+    });
+  }
   function tagScopeOptions(){
     var insts=tradeByInstrument(tradeList()).map(function(r){ return r.inst; })
       .filter(function(i){ return i!=="— untagged —"; });
@@ -5759,6 +5862,7 @@ AI_TYPES.join(", "),
     document.getElementById("tagWhy").innerHTML = untagged
       ? "<b>"+untagged+"</b> of your <b>"+all.length+"</b> trades have no instrument — the field is optional, so anything typed without one saved blank. That's why <b>By instrument</b> shows a single “untagged” group, and why your plan can't tell you where your edge is."
       : "Every trade is tagged. Use this to <b>change</b> or <b>clear</b> an instrument in bulk.";
+    renderTagSuggest();
     updateTagPreview();
   }
   function updateTagPreview(){
@@ -5797,6 +5901,8 @@ AI_TYPES.join(", "),
         confirmText: sym ? "Tag them" : "Untag them",
         danger: !sym,
         onConfirm:function(){
+          recordAction(sym ? ("Tagged "+hits.length+" trade"+(hits.length===1?"":"s")+" as "+sym)
+                           : ("Untagged "+hits.length+" trade"+(hits.length===1?"":"s")));
           var ids={}; hits.forEach(function(t){ ids[t.id]=1; });
           state.transactions.forEach(function(t){
             if(!ids[t.id]) return;
@@ -6412,8 +6518,11 @@ AI_TYPES.join(", "),
       // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
       var editBtn = t.auto ? '' : '<button class="edit" data-id="'+t.id+'" title="Edit">\u270f\ufe0f</button>';
       html+='<div class="lrow'+(hasProof?" has-proof":"")+'" data-id="'+t.id+'">'
+          // checkbox AND date are one selection zone: a 16px tick is a miserable target,
+          // and the date next to it is dead space that may as well do the same job.
+          +'<div class="lsel" data-id="'+t.id+'" title="Select for export">'
           +'<input type="checkbox" class="lchk" data-id="'+t.id+'" title="Select for export"'+checked+'>'
-          +'<div class="ldate">'+mm+'<b>'+dd+'</b></div>'
+          +'<div class="ldate">'+mm+'<b>'+dd+'</b></div></div>'
           +'<div class="lmid"><span class="badge">'+esc(meta.label)+'</span>'+instTag
           +(note?'<div class="lnote">'+note+'</div>':'')+'</div>'
           +eyeBtn
@@ -6443,6 +6552,15 @@ AI_TYPES.join(", "),
         toggleSelect(+cb.getAttribute("data-id"), cb.checked);
       });
     });
+    // anywhere in the zone — the tick, the date, the gap around them
+    Array.prototype.forEach.call(led.querySelectorAll(".lsel"), function(z){
+      z.addEventListener("click", function(e){
+        e.stopPropagation();                       // never opens the record
+        if(e.target.classList.contains("lchk")) return;  // the tick handles itself
+        var id=+z.getAttribute("data-id");
+        toggleSelect(id, !selectedIds[id]);
+      });
+    });
     // Selection lives on the checkbox alone now — the row tap opens the full record.
     // The checkbox gets a padded hit area (.lchk in CSS) so it's still thumb-sized;
     // that padding is why the whole row didn't need to be the target.
@@ -6454,7 +6572,7 @@ AI_TYPES.join(", "),
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.closest(".del,.edit,.eye-btn,.lchk")) return;
+        if(e.target.closest(".del,.edit,.eye-btn,.lsel")) return;
         openTxDetail(+row.getAttribute("data-id"));
       });
       row.setAttribute("tabindex","0");
@@ -6514,6 +6632,9 @@ AI_TYPES.join(", "),
   var pendingDelete=null; // {tx, timer}
   function deleteWithUndo(id){
     var idx=-1;
+    (function(){ var t=state.transactions.filter(function(x){ return x.id===id; })[0];
+      if(t) recordAction("Deleted "+(TYPE_META[t.type]||{label:t.type}).label.toLowerCase()+" "
+        +fmt(Math.abs(num(t.amount)), state.currency)); })();
     for(var i=0;i<state.transactions.length;i++){ if(state.transactions[i].id===id){ idx=i; break; } }
     if(idx<0) return;
     var tx=state.transactions[idx];
@@ -6678,6 +6799,72 @@ AI_TYPES.join(", "),
 
   /* ---------------- image viewer ---------------- */
   var viewingId=null;
+  /* ================= RECENT ACTIONS =================
+     A snapshot of the whole portfolio taken BEFORE each change, so any of them can be
+     put back. Snapshots rather than inverse operations: an inverse has to be written
+     per action type and is wrong exactly when it matters, whereas a snapshot restores
+     whatever was actually there.
+
+     In memory only, and deliberately: persisting a dozen copies of the ledger risks the
+     storage quota that holds the real data. Undo covers this session — the trash bin and
+     the automatic backups cover the rest.
+
+     Undoing an older change necessarily undoes the newer ones too, because state goes
+     back to how it was before it. The confirm says so rather than surprising anyone. */
+  var ACTIONS=[], ACTIONS_MAX=12;
+  function recordAction(label){
+    try{
+      ACTIONS.unshift({ label:label, at:Date.now(), snap:JSON.stringify(state) });
+      if(ACTIONS.length>ACTIONS_MAX) ACTIONS.pop();
+    }catch(e){ return; }   // a snapshot that can't be taken must never block the action
+    renderActions();
+  }
+  function actionAgo(ms){
+    var s=Math.floor((Date.now()-ms)/1000);
+    if(s<10) return "just now";
+    if(s<60) return s+"s ago";
+    if(s<3600) return Math.floor(s/60)+"m ago";
+    return Math.floor(s/3600)+"h ago";
+  }
+  function renderActions(){
+    var box=document.getElementById("actList");
+    if(!box) return;
+    var n=document.getElementById("actCount");
+    if(n) n.textContent = ACTIONS.length ? ACTIONS.length+" change"+(ACTIONS.length===1?"":"s") : "";
+    if(!ACTIONS.length){
+      box.innerHTML='<div class="hint" style="margin:0">Nothing to undo yet. Changes you make appear here, newest first.</div>';
+      return;
+    }
+    box.innerHTML=ACTIONS.map(function(a,i){
+      return '<div class="act-row">'
+        +'<div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+actionAgo(a.at)+'</span></div>'
+        +'<button type="button" class="btn ghost sm act-u" data-i="'+i+'">Undo</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll(".act-u"), function(b){
+      b.addEventListener("click", function(){ undoAction(+b.getAttribute("data-i")); });
+    });
+  }
+  function undoAction(i){
+    var a=ACTIONS[i];
+    if(!a) return;
+    var newer=i;   // everything above it in the list happened after it
+    appModal({
+      title:"Undo “"+a.label+"”?",
+      message:"Everything goes back to how it was "+actionAgo(a.at)+", before that change."
+        +(newer>0 ? " <b>That also undoes the "+newer+" change"+(newer===1?"":"s")+" you made after it</b>, because they came later." : "")
+        +"<br><br>A photo you deleted can't come back this way — the picture itself is already gone.",
+      confirmText:"Undo it",
+      onConfirm:function(){
+        applyPortfolioData(JSON.parse(a.snap));
+        ACTIONS=ACTIONS.slice(i+1);   // that moment is now the present; later ones never happened
+        persistNow();
+        applyLayout(); applyTraderMode(); refreshSelects();
+        render(); renderPortfolioUI(); renderActions();
+        flashSaved("undone");
+      }
+    });
+  }
+
   /* ================= ONE ENTRY, IN FULL =================
      The row is a summary: the note truncates, the photo is a 14px icon, and the amount
      only shows what hit your balance. This is the whole record — every pot it moved, the
@@ -6981,6 +7168,8 @@ AI_TYPES.join(", "),
       if(editingId!=null){
         var tx=state.transactions.filter(function(t){ return t.id===editingId; })[0];
         if(!tx){ cancelEdit(); return; }
+        recordAction("Edited "+(TYPE_META[tx.type]||{label:tx.type}).label.toLowerCase()
+          +" "+fmt(Math.abs(num(tx.amount)), state.currency));
         tx.date=date; tx.type=type; tx.amount=raw;
         if(type==="spend") tx.cat=document.getElementById("fCat").value; else delete tx.cat;
         if(type==="trade_win"||type==="trade_loss"){
@@ -7007,6 +7196,7 @@ AI_TYPES.join(", "),
         }
         if(note) tx2.note=note;
         if(pendingPhoto){ tx2.photo=tx2.id; savePhoto(tx2.id, pendingPhoto.dataUrl); }
+        recordAction("Added "+(TYPE_META[type]||{label:type}).label.toLowerCase()+" "+fmt(raw, state.currency));
         state.transactions.push(tx2);
         state.selectedMonths=[monthKey(date)];
         mirrorNewTransaction(tx2);
@@ -7811,6 +8001,12 @@ AI_TYPES.join(", "),
 
   <!-- Trash -->
   <div style="padding:0 20px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Recent actions<span class="mut" id="actCount" style="font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;margin-left:8px"></span></div>
+        <div class="hint" style="margin:0 0 10px">Changes from this session, newest first. Undoing one also undoes anything after it.</div>
+        <div id="actList"></div>
+      </div>
+      <hr class="sep">
+      <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Recently deleted</div>
     <div class="hint">Deleted entries wait here for <b>30 days</b> — photos and all — before they go for good. Restore anything that shouldn't have gone.</div>
     <div id="trashList"></div>
@@ -7978,7 +8174,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.8</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.9</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
