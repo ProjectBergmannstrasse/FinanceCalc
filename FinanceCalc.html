@@ -10,6 +10,7 @@
     --bd:#232c3d; --bd2:#2c3648;
     --tx:#e6ebf2; --mut:#7c8798;
     --amber:#f4b73f; --amber-dim:#8a6a1f;
+    --hm0:#1b2230; --hm1:#4a3a1c; --hm2:#7a5a20; --hm3:#b08328; --hm4:#e0a832; --hm5:#f4b73f;
     --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -19,6 +20,7 @@
   /* Theme: Mono — black bg, white text, green/red P&L kept */
   [data-theme="mono"]{
     --bg:#000000; --panel:#111111; --card:#1a1a1a; --card2:#222222;
+    --hm0:#222222; --hm1:#3d3d3d; --hm2:#5c5c5c; --hm3:#828282; --hm4:#b5b5b5; --hm5:#e8e8e8;
     --bd:#333333; --bd2:#444444;
     --tx:#ffffff; --mut:#888888;
     --amber:#ffffff; --amber-dim:#aaaaaa;
@@ -43,6 +45,7 @@
     --bd:#1a3d26; --bd2:#235234;
     --tx:#d4f5e2; --mut:#5a8a6e;
     --amber:#00ff88; --amber-dim:#007a40;
+    --hm0:#102519; --hm1:#12452a; --hm2:#0f6b3d; --hm3:#0a9954; --hm4:#00cc6e; --hm5:#00ff88;
     --up:#00ff88; --down:#ff4466; --cool:#00ccff;
     --hero-grad:linear-gradient(160deg,#071a0f,#030d07);
     --hero-glow:rgba(0,255,136,.10);
@@ -137,6 +140,21 @@
   .rec-btn{flex:none;border:1px solid var(--bd2);background:transparent;color:var(--mut);border-radius:6px;padding:4px 7px;font-size:10.5px;font-weight:700;cursor:pointer;transition:border-color .13s,color .13s}
   .rec-btn:hover{border-color:var(--amber);color:var(--tx)}
   .rec-empty{font-size:12.5px;color:var(--mut);padding:10px 0}
+
+  #hmGridWrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px 2px}
+  .hm-cell{cursor:pointer;transition:opacity .12s}
+  .hm-cell:hover{opacity:.75}
+  .hm-legend{display:flex;align-items:center;gap:4px;margin-top:9px;justify-content:flex-end}
+  .hm-lg-t{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+  .hm-sw{width:11px;height:11px;border-radius:2.5px;display:inline-block}
+  .hm-sw.l1{background:var(--hm1)} .hm-sw.l2{background:var(--hm2)} .hm-sw.l3{background:var(--hm3)}
+  .hm-sw.l4{background:var(--hm4)} .hm-sw.l5{background:var(--hm5)}
+  .hm-pick{margin-top:10px;padding:9px 11px;border:1px solid var(--amber);border-radius:8px;background:var(--card);font-size:12px;line-height:1.5}
+  .hm-pick b{color:var(--tx)}
+  .hm-pick-x{float:right;border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 8px}
+  .hm-insight{margin-top:9px;font-size:11.5px;color:var(--mut);line-height:1.5}
+  .hm-insight b{color:var(--tx)}
+  .hm-mlab{font-size:8.5px;fill:var(--mut);font-family:var(--mono)}
 
   .fc-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
   .fc-num{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1}
@@ -593,6 +611,24 @@
 <div class="panel" id="goalCard" style="display:none">
   <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
   <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
+</div>
+
+<!-- Spending heatmap -->
+<div class="panel" id="hmCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">▦</span> Where it goes</h2>
+    <span class="mut" id="hmSpan" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px">
+    <div id="hmGridWrap"><div id="hmChart"></div></div>
+    <div class="hm-legend">
+      <span class="hm-lg-t" id="hmLegT">less</span>
+      <span class="hm-sw l1"></span><span class="hm-sw l2"></span><span class="hm-sw l3"></span><span class="hm-sw l4"></span><span class="hm-sw l5"></span>
+      <span class="hm-lg-t">more</span>
+    </div>
+    <div id="hmPick" class="hm-pick" style="display:none"></div>
+    <div id="hmInsight" class="hm-insight"></div>
+  </div>
 </div>
 
 <!-- Cash-flow forecast -->
@@ -3757,6 +3793,63 @@ AI_TYPES.join(", "),
     });
   }
 
+  /* ================= SPENDING HEATMAP =================
+     A year of days, one cell each, shaded by how much left your pocket. Scaling is by
+     PERCENTILE, not by max: one $2,500 trade loss against normal $20 days would crush
+     every real day to the palest shade and the chart would say nothing. */
+  var HM_WEEKS=27;                       // ~6 months — fits a phone without scrolling
+  function hmDayTotals(){
+    var out={};
+    state.transactions.forEach(function(t){
+      var d=balDelta(t);
+      if(d>=0) return;                   // money leaving only
+      var k=t.date;
+      if(!k) return;
+      out[k]=(out[k]||0)+(-d);
+    });
+    return out;
+  }
+  function hmGrid(weeks){
+    // walk back to the Sunday that starts the window, so columns are whole weeks
+    var end=new Date();
+    var start=new Date();
+    start.setDate(start.getDate()-(weeks*7-1));
+    start.setDate(start.getDate()-start.getDay());
+    var totals=hmDayTotals(), cells=[], cur=new Date(start);
+    var endS=end.getFullYear()+"-"+two(end.getMonth()+1)+"-"+two(end.getDate());
+    while(true){
+      var ds=cur.getFullYear()+"-"+two(cur.getMonth()+1)+"-"+two(cur.getDate());
+      if(ds>endS) break;
+      cells.push({date:ds, amt:totals[ds]||0, dow:cur.getDay(), future:false});
+      cur.setDate(cur.getDate()+1);
+    }
+    return cells;
+  }
+  // Percentile so one outlier can't flatten the scale.
+  function hmScale(cells){
+    var vals=cells.map(function(c){ return c.amt; }).filter(function(v){ return v>0; }).sort(function(a,b){ return a-b; });
+    if(!vals.length) return {p:[0,0,0,0], max:0, spentDays:0};
+    var at=function(f){ return vals[Math.min(vals.length-1, Math.floor(vals.length*f))]; };
+    return {p:[at(0.25), at(0.5), at(0.75), at(0.92)], max:vals[vals.length-1], spentDays:vals.length};
+  }
+  function hmLevel(amt, sc){
+    if(amt<=0) return 0;
+    if(amt<=sc.p[0]) return 1;
+    if(amt<=sc.p[1]) return 2;
+    if(amt<=sc.p[2]) return 3;
+    if(amt<=sc.p[3]) return 4;
+    return 5;
+  }
+  // Which weekday actually costs you the most, per day that you spent on it.
+  function hmByWeekday(cells){
+    var sum=[0,0,0,0,0,0,0], n=[0,0,0,0,0,0,0];
+    cells.forEach(function(c){ if(c.amt>0){ sum[c.dow]+=c.amt; n[c.dow]++; } });
+    var rows=[];
+    for(var i=0;i<7;i++) if(n[i]) rows.push({dow:i, total:sum[i], n:n[i], avg:sum[i]/n[i]});
+    rows.sort(function(a,b){ return b.total-a.total; });
+    return rows;
+  }
+
   /* ================= CASH-FLOW FORECAST =================
      Projects the spendable balance forward. Two ingredients, kept strictly separate:
        KNOWN  — recurring rules. Real dates, real amounts, reusing nextAfter() so the
@@ -3829,6 +3922,69 @@ AI_TYPES.join(", "),
     return {start:start, series:series, events:events, burn:burn, low:low, zeroOn:zeroOn, end:series[series.length-1].bal};
   }
 
+  /* ---------------- heatmap: UI ---------------- */
+  var hmSel=null;
+  function hmSvg(cells, sc){
+    var CS=11, GAP=2.5, PAD_L=15, PAD_T=13;
+    var weeks=Math.ceil(cells.length/7) + (cells[0].dow>0?1:0);
+    var w=PAD_L+weeks*(CS+GAP), h=PAD_T+7*(CS+GAP);
+    var out='', col=0, lastMonth=-1, labels='';
+    cells.forEach(function(c,i){
+      var dow=c.dow;
+      if(i>0 && dow===0) col++;
+      var x=PAD_L+col*(CS+GAP), y=PAD_T+dow*(CS+GAP);
+      var lvl=hmLevel(c.amt, sc);
+      var mo=+c.date.slice(5,7);
+      if(dow===0 && mo!==lastMonth){ labels+='<text class="hm-mlab" x="'+x+'" y="9">'+MONTHS[mo-1]+'</text>'; lastMonth=mo; }
+      var sel=(hmSel===c.date);
+      out+='<rect class="hm-cell" data-d="'+c.date+'" x="'+x+'" y="'+y+'" width="'+CS+'" height="'+CS+'" rx="2.5" '
+        +'fill="var(--hm'+lvl+')"'+(sel?' stroke="var(--tx)" stroke-width="1.5"':'')+'><title>'+c.date+(c.amt?" · "+fmt(c.amt,state.currency):" · nothing")+'</title></rect>';
+    });
+    var dl=["S","M","T","W","T","F","S"].map(function(d,i){
+      return i%2===1?'<text class="hm-mlab" x="0" y="'+(PAD_T+i*(CS+GAP)+8.5)+'">'+d+'</text>':"";
+    }).join("");
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:'+w+'px;max-width:none;height:'+h+'px;display:block">'+labels+dl+out+'</svg>';
+  }
+  function renderHeatmap(){
+    var card=document.getElementById("hmCard");
+    if(!card) return;
+    var cells=hmGrid(HM_WEEKS), sc=hmScale(cells);
+    if(!sc.spentDays){ card.style.display="none"; return; }   // nothing spent = nothing to show
+    card.style.display="";
+    document.getElementById("hmChart").innerHTML=hmSvg(cells, sc);
+    var first=cells[0].date, last=cells[cells.length-1].date;
+    document.getElementById("hmSpan").textContent=fcShortDate(first)+" – "+fcShortDate(last);
+
+    Array.prototype.forEach.call(document.querySelectorAll("#hmChart .hm-cell"), function(r){
+      r.addEventListener("click", function(){
+        var ds=r.getAttribute("data-d");
+        hmSel=(hmSel===ds)?null:ds;
+        renderHeatmap();
+      });
+    });
+
+    var pick=document.getElementById("hmPick");
+    if(hmSel){
+      var day=state.transactions.filter(function(t){ return t.date===hmSel && balDelta(t)<0; });
+      var tot=day.reduce(function(n,t){ return n+(-balDelta(t)); },0);
+      pick.style.display="";
+      pick.innerHTML='<button type="button" class="hm-pick-x" id="hmPickX" aria-label="Close">✕</button>'
+        +'<b>'+esc(niceDate(hmSel))+'</b> — '+(day.length?('<b>'+fmt(tot,state.currency)+'</b> across '+day.length+' entr'+(day.length===1?"y":"ies")+'<br>'
+          +day.slice(0,4).map(function(t){ return '· '+esc((t.note||t.cat||TYPE_META[t.type].label))+' — '+fmt(Math.abs(num(t.amount)),state.currency); }).join("<br>")
+          +(day.length>4?"<br>· …and "+(day.length-4)+" more":"")):"nothing went out.");
+      document.getElementById("hmPickX").addEventListener("click", function(){ hmSel=null; renderHeatmap(); });
+    } else pick.style.display="none";
+
+    var by=hmByWeekday(cells);
+    var el=document.getElementById("hmInsight");
+    if(by.length>=3){
+      var top=by[0];
+      var days=["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"];
+      el.innerHTML="<b>"+days[top.dow]+"</b> cost you the most — <b>"+fmt(top.total,state.currency)+"</b> across "+top.n+" of them, averaging <b>"+fmt(top.avg,state.currency)+"</b> each. "
+        +"You spent something on <b>"+sc.spentDays+"</b> of the last "+cells.length+" days.";
+    } else el.innerHTML="You spent something on <b>"+sc.spentDays+"</b> of the last "+cells.length+" days.";
+  }
+
   /* ---------------- forecast: UI ---------------- */
   var fcDays=30;
   function fcChartSvg(f){
@@ -3897,6 +4053,7 @@ AI_TYPES.join(", "),
         fcDays=parseInt(b.getAttribute("data-d"),10);
         Array.prototype.forEach.call(document.querySelectorAll("#fcRange button"), function(x){ x.classList.toggle("on", x===b); });
         renderForecast();
+    renderHeatmap();
       });
     });
   }
@@ -4130,6 +4287,7 @@ AI_TYPES.join(", "),
         persist();
         renderBudgets();
     renderForecast();
+    renderHeatmap();
       });
     });
   }
@@ -4992,6 +5150,7 @@ AI_TYPES.join(", "),
     }
     renderBudgets();
     renderForecast();
+    renderHeatmap();
     renderGoals();
     checkRecurPrompt();
 
@@ -5381,7 +5540,12 @@ AI_TYPES.join(", "),
 
   function closeViewer(){ document.getElementById("viewer").style.display="none"; viewingId=null; }
 
-  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+  // null/undefined -> "", not the literal word "null". Dozens of call sites pass fields
+  // that may be absent (t.note, t.inst, meta.label); String(null) puts "null" on screen.
+  function esc(s){
+    if(s===null || typeof s==="undefined") return "";
+    return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; });
+  }
   function syncInput(id,val){
     var el=document.getElementById(id); if(!el) return;
     if(document.activeElement===el) return;
@@ -6528,7 +6692,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.8</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.9</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
