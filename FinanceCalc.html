@@ -682,6 +682,24 @@
   .act-w{font-size:10.5px;color:var(--mut);font-family:var(--mono)}
   .act-u{flex:none}
 
+  .ph-strip{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .ph-strip:empty{margin-top:0}
+  .ph-thumb{position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;
+    border:1px solid var(--bd);background:var(--card2);flex:none}
+  .ph-thumb.ph-new{border-color:var(--amber)}
+  .ph-kb{position:absolute;left:0;right:0;bottom:0;font-size:8px;line-height:1.4;text-align:center;
+    background:rgba(0,0,0,.62);color:#fff;font-family:var(--mono);padding:1px 2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ph-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph-x{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;border:0;
+    background:rgba(0,0,0,.66);color:#fff;font-size:12px;line-height:1;cursor:pointer;padding:0}
+  .ph-x:hover{background:var(--down)}
+  .td-photo-many{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;background:transparent}
+  .td-pcell{border-radius:8px;overflow:hidden;background:var(--card2);min-height:50px}
+  .td-pcell img{width:100%;display:block;cursor:zoom-in}
+  .viewer-pic{margin-bottom:14px}
+  .viewer-n{font-size:10.5px;color:var(--mut);font-family:var(--mono);margin-bottom:5px}
+
   .sw-hint{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
     align-items:center;font-size:11px;color:var(--mut)}
   .sw-chip{padding:4px 9px;border:1px solid var(--bd2);background:var(--card2);color:var(--mut);
@@ -969,14 +987,14 @@
         <input type="text" id="fNote" placeholder="e.g. birthday money, gold trade, pencil case">
       </div>
       <div class="fld full">
-        <label>Photo / receipt (optional)</label>
+        <label>Photos / receipts (optional)</label>
         <div class="photo-pick">
-          <input type="file" id="fPhoto" accept="image/*,.heic,.heif,.png,.jpg,.jpeg,.webp,.gif,.bmp" style="display:none">
-          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach photo</button>
+          <input type="file" id="fPhoto" multiple accept="image/*,.heic,.heif,.png,.jpg,.jpeg,.webp,.gif,.bmp" style="display:none">
+          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach photos</button>
           <span id="fPhotoName" class="mut" style="font-size:12px"></span>
-          <img id="fPhotoPrev" alt="" style="display:none;margin-left:auto">
-          <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove</button>
+          <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove all</button>
         </div>
+        <div id="fPhotoStrip" class="ph-strip"></div>
       </div>
       <div class="fld full">
         <button type="submit" class="btn primary" id="entrySubmitBtn" style="width:100%">Add entry</button>
@@ -2240,6 +2258,29 @@
     catch(e){}
   }
   async function savePhotoExtMap(){ try{ var store=await idbStore("meta","readwrite"); await reqToPromise(store.put(photoExtMap,"photoExtMap")); }catch(e){} }
+  /* ---- photos, plural ----
+     An entry used to hold ONE photo id, keyed by the transaction id. Now it holds a list.
+     photosOf() reads BOTH shapes, so nothing migrates and no existing save is rewritten:
+     an old {photo:"12"} keeps working forever and quietly becomes {photos:[...]} only if
+     that entry is edited. Rewriting everyone's data on load to add a feature is how you
+     lose it. */
+  function photosOf(t){
+    if(!t) return [];
+    if(Array.isArray(t.photos)) return t.photos.filter(Boolean);
+    return t.photo ? [t.photo] : [];
+  }
+  function setPhotos(t, arr){
+    arr=(arr||[]).filter(Boolean);
+    delete t.photo;                       // the old single field never coexists with the list
+    if(arr.length) t.photos=arr.slice(); else delete t.photos;
+  }
+  // First one keeps the bare transaction id so old and new entries key the same way.
+  function newPhotoId(txId, taken){
+    var i=0, id;
+    do{ id = (i===0) ? String(txId) : (txId+":"+i); i++; }while(taken.indexOf(id)>=0);
+    return id;
+  }
+  var PHOTO_MAX=8;   // a receipt has a few sides, not fifty; keeps one entry from eating the quota
   function savePhoto(id, dataUrl, cb){
     photoCache[id]=dataUrl;
     var ext=extFromDataUrl(dataUrl);
@@ -3208,7 +3249,7 @@ AI_TYPES.join(", "),
         // the post-delete state would be worse than none.
         safetyBackup("delete-portfolio", function(){
         var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
-        txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        txs.forEach(function(t){ photosOf(t).forEach(delPhoto); });
         var wasActive=(pid===ACTIVE_PID);
         PORTFOLIOS=PORTFOLIOS.filter(function(x){ return x.id!==pid; });
         // any portfolio that was mirroring the deleted one has nothing to mirror now
@@ -3244,9 +3285,17 @@ AI_TYPES.join(", "),
         var newPid=genPid();
         var photoJobs=[];
         txs.forEach(function(t){
-          var oldPhoto=t.photo;
+          var old=photosOf(t);
           t.id=freshIdBase();
-          if(oldPhoto){ t.photo=t.id; photoJobs.push({oldId:oldPhoto, newId:t.id}); }
+          if(old.length){
+            var fresh=[];
+            old.forEach(function(oldId){
+              var nid=newPhotoId(t.id, fresh);
+              fresh.push(nid);
+              photoJobs.push({oldId:oldId, newId:nid});
+            });
+            setPhotos(t, fresh);   // every photo re-keyed, not just the first
+          }
         });
         delete dataCopy.mirrorFrom;
         PORTFOLIOS.push({id:newPid, name:name, createdAt:Date.now(), data:dataCopy});
@@ -3983,7 +4032,7 @@ AI_TYPES.join(", "),
     // hard cap: the oldest fall out early rather than letting this grow without bound
     while(state.trash.length>TRASH_MAX){
       var gone=state.trash.pop();
-      if(gone && gone.tx && gone.tx.photo) delPhoto(gone.tx.photo);
+      if(gone && gone.tx) photosOf(gone.tx).forEach(delPhoto);
     }
   }
   function purgeTrash(){
@@ -3991,7 +4040,7 @@ AI_TYPES.join(", "),
     var keep=[], n=0;
     state.trash.forEach(function(item){
       if(trashAge(item)>=TRASH_DAYS){
-        if(item.tx && item.tx.photo) delPhoto(item.tx.photo);   // only now is it really gone
+        if(item.tx) photosOf(item.tx).forEach(delPhoto);   // only now is it really gone
         n++;
       } else keep.push(item);
     });
@@ -4006,14 +4055,19 @@ AI_TYPES.join(", "),
     // an id could have been reused by an import while this sat in the bin
     var clash=state.transactions.some(function(t){ return t.id===tx.id; });
     if(clash){
-      var oldPhoto=tx.photo;
+      var old=photosOf(tx);
       tx.id=freshIdBase()+Math.floor(Math.random()*1000);
-      if(oldPhoto){
-        // re-key the photo to match the new id, or the restored entry points at nothing
-        loadPhoto(oldPhoto, function(data){
-          if(data){ savePhoto(tx.id, data); delPhoto(oldPhoto); }
+      if(old.length){
+        // re-key EVERY photo to match the new id, or the restored entry points at nothing
+        var fresh=[];
+        old.forEach(function(oldId){
+          var nid=newPhotoId(tx.id, fresh);
+          fresh.push(nid);
+          loadPhoto(oldId, function(data){
+            if(data){ savePhoto(nid, data); delPhoto(oldId); }
+          });
         });
-        tx.photo=tx.id;
+        setPhotos(tx, fresh);
       }
     }
     state.transactions.push(tx);
@@ -4022,7 +4076,7 @@ AI_TYPES.join(", "),
     return tx;
   }
   function emptyTrash(){
-    trashList().forEach(function(item){ if(item.tx && item.tx.photo) delPhoto(item.tx.photo); });
+    trashList().forEach(function(item){ if(item.tx) photosOf(item.tx).forEach(delPhoto); });
     state.trash=[];
     persistNow();
   }
@@ -4041,7 +4095,7 @@ AI_TYPES.join(", "),
       var when = left<=0 ? "going now" : (left===1 ? "1 day left" : left+" days left");
       return '<div class="tr-item" data-i="'+i+'">'
         +'<div class="tr-item-main"><div class="tr-item-nm">'+esc(nm)+'</div>'
-        +'<div class="tr-item-sub">'+esc(t.date||"")+' · '+esc(meta.label)+(t.photo?" · 📎":"")+' · <span class="'+(left<=5?"tr-soon":"")+'">'+when+'</span></div></div>'
+        +'<div class="tr-item-sub">'+esc(t.date||"")+' · '+esc(meta.label)+(photosOf(t).length?" · 📎"+(photosOf(t).length>1?photosOf(t).length:""):"")+' · <span class="'+(left<=5?"tr-soon":"")+'">'+when+'</span></div></div>'
         +'<div class="tr-item-amt">'+fmt(num(t.amount),sym)+'</div>'
         +'<button type="button" class="tr-item-btn" data-i="'+i+'">Restore</button>'
         +'</div>';
@@ -5328,7 +5382,7 @@ AI_TYPES.join(", "),
   function refreshPhotoQHint(){
     var el=document.getElementById("photoQHint");
     if(!el) return;
-    var n=state.transactions.filter(function(t){ return t.photo; }).length;
+    var n=state.transactions.reduce(function(a,t){ return a+photosOf(t).length; },0);
     var base="Receipts only need to be legible. Originals from a phone are ~3\u00a0MB each and are what make backups too big to copy.";
     if(!n){ el.innerHTML=base; return; }
     el.innerHTML=base+" You have <b>"+n+"</b> photo"+(n===1?"":"s")+" attached — this setting applies to new ones as you add them.";
@@ -6432,7 +6486,11 @@ AI_TYPES.join(", "),
 
   var selectedIds={}; // ephemeral UI-only selection for "export selected" — never persisted
   var editingId=null;      // id of the transaction currently loaded into the form for editing, or null
-  var pendingPhoto=null;   // {dataUrl,name} freshly picked in the form, not yet saved
+  /* Freshly picked in the form, not yet saved. A list now, and `keep` holds the ids of
+     photos already on the entry being edited — so adding a third photo doesn't silently
+     discard the two already there. */
+  var pendingPhotos=[];    // [{dataUrl,name}]
+  var keepPhotos=[];       // ids of existing photos retained while editing
   var photoCleared=false;  // true if the user explicitly removed a photo while editing
 
   // type -> show/hide category & adjust label (shared by bind()'s live listener and startEdit/cancelEdit)
@@ -6446,11 +6504,48 @@ AI_TYPES.join(", "),
     lbl.textContent = (v==="adjust")?"Amount (use − for a drop)":"Amount";
   }
   function clearPhotoPick(){
-    pendingPhoto=null; photoCleared=true;
+    pendingPhotos=[]; keepPhotos=[]; photoCleared=true;
     var fPhotoEl=document.getElementById("fPhoto"); if(fPhotoEl) fPhotoEl.value="";
-    document.getElementById("fPhotoName").textContent="";
-    document.getElementById("fPhotoPrev").style.display="none";
-    document.getElementById("fPhotoClear").style.display="none";
+    renderPhotoStrip();
+  }
+  // One strip showing both what's already saved and what's just been picked — they look
+  // the same to the person, so they shouldn't be in two different places.
+  function renderPhotoStrip(){
+    var strip=document.getElementById("fPhotoStrip");
+    if(!strip) return;
+    var total=keepPhotos.length+pendingPhotos.length;
+    var nm=document.getElementById("fPhotoName");
+    if(nm) nm.textContent = total ? total+" photo"+(total===1?"":"s")
+      +(total>=PHOTO_MAX?" (max)":"") : "";
+    var clr=document.getElementById("fPhotoClear");
+    if(clr) clr.style.display = total ? "inline-block" : "none";
+    var btn=document.getElementById("fPhotoBtn");
+    if(btn) btn.disabled = total>=PHOTO_MAX;
+    strip.innerHTML="";
+    keepPhotos.forEach(function(id,i){
+      var c=document.createElement("div"); c.className="ph-thumb"; c.setAttribute("data-keep",id);
+      c.innerHTML='<img alt="Photo '+(i+1)+'"><button type="button" class="ph-x" title="Remove">×</button>';
+      strip.appendChild(c);
+      loadPhoto(id, function(url){ if(url) c.querySelector("img").src=url; });
+      c.querySelector(".ph-x").addEventListener("click", function(){
+        keepPhotos=keepPhotos.filter(function(x){ return x!==id; });
+        photoCleared=true; renderPhotoStrip();
+      });
+    });
+    pendingPhotos.forEach(function(pp,i){
+      var c=document.createElement("div"); c.className="ph-thumb ph-new";
+      var note="";
+      if(pp.wasBytes && pp.nowBytes && pp.nowBytes < pp.wasBytes*0.9)
+        note=kbTxt(pp.wasBytes)+" → "+kbTxt(pp.nowBytes);
+      else if(pp.nowBytes||pp.wasBytes) note=kbTxt(pp.nowBytes||pp.wasBytes);
+      c.title=(pp.name||"photo")+(note?" · "+note:"");
+      c.innerHTML='<img src="'+pp.dataUrl+'" alt="New photo '+(i+1)+'"><button type="button" class="ph-x" title="Remove">×</button>'
+        +(note?'<span class="ph-kb">'+esc(note)+'</span>':'');
+      strip.appendChild(c);
+      c.querySelector(".ph-x").addEventListener("click", function(){
+        pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip();
+      });
+    });
   }
 
 
@@ -6512,7 +6607,7 @@ AI_TYPES.join(", "),
       else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
       var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
       var instTag = t.inst ? '<span class="inst-tag">'+esc(t.inst)+'</span>' : '';
-      var hasProof = !!t.photo;
+      var hasProof = photosOf(t).length>0;
       var eyeBtn = hasProof ? '<button type="button" class="eye-btn" data-id="'+t.id+'" title="View photo">\u{1F441}</button>' : '';
       var checked = selectedIds[t.id] ? " checked" : "";
       // auto/advance entries are managed via the allowance & advance tools, not ad-hoc edited
@@ -6598,17 +6693,10 @@ AI_TYPES.join(", "),
     document.getElementById("fSplit").value="1";
     var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
-    pendingPhoto=null; photoCleared=false;
-    if(tx.photo){
-      document.getElementById("fPhotoName").textContent="current photo (pick a new one to replace it)";
-      document.getElementById("fPhotoClear").style.display="inline-block";
-      var prevEl=document.getElementById("fPhotoPrev");
-      loadPhoto(tx.photo, function(data){ if(data){ prevEl.src=data; prevEl.style.display="block"; } });
-    } else {
-      document.getElementById("fPhotoName").textContent="";
-      document.getElementById("fPhotoPrev").style.display="none";
-      document.getElementById("fPhotoClear").style.display="none";
-    }
+    // Picking a new photo used to REPLACE the old one. Now they add, and each existing
+    // one has its own × — which is the only way "attach another" can mean what it says.
+    pendingPhotos=[]; keepPhotos=photosOf(tx).slice(); photoCleared=false;
+    renderPhotoStrip();
     var titleEl=document.getElementById("formTitle"); if(titleEl) titleEl.textContent="Editing entry";
     var submitBtn=document.getElementById("entrySubmitBtn"); if(submitBtn) submitBtn.textContent="Save changes";
     var cancelBtn=document.getElementById("cancelEditBtn"); if(cancelBtn) cancelBtn.style.display="inline-block";
@@ -6703,7 +6791,7 @@ AI_TYPES.join(", "),
     wins:       function(t){ return t.type==="trade_win"; },
     loss:       function(t){ return t.type==="trade_loss"; },
     losses:     function(t){ return t.type==="trade_loss"; },
-    photo:      function(t){ return !!t.photo; },
+    photo:      function(t){ return photosOf(t).length>0; },
     note:       function(t){ return !!(t.note && t.note.trim()); }
   };
   function isTradeTx(t){ return t.type==="trade_win" || t.type==="trade_loss"; }
@@ -6761,7 +6849,7 @@ AI_TYPES.join(", "),
   }
   // bundles a chosen list of transactions (plus any photos they reference) into one JSON payload
   function exportTxList(list, cb){
-    var ids=[]; list.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+    var ids=[]; list.forEach(function(t){ photosOf(t).forEach(function(p){ ids.push(p); }); });
     var photos={}, i=0;
     (function next(){
       if(i>=ids.length){
@@ -6908,7 +6996,8 @@ AI_TYPES.join(", "),
         +'<div class="td-sec">What it moved</div>'+txPotMoves(t,sym)
         +(bits?'<div class="td-sec">Details</div>'+bits:"")
         +(t.note?'<div class="td-sec">Note</div><div class="td-note">'+esc(t.note)+'</div>':"")
-        +(t.photo?'<div class="td-sec">Photo</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
+        +(photosOf(t).length?'<div class="td-sec">'+(photosOf(t).length>1?photosOf(t).length+" photos":"Photo")
+            +'</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
       +'</div>'
       +'<div class="td-foot">'
         +(t.auto?'<div class="hint" style="margin:0;flex:1">Managed by the allowance tools \u2014 edit it there.</div>'
@@ -6935,14 +7024,23 @@ AI_TYPES.join(", "),
       if(editingId===t.id) cancelEdit();   // don't leave a deleted entry loaded in the form
       deleteWithUndo(t.id);                // same path as the row's bin icon, undo included
     });
-    if(t.photo){
-      loadPhoto(t.photo, function(url){
-        var box=ov.querySelector("#tdPhoto");
-        if(!box) return;
-        if(!url){ box.textContent="Photo missing."; return; }
-        box.innerHTML='<img src="'+url+'" alt="Receipt">';
-        box.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
-      });
+    var pics=photosOf(t);
+    if(pics.length){
+      var box=ov.querySelector("#tdPhoto");
+      if(box){
+        box.innerHTML="";
+        box.classList.toggle("td-photo-many", pics.length>1);
+        pics.forEach(function(pid,i){
+          var cell=document.createElement("div");
+          cell.className="td-pcell";
+          box.appendChild(cell);
+          loadPhoto(pid, function(url){
+            if(!url){ cell.textContent="missing"; return; }
+            cell.innerHTML='<img src="'+url+'" alt="Receipt '+(i+1)+'">';
+            cell.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
+          });
+        });
+      }
     }
   }
 
@@ -6954,14 +7052,27 @@ AI_TYPES.join(", "),
     document.getElementById("viewerTitle").textContent=(tx.note||tx.cat||"Photo").slice(0,55);
     body.innerHTML='<div class="viewer-note">Loading\u2026</div>';
     document.getElementById("viewer").style.display="flex";
-    if(tx.photo){
-      loadPhoto(tx.photo, function(data){
-        if(!data){ body.innerHTML='<div class="viewer-note">Photo not found. Re-attach it with the \ud83d\udcce button.</div>'; return; }
-        var img=new Image();
-        img.style.cssText="max-width:100%;border-radius:8px";
-        img.onload=function(){ body.innerHTML=""; body.appendChild(img); };
-        img.onerror=function(){ body.innerHTML='<div class="viewer-note">Can\'t preview this format in browser.<br><a href="'+data+'" download="receipt">Download to view</a></div>'; };
-        img.src=data; img.alt="receipt";
+    // The viewer shows every photo on the entry now, stacked, each numbered — rather than
+    // silently showing only the first and pretending it's the lot.
+    var pics=photosOf(tx);
+    if(pics.length){
+      body.innerHTML="";
+      pics.forEach(function(pid, i){
+        var wrap=document.createElement("div");
+        wrap.className="viewer-pic";
+        wrap.innerHTML = pics.length>1
+          ? '<div class="viewer-n">'+(i+1)+' of '+pics.length+'</div><div class="viewer-slot">Loading\u2026</div>'
+          : '<div class="viewer-slot">Loading\u2026</div>';
+        body.appendChild(wrap);
+        var slot=wrap.querySelector(".viewer-slot");
+        loadPhoto(pid, function(data){
+          if(!data){ slot.innerHTML='<div class="viewer-note">Photo not found. Re-attach it with the \ud83d\udcce button.</div>'; return; }
+          var img=new Image();
+          img.style.cssText="max-width:100%;border-radius:8px;display:block";
+          img.onload=function(){ slot.innerHTML=""; slot.appendChild(img); };
+          img.onerror=function(){ slot.innerHTML='<div class="viewer-note">Can\'t preview this format in browser.<br><a href="'+data+'" download="receipt">Download to view</a></div>'; };
+          img.src=data; img.alt="receipt "+(i+1);
+        });
       });
     } else {
       body.innerHTML='<div class="viewer-note">No photo attached.</div>';
@@ -7118,24 +7229,29 @@ AI_TYPES.join(", "),
     var fPhoto=document.getElementById("fPhoto");
     document.getElementById("fPhotoBtn").addEventListener("click", function(){ fPhoto.click(); });
     fPhoto.addEventListener("change", function(){
-      var f=fPhoto.files && fPhoto.files[0]; if(!f) return;
-      document.getElementById("fPhotoName").textContent="reading…";
+      var files=Array.prototype.slice.call(fPhoto.files||[]);
+      if(!files.length) return;
+      var room=PHOTO_MAX-(keepPhotos.length+pendingPhotos.length);
+      var over=files.length-room;
+      if(over>0) files=files.slice(0,Math.max(0,room));
       var nmEl=document.getElementById("fPhotoName");
-      if(nmEl) nmEl.textContent="reading photo…";
-      processImage(f, function(res){
-        pendingPhoto=res; photoCleared=false;
-        var nm=res.name||"photo";
-        var short = nm.length>22? nm.slice(0,20)+"…" : nm;
-        // say what happened to the file — silent shrinking of someone's photo is rude
-        if(res.wasBytes && res.nowBytes && res.nowBytes < res.wasBytes*0.9){
-          short += " · "+kbTxt(res.wasBytes)+" → "+kbTxt(res.nowBytes);
-        } else if(res.wasBytes){
-          short += " · "+kbTxt(res.nowBytes||res.wasBytes);
-        }
-        document.getElementById("fPhotoName").textContent = short;
-        var prev=document.getElementById("fPhotoPrev");
-        prev.src=res.dataUrl; prev.style.display="block";
-        document.getElementById("fPhotoClear").style.display="inline-block";
+      if(!files.length){
+        if(nmEl) nmEl.textContent="that's the most ("+PHOTO_MAX+")";
+        fPhoto.value=""; return;
+      }
+      if(nmEl) nmEl.textContent="reading "+files.length+" photo"+(files.length===1?"":"s")+"…";
+      var left=files.length;
+      files.forEach(function(f){
+        processImage(f, function(res){
+          if(res) pendingPhotos.push(res);
+          photoCleared=false;
+          if(--left===0){
+            fPhoto.value="";           // so picking the same file again still fires change
+            renderPhotoStrip();
+            // silently dropping someone's photos would be worse than saying so
+            if(over>0) flashSaved("added "+files.length+" — "+PHOTO_MAX+" is the limit");
+          }
+        });
       });
     });
     document.getElementById("fPhotoClear").addEventListener("click", clearPhotoPick);
@@ -7177,12 +7293,20 @@ AI_TYPES.join(", "),
           if(iv2) tx.inst=iv2; else delete tx.inst;
         } else delete tx.inst;
         if(note) tx.note=note; else delete tx.note;
-        if(pendingPhoto){
-          if(tx.photo) delPhoto(tx.photo);
-          tx.photo=tx.id; savePhoto(tx.id, pendingPhoto.dataUrl);
-        } else if(photoCleared && tx.photo){
-          delPhoto(tx.photo); delete tx.photo;
-        }
+        // keepPhotos = the existing ones NOT removed in the strip; anything gone from it
+        // is deleted for real. Only touch photos if the form actually loaded them.
+        (function(){
+          var had=photosOf(tx);
+          var kept=keepPhotos.filter(function(id){ return had.indexOf(id)>=0; });
+          had.forEach(function(id){ if(kept.indexOf(id)<0) delPhoto(id); });
+          var ids=kept.slice();
+          pendingPhotos.forEach(function(pp){
+            var nid=newPhotoId(tx.id, ids);
+            ids.push(nid);
+            savePhoto(nid, pp.dataUrl);
+          });
+          setPhotos(tx, ids);
+        })();
         cancelEdit();
         state.selectedMonths=[monthKey(date)];
         persist(); render();
@@ -7195,7 +7319,15 @@ AI_TYPES.join(", "),
           if(iv) tx2.inst=iv;
         }
         if(note) tx2.note=note;
-        if(pendingPhoto){ tx2.photo=tx2.id; savePhoto(tx2.id, pendingPhoto.dataUrl); }
+        if(pendingPhotos.length){
+          var pids=[];
+          pendingPhotos.forEach(function(pp){
+            var nid=newPhotoId(tx2.id, pids);
+            pids.push(nid);
+            savePhoto(nid, pp.dataUrl);
+          });
+          setPhotos(tx2, pids);
+        }
         recordAction("Added "+(TYPE_META[type]||{label:type}).label.toLowerCase()+" "+fmt(raw, state.currency));
         state.transactions.push(tx2);
         state.selectedMonths=[monthKey(date)];
@@ -7408,7 +7540,7 @@ AI_TYPES.join(", "),
       var ids=[];
       PORTFOLIOS.forEach(function(p){
         var txs=(p.data&&Array.isArray(p.data.transactions))?p.data.transactions:[];
-        txs.forEach(function(t){ if(t.photo && ids.indexOf(t.photo)<0) ids.push(t.photo); });
+        txs.forEach(function(t){ photosOf(t).forEach(function(p){ if(ids.indexOf(p)<0) ids.push(p); }); });
       });
       var photos={}, i=0;
       (function next(){
@@ -7514,7 +7646,7 @@ AI_TYPES.join(", "),
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
               setTimeout(function(){ URL.revokeObjectURL(url); },1000);
             }catch(e){ /* best-effort — the erase proceeds either way */ }
-            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            state.transactions.forEach(function(t){ photosOf(t).forEach(delPhoto); });
             var blank=clone(DEFAULTS); blank.transactions=[]; blank.selectedMonths=null;
             applyPortfolioData(blank);
             flushActiveIntoRegistry();
@@ -7653,7 +7785,7 @@ AI_TYPES.join(", "),
           message:"This is an older backup with <b>"+n0+" "+(n0===1?"entry":"entries")+"</b>.\n\nIt replaces everything in <b>"+esc(pfName)+"</b>. Your other portfolios are not affected.",
           confirmText:"Replace "+esc(pfName), danger:true,
           onConfirm:function(){
-            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            state.transactions.forEach(function(t){ photosOf(t).forEach(delPhoto); });
             var incoming=clone(obj.state);
             incoming.transactions=adoptTransactions(obj.state.transactions, obj.photos);
             applyPortfolioData(incoming);
@@ -7685,7 +7817,7 @@ AI_TYPES.join(", "),
           message:"This replaces everything in <b>"+esc(pfName2)+"</b> with <b>"+obj.transactions.length+" entries</b>. Your other portfolios are not affected.",
           confirmText:"Replace", danger:true,
           onConfirm:function(){
-            state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+            state.transactions.forEach(function(t){ photosOf(t).forEach(delPhoto); });
             var incoming2=clone(obj);
             incoming2.transactions=adoptTransactions(obj.transactions, obj.photos);
             applyPortfolioData(incoming2);
@@ -7711,7 +7843,7 @@ AI_TYPES.join(", "),
     });
     function doReset(){
       safetyBackup("reset", function(){
-        state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+        state.transactions.forEach(function(t){ photosOf(t).forEach(delPhoto); });
         state=clone(DEFAULTS); state.selectedMonths=null;
         flushActiveIntoRegistry();
         persistNow(); render(); renderPortfolioUI(); flashSaved("reset — backup downloaded");
@@ -8174,7 +8306,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
