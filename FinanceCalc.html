@@ -59,6 +59,75 @@
   [data-theme="emerald"] .dot{background:#00ff88;box-shadow:0 0 0 5px rgba(0,255,136,.15)}
   [data-theme="emerald"] input:focus,[data-theme="emerald"] select:focus{border-color:#00ff88;box-shadow:0 0 0 3px rgba(0,255,136,.12)}
 
+  /* Theme: Paper — the only light theme. Everything else in here assumes a dark
+     background, so this one also has to walk back the hardcoded black shadows. */
+  [data-theme="paper"]{
+    --bg:#f4f1ea; --panel:#ffffff; --card:#faf8f3; --card2:#efece3;
+    --bd:#ded9cd; --bd2:#c9c3b4;
+    --tx:#1f1c17; --mut:#777063;
+    --amber:#b3730d; --amber-dim:#d9ac6a;
+    --hm0:#e8e4da; --hm1:#f0d9b0; --hm2:#e3b978; --hm3:#d19a42; --hm4:#bd8018; --hm5:#8f5a06;
+    --up:#0f7a45; --down:#c22f2f; --cool:#2a6fa8;
+    --hero-grad:linear-gradient(160deg,#ffffff,#f4f1ea);
+    --hero-glow:rgba(179,115,13,.10);
+  }
+  [data-theme="paper"] .seg button.on{background:#1f1c17;color:#f4f1ea}
+  [data-theme="paper"] .btn.primary{background:#1f1c17;color:#f4f1ea}
+  [data-theme="paper"] .yr-count .pip.on{background:#b3730d}
+  [data-theme="paper"] .done-tag{color:#0f7a45}
+  [data-theme="paper"] .catbar span{background:linear-gradient(90deg,#b3730d,#d9ac6a)}
+  [data-theme="paper"] a{color:#8f5a06}
+  [data-theme="paper"] .dot{background:#b3730d;box-shadow:0 0 0 5px rgba(179,115,13,.15)}
+  [data-theme="paper"] input:focus,[data-theme="paper"] select:focus{border-color:#b3730d;box-shadow:0 0 0 3px rgba(179,115,13,.14)}
+  [data-theme="paper"] .badge{background:#efece3;color:#777063;border-color:#ded9cd}
+  /* black shadows built for a dark app read as bruises on paper */
+  [data-theme="paper"] .mdl{box-shadow:0 24px 60px rgba(60,50,30,.18)}
+  [data-theme="paper"] .mdl-ov{background:rgba(40,34,22,.34)}
+  [data-theme="paper"] .undo-toast{box-shadow:0 10px 30px rgba(60,50,30,.16)}
+  [data-theme="paper"] #tabbar{box-shadow:0 12px 34px rgba(60,50,30,.14)}
+  [data-theme="paper"] .ai-th button{background:rgba(255,255,255,.85);color:#1f1c17}
+
+  /* Theme: Synth — synthwave, magenta on deep violet */
+  [data-theme="synth"]{
+    --bg:#120a20; --panel:#1a0f2e; --card:#211339; --card2:#2b1a49;
+    --bd:#3d2568; --bd2:#523182;
+    --tx:#f2e6ff; --mut:#9b7cc4;
+    --amber:#ff4fd8; --amber-dim:#8f2a79;
+    --hm0:#2b1a49; --hm1:#4a2065; --hm2:#772b8e; --hm3:#a834ae; --hm4:#d840c7; --hm5:#ff4fd8;
+    --up:#3ff5c4; --down:#ff4f7d; --cool:#4fc3ff;
+    --hero-grad:linear-gradient(160deg,#241443,#120a20);
+    --hero-glow:rgba(255,79,216,.16);
+  }
+  [data-theme="synth"] .seg button.on{background:#ff4fd8;color:#120a20}
+  [data-theme="synth"] .btn.primary{background:#ff4fd8;color:#120a20}
+  [data-theme="synth"] .yr-count .pip.on{background:#ff4fd8}
+  [data-theme="synth"] .done-tag{color:#3ff5c4}
+  [data-theme="synth"] .catbar span{background:linear-gradient(90deg,#ff4fd8,#4fc3ff)}
+  [data-theme="synth"] a{color:#4fc3ff}
+  [data-theme="synth"] .dot{background:#ff4fd8;box-shadow:0 0 0 5px rgba(255,79,216,.18)}
+  [data-theme="synth"] input:focus,[data-theme="synth"] select:focus{border-color:#ff4fd8;box-shadow:0 0 0 3px rgba(255,79,216,.15)}
+
+  /* Theme: Ice — arctic, cool slate and cyan */
+  [data-theme="ice"]{
+    --bg:#0a1219; --panel:#0f1a24; --card:#13212e; --card2:#1a2c3c;
+    --bd:#24405a; --bd2:#305775;
+    --tx:#e2f1fb; --mut:#7595ad;
+    --amber:#38c6f4; --amber-dim:#1a6b8a;
+    --hm0:#1a2c3c; --hm1:#1c4459; --hm2:#186986; --hm3:#1490b5; --hm4:#22b0dc; --hm5:#38c6f4;
+    --up:#31e0a8; --down:#ff6b7d; --cool:#38c6f4;
+    --hero-grad:linear-gradient(160deg,#14232f,#0a1219);
+    --hero-glow:rgba(56,198,244,.13);
+  }
+  [data-theme="ice"] .seg button.on{background:#38c6f4;color:#0a1219}
+  [data-theme="ice"] .btn.primary{background:#38c6f4;color:#0a1219}
+  [data-theme="ice"] .yr-count .pip.on{background:#38c6f4}
+  [data-theme="ice"] .done-tag{color:#31e0a8}
+  [data-theme="ice"] .catbar span{background:linear-gradient(90deg,#38c6f4,#1a6b8a)}
+  [data-theme="ice"] a{color:#38c6f4}
+  [data-theme="ice"] .dot{background:#38c6f4;box-shadow:0 0 0 5px rgba(56,198,244,.16)}
+  [data-theme="ice"] input:focus,[data-theme="ice"] select:focus{border-color:#38c6f4;box-shadow:0 0 0 3px rgba(56,198,244,.14)}
+
+
   /* ---- touch bar ---- */
   .page{animation:pageIn .22s cubic-bezier(.22,1,.36,1)}
   @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -1446,7 +1515,10 @@
   var DEFAULTS = {
     currency:"$",
     opening:{balance:0, debt:0, savings:0, tax:0, trading:0},
-    settings:{allowance:41, toDebt:30, toTrading:11, toSavings:0, taxPct:0, sepTrading:false, photoQ:"med"},
+    // Neutral defaults. These were 41/30/11 — one household's actual allowance numbers,
+    // handed to every new portfolio as if they were universal. Zero means "not set up
+    // yet", which is the only honest default for someone else's money.
+    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, photoQ:"med"},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
@@ -1710,9 +1782,6 @@
     return true;
   }
 
-  // Currency switch date — trades before this were AED-era, reset to zero, don't count in P/L
-  var USD_ERA_START = "2026-04-01";
-
   function summaryFor(scope){ // scope = 'all', a single 'YYYY-MM', or an array of 'YYYY-MM'
     var monthSet=null;
     if(Array.isArray(scope)){ monthSet={}; scope.forEach(function(k){ monthSet[k]=1; }); }
@@ -1723,8 +1792,8 @@
       var a=num(t.amount);
       r.net+=balDelta(t);
       if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
-      else if(t.type==="trade_win"&&t.date>=USD_ERA_START){ r.tradePL+=a; }
-      else if(t.type==="trade_loss"&&t.date>=USD_ERA_START){ r.tradePL-=a; }
+      else if(t.type==="trade_win"){ r.tradePL+=a; }
+      else if(t.type==="trade_loss"){ r.tradePL-=a; }
       else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
       if(t.type==="pay_debt_balance"||t.type==="alw_debt") r.debtPaid+=a;
       r.saved+=savDelta(t);
@@ -2762,7 +2831,7 @@ AI_TYPES.join(", "),
     appModal({
       title:"New portfolio",
       message:"Give it a name. It starts empty, with its own balances and settings.",
-      input:{value:"", placeholder:"e.g. Trading, Savings, Zuhayr"},
+      input:{value:"", placeholder:"e.g. Trading, Savings, Business"},
       confirmText:"Create",
       onConfirm:function(name){
         flushActiveIntoRegistry();
@@ -5096,16 +5165,10 @@ AI_TYPES.join(", "),
     var activeM=activeMonths(), allSel=isAllSelected();
     var sm = allSel ? summaryFor("all") : summaryFor(activeM);
 
-    // advance notices — one set of banners per ticked month; the era-boundary note
-    // applies to "All months" too, since the same Trade P/L gap exists there
+    // advance notices — one set of banners per ticked month
     var advNotesEl=document.getElementById("advNotes");
     if(advNotesEl){
       var nh="";
-      var eraMonth=monthKey(USD_ERA_START);
-      var eraCheckMonths = allSel ? monthsInData() : activeM;
-      if(eraCheckMonths.some(function(m){ return m<eraMonth; })){
-        nh+='<div class="adv-note adv-info"><span>\u2139\ufe0f Trade P/L above only counts trades from '+monthLong(eraMonth)+' onward (the AED\u2192USD switch). Earlier trades still show their original amounts in the list below \u2014 they\u2019re just not folded into this total.</span></div>';
-      }
       if(!allSel && activeM.length>0){
         activeM.slice().sort().forEach(function(mkey){
           var advIn=advanceReceivedFor(mkey);
@@ -5575,10 +5638,24 @@ AI_TYPES.join(", "),
   function bind(){
     // theme switcher — mono is the default
     var THEMES=[
-      {key:"mono",   label:"⬛ Mono",   swatch:"#000000"},
-      {key:"dark",   label:"🌑 Dark",   swatch:"#0b0e14"},
-      {key:"emerald",label:"💚 Matrix", swatch:"#00ff88"}
+      {key:"mono",   label:"⬛ Mono",   swatch:"#000000", ring:"#444444"},
+      {key:"dark",   label:"🌑 Dark",   swatch:"#0b0e14", ring:"#f4b73f"},
+      {key:"emerald",label:"💚 Matrix", swatch:"#00ff88"},
+      {key:"paper",  label:"📄 Paper",  swatch:"#f4f1ea", ring:"#b3730d"},
+      {key:"synth",  label:"🌆 Synth",  swatch:"#ff4fd8"},
+      {key:"ice",    label:"🧊 Ice",    swatch:"#38c6f4"}
     ];
+    // Render the picker FROM the list. Previously the buttons were hardcoded HTML and
+    // THEMES was never read, so the two could disagree and nothing would notice.
+    (function buildThemeGrid(){
+      var g=document.getElementById("themeGrid");
+      if(!g) return;
+      g.innerHTML=THEMES.map(function(t){
+        var ring=t.ring?";border:1px solid "+t.ring:"";
+        return '<button type="button" class="theme-opt" data-theme-key="'+t.key+'">'
+          +'<span class="tsw" style="background:'+t.swatch+ring+'"></span>'+t.label+'</button>';
+      }).join("");
+    })();
     function applyTheme(key){
       document.documentElement.setAttribute("data-theme", key==="dark"?"":key);
       try{localStorage.setItem("mymoney_theme",key);}catch(e){}
@@ -6347,11 +6424,7 @@ AI_TYPES.join(", "),
   <!-- Theme picker -->
   <div style="padding:18px 20px 0">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Appearance</div>
-    <div class="theme-grid">
-      <button class="theme-opt" data-theme-key="mono"><span class="tsw" style="background:#000;border:1px solid #444"></span>⬛ Mono</button>
-      <button class="theme-opt" data-theme-key="dark"><span class="tsw" style="background:#0b0e14;border:1px solid #f4b73f"></span>🌑 Dark</button>
-      <button class="theme-opt" data-theme-key="emerald"><span class="tsw" style="background:#00ff88"></span>💚 Matrix</button>
-    </div>
+    <div class="theme-grid" id="themeGrid"></div>
   </div>
 
   <hr class="sep" style="margin:20px">
@@ -6692,7 +6765,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.9</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.0</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
