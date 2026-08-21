@@ -238,6 +238,18 @@
   .cs-mut{opacity:.7}
   .cs-tot{margin-top:8px;font-size:11px;color:var(--mut)}
 
+  .ly-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--bd);
+    border-radius:9px;background:var(--card);margin-bottom:7px}
+  .ly-ord{display:flex;flex-direction:column;gap:2px;flex:none}
+  .ly-ord button{width:26px;height:19px;border:1px solid var(--bd2);background:transparent;color:var(--mut);
+    border-radius:4px;font-size:8px;cursor:pointer;line-height:1;transition:border-color .13s,color .13s}
+  .ly-ord button:hover:not(:disabled){border-color:var(--amber);color:var(--tx)}
+  .ly-ord button:disabled{opacity:.3;cursor:default}
+  .ly-main{flex:1;min-width:0}
+  .ly-nm{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ly-hint{font-size:10.5px;color:var(--mut);margin-top:1px}
+  .ly-sel{flex:none;width:104px;font-size:12px;padding:5px 6px}
+
   .mc-wrap{margin:10px 0 4px}
   .mc-bar{position:relative;height:34px;border-radius:8px;background:var(--card2);overflow:hidden}
   .mc-band{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,color-mix(in srgb,var(--down) 22%,transparent),color-mix(in srgb,var(--up) 22%,transparent))}
@@ -703,7 +715,42 @@
 
 
 <!-- Chart -->
-<div class="panel">
+<!-- Cards you choose in Settings → Layout land here, in your order -->
+<div id="dashSlot"></div>
+
+</main>
+
+<!-- Card pool: every movable card is parked here at load, then moved to whichever page
+     the user's layout says. Keeping one home means a card can never be orphaned. -->
+<div id="cardPool" style="display:none">
+<div class="panel" id="hmCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">▦</span> Where it goes</h2>
+    <span class="mut" id="hmSpan" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px">
+    <div id="hmGridWrap"><div id="hmChart"></div></div>
+    <div class="hm-legend">
+      <span class="hm-lg-t" id="hmLegT">less</span>
+      <span class="hm-sw l1"></span><span class="hm-sw l2"></span><span class="hm-sw l3"></span><span class="hm-sw l4"></span><span class="hm-sw l5"></span>
+      <span class="hm-lg-t">more</span>
+    </div>
+    <div id="hmPick" class="hm-pick" style="display:none"></div>
+    <div id="hmInsight" class="hm-insight"></div>
+  </div>
+</div>
+<div class="panel" id="goalCard" style="display:none">
+  <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
+  <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
+</div>
+<div class="panel" id="budgetCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">◑</span> Budgets</h2>
+    <span class="mut" id="budgetMonth" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
+</div>
+<div class="panel" id="chartCard">
   <div class="p-head">
     <h2><span class="tick">▚</span> Balance over time</h2>
     <div style="display:flex;gap:8px;align-items:center">
@@ -716,8 +763,7 @@
   </div>
   <div class="p-body" id="chartWrap"></div>
 </div>
-
-</main>
+</div>
 
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
@@ -809,23 +855,7 @@
   </div>
 </div>
 
-<!-- Where it goes — moved off the dashboard; it belongs next to the entries it describes -->
-<div class="panel" id="hmCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">▦</span> Where it goes</h2>
-    <span class="mut" id="hmSpan" style="font-size:12px"></span>
-  </div>
-  <div class="p-body" style="padding-top:4px">
-    <div id="hmGridWrap"><div id="hmChart"></div></div>
-    <div class="hm-legend">
-      <span class="hm-lg-t" id="hmLegT">less</span>
-      <span class="hm-sw l1"></span><span class="hm-sw l2"></span><span class="hm-sw l3"></span><span class="hm-sw l4"></span><span class="hm-sw l5"></span>
-      <span class="hm-lg-t">more</span>
-    </div>
-    <div id="hmPick" class="hm-pick" style="display:none"></div>
-    <div id="hmInsight" class="hm-insight"></div>
-  </div>
-</div>
+<div id="ledgerSlot"></div>
 
 <!-- Ledger -->
 <div class="panel">
@@ -891,7 +921,6 @@
           <button type="button" data-d="30" class="on">30d</button>
           <button type="button" data-d="60">60d</button>
           <button type="button" data-d="90">90d</button>
-          <button type="button" data-d="365">1y</button>
         </div>
       </div>
       <div class="p-body" style="padding-top:2px">
@@ -1533,6 +1562,8 @@
     budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
     recurring:[], // [{id,type,amount,cat,note,freq,day,startDate,lastRun,paused}]
     goals:[],     // [{id,name,target,by,createdAt}] — measured against the savings pot
+    layout:null,      // {cardId: pageId} — null = use defaults
+    layoutOrder:null, // [cardId] — null = declaration order
     trash:[],     // [{tx,at}] deleted entries, recoverable for 30 days
     chartType:"candle", chartCollapsed:false,
     selectedMonths:null, // array of "YYYY-MM", or ["all"]; null = not yet initialized
@@ -2830,6 +2861,7 @@ AI_TYPES.join(", "),
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
     resetLedgerView();
+    applyLayout();   // layout is per-portfolio, so the cards move with the switch
     persistNow();
     render();
     renderPortfolioUI();
@@ -3546,7 +3578,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -4030,6 +4062,96 @@ AI_TYPES.join(", "),
       el.innerHTML="<b>"+days[top.dow]+"</b> cost you the most — <b>"+fmt(top.total,state.currency)+"</b> across "+top.n+" of them, averaging <b>"+fmt(top.avg,state.currency)+"</b> each. "
         +"You spent something on <b>"+sc.spentDays+"</b> of the last "+cells.length+" days.";
     } else el.innerHTML="You spent something on <b>"+sc.spentDays+"</b> of the last "+cells.length+" days.";
+  }
+
+  /* ================= LAYOUT =================
+     Which cards go on which page, and in what order — the user's call, not mine. Every
+     movable card is parked in #cardPool at load and moved into a page's slot from this
+     config, so a card can never end up orphaned: if it isn't placed, it's in the pool.
+     Defaults are deliberately sparse. A dashboard that shows everything shows nothing. */
+  var LAYOUT_CARDS=[
+    {id:"chartCard",  name:"Balance over time", hint:"Candles or line"},
+    {id:"hmCard",     name:"Where it goes",     hint:"Spending heatmap"},
+    {id:"budgetCard", name:"Budgets",           hint:"Monthly caps + progress"},
+    {id:"goalCard",   name:"Goals",             hint:"Savings targets"}
+  ];
+  var LAYOUT_PAGES=[
+    {id:"dash",     slot:"dashSlot",     label:"Dashboard"},
+    {id:"entries",  slot:"ledgerSlot",   label:"Entries"},
+    {id:"settings", slot:"settingsSlot", label:"Settings"},
+    {id:"off",      slot:null,           label:"Hidden"}
+  ];
+  var LAYOUT_DEFAULT={ chartCard:"dash", hmCard:"entries", budgetCard:"settings", goalCard:"settings" };
+  function layoutCfg(){
+    var L=(state.layout && typeof state.layout==="object") ? state.layout : {};
+    var out={};
+    LAYOUT_CARDS.forEach(function(c){
+      var v=L[c.id];
+      out[c.id] = LAYOUT_PAGES.some(function(p){ return p.id===v; }) ? v : LAYOUT_DEFAULT[c.id];
+    });
+    return out;
+  }
+  function layoutOrder(){
+    var o=(state.layoutOrder && Array.isArray(state.layoutOrder)) ? state.layoutOrder.slice() : [];
+    // anything new (a card added in a later version) lands at the end rather than vanishing
+    LAYOUT_CARDS.forEach(function(c){ if(o.indexOf(c.id)<0) o.push(c.id); });
+    return o.filter(function(id){ return LAYOUT_CARDS.some(function(c){ return c.id===id; }); });
+  }
+  function applyLayout(){
+    var cfg=layoutCfg(), order=layoutOrder();
+    var pool=document.getElementById("cardPool");
+    if(!pool) return;
+    order.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el) return;
+      var page=LAYOUT_PAGES.filter(function(p){ return p.id===cfg[id]; })[0];
+      var target=(page && page.slot) ? document.getElementById(page.slot) : pool;
+      if(target) target.appendChild(el);   // appendChild moves; order follows the loop
+    });
+  }
+  function setLayout(cardId, pageId){
+    if(!state.layout || typeof state.layout!=="object") state.layout={};
+    state.layout[cardId]=pageId;
+    persistNow(); applyLayout(); render(); renderLayoutUI();
+  }
+  function moveLayout(cardId, dir){
+    var o=layoutOrder(), i=o.indexOf(cardId), j=i+dir;
+    if(i<0 || j<0 || j>=o.length) return;
+    o[i]=o[j]; o[j]=cardId;
+    state.layoutOrder=o;
+    persistNow(); applyLayout(); renderLayoutUI();
+  }
+  function renderLayoutUI(){
+    var box=document.getElementById("layoutList");
+    if(!box) return;
+    var cfg=layoutCfg(), order=layoutOrder();
+    box.innerHTML=order.map(function(id,i){
+      var c=LAYOUT_CARDS.filter(function(x){ return x.id===id; })[0];
+      var opts=LAYOUT_PAGES.map(function(p){
+        return '<option value="'+p.id+'"'+(cfg[id]===p.id?" selected":"")+'>'+esc(p.label)+'</option>';
+      }).join("");
+      return '<div class="ly-row" data-id="'+id+'">'
+        +'<div class="ly-ord"><button type="button" data-dir="-1"'+(i===0?" disabled":"")+' aria-label="Move up">▲</button>'
+        +'<button type="button" data-dir="1"'+(i===order.length-1?" disabled":"")+' aria-label="Move down">▼</button></div>'
+        +'<div class="ly-main"><div class="ly-nm">'+esc(c.name)+'</div><div class="ly-hint">'+esc(c.hint)+'</div></div>'
+        +'<select class="ly-sel" aria-label="Where to show '+esc(c.name)+'">'+opts+'</select>'
+        +'</div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll(".ly-row"), function(row){
+      var id=row.getAttribute("data-id");
+      Array.prototype.forEach.call(row.querySelectorAll("[data-dir]"), function(b){
+        b.addEventListener("click", function(){ moveLayout(id, +b.getAttribute("data-dir")); });
+      });
+      row.querySelector(".ly-sel").addEventListener("change", function(e){ setLayout(id, e.target.value); });
+    });
+  }
+  function bindLayout(){
+    var r=document.getElementById("layoutReset");
+    if(r) r.addEventListener("click", function(){
+      state.layout=clone(LAYOUT_DEFAULT);
+      state.layoutOrder=LAYOUT_CARDS.map(function(c){ return c.id; });
+      persistNow(); applyLayout(); render(); renderLayoutUI(); flashSaved("layout reset");
+    });
   }
 
   /* ================= TRADING FORECAST =================
@@ -4797,8 +4919,7 @@ AI_TYPES.join(", "),
     var numEl=document.getElementById("trFcNum");
     numEl.textContent=(f.expected>=0?"+":"")+fmt(f.expected,sym);
     numEl.className="fc-num mono "+(f.expected>=0?"up":"down");
-    var span = trFcDays>=365 ? "a year" : (trFcDays+" days");
-    document.getElementById("trFcCap").textContent="expected over "+span+" · about "+f.trades+" trade"+(f.trades===1?"":"s");
+    document.getElementById("trFcCap").textContent="expected over "+trFcDays+" days · about "+f.trades+" trade"+(f.trades===1?"":"s");
 
     var sim=tradeSim(list, trFcDays, 1000);
     var band=document.getElementById("trFcBand");
@@ -6457,6 +6578,7 @@ AI_TYPES.join(", "),
     bindCsvImport();
     bindPhotoQ();
     bindChartMode();
+    bindLayout();
     bindRecurring();
     bindGoals();
     bindTrash();
@@ -6470,7 +6592,8 @@ AI_TYPES.join(", "),
       if(document.visibilityState==="hidden" && saveTimer) persistNow();
     });
     loadData(function(){
-      purgeTrash();   // drop anything past its 30 days before the first paint
+      purgeTrash();    // drop anything past its 30 days before the first paint
+      applyLayout();   // cards to their chosen pages before anything paints
       render(); renderPortfolioUI(); refreshStorageBadge();
     });
   }
@@ -6670,20 +6793,8 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
-  <!-- Goals + Budgets: moved off the dashboard, sat next to their own settings -->
-  <div style="padding:0 20px">
-<div class="panel" id="goalCard" style="display:none">
-  <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
-  <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
-</div>
-<div class="panel" id="budgetCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">◑</span> Budgets</h2>
-    <span class="mut" id="budgetMonth" style="font-size:12px"></span>
-  </div>
-  <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
-</div>
-  </div>
+  <!-- Cards assigned to Settings by the layout picker -->
+  <div id="settingsSlot" style="padding:0 20px"></div>
 
   <hr class="sep" style="margin:20px">
 
@@ -6798,6 +6909,12 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Wording</div>
     <div class="hint">Call things whatever you actually call them. Leave a box empty to use the default.</div>
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin:4px 0 10px">Layout</div>
+    <div class="hint">Put each card where you want it, or hide it. Use ▲▼ to reorder. Takes effect straight away.</div>
+    <div id="layoutList"></div>
+    <button class="btn ghost sm" id="layoutReset" style="width:100%;margin-top:8px">Reset to defaults</button>
+    <hr class="sep" style="margin:18px 0">
+
     <div class="fld"><label for="setChartMode">Balance chart shows</label>
       <select id="setChartMode">
         <option value="candle">Candles — monthly high/low</option>
@@ -6850,7 +6967,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.4</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.5</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
