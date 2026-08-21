@@ -260,6 +260,42 @@
   .pl-m.near .pl-m-v{color:var(--amber)}
   .pl-m.over .pl-m-v{color:var(--down)}
 
+  .xsel{position:relative;display:block}
+  .xsel-native{position:absolute!important;opacity:0;pointer-events:none;width:1px;height:1px;margin:0;padding:0;border:0}
+  .xsel-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--card2);border:1px solid var(--bd2);border-radius:10px;color:var(--tx);
+    font-family:inherit;font-size:15px;padding:11px 13px;cursor:pointer;text-align:left;
+    transition:border-color .13s,background .13s}
+  .xsel-btn:hover:not(:disabled){border-color:var(--amber)}
+  .xsel-btn:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .xsel-btn:disabled{opacity:.5;cursor:default}
+  .xsel-btn.placeholder .xsel-val{color:var(--mut)}
+  .xsel-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .xsel-car{flex:none;font-size:10px;color:var(--mut)}
+  .ly-sel .xsel-btn{font-size:12px;padding:5px 7px}
+  .xsel-ov{position:fixed;inset:0;z-index:9400;background:rgba(0,0,0,.62);backdrop-filter:blur(3px);
+    display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .14s}
+  .xsel-ov.in{opacity:1}
+  .xsel-sheet{width:100%;max-width:400px;max-height:min(70vh,520px);display:flex;flex-direction:column;
+    background:var(--card);border:1px solid var(--bd2);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);transform:translateY(8px) scale(.99);transition:transform .16s}
+  .xsel-ov.in .xsel-sheet{transform:none}
+  .xsel-h{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.6px;
+    text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--bd)}
+  .xsel-list{overflow-y:auto;padding:6px}
+  .xsel-o{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:transparent;border:0;border-radius:9px;color:var(--tx);font-family:inherit;font-size:15px;
+    padding:12px 12px;cursor:pointer;text-align:left;transition:background .1s}
+  .xsel-o:hover{background:var(--card2)}
+  .xsel-o:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+  .xsel-o.on{background:color-mix(in srgb,var(--amber) 15%,transparent);font-weight:700}
+  .xsel-otx{flex:1;min-width:0}
+  .xsel-tick{flex:none;color:var(--amber);font-weight:800}
+  @media(max-width:520px){
+    .xsel-ov{align-items:flex-end;padding:0}
+    .xsel-sheet{max-width:none;border-radius:18px 18px 0 0;max-height:76vh;transform:translateY(14px)}
+  }
+
   .ly-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--bd);
     border-radius:9px;background:var(--card);margin-bottom:7px}
   .ly-ord{display:flex;flex-direction:column;gap:2px;flex:none}
@@ -1695,6 +1731,21 @@
   function hasAnyTrades(){
     return state.transactions.some(function(t){ return t.type==="trade_win"||t.type==="trade_loss"; });
   }
+  // Anyone who changed currency before this fix has settings like 11.001 sitting in
+  // their data. Prevention doesn't clean that up, so scrub the artefacts on load.
+  // Only the settings — they're numbers a person typed, so a fraction of a cent in one
+  // is always conversion damage. Transaction amounts are left alone: a 17.965 fill is real.
+  function migrateCentsDrift(){
+    if(!state.settings) return;
+    ["allowance","toDebt","toTrading","toSavings"].forEach(function(k){
+      var v=num(state.settings[k]);
+      if(v && Math.abs(v-roundCents(v))>1e-9) state.settings[k]=roundCents(v);
+    });
+    if(state.opening) ["balance","debt","savings","tax","trading"].forEach(function(k){
+      var v=num(state.opening[k]);
+      if(v && Math.abs(v-roundCents(v))>1e-9) state.opening[k]=roundCents(v);
+    });
+  }
   function migrateTraderFlag(){
     if(!state.settings) return;
     if(typeof state.settings.isTrader==="undefined" || state.settings.isTrader===false){
@@ -1867,14 +1918,13 @@
      logic; nothing here ever computes "convert to USD, then to target".) Rates are a
      snapshot, editable by hand if you want to update them later — this app never phones
      out to a live rate API, by design, so it works with zero connectivity. */
-  var CURRENCY_RATES = {
-    USD:{AED:3.6725, GBP:0.746,    EUR:0.877,    CHF:0.806,    SGD:1.29,     JPY:162},
-    AED:{USD:0.272294,GBP:0.203131,EUR:0.238802, CHF:0.219469, SGD:0.351259, JPY:44.11},
-    GBP:{USD:1.3405, AED:4.9229,   EUR:1.1756,   CHF:1.0804,   SGD:1.7292,   JPY:217.16},
-    EUR:{USD:1.1403, AED:4.1876,   GBP:0.850627, CHF:0.919042, SGD:1.4709,   JPY:184.72},
-    CHF:{USD:1.2407, AED:4.5565,   GBP:0.925558, EUR:1.0881,   SGD:1.6005,   JPY:200.99},
-    SGD:{USD:0.775194,AED:2.8469,  GBP:0.578295, EUR:0.679845, CHF:0.624806, JPY:125.58},
-    JPY:{USD:0.006173,AED:0.02267, GBP:0.004605, EUR:0.005414, CHF:0.004975, SGD:0.007963}
+  /* One source of truth: what 1 unit is worth in USD. Every pair is derived from it.
+     Before, each pair was stored independently — USD→GBP said 0.746 while GBP→USD said
+     1.3405, and 1/0.746 is 1.34048…, so the two disagreed and a round-trip drifted.
+     Conversion is still lossy (it is in real life too — this is why 41 can come back as
+     41.01), but the numbers can no longer contradict each other. */
+  var USD_PER = {
+    USD:1, AED:1/3.6725, GBP:1/0.746, EUR:1/0.877, CHF:1/0.806, SGD:1/1.29, JPY:1/162
   };
   var CURRENCY_META = {
     USD:{sym:"$",  code:"USD", name:"US Dollar",       flag:"🇺🇸"},
@@ -1890,23 +1940,26 @@
 
   function convertAmount(amount, fromCode, toCode){
     if(!fromCode || !toCode || fromCode===toCode) return amount;
-    var row=CURRENCY_RATES[fromCode];
-    if(!row || row[toCode]==null) return amount; // unknown pair (e.g. a custom symbol) — leave untouched
-    return amount*row[toCode];
+    if(USD_PER[fromCode]==null || USD_PER[toCode]==null) return amount; // custom symbol — leave untouched
+    return amount*(USD_PER[fromCode]/USD_PER[toCode]);
   }
-  function roundMoney(v){ return Math.round(v*10000)/10000; } // sub-cent precision like the real data already uses (e.g. 17.965) — just clamps runaway float noise
+  function roundMoney(v){ return Math.round(v*10000)/10000; } // clamps float noise; keeps sub-cent amounts like a 17.965 fill
+  // Money has two decimal places. 4dp is right for a broker fill you typed in yourself,
+  // but a CONVERTED figure at 4dp just displays the conversion's own error as though it
+  // were your money — which is where "11.001" came from.
+  function roundCents(v){ return Math.round(v*100)/100; }
   // rewrites every stored amount in state from one currency symbol to another, in place
   function convertStateCurrency(fromSym, toSym){
     var fromCode=SYMBOL_TO_CODE[fromSym], toCode=SYMBOL_TO_CODE[toSym];
     if(!fromCode || !toCode || fromCode===toCode) return false;
-    state.transactions.forEach(function(t){ t.amount=roundMoney(convertAmount(t.amount, fromCode, toCode)); });
-    state.opening.balance=roundMoney(convertAmount(state.opening.balance, fromCode, toCode));
-    state.opening.debt=roundMoney(convertAmount(state.opening.debt, fromCode, toCode));
-    state.opening.savings=roundMoney(convertAmount(state.opening.savings, fromCode, toCode));
-    state.settings.allowance=roundMoney(convertAmount(state.settings.allowance, fromCode, toCode));
-    state.settings.toDebt=roundMoney(convertAmount(state.settings.toDebt, fromCode, toCode));
-    state.settings.toTrading=roundMoney(convertAmount(state.settings.toTrading, fromCode, toCode));
-    state.settings.toSavings=roundMoney(convertAmount(state.settings.toSavings, fromCode, toCode));
+    state.transactions.forEach(function(t){ t.amount=roundCents(convertAmount(t.amount, fromCode, toCode)); });
+    state.opening.balance=roundCents(convertAmount(state.opening.balance, fromCode, toCode));
+    state.opening.debt=roundCents(convertAmount(state.opening.debt, fromCode, toCode));
+    state.opening.savings=roundCents(convertAmount(state.opening.savings, fromCode, toCode));
+    state.settings.allowance=roundCents(convertAmount(state.settings.allowance, fromCode, toCode));
+    state.settings.toDebt=roundCents(convertAmount(state.settings.toDebt, fromCode, toCode));
+    state.settings.toTrading=roundCents(convertAmount(state.settings.toTrading, fromCode, toCode));
+    state.settings.toSavings=roundCents(convertAmount(state.settings.toSavings, fromCode, toCode));
 
     // Everything below holds money too. Missing any of them leaves that feature quietly
     // denominated in the OLD currency — a $200 cap becomes a €200 cap, a restored entry
@@ -1914,18 +1967,18 @@
     if(state.budgets && typeof state.budgets==="object"){
       Object.keys(state.budgets).forEach(function(k){
         var v=num(state.budgets[k]);
-        if(v>0) state.budgets[k]=roundMoney(convertAmount(v, fromCode, toCode));
+        if(v>0) state.budgets[k]=roundCents(convertAmount(v, fromCode, toCode));
       });
     }
     if(Array.isArray(state.recurring)){
-      state.recurring.forEach(function(r){ r.amount=roundMoney(convertAmount(num(r.amount), fromCode, toCode)); });
+      state.recurring.forEach(function(r){ r.amount=roundCents(convertAmount(num(r.amount), fromCode, toCode)); });
     }
     if(Array.isArray(state.goals)){
-      state.goals.forEach(function(g){ if(g && g.target!=null) g.target=roundMoney(convertAmount(num(g.target), fromCode, toCode)); });
+      state.goals.forEach(function(g){ if(g && g.target!=null) g.target=roundCents(convertAmount(num(g.target), fromCode, toCode)); });
     }
     if(Array.isArray(state.trash)){
       state.trash.forEach(function(item){
-        if(item && item.tx) item.tx.amount=roundMoney(convertAmount(num(item.tx.amount), fromCode, toCode));
+        if(item && item.tx) item.tx.amount=roundCents(convertAmount(num(item.tx.amount), fromCode, toCode));
       });
     }
     return true;
@@ -2972,8 +3025,10 @@ AI_TYPES.join(", "),
     photoCache={};
     resetLedgerView();
     applyLayout();       // layout is per-portfolio, so the cards move with the switch
+    migrateCentsDrift();
     migrateTraderFlag();
     applyTraderMode();   // ...and so is "do you trade"
+    refreshSelects();
     persistNow();
     render();
     renderPortfolioUI();
@@ -4312,6 +4367,96 @@ AI_TYPES.join(", "),
     appModal({title:hit.t, message:hit.m, confirmText:"OK", cancelText:"Close"});
   }
 
+  /* ================= APP-STYLED SELECTS =================
+     Native <select> renders as an OS dropdown — a grey system list dropped on top of the
+     app, which is what the screenshot showed. These get the app's own sheet instead.
+
+     Deliberately an ENHANCER, not a replacement: the real <select> stays in the DOM,
+     hidden. Everything that already reads sel.value, sets it, rebuilds .options or
+     hides options for trader mode keeps working untouched — the sheet just drives it.
+     Rewriting 20 selects as bespoke widgets would have meant re-testing every one. */
+  function xselLabel(sel){
+    var l = sel.id && document.querySelector('label[for="'+sel.id+'"]');
+    if(l) return l.textContent.replace(/\s+/g," ").trim();
+    var f = sel.closest && sel.closest(".fld");
+    var fl = f && f.querySelector("label");
+    return fl ? fl.textContent.replace(/\s+/g," ").trim() : "Choose";
+  }
+  function xselVisible(sel){
+    return Array.prototype.filter.call(sel.options, function(o){ return !o.hidden; });
+  }
+  function enhanceSelect(sel){
+    if(!sel || sel._xs) return;
+    sel._xs=true;
+    var wrap=document.createElement("div");
+    wrap.className="xsel";
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add("xsel-native");
+    var btn=document.createElement("button");
+    btn.type="button"; btn.className="xsel-btn";
+    btn.innerHTML='<span class="xsel-val"></span><span class="xsel-car">▾</span>';
+    wrap.appendChild(btn);
+    function sync(){
+      var o=sel.options[sel.selectedIndex];
+      var vis=xselVisible(sel);
+      // an empty picker is a dead button — say so rather than render a lone caret
+      btn.querySelector(".xsel-val").textContent = o ? o.textContent : (vis.length ? "" : "—");
+      btn.disabled = sel.disabled || !vis.length;
+      btn.classList.toggle("placeholder", !o || o.value==="");
+    }
+    sel._xsync=sync;
+    sync();
+    sel.addEventListener("change", sync);
+    btn.addEventListener("click", function(e){ e.preventDefault(); openXsel(sel, btn); });
+  }
+  function openXsel(sel, btn){
+    var opts=xselVisible(sel);
+    if(!opts.length) return;
+    var ov=document.createElement("div");
+    ov.className="xsel-ov";
+    ov.innerHTML='<div class="xsel-sheet" role="listbox">'
+      +'<div class="xsel-h">'+esc(xselLabel(sel))+'</div>'
+      +'<div class="xsel-list">'
+      +opts.map(function(o){
+          var on=(o.value===sel.value);
+          return '<button type="button" class="xsel-o'+(on?" on":"")+'" data-v="'+esc(o.value)+'" role="option" aria-selected="'+on+'">'
+            +'<span class="xsel-otx">'+esc(o.textContent)+'</span>'
+            +(on?'<span class="xsel-tick">✓</span>':'')+'</button>';
+        }).join("")
+      +'</div></div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add("in"); });
+    var close=function(){
+      ov.classList.remove("in");
+      document.removeEventListener("keydown", onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 140);
+      if(btn) btn.focus();
+    };
+    var onKey=function(e){ if(e.key==="Escape"){ e.preventDefault(); close(); } };
+    document.addEventListener("keydown", onKey);
+    ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
+    Array.prototype.forEach.call(ov.querySelectorAll(".xsel-o"), function(b){
+      b.addEventListener("click", function(){
+        var v=b.getAttribute("data-v");
+        if(v!==sel.value){
+          sel.value=v;
+          sel.dispatchEvent(new Event("change",{bubbles:true}));  // whatever was bound still runs
+        } else if(sel._xsync) sel._xsync();
+        close();
+      });
+    });
+    var cur=ov.querySelector(".xsel-o.on") || ov.querySelector(".xsel-o");
+    if(cur) cur.focus();
+  }
+  // options get rebuilt at runtime (categories, instruments, trader mode) — re-read them
+  function refreshSelects(){
+    Array.prototype.forEach.call(document.querySelectorAll("select"), function(sel){
+      if(!sel._xs) enhanceSelect(sel);
+      else if(sel._xsync) sel._xsync();
+    });
+  }
+
   /* ================= LAYOUT =================
      Which cards go on which page, and in what order — the user's call, not mine. Every
      movable card is parked in #cardPool at load and moved into a page's slot from this
@@ -4835,7 +4980,7 @@ AI_TYPES.join(", "),
       if(!state.settings) state.settings={};
       state.settings.isTrader=c.checked;
       if(!c.checked) state.settings.sepTrading=false;   // no trading, no split
-      persistNow(); applyTraderMode(); render(); flashSaved("saved");
+      persistNow(); applyTraderMode(); refreshSelects(); render(); flashSaved("saved");
     });
   }
   function fillTraderToggle(){
@@ -5089,6 +5234,7 @@ AI_TYPES.join(", "),
     var insts=tradeByInstrument(all).map(function(r){ return r.inst; });
     sel.innerHTML='<option value="__all">All instruments</option>'+insts.map(function(i){ return '<option value="'+esc(i)+'">'+esc(i)+'</option>'; }).join("");
     sel.value=insts.indexOf(prev)>=0?prev:"__all";
+    if(sel._xsync) sel._xsync();   // options were just rebuilt
 
     var list=trScopedList();
     var wrEl=document.getElementById("trWr"), subEl=document.getElementById("trWrSub");
@@ -5923,6 +6069,7 @@ AI_TYPES.join(", "),
     document.getElementById("fType").value=tx.type;
     typeUI();
     if(tx.type==="spend") document.getElementById("fCat").value=tx.cat||"Other";
+    refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
     document.getElementById("fSplit").value="1";
@@ -6925,9 +7072,11 @@ AI_TYPES.join(", "),
     });
     loadData(function(){
       purgeTrash();          // drop anything past its 30 days before the first paint
+      migrateCentsDrift();   // scrub 11.001-style conversion artefacts
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
+      refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
     });
   }
@@ -7309,7 +7458,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.7</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.8</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
