@@ -2862,6 +2862,25 @@ AI_TYPES.join(", "),
       }
     });
   }
+  // Assigned inside bind() (it closes over that scope); declared here so module-scope
+  // callers like deletePortfolio can reach it.
+  var exportData=null;
+  // Every destructive path downloads a full rescue file first. One implementation, so
+  // Reset / Erase / Delete-portfolio can't drift apart.
+  function safetyBackup(tag, done){
+    if(typeof exportData!=="function"){ done(); return; }   // never block the action
+    flashSaved("backing up\u2026");
+    exportData(function(json){
+      try{
+        var blob=new Blob([json],{type:"application/json"});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement("a"); a.href=url; a.download="my-money-before-"+tag+"-"+todayStr()+".json";
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+      }catch(e){ /* best-effort: the destructive action still proceeds */ }
+      done();
+    });
+  }
   function deletePortfolio(pid){
     if(PORTFOLIOS.length<=1){
       appModal({title:"Can't delete", message:"This is your only portfolio. Create another one first.", confirmText:"OK", cancelText:"Close"});
@@ -2871,11 +2890,14 @@ AI_TYPES.join(", "),
     var n=((p.data&&p.data.transactions)||[]).length;
     appModal({
       title:"Delete portfolio?",
-      message:"<b>"+esc(p.name)+"</b> and its "+n+" "+(n===1?"entry":"entries")+" will be permanently deleted, along with any attached photos.\n\nThis can't be undone. Type DELETE to confirm.",
+      message:"<b>"+esc(p.name)+"</b> and its "+n+" "+(n===1?"entry":"entries")+" will be permanently deleted, along with any attached photos.\n\nA backup of <b>every</b> portfolio downloads first.\n\nThis can't be undone. Type DELETE to confirm.",
       requireWord:"DELETE",
       confirmText:"Delete",
       danger:true,
       onConfirm:function(){
+        // Backup captures EVERY portfolio, before anything is touched — a rescue file of
+        // the post-delete state would be worse than none.
+        safetyBackup("delete-portfolio", function(){
         var txs=(p.data && Array.isArray(p.data.transactions)) ? p.data.transactions : [];
         txs.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
         var wasActive=(pid===ACTIVE_PID);
@@ -2891,6 +2913,8 @@ AI_TYPES.join(", "),
         }
         persistNow();
         renderPortfolioUI();
+        flashSaved("deleted \u2014 backup downloaded");
+        });
       }
     });
   }
@@ -6036,7 +6060,7 @@ AI_TYPES.join(", "),
 
     // Full backup = EVERY portfolio (and every photo any of them reference), not just
     // the active one. Anything less isn't actually a backup once portfolios exist.
-    function exportData(cb){
+    exportData=function(cb){
       flushActiveIntoRegistry();
       var ids=[];
       PORTFOLIOS.forEach(function(p){
@@ -6342,16 +6366,7 @@ AI_TYPES.join(", "),
       });
     });
     function doReset(){
-      var pfN=(activePortfolio()&&activePortfolio().name)||"this portfolio";
-      flashSaved("backing up…");
-      exportData(function(json){
-        try{
-          var blob=new Blob([json],{type:"application/json"});
-          var url=URL.createObjectURL(blob);
-          var a=document.createElement("a"); a.href=url; a.download="my-money-before-reset-"+todayStr()+".json";
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(function(){ URL.revokeObjectURL(url); },1000);
-        }catch(e){ /* best-effort safety backup — reset proceeds either way */ }
+      safetyBackup("reset", function(){
         state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
         state=clone(DEFAULTS); state.selectedMonths=null;
         flushActiveIntoRegistry();
@@ -6776,7 +6791,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.1</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.2</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
