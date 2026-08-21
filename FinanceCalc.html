@@ -127,6 +127,7 @@
   [data-theme="ice"] .dot{background:#38c6f4;box-shadow:0 0 0 5px rgba(56,198,244,.16)}
   [data-theme="ice"] input:focus,[data-theme="ice"] select:focus{border-color:#38c6f4;box-shadow:0 0 0 3px rgba(56,198,244,.14)}
 
+
   /* ---- touch bar ---- */
   .page{animation:pageIn .22s cubic-bezier(.22,1,.36,1)}
   @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -158,6 +159,19 @@
   .page-head{padding:6px 0 14px}
   .page-head h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
 
+  /* ---- win rate card ---- */
+  .wr-body{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .wr-left{flex:none;min-width:118px}
+  .wr-big{font-size:40px;font-weight:800;line-height:1;letter-spacing:-1px}
+  .wr-lbl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+  .wr-right{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;min-width:200px}
+  .wr-cell{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:8px 9px}
+  .wr-k{font-size:9.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+  .wr-v{font-size:14px;font-weight:700;margin-top:2px}
+  .wr-foot{padding:0 16px 14px;font-size:11.5px;color:var(--mut)}
+  .wr-card{cursor:pointer;transition:border-color .15s}
+  .wr-card:hover{border-color:var(--bd2)}
+
   .cp-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;-webkit-user-select:none}
   .cp-row:hover{border-color:var(--bd2)}
   .cp-row:active{background:var(--card2)}
@@ -169,6 +183,7 @@
   .cp-v{font-size:13px;font-weight:600;margin-top:2px;word-break:break-all;line-height:1.35}
   .cp-v.mono-wrap{font-family:var(--mono);font-size:11.5px;font-weight:500}
   .cp-tag{flex:none;font-size:10.5px;font-weight:700;color:var(--mut);border:1px solid var(--bd2);border-radius:5px;padding:3px 7px}
+  .stat-sub{font-size:10px;color:var(--mut);margin-top:2px;font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .inst-tag{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--cool);border:1px solid var(--bd2);border-radius:4px;padding:1px 4px;vertical-align:1px}
 
   /* Trading stats */
@@ -213,6 +228,15 @@
   .ins-more-btn{width:100%;margin-top:6px;padding:7px;border:1px dashed var(--bd2);background:transparent;
     color:var(--mut);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .13s,color .13s}
   .ins-more-btn:hover{border-color:var(--amber);color:var(--tx)}
+
+  .cs-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--card2);margin:2px 0 9px}
+  .cs-seg{display:block;height:100%}
+  .cs-legend{display:flex;flex-wrap:wrap;gap:9px 14px;font-size:11px;color:var(--mut)}
+  .cs-li{display:inline-flex;align-items:center;gap:5px}
+  .cs-li i{width:8px;height:8px;border-radius:2px;flex:none}
+  .cs-li b{color:var(--tx);font-family:var(--mono);font-size:10.5px}
+  .cs-mut{opacity:.7}
+  .cs-tot{margin-top:8px;font-size:11px;color:var(--mut)}
 
   .pl-rule{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)}
   .pl-rule:last-child{border-bottom:0}
@@ -336,6 +360,7 @@
     .xsel-sheet{max-width:none;border-radius:18px 18px 0 0;max-height:76vh;transform:translateY(14px)}
   }
 
+
   .mc-wrap{margin:10px 0 4px}
   .mc-bar{position:relative;height:34px;border-radius:8px;background:var(--card2);overflow:hidden}
   .mc-band{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,color-mix(in srgb,var(--down) 22%,transparent),color-mix(in srgb,var(--up) 22%,transparent))}
@@ -348,6 +373,12 @@
   .fc-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
   .fc-num{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1}
   .fc-cap{font-size:11.5px;color:var(--mut)}
+  .fc-sec{margin-top:12px;border-top:1px solid var(--bd);padding-top:10px}
+  .fc-sec-t{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:7px;font-weight:700}
+  .fc-ev{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12px}
+  .fc-ev-d{flex:none;width:52px;font-family:var(--mono);font-size:10.5px;color:var(--mut)}
+  .fc-ev-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fc-ev-a{flex:none;font-family:var(--mono);font-weight:700;font-size:11.5px}
   .fc-foot{margin-top:10px;font-size:10.5px;color:var(--mut);line-height:1.5}
   .fc-alert{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border-radius:8px;margin-top:9px;
     font-size:12px;line-height:1.45;border:1px solid var(--bd);background:var(--card)}
@@ -420,6 +451,7 @@
   .tr-cell{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:9px 10px}
   .tr-k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
   .tr-v{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:3px}
+  .tr-sec{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin:16px 0 8px}
   .tr-tbl{border:1px solid var(--bd);border-radius:9px;overflow:hidden}
   .tr-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--bd);background:var(--card)}
   .tr-row:last-child{border-bottom:0}
@@ -518,6 +550,9 @@
   .brand .sub{font-size:13px;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
   #saved{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px}
   #saved .s-dot{width:7px;height:7px;border-radius:50%;background:var(--up);opacity:.5;transition:opacity .3s}
+
+  /* storage tier badge + health dashboard */
+  .tier-badge{border:1px solid var(--bd);background:var(--card);color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.2px;padding:5px 9px;border-radius:20px;cursor:pointer;white-space:nowrap}
   .tier-badge.emergency{border-color:rgba(255,93,93,.4);color:var(--down);background:rgba(255,93,93,.08)}
   .tier-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd);font-size:13px}
   .tier-row:last-child{border-bottom:0}
@@ -575,6 +610,7 @@
   /* chart */
   #chartWrap{padding:6px 8px 4px}
   svg.chart{width:100%;height:auto;aspect-ratio:720/220;display:block}
+  .chart-empty{color:var(--mut);font-size:13px;text-align:center;padding:30px 0}
 
   /* entry form */
   form.entry{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -589,6 +625,9 @@
   .btn.ghost{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
   .btn.ghost:hover{border-color:var(--bd2)}
   .btn.sm{padding:8px 13px;font-size:13px}
+
+  /* automation */
+  .auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .split-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd)}
   .split-row:last-of-type{border-bottom:0}
   .split-row .nm{display:flex;align-items:center;gap:9px;font-size:14px}
@@ -668,6 +707,7 @@
   details>summary::-webkit-details-marker{display:none}
   details>summary .chev{color:var(--mut);transition:.2s}
   details[open]>summary .chev{transform:rotate(180deg)}
+  .d-body{padding:0 18px 18px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .hint{font-size:13px;color:var(--mut);margin:2px 0 14px}
   .data-btns{display:flex;flex-wrap:wrap;gap:10px}
@@ -875,8 +915,7 @@
           <option value="trade_win">Trade — made money</option>
           <option value="trade_loss">Trade — lost money</option>
           <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
-          <option value="borrow_cash">Borrowed cash (into my account)</option>
-          <option value="borrow">Someone paid for me (I owe them)</option>
+          <option value="borrow">Borrowed / debt went up</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
@@ -1662,7 +1701,7 @@
   var TYPE_META = {
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
-    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
     to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
@@ -1835,7 +1874,6 @@
   function balDelta(t){
     var a=num(t.amount), sep=sepTrading();
     switch(t.type){
-      case "borrow_cash": return a;   // borrowed money that actually arrived in the account
       case "income": case "withdraw": return a;
       case "trade_win":   return sep ? 0 : a;
       case "alw_trading": return sep ? 0 : a;
@@ -1872,7 +1910,7 @@
     var a=num(t.amount);
     switch(t.type){
       case "pay_debt_balance": case "alw_debt": return -a;
-      case "borrow": case "borrow_cash": return a;
+      case "borrow": return a;
       default: return 0;
     }
   }
@@ -1982,12 +2020,6 @@
   // but a CONVERTED figure at 4dp just displays the conversion's own error as though it
   // were your money — which is where "11.001" came from.
   function roundCents(v){ return Math.round(v*100)/100; }
-  /* No amount a person types or a broker exports is a trillion. Without a ceiling, two
-     entries near the float limit sum to Infinity and the app cheerfully renders
-     "$Infinity" — not a crash, which is worse: a number that means nothing, sitting
-     where your balance should be. Found by throwing random junk at totals(). */
-  var AMOUNT_MAX=1e12;
-  function sane(v){ return isFinite(v) && Math.abs(v)<=AMOUNT_MAX; }
   // rewrites every stored amount in state from one currency symbol to another, in place
   function convertStateCurrency(fromSym, toSym){
     var fromCode=SYMBOL_TO_CODE[fromSym], toCode=SYMBOL_TO_CODE[toSym];
@@ -3068,8 +3100,6 @@ AI_TYPES.join(", "),
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
     resetLedgerView();
-    lyPicked=null;       // a card picked up in the OLD portfolio must not stay picked here:
-                         // the next zone tap would move something you never selected
     applyLayout();       // layout is per-portfolio, so the cards move with the switch
     migrateCentsDrift();
     migrateTraderFlag();
@@ -5011,7 +5041,7 @@ AI_TYPES.join(", "),
     });
     document.getElementById("recSaveBtn").addEventListener("click", function(){
       var amt=parseFloat(document.getElementById("recAmt").value);
-      if(!isFinite(amt) || amt<=0 || !sane(amt)){ shake(document.getElementById("recAmt")); return; }
+      if(!isFinite(amt) || amt<=0){ shake(document.getElementById("recAmt")); return; }
       var start=document.getElementById("recStart").value || todayStr();
       var freq=document.getElementById("recFreq").value;
       var r={ id:"r"+Date.now()+Math.floor(Math.random()*1000),
@@ -5179,7 +5209,7 @@ AI_TYPES.join(", "),
     body.forEach(function(r){
       var date=csvDate(r[di]);
       var amt=csvNum(r[ai]);
-      if(!date || !isFinite(amt) || amt===0 || !sane(amt)) { out.push({skip:"unreadable", raw:r}); return; }
+      if(!date || !isFinite(amt) || amt===0) { out.push({skip:"unreadable", raw:r}); return; }
       var type;
       if(mode==="trade") type = amt>=0 ? "trade_win" : "trade_loss";
       else if(mode==="spend") type="spend";
@@ -6805,13 +6835,6 @@ AI_TYPES.join(", "),
       var raw=num(document.getElementById("fAmt").value);
       if(type!=="adjust") raw=Math.abs(raw);
       if(!raw){ shake(document.getElementById("fAmt")); return; }
-      if(!sane(raw)){
-        shake(document.getElementById("fAmt"));
-        appModal({title:"That amount can't be right",
-          message:"<b>"+esc(document.getElementById("fAmt").value)+"</b> is beyond anything this can hold — it'd turn your balance into nonsense rather than a number. Check for a stray digit or a pasted value.",
-          confirmText:"OK", cancelText:null});
-        return;
-      }
       var splitN=parseInt(document.getElementById("fSplit").value,10);
       if(!splitN || splitN<1) splitN=1;
       var totalRaw=raw;
@@ -7822,7 +7845,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.6</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.4</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
