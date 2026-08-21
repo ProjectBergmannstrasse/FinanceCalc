@@ -490,7 +490,16 @@
   .hero .cap{font-size:14px;color:var(--mut);margin-top:8px}
 
   /* stat trio */
+  /* Column count follows how many boxes are actually visible. It was hardcoded to 3,
+     so turning on the trading split added a 4th that dropped onto its own row. */
   .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .trio[data-n="1"]{grid-template-columns:1fr}
+  .trio[data-n="2"]{grid-template-columns:repeat(2,1fr)}
+  .trio[data-n="4"]{grid-template-columns:repeat(2,1fr)}          /* 2x2, no orphan */
+  .trio[data-n="5"]{grid-template-columns:repeat(2,1fr)}
+  .trio[data-n="5"] .stat:last-child{grid-column:span 2}          /* net worth spans the row */
+  @media(max-width:420px){ .trio[data-n="3"]{grid-template-columns:repeat(2,1fr)}
+    .trio[data-n="3"] .stat:last-child{grid-column:span 2} }
   .stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
   .stat .k{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);font-weight:600}
   .stat .v{font-size:20px;margin-top:6px;font-weight:700}
@@ -721,6 +730,13 @@
   <div class="lbl" id="heroLbl">Money I have right now</div>
   <div class="big mono" id="heroBal">—</div>
   <div class="cap" id="heroCap"></div>
+</div>
+
+<!-- A trading pot can't hold less than nothing. If it does, trades are being counted
+     against money that was never moved in, and "spendable cash" is overstating by exactly
+     that much — which is what makes the split look like it's inventing money. -->
+<div id="trNegWarn" class="storage-warn" style="display:none;background:color-mix(in srgb,var(--down) 12%,transparent);border-color:color-mix(in srgb,var(--down) 45%,var(--bd))">
+  <span id="trNegMsg"></span>
 </div>
 
 <!-- stat trio -->
@@ -1590,7 +1606,7 @@
     // Neutral defaults. These were 41/30/11 — one household's actual allowance numbers,
     // handed to every new portfolio as if they were universal. Zero means "not set up
     // yet", which is the only honest default for someone else's money.
-    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, photoQ:"med"},
+    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, isTrader:false, photoQ:"med"},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
@@ -1672,6 +1688,65 @@
   //        now" becomes actual liquid bank cash. Moving money between the two is explicit.
   // Every figure is derived from the transaction list, so this toggles freely in both
   // directions and never rewrites or loses a single entry.
+  // Most people don't trade. Everything trading-related stays out of the way until
+  // someone says otherwise — but anyone who ALREADY has trades logged obviously trades,
+  // so their tab must not vanish on upgrade.
+  function isTrader(){ return !!(state.settings && state.settings.isTrader); }
+  function hasAnyTrades(){
+    return state.transactions.some(function(t){ return t.type==="trade_win"||t.type==="trade_loss"; });
+  }
+  function migrateTraderFlag(){
+    if(!state.settings) return;
+    if(typeof state.settings.isTrader==="undefined" || state.settings.isTrader===false){
+      if(hasAnyTrades()) state.settings.isTrader=true;
+    }
+  }
+  function applyTraderMode(){
+    var on=isTrader();
+    var tab=document.querySelector('#tabbar .tab[data-page="pageTrading"]');
+    if(tab) tab.style.display = on ? "" : "none";
+    var tb=document.getElementById("tabbar");
+    if(tb) tb.setAttribute("data-tabs", on ? "4" : "3");
+    // trading-only controls on the entry form and in settings
+    ["fInstWrap","sepTradingWrap"].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el) el.style.display = on ? "" : "none";
+    });
+    var sel=document.getElementById("fType");
+    if(sel) Array.prototype.forEach.call(sel.querySelectorAll("option"), function(o){
+      if(/^(trade_win|trade_loss|to_trading|from_trading|alw_trading)$/.test(o.value)) o.hidden = !on;
+    });
+    // if they've turned trading off while sitting on the Trading tab, move them somewhere real
+    if(!on && document.getElementById("pageTrading") && document.getElementById("pageTrading").classList.contains("on")) setTab("pageDash");
+  }
+  // How much was ever deliberately moved into trading. Trades are results; they are not
+  // funding. If this is zero and the pot is negative, the model has been given P&L with
+  // no capital behind it.
+  function tradingFunded(){
+    var f=num(state.opening.trading);
+    state.transactions.forEach(function(t){
+      if(t.type==="to_trading") f+=Math.abs(num(t.amount));
+      else if(t.type==="from_trading") f-=Math.abs(num(t.amount));
+      else if(t.type==="alw_trading") f+=Math.abs(num(t.amount));
+    });
+    return f;
+  }
+  function renderTradingSanity(){
+    var box=document.getElementById("trNegWarn");
+    if(!box) return;
+    if(!sepTrading()){ box.style.display="none"; return; }
+    var t=totals(), sym=state.currency;
+    if(t.trading>=0){ box.style.display="none"; return; }
+    var funded=tradingFunded();
+    box.style.display="";
+    document.getElementById("trNegMsg").innerHTML=
+      "⚠️ Your <b>"+esc(L("trading"))+"</b> account shows <b>"+fmt(t.trading,sym)+"</b> — an account can't hold less than nothing."
+      + (funded<=0
+          ? " You've logged trades but never logged <b>moving money into trading</b>, so the losses are being charged to a pot that was never funded."
+          : " You've funded <b>"+fmt(funded,sym)+"</b> and lost more than that.")
+      + " That means <b>Money I have right now</b> is overstating your cash by <b>"+fmt(Math.abs(t.trading),sym)+"</b> — it's really "
+      + fmt(t.balance-Math.abs(t.trading),sym) + ". Add a <b>Moved to trading</b> entry for what you actually put in, or turn the split off in Settings.";
+  }
   function sepTrading(){ return !!(state.settings && state.settings.sepTrading); }
   function balDelta(t){
     var a=num(t.amount), sep=sepTrading();
@@ -2896,7 +2971,9 @@ AI_TYPES.join(", "),
     applyPortfolioData(clone(findPortfolio(pid).data||{}));
     photoCache={};
     resetLedgerView();
-    applyLayout();   // layout is per-portfolio, so the cards move with the switch
+    applyLayout();       // layout is per-portfolio, so the cards move with the switch
+    migrateTraderFlag();
+    applyTraderMode();   // ...and so is "do you trade"
     persistNow();
     render();
     renderPortfolioUI();
@@ -3613,7 +3690,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -4631,7 +4708,7 @@ AI_TYPES.join(", "),
         else delete state.budgets[cat];   // blank/zero = no cap, not a cap of zero
         persist();
         renderBudgets();
-    renderHeatmap();
+        renderHeatmap();
       });
     });
   }
@@ -4750,6 +4827,20 @@ AI_TYPES.join(", "),
     document.getElementById("csvPasteWrap").style.display="none";
     document.getElementById("csvBox").value="";
     var f=document.getElementById("csvFile"); if(f) f.value="";
+  }
+  function bindTraderToggle(){
+    var c=document.getElementById("sIsTrader");
+    if(!c) return;
+    c.addEventListener("change", function(){
+      if(!state.settings) state.settings={};
+      state.settings.isTrader=c.checked;
+      if(!c.checked) state.settings.sepTrading=false;   // no trading, no split
+      persistNow(); applyTraderMode(); render(); flashSaved("saved");
+    });
+  }
+  function fillTraderToggle(){
+    var c=document.getElementById("sIsTrader");
+    if(c) c.checked=isTrader();
   }
   function bindChartMode(){
     var sel=document.getElementById("setChartMode");
@@ -5491,7 +5582,12 @@ AI_TYPES.join(", "),
     taxWrap.style.display = taxUsed ? "" : "none";
     if(taxUsed) document.getElementById("stTax").textContent=fmt(t.tax,sym);
 
-    // win rate lives in its own dashboard card now — the stat grid stays an even 3
+    // The grid was hardcoded to 3 columns, so showing a 4th tile left one stranded on
+    // its own row. Tell the CSS how many are actually visible and let it lay out.
+    var trio=document.querySelector(".trio");
+    if(trio) trio.setAttribute("data-n", String(
+      Array.prototype.filter.call(trio.children, function(el){ return el.style.display!=="none"; }).length));
+
     var netEl=document.getElementById("stNet");
     netEl.textContent=fmt(t.net,sym);
     netEl.className="v mono "+(t.net>=0?"up":"down");
@@ -5639,6 +5735,7 @@ AI_TYPES.join(", "),
       });
       cats.innerHTML=html;
     }
+    renderTradingSanity();
     renderBudgets();
     renderHeatmap();
     renderGoals();
@@ -6812,6 +6909,7 @@ AI_TYPES.join(", "),
     bindCsvImport();
     bindPhotoQ();
     bindChartMode();
+    bindTraderToggle();
     bindLayout();
     bindRecurring();
     bindGoals();
@@ -6826,8 +6924,10 @@ AI_TYPES.join(", "),
       if(document.visibilityState==="hidden" && saveTimer) persistNow();
     });
     loadData(function(){
-      purgeTrash();    // drop anything past its 30 days before the first paint
-      applyLayout();   // cards to their chosen pages before anything paints
+      purgeTrash();          // drop anything past its 30 days before the first paint
+      migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
+      applyLayout();         // cards to their chosen pages before anything paints
+      applyTraderMode();     // hide trading UI unless they've said they trade
       render(); renderPortfolioUI(); refreshStorageBadge();
     });
   }
@@ -6948,6 +7048,14 @@ AI_TYPES.join(", "),
 
   <!-- Bank vs trading -->
   <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Trading</div>
+    <label class="split-row" style="cursor:pointer">
+      <div class="nm">Do you trade?<div class="sub">Off by default. Turning it on adds the Trading tab, trade entry types and an instrument field.</div></div>
+      <input type="checkbox" id="sIsTrader" style="width:20px;height:20px;accent-color:var(--amber)">
+    </label>
+  </div>
+
+  <div style="padding:0 20px;margin-top:16px" id="sepTradingWrap">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Bank &amp; Trading</div>
     <div class="subhint" style="margin-bottom:12px">By default your trading money and your bank money are one pot, so wins and losses move the same number you'd spend from. Split them and <b>“Money I have right now” becomes actual liquid cash</b>, with trading capital tracked separately.</div>
     <label class="split-row" style="cursor:pointer">
@@ -7201,7 +7309,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.6</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.7</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
