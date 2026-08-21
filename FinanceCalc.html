@@ -225,6 +225,28 @@
   .hm-insight b{color:var(--tx)}
   .hm-mlab{font-size:8.5px;fill:var(--mut);font-family:var(--mono)}
 
+  .ins-more-btn{width:100%;margin-top:6px;padding:7px;border:1px dashed var(--bd2);background:transparent;
+    color:var(--mut);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:border-color .13s,color .13s}
+  .ins-more-btn:hover{border-color:var(--amber);color:var(--tx)}
+
+  .cs-bar{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--card2);margin:2px 0 9px}
+  .cs-seg{display:block;height:100%}
+  .cs-legend{display:flex;flex-wrap:wrap;gap:9px 14px;font-size:11px;color:var(--mut)}
+  .cs-li{display:inline-flex;align-items:center;gap:5px}
+  .cs-li i{width:8px;height:8px;border-radius:2px;flex:none}
+  .cs-li b{color:var(--tx);font-family:var(--mono);font-size:10.5px}
+  .cs-mut{opacity:.7}
+  .cs-tot{margin-top:8px;font-size:11px;color:var(--mut)}
+
+  .mc-wrap{margin:10px 0 4px}
+  .mc-bar{position:relative;height:34px;border-radius:8px;background:var(--card2);overflow:hidden}
+  .mc-band{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,color-mix(in srgb,var(--down) 22%,transparent),color-mix(in srgb,var(--up) 22%,transparent))}
+  .mc-zero{position:absolute;top:0;bottom:0;width:1px;background:var(--mut);opacity:.65}
+  .mc-med{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--amber);border-radius:2px}
+  .mc-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--mut);margin-top:4px}
+  .mc-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:var(--mut);margin-top:7px}
+  .mc-legend b{color:var(--tx);font-family:var(--mono)}
+
   .fc-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
   .fc-num{font-size:30px;font-weight:800;letter-spacing:-.6px;line-height:1}
   .fc-cap{font-size:11.5px;color:var(--mut)}
@@ -676,63 +698,9 @@
   <div class="stat"><div class="k">Net worth</div><div class="v mono" id="stNet">—</div></div>
 </div>
 
-<!-- Goals -->
-<div class="panel" id="goalCard" style="display:none">
-  <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
-  <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
-</div>
 
-<!-- Spending heatmap -->
-<div class="panel" id="hmCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">▦</span> Where it goes</h2>
-    <span class="mut" id="hmSpan" style="font-size:12px"></span>
-  </div>
-  <div class="p-body" style="padding-top:4px">
-    <div id="hmGridWrap"><div id="hmChart"></div></div>
-    <div class="hm-legend">
-      <span class="hm-lg-t" id="hmLegT">less</span>
-      <span class="hm-sw l1"></span><span class="hm-sw l2"></span><span class="hm-sw l3"></span><span class="hm-sw l4"></span><span class="hm-sw l5"></span>
-      <span class="hm-lg-t">more</span>
-    </div>
-    <div id="hmPick" class="hm-pick" style="display:none"></div>
-    <div id="hmInsight" class="hm-insight"></div>
-  </div>
-</div>
 
-<!-- Cash-flow forecast -->
-<div class="panel" id="fcCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">◔</span> Looking ahead</h2>
-    <div class="seg" id="fcRange">
-      <button type="button" data-d="30" class="on">30d</button>
-      <button type="button" data-d="60">60d</button>
-      <button type="button" data-d="90">90d</button>
-    </div>
-  </div>
-  <div class="p-body" style="padding-top:2px">
-    <div class="fc-head">
-      <div class="fc-num mono" id="fcEnd">—</div>
-      <div class="fc-cap" id="fcCap"></div>
-    </div>
-    <div id="fcChart"></div>
-    <div id="fcWarn"></div>
-    <div class="fc-sec" id="fcUpNext" style="display:none">
-      <div class="fc-sec-t">Coming up</div>
-      <div id="fcEvents"></div>
-    </div>
-    <div class="fc-foot" id="fcBasis"></div>
-  </div>
-</div>
 
-<!-- Budgets -->
-<div class="panel" id="budgetCard" style="display:none">
-  <div class="p-head">
-    <h2><span class="tick">◑</span> Budgets</h2>
-    <span class="mut" id="budgetMonth" style="font-size:12px"></span>
-  </div>
-  <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
-</div>
 
 <!-- Chart -->
 <div class="panel">
@@ -841,6 +809,24 @@
   </div>
 </div>
 
+<!-- Where it goes — moved off the dashboard; it belongs next to the entries it describes -->
+<div class="panel" id="hmCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">▦</span> Where it goes</h2>
+    <span class="mut" id="hmSpan" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px">
+    <div id="hmGridWrap"><div id="hmChart"></div></div>
+    <div class="hm-legend">
+      <span class="hm-lg-t" id="hmLegT">less</span>
+      <span class="hm-sw l1"></span><span class="hm-sw l2"></span><span class="hm-sw l3"></span><span class="hm-sw l4"></span><span class="hm-sw l5"></span>
+      <span class="hm-lg-t">more</span>
+    </div>
+    <div id="hmPick" class="hm-pick" style="display:none"></div>
+    <div id="hmInsight" class="hm-insight"></div>
+  </div>
+</div>
+
 <!-- Ledger -->
 <div class="panel">
   <div class="p-head">
@@ -896,6 +882,28 @@
     </div>
 
     <div class="tr-grid" id="trGrid"></div>
+
+    <!-- Trading forecast -->
+    <div class="panel" id="trFcCard" style="display:none">
+      <div class="p-head">
+        <h2><span class="tick">◔</span> Looking ahead</h2>
+        <div class="seg" id="trFcRange">
+          <button type="button" data-d="30" class="on">30d</button>
+          <button type="button" data-d="60">60d</button>
+          <button type="button" data-d="90">90d</button>
+          <button type="button" data-d="365">1y</button>
+        </div>
+      </div>
+      <div class="p-body" style="padding-top:2px">
+        <div class="fc-head">
+          <div class="fc-num mono" id="trFcNum">—</div>
+          <div class="fc-cap" id="trFcCap"></div>
+        </div>
+        <div id="trFcBand"></div>
+        <div id="trFcWarn"></div>
+        <div class="fc-foot" id="trFcBasis"></div>
+      </div>
+    </div>
 
     <div class="panel" id="trInstPanel" style="display:none">
       <div class="p-head"><h2><span class="tick">◎</span> By instrument</h2></div>
@@ -3538,7 +3546,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -3951,77 +3959,9 @@ AI_TYPES.join(", "),
      Entries created BY a recurring rule are excluded from the drift average, or rent
      would be counted twice: once as a known event and again inside the daily burn.
      This is a projection from your own numbers, not a prediction, and it says so. */
-  var FORECAST_LOOKBACK=90;
-  var FORECAST_MIN_DAYS=14;   // below this, one unusual day dominates the average
-  function dailyBurn(){
-    var t=todayStr();
-    var cut=new Date(); cut.setDate(cut.getDate()-FORECAST_LOOKBACK);
-    var cutS=cut.getFullYear()+"-"+two(cut.getMonth()+1)+"-"+two(cut.getDate());
-    var spent=0, first=null;
-    state.transactions.forEach(function(x){
-      if(x.rec) return;                       // came from a rule — it's a KNOWN event
-      if(x.date<cutS || x.date>t) return;
-      var d=balDelta(x);
-      if(d<0){ spent+=-d; if(!first || x.date<first) first=x.date; }
-    });
-    if(!spent) return {perDay:0, days:0, sample:0};
-    // divide by the span actually covered, not a flat 90 — a two-week-old ledger
-    // shouldn't look like it burns a seventh of what it does
-    var span=Math.max(1, Math.round((new Date(t)-new Date(first))/86400000)+1);
-    span=Math.min(span, FORECAST_LOOKBACK);
-    return {perDay:spent/span, days:span, sample:spent};
-  }
-  function knownEvents(days){
-    var out=[], t=todayStr();
-    var end=new Date(); end.setDate(end.getDate()+days);
-    var endS=end.getFullYear()+"-"+two(end.getMonth()+1)+"-"+two(end.getDate());
-    recurList().forEach(function(r){
-      if(r.paused) return;
-      var amt=Math.abs(num(r.amount));
-      if(!amt) return;
-      var delta=balDelta({type:r.type, amount:amt});
-      if(!delta) return;                       // doesn't move spendable cash
-      // start from the next occurrence AFTER today, walking the same function the
-      // real poster uses
-      var cur=r.lastRun ? nextAfter(r, r.lastRun) : (r.startDate || t);
-      var guard=0;
-      while(cur && cur<=t && guard++<600) cur=nextAfter(r, cur);
-      guard=0;
-      while(cur && cur<=endS && guard++<600){
-        out.push({date:cur, amount:delta, label:(r.note||"").trim()||TYPE_META[r.type].label});
-        cur=nextAfter(r, cur);
-      }
-    });
-    return out.sort(function(a,b){ return a.date<b.date?-1:1; });
-  }
-  function forecast(days){
-    var start=totals().balance;
-    var burn=dailyBurn();
-    var events=knownEvents(days);
-    // Two ingredients, two confidence levels. Scheduled events are facts. A burn rate
-    // from a couple of days is one purchase wearing a trend's clothes — so below the
-    // minimum span we project the facts only and say the rest is unknown, rather than
-    // extrapolating a laptop into "-$22,000, you run out Tuesday".
-    var thin = burn.perDay>0 && burn.days<FORECAST_MIN_DAYS;
-    var perDay = thin ? 0 : burn.perDay;
-    var byDate={};
-    events.forEach(function(e){ byDate[e.date]=(byDate[e.date]||0)+e.amount; });
-    var series=[], bal=start, low={bal:start, date:todayStr()}, zeroOn=null;
-    var d=new Date();
-    for(var i=0;i<=days;i++){
-      var ds=d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate());
-      if(i>0){
-        bal-=perDay;
-        if(byDate[ds]) bal+=byDate[ds];
-      }
-      series.push({date:ds, bal:bal, event:byDate[ds]||0});
-      if(bal<low.bal){ low={bal:bal, date:ds}; }
-      if(bal<0 && !zeroOn) zeroOn=ds;
-      d.setDate(d.getDate()+1);
-    }
-    return {start:start, series:series, events:events, burn:burn, low:low, zeroOn:zeroOn,
-            thin:thin, end:series[series.length-1].bal};
-  }
+  
+  
+  
 
   /* ---------------- heatmap: UI ---------------- */
   var hmSel=null;
@@ -4045,6 +3985,12 @@ AI_TYPES.join(", "),
       return i%2===1?'<text class="hm-mlab" x="0" y="'+(PAD_T+i*(CS+GAP)+8.5)+'">'+d+'</text>':"";
     }).join("");
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:'+w+'px;max-width:none;height:'+h+'px;display:block">'+labels+dl+out+'</svg>';
+  }
+  // "2026-07-04" -> "Jul 4". Shared by the heatmap; keep it near its user.
+  function fcShortDate(ds){
+    var p=String(ds||"").split("-");
+    if(p.length<3) return String(ds||"");
+    return MONTHS[(+p[1])-1].slice(0,3)+" "+(+p[2]);
   }
   function renderHeatmap(){
     var card=document.getElementById("hmCard");
@@ -4086,81 +4032,83 @@ AI_TYPES.join(", "),
     } else el.innerHTML="You spent something on <b>"+sc.spentDays+"</b> of the last "+cells.length+" days.";
   }
 
-  /* ---------------- forecast: UI ---------------- */
-  var fcDays=30;
-  function fcChartSvg(f){
-    var pts=f.series, w=680, h=120, pad=6;
-    var vals=pts.map(function(p){ return p.bal; }).concat([0]);
-    var min=Math.min.apply(null,vals), max=Math.max.apply(null,vals);
-    var span=(max-min)||1;
-    var X=function(i){ return pad+(i/(pts.length-1))*(w-pad*2); };
-    var Y=function(v){ return h-pad-((v-min)/span)*(h-pad*2); };
-    var line=pts.map(function(p,i){ return X(i).toFixed(1)+","+Y(p.bal).toFixed(1); }).join(" ");
-    var zeroY=Y(0).toFixed(1);
-    var col=f.zeroOn?"var(--down)":"var(--up)";
-    var area='<polygon points="'+X(0).toFixed(1)+","+zeroY+" "+line+" "+X(pts.length-1).toFixed(1)+","+zeroY+'" fill="'+col+'" opacity=".08"/>';
-    // mark each known event so the steps in the line are explainable
-    var marks=pts.map(function(p,i){
-      if(!p.event) return "";
-      return '<line x1="'+X(i).toFixed(1)+'" y1="'+pad+'" x2="'+X(i).toFixed(1)+'" y2="'+(h-pad)+'" stroke="var(--bd2)" stroke-width="1" stroke-dasharray="2 3"/>';
-    }).join("");
-    var zeroLine=(min<0&&max>0)?'<line x1="0" y1="'+zeroY+'" x2="'+w+'" y2="'+zeroY+'" stroke="var(--down)" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>':"";
-    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="width:100%;height:120px;display:block">'
-      +marks+area+zeroLine
-      +'<polyline points="'+line+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/></svg>';
+  /* ================= TRADING FORECAST =================
+     Projects the trading account, not the bank. Two honest ingredients:
+       RATE  — how often you actually trade (trades ÷ days of history)
+       EDGE  — expectancy: what one average trade is worth, from YOUR record
+     Expected P&L = rate × edge × days. That is a point estimate and a point estimate
+     of a random process is a fiction on its own — so the Monte Carlo below reports the
+     spread around it. Neither predicts anything; both describe your own numbers. */
+  var TR_FC_MIN_TRADES=20;
+  function tradeRate(list){
+    if(list.length<2) return {perDay:0, days:0};
+    var ds=list.map(function(t){ return t.date; }).sort();
+    var first=new Date(ds[0]), last=new Date(ds[ds.length-1]);
+    var days=Math.max(1, Math.round((last-first)/86400000)+1);
+    return {perDay:list.length/days, days:days};
   }
-  function fcShortDate(ds){
-    var p=ds.split("-");
-    return MONTHS[(+p[1])-1].slice(0,3)+" "+(+p[2]);
+  function tradeForecast(list, days){
+    var s=tradeStats(list), rate=tradeRate(list);
+    var n=Math.round(rate.perDay*days);
+    return {
+      trades:n,
+      expected:s.expectancy*n,          // edge × how many shots you'll take
+      expectancy:s.expectancy,
+      perDay:rate.perDay, histDays:rate.days,
+      thin:list.length<TR_FC_MIN_TRADES,
+      stats:s
+    };
   }
-  function renderForecast(){
-    var card=document.getElementById("fcCard");
-    if(!card) return;
-    var f=forecast(fcDays), sym=state.currency;
-    // Nothing to project from: no rules and no spending history would just draw a
-    // flat line and pretend it meant something.
-    if(!f.events.length && (f.thin || f.burn.perDay<=0)){ card.style.display="none"; return; }
-    card.style.display="";
-    var endEl=document.getElementById("fcEnd");
-    endEl.textContent=fmt(f.end,sym);
-    endEl.className="fc-num mono "+(f.end>=0?"up":"down");
-    document.getElementById("fcCap").textContent=(f.thin?"scheduled items only · next ":"projected in ")+fcDays+" days · "+fmt(f.start,sym)+" today";
-    document.getElementById("fcChart").innerHTML=fcChartSvg(f);
-
-    var warn=document.getElementById("fcWarn");
-    if(f.thin){
-      // Thin history: report the shape, refuse to name a date.
-      warn.innerHTML='<div class="fc-alert warn"><span>◔</span><span>This counts scheduled items only. <b>'+f.burn.days+' day'+(f.burn.days===1?"":"s")+'</b> of spending isn\'t enough to work out your everyday rate — after about <b>'+FORECAST_MIN_DAYS+' days</b> it gets folded in.</span></div>';
-    } else if(f.zeroOn){
-      var daysOut=Math.round((new Date(f.zeroOn)-new Date(todayStr()))/86400000);
-      warn.innerHTML='<div class="fc-alert bad"><span>⚠️</span><span>On this path you run out around <b>'+esc(fcShortDate(f.zeroOn))+'</b> — about <b>'+daysOut+' days</b> away.</span></div>';
-    } else if(f.low.bal < f.start*0.25 && f.low.bal>=0){
-      warn.innerHTML='<div class="fc-alert warn"><span>⚡</span><span>Tightest point is <b>'+fmt(f.low.bal,sym)+'</b> around <b>'+esc(fcShortDate(f.low.date))+'</b>.</span></div>';
-    } else warn.innerHTML="";
-
-    var up=f.events.slice(0,5);
-    document.getElementById("fcUpNext").style.display=up.length?"":"none";
-    document.getElementById("fcEvents").innerHTML=up.map(function(e){
-      return '<div class="fc-ev"><span class="fc-ev-d">'+esc(fcShortDate(e.date))+'</span>'
-        +'<span class="fc-ev-n">'+esc(e.label)+'</span>'
-        +'<span class="fc-ev-a '+(e.amount>=0?"up":"down")+'">'+(e.amount>=0?"+":"")+fmt(e.amount,sym)+'</span></div>';
-    }).join("");
-
-    var bits=[];
-    if(f.burn.perDay>0 && !f.thin) bits.push("everyday spending of about <b>"+fmt(f.burn.perDay,sym)+"/day</b> (from your last "+f.burn.days+" days)");
-    if(f.events.length) bits.push("<b>"+f.events.length+"</b> scheduled item"+(f.events.length===1?"":"s"));
-    document.getElementById("fcBasis").innerHTML="Based on "+bits.join(" and ")+". It's a projection from your own numbers, not a prediction — one unusual month changes it.";
-  }
-  function bindForecast(){
-    Array.prototype.forEach.call(document.querySelectorAll("#fcRange button"), function(b){
-      b.addEventListener("click", function(){
-        fcDays=parseInt(b.getAttribute("data-d"),10);
-        Array.prototype.forEach.call(document.querySelectorAll("#fcRange button"), function(x){ x.classList.toggle("on", x===b); });
-        renderForecast();
-    renderHeatmap();
-      });
+  /* Monte Carlo: replay YOUR win rate and YOUR win/loss sizes n times over. A point
+     estimate says "you'll make $900". This says how often that actually happens — and
+     a positive edge with a 30% chance of being down is a very different thing to hold
+     than a positive edge alone. */
+  function tradeSim(list, days, runs){
+    var s=tradeStats(list), rate=tradeRate(list);
+    var n=Math.round(rate.perDay*days);
+    if(n<1 || !list.length) return null;
+    var wins=[], losses=[];
+    list.forEach(function(t){
+      var a=Math.abs(num(t.amount));
+      if(t.type==="trade_win") wins.push(a); else losses.push(a);
     });
+    if(!wins.length && !losses.length) return null;
+    runs=runs||1000;
+    var outs=[], down=0, worstRun=0;
+    for(var r=0;r<runs;r++){
+      var tot=0, eq=0, peak=0, dd=0;
+      for(var i=0;i<n;i++){
+        var win = Math.random() < s.winRate;
+        var pool = win ? wins : losses;
+        if(!pool.length) continue;
+        // resample real results rather than assume a bell curve — his tail IS the point
+        var v = pool[Math.floor(Math.random()*pool.length)] * (win?1:-1);
+        tot+=v; eq+=v;
+        if(eq>peak) peak=eq;
+        if(peak-eq>dd) dd=peak-eq;
+      }
+      if(tot<0) down++;
+      if(dd>worstRun) worstRun=dd;
+      outs.push(tot);
+    }
+    outs.sort(function(a,b){ return a-b; });
+    var q=function(p){ return outs[Math.min(outs.length-1, Math.floor(p*outs.length))]; };
+    return {
+      n:n, runs:runs, median:q(0.5), p10:q(0.1), p90:q(0.9),
+      best:outs[outs.length-1], worst:outs[0],
+      chanceDown:down/runs, typicalDD:worstRun, outs:outs
+    };
   }
+
+  /* Compact spending breakdown — one stacked strip plus a small legend, sized to sit
+     where the chart does rather than the full card's worth of bars. */
+  
+
+  /* ---------------- forecast: UI ---------------- */
+  
+  
+  
+  
 
   /* ================= RECURRING ENTRIES =================
      The hard parts are not the UI: (1) never double-add — every run is stamped per rule,
@@ -4390,7 +4338,6 @@ AI_TYPES.join(", "),
         else delete state.budgets[cat];   // blank/zero = no cap, not a cap of zero
         persist();
         renderBudgets();
-    renderForecast();
     renderHeatmap();
       });
     });
@@ -4510,6 +4457,18 @@ AI_TYPES.join(", "),
     document.getElementById("csvPasteWrap").style.display="none";
     document.getElementById("csvBox").value="";
     var f=document.getElementById("csvFile"); if(f) f.value="";
+  }
+  function bindChartMode(){
+    var sel=document.getElementById("setChartMode");
+    if(!sel) return;
+    sel.addEventListener("change", function(){
+      state.chartType=sel.value;
+      persistNow(); render(); flashSaved("saved");
+    });
+  }
+  function fillChartMode(){
+    var sel=document.getElementById("setChartMode");
+    if(sel) sel.value=state.chartType||"candle";
   }
   function bindPhotoQ(){
     var sel=document.getElementById("setPhotoQ");
@@ -4651,6 +4610,7 @@ AI_TYPES.join(", "),
   /* Insight rules. Each one computes from the user's actual trades and states the number
      it used, so nothing is a black box. They describe patterns; they never say what to
      trade — that's his call, with his money. */
+  var TR_INSIGHT_MAX=3;
   function tradeInsights(list, sym){
     var out=[], s=tradeStats(list), n=list.length;
     function add(kind, text){ out.push({kind:kind, text:text}); }
@@ -4789,12 +4749,91 @@ AI_TYPES.join(", "),
       }).join("");
     } else ip.style.display="none";
 
+    renderTradeForecast(list, sym);
+
     var ICON={good:"✅",bad:"⚠️",warn:"⚡",info:"ℹ️"};
-    document.getElementById("trInsights").innerHTML=tradeInsights(list,sym).map(function(x){
+    // Seventeen rules can match at once. Fifteen paragraphs of advice is a wall nobody
+    // reads, so show the few that matter most: problems first, then warnings, then
+    // observations. The rest are one tap away rather than shouting over the important ones.
+    var RANK={bad:0, warn:1, good:2, info:3};
+    var all=tradeInsights(list,sym).map(function(x,i){ x._i=i; return x; })
+      .sort(function(a,b){ return (RANK[a.kind]-RANK[b.kind]) || (a._i-b._i); });
+    var top=all.slice(0, TR_INSIGHT_MAX), rest=all.slice(TR_INSIGHT_MAX);
+    var draw=function(x){
       return '<div class="ins ins-'+x.kind+'"><span class="ins-ic">'+ICON[x.kind]+'</span><span>'+x.text+'</span></div>';
-    }).join("");
+    };
+    var h=top.map(draw).join("");
+    if(rest.length){
+      h+='<div id="insMore" style="display:none">'+rest.map(draw).join("")+'</div>'
+        +'<button type="button" class="ins-more-btn" id="insMoreBtn">'+rest.length+' more</button>';
+    }
+    document.getElementById("trInsights").innerHTML=h;
+    var mb=document.getElementById("insMoreBtn");
+    if(mb) mb.addEventListener("click", function(){
+      var box=document.getElementById("insMore");
+      var open=box.style.display!=="none";
+      box.style.display=open?"none":"block";
+      mb.textContent=open?(rest.length+" more"):"Show less";
+    });
+  }
+  var trFcDays=30;
+  function mcBar(sim, sym){
+    var lo=Math.min(sim.p10,0), hi=Math.max(sim.p90,0);
+    var span=(hi-lo)||1;
+    var X=function(v){ return ((v-lo)/span)*100; };
+    return '<div class="mc-wrap"><div class="mc-bar">'
+      +'<div class="mc-band" style="left:'+X(sim.p10).toFixed(1)+'%;width:'+(X(sim.p90)-X(sim.p10)).toFixed(1)+'%"></div>'
+      +'<div class="mc-zero" style="left:'+X(0).toFixed(1)+'%"></div>'
+      +'<div class="mc-med" style="left:'+X(sim.median).toFixed(1)+'%"></div>'
+      +'</div><div class="mc-scale"><span>'+fmt(sim.p10,sym)+'</span><span>'+fmt(sim.p90,sym)+'</span></div></div>';
+  }
+  function renderTradeForecast(list, sym){
+    var card=document.getElementById("trFcCard");
+    if(!card) return;
+    if(!list.length){ card.style.display="none"; return; }
+    var f=tradeForecast(list, trFcDays);
+    if(!f.trades){ card.style.display="none"; return; }
+    card.style.display="";
+    var numEl=document.getElementById("trFcNum");
+    numEl.textContent=(f.expected>=0?"+":"")+fmt(f.expected,sym);
+    numEl.className="fc-num mono "+(f.expected>=0?"up":"down");
+    var span = trFcDays>=365 ? "a year" : (trFcDays+" days");
+    document.getElementById("trFcCap").textContent="expected over "+span+" · about "+f.trades+" trade"+(f.trades===1?"":"s");
+
+    var sim=tradeSim(list, trFcDays, 1000);
+    var band=document.getElementById("trFcBand");
+    if(sim){
+      var pct=Math.round(sim.chanceDown*100);
+      band.innerHTML=mcBar(sim,sym)
+        +'<div class="mc-legend">'
+        +'<span>middle 80%: <b>'+fmt(sim.p10,sym)+'</b> to <b>'+fmt(sim.p90,sym)+'</b></span>'
+        +'<span>typical: <b>'+fmt(sim.median,sym)+'</b></span>'
+        +'<span>down after '+trFcDays+'d: <b>'+pct+'%</b></span>'
+        +'</div>';
+    } else band.innerHTML="";
+
+    var warn=document.getElementById("trFcWarn");
+    if(f.thin){
+      warn.innerHTML='<div class="fc-alert warn"><span>◔</span><span>Only <b>'+list.length+'</b> trade'+(list.length===1?"":"s")+' to go on. Under ~'+TR_FC_MIN_TRADES+', one result moves all of this — treat it as a sketch.</span></div>';
+    } else if(f.expectancy<0){
+      warn.innerHTML='<div class="fc-alert bad"><span>⚠️</span><span>Your edge is <b>negative</b> ('+fmt(f.expectancy,sym)+' per trade). More trading makes this worse, not better — the projection gets more negative the longer you go.</span></div>';
+    } else if(sim && sim.chanceDown>=0.35){
+      warn.innerHTML='<div class="fc-alert warn"><span>⚡</span><span>Edge is positive, but <b>'+Math.round(sim.chanceDown*100)+'%</b> of runs still finish down. A real edge loses often — that\'s what surviving it costs.</span></div>';
+    } else warn.innerHTML="";
+
+    document.getElementById("trFcBasis").innerHTML="Your edge is <b>"+fmt(f.expectancy,sym)+"/trade</b> and you trade about <b>"+(Math.round(f.perDay*10)/10)+"×/day</b> (over "+f.histDays+" days). Expected = edge × trades. The range comes from replaying your own wins and losses <b>1,000</b> times — same numbers, reshuffled. It describes your record, it doesn\'t predict the market.";
+  }
+  function bindTradeForecast(){
+    Array.prototype.forEach.call(document.querySelectorAll("#trFcRange button"), function(b){
+      b.addEventListener("click", function(){
+        trFcDays=parseInt(b.getAttribute("data-d"),10);
+        Array.prototype.forEach.call(document.querySelectorAll("#trFcRange button"), function(x){ x.classList.toggle("on", x===b); });
+        renderTradingPage();
+      });
+    });
   }
   function bindTradingPage(){
+    bindTradeForecast();
     Array.prototype.forEach.call(document.querySelectorAll("#trPeriod button"), function(b){
       b.addEventListener("click", function(){
         trPeriod=b.getAttribute("data-p");
@@ -5247,7 +5286,6 @@ AI_TYPES.join(", "),
       cats.innerHTML=html;
     }
     renderBudgets();
-    renderForecast();
     renderHeatmap();
     renderGoals();
     checkRecurPrompt();
@@ -6418,10 +6456,10 @@ AI_TYPES.join(", "),
     bindLabelInputs();
     bindCsvImport();
     bindPhotoQ();
+    bindChartMode();
     bindRecurring();
     bindGoals();
     bindTrash();
-    bindForecast();
     bindCopyRows();
     bindTabs();
     refreshAiVisibility();
@@ -6632,6 +6670,23 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Goals + Budgets: moved off the dashboard, sat next to their own settings -->
+  <div style="padding:0 20px">
+<div class="panel" id="goalCard" style="display:none">
+  <div class="p-head"><h2><span class="tick">◎</span> Goals</h2></div>
+  <div class="p-body" style="padding-top:4px"><div id="goalList"></div></div>
+</div>
+<div class="panel" id="budgetCard" style="display:none">
+  <div class="p-head">
+    <h2><span class="tick">◑</span> Budgets</h2>
+    <span class="mut" id="budgetMonth" style="font-size:12px"></span>
+  </div>
+  <div class="p-body" style="padding-top:4px"><div id="budgetList"></div></div>
+</div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Trash -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Recently deleted</div>
@@ -6644,8 +6699,7 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
-  <!-- Goals -->
-  <div style="padding:0 20px">
+    <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Savings goals</div>
     <div class="hint">Measured against your real savings pot. The forecast uses what you've <b>actually</b> been saving, not what you'd like to.</div>
     <div id="goalSetList"></div>
@@ -6695,8 +6749,7 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
-  <!-- Budgets -->
-  <div style="padding:0 20px">
+    <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Monthly budgets</div>
     <div class="hint">Set a monthly cap per category. Leave one blank for no cap. Caps always measure the <b>current calendar month</b>, whatever months you have ticked elsewhere.</div>
     <div id="budgetInputs"></div>
@@ -6745,6 +6798,12 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Wording</div>
     <div class="hint">Call things whatever you actually call them. Leave a box empty to use the default.</div>
+    <div class="fld"><label for="setChartMode">Balance chart shows</label>
+      <select id="setChartMode">
+        <option value="candle">Candles — monthly high/low</option>
+        <option value="line">Line — balance over time</option>
+      </select>
+    </div>
     <div class="fld"><label for="setPhotoQ">Photo quality</label>
       <select id="setPhotoQ">
         <option value="high">High — 2000px</option>
@@ -6791,7 +6850,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.2</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.4</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
