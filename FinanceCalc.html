@@ -260,6 +260,24 @@
   .pl-m.near .pl-m-v{color:var(--amber)}
   .pl-m.over .pl-m-v{color:var(--down)}
 
+  .sect{border:1px solid var(--bd);border-radius:12px;background:var(--card);margin:0 20px 8px;overflow:hidden}
+  .sect[open]{border-color:var(--bd2)}
+  .sect-h{display:flex;align-items:center;gap:12px;padding:14px 15px;cursor:pointer;list-style:none;
+    user-select:none;transition:background .12s}
+  .sect-h::-webkit-details-marker{display:none}
+  .sect-h:hover{background:var(--card2)}
+  .sect-i{flex:none;font-size:15px;opacity:.9;width:20px;text-align:center}
+  .sect-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sect-t{font-size:14px;font-weight:700;letter-spacing:.2px}
+  .sect-s{font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sect-c{flex:none;color:var(--mut);font-size:11px;transition:transform .16s}
+  .sect[open] .sect-c{transform:rotate(90deg)}
+  .sect-b{padding:2px 0 14px;border-top:1px solid var(--bd)}
+  /* inner blocks already carry their own 20px padding — don't double it up */
+  .sect-b > div{padding-left:15px;padding-right:15px}
+  .sect-b > div[style*="padding:0 20px"]{padding-left:15px!important;padding-right:15px!important}
+  .sect-b .panel{margin-left:0;margin-right:0}
+
   .xsel{position:relative;display:block}
   .xsel-native{position:absolute!important;opacity:0;pointer-events:none;width:1px;height:1px;margin:0;padding:0;border:0}
   .xsel-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -3389,6 +3407,7 @@ AI_TYPES.join(", "),
     if(sep) sep.style.display = on ? "" : "none";
     if(btn) btn.style.display = on ? "" : "none";
     if(!on) closeAiPanel();
+    if(typeof refreshSettingsSections==="function") refreshSettingsSections();
     var pill=document.getElementById("aiStatusPill");
     if(pill){
       pill.textContent = !aiConfigured() ? "· not set up"
@@ -3453,7 +3472,7 @@ AI_TYPES.join(", "),
         title:"Set up AI mode first",
         message:"AI auto-fill needs at least one API key. Open <b>Settings → AI Mode</b> to add one — it takes a couple of minutes and the free tiers are usually enough.\n\nTwo keys from different companies is strongly recommended: that's what lets the app catch its own mistakes instead of quietly getting things wrong.",
         confirmText:"Open settings",
-        onConfirm:function(){ if(_openSettings) _openSettings(); setTimeout(function(){ var s=document.getElementById("aiSection"); try{ if(s&&s.scrollIntoView) s.scrollIntoView({behavior:"smooth"}); }catch(e){} },120); }
+        onConfirm:function(){ if(_openSettings) _openSettings(); openSettingsSection("ai"); setTimeout(function(){ var s=document.getElementById("aiSection"); try{ if(s&&s.scrollIntoView) s.scrollIntoView({behavior:"smooth"}); }catch(e){} },120); }
       });
       return;
     }
@@ -4387,6 +4406,122 @@ AI_TYPES.join(", "),
     state._planWarned=key;
     appModal({title:hit.t, message:hit.m, confirmText:"OK", cancelText:"Close"});
   }
+
+  /* ================= SETTINGS SECTIONS =================
+     Settings grew to 19 stacked blocks — everything visible at once, which is the same
+     as nothing being findable. Same features, grouped and collapsed: seven rows.
+
+     Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
+     aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
+     cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
+  var SETTINGS_GROUPS=[
+    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
+     has:["Appearance"]},
+    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
+     has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
+    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
+     has:["Trading","Import trades from a file"]},
+    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
+     has:["Wording","Layout"], ids:["settingsSlot"]},
+    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
+     has:["Repeats","Monthly budgets","Savings goals"]},
+    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
+     ids:["aiSection"]},
+    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
+     has:["Back Up & Data","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+  ];
+  function settingsHeadingOf(el){
+    var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
+    return h ? h.textContent.replace(/\s+/g," ").trim() : null;
+  }
+  function groupForHeading(txt){
+    if(!txt) return null;
+    for(var i=0;i<SETTINGS_GROUPS.length;i++){
+      var g=SETTINGS_GROUPS[i];
+      if(!g.has) continue;
+      for(var j=0;j<g.has.length;j++){
+        // headings carry live state ("AI Mode · not set up"), so match the stem
+        if(txt.indexOf(g.has[j])===0) return g.k;
+      }
+    }
+    return null;
+  }
+  // Jumping to a section from elsewhere (e.g. "set up AI") has to open it, or it
+  // scrolls to a collapsed row and looks broken.
+  function openSettingsSection(k){
+    var det=document.querySelector('details.sect[data-k="'+k+'"]');
+    if(det) det.open=true;
+  }
+  // AI and Advanced hide their own blocks. A section header promising something that
+  // isn't in there is worse than no header.
+  function refreshSettingsSections(){
+    Array.prototype.forEach.call(document.querySelectorAll("details.sect"), function(det){
+      var b=det.querySelector(".sect-b");
+      if(!b) return;
+      var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
+      det.style.display = any ? "" : "none";
+    });
+  }
+  function buildSettingsSections(){
+    var page=document.getElementById("pageSettings");
+    if(!page || page._sect) return;
+    var kids=Array.prototype.slice.call(page.children);
+    var head=kids[0];   // .page-head stays put
+    var plan=[], cur=null;
+    kids.forEach(function(el, idx){
+      if(idx===0) return;
+      if(el.tagName==="HR") return;               // sections separate themselves now
+      var byId=null;
+      SETTINGS_GROUPS.forEach(function(g){ if(g.ids && g.ids.indexOf(el.id)>=0) byId=g.k; });
+      var k = byId || groupForHeading(settingsHeadingOf(el)) || cur;
+      if(!k) return;                              // nothing to belong to — leave it alone
+      cur=k;
+      plan.push({el:el, k:k});
+    });
+    if(!plan.length) return;
+    var boxes={};
+    SETTINGS_GROUPS.forEach(function(g){
+      if(!plan.some(function(x){ return x.k===g.k; })) return;
+      var det=document.createElement("details");
+      det.className="sect"; det.setAttribute("data-k", g.k);
+      det.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
+        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span>'
+        +'<span class="sect-s">'+esc(g.sub)+'</span></span>'
+        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
+      page.appendChild(det);
+      boxes[g.k]=det.querySelector(".sect-b");
+      det.addEventListener("toggle", function(){
+        try{
+          var open=JSON.parse(localStorage.getItem("mymoney_sect")||"{}");
+          open[g.k]=det.open;
+          localStorage.setItem("mymoney_sect", JSON.stringify(open));
+        }catch(e){}
+      });
+    });
+    // move, don't clone — every listener bound at startup survives the move
+    plan.forEach(function(x){ if(boxes[x.k]) boxes[x.k].appendChild(x.el); });
+    // strip the now-orphaned separators
+    Array.prototype.slice.call(page.children).forEach(function(el){
+      if(el.tagName==="HR") el.parentNode.removeChild(el);
+    });
+    try{
+      var open=JSON.parse(localStorage.getItem("mymoney_sect")||"{}");
+      Array.prototype.forEach.call(page.querySelectorAll("details.sect"), function(det){
+        if(open[det.getAttribute("data-k")]) det.open=true;
+      });
+    }catch(e){}
+    page._sect=true;
+  }
+
+  
+  
+  
+  
+  
+  
+  // A group whose every section is hidden (AI off, Advanced off) shouldn't leave an
+  // empty header behind promising something that isn't there.
+  
 
   /* ================= APP-STYLED SELECTS =================
      Native <select> renders as an OS dropdown — a grey system list dropped on top of the
@@ -6921,6 +7056,7 @@ AI_TYPES.join(", "),
       if(advTaps>=7){
         advTaps=0;
         document.getElementById("advWrap").style.display="block";
+        refreshSettingsSections();
         refreshAdvancedUI();
         flashSaved("advanced unlocked");
       }
@@ -7168,6 +7304,8 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
+      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
+      refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
     });
@@ -7550,7 +7688,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.1</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
