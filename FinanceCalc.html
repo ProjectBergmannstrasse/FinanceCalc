@@ -633,6 +633,35 @@
   /* ledger */
   .led-tools{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--mut);flex-wrap:wrap;justify-content:flex-end}
   #ledSearch{font-size:12.5px;padding:6px 9px}
+  /* the checkbox is the only selector now, so it has to be hittable with a thumb */
+  .lchk{width:16px;height:16px;flex:none;cursor:pointer;accent-color:var(--amber);
+    padding:11px;margin:-11px -4px -11px -11px;box-sizing:content-box;background-clip:content-box}
+  .lrow{cursor:pointer}
+  .lrow:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+
+  .td-sheet{max-width:440px}
+  .td-head{padding:18px 18px 14px;text-align:center;border-bottom:1px solid var(--bd);background:var(--card2)}
+  .td-badge{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.7px;padding:3px 8px;
+    border-radius:99px;background:var(--bd2);color:var(--mut);margin-bottom:9px}
+  .td-amt{font-size:30px;font-weight:800;letter-spacing:-.5px}
+  .td-date{font-size:11.5px;color:var(--mut);margin-top:5px}
+  .td-body{padding:14px 18px;overflow-y:auto}
+  .td-sec{font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--mut);margin:14px 0 7px}
+  .td-body .td-sec:first-child{margin-top:0}
+  .td-pot,.td-row{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:7px 0;border-bottom:1px solid var(--bd);font-size:13px}
+  .td-pot:last-of-type,.td-row:last-of-type{border-bottom:0}
+  .td-pot span:first-child,.td-row span:first-child{color:var(--mut)}
+  .td-pot .mono{font-weight:700}
+  .td-note{font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;
+    background:var(--card2);border:1px solid var(--bd);border-radius:9px;padding:10px 11px}
+  .td-photo{border-radius:9px;overflow:hidden;background:var(--card2);min-height:60px;
+    display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:11px}
+  .td-photo img{width:100%;display:block;cursor:zoom-in}
+  .td-foot{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--bd);background:var(--card2)}
+  .td-foot .btn{flex:1}
+
   .sw-hint{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
     align-items:center;font-size:11px;color:var(--mut)}
   .sw-chip{padding:4px 9px;border:1px solid var(--bd2);background:var(--card2);color:var(--mut);
@@ -6414,9 +6443,9 @@ AI_TYPES.join(", "),
         toggleSelect(+cb.getAttribute("data-id"), cb.checked);
       });
     });
-    // The whole row is the tap target for selection. A 14px checkbox is a miserable
-    // thing to hit on a phone, and it was the only way to select. The photo viewer moves
-    // to the eye icon, which is what it looks like it does anyway.
+    // Selection lives on the checkbox alone now — the row tap opens the full record.
+    // The checkbox gets a padded hit area (.lchk in CSS) so it's still thumb-sized;
+    // that padding is why the whole row didn't need to be the target.
     Array.prototype.forEach.call(led.querySelectorAll(".eye-btn"), function(b){
       b.addEventListener("click", function(e){
         e.stopPropagation();
@@ -6425,9 +6454,12 @@ AI_TYPES.join(", "),
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
-        if(e.target.closest(".del,.edit,.eye-btn")) return;
-        var id=+row.getAttribute("data-id");
-        toggleSelect(id, !selectedIds[id]);
+        if(e.target.closest(".del,.edit,.eye-btn,.lchk")) return;
+        openTxDetail(+row.getAttribute("data-id"));
+      });
+      row.setAttribute("tabindex","0");
+      row.addEventListener("keydown", function(e){
+        if(e.key==="Enter"){ e.preventDefault(); openTxDetail(+row.getAttribute("data-id")); }
       });
     });
     updateExportBtn();
@@ -6646,6 +6678,87 @@ AI_TYPES.join(", "),
 
   /* ---------------- image viewer ---------------- */
   var viewingId=null;
+  /* ================= ONE ENTRY, IN FULL =================
+     The row is a summary: the note truncates, the photo is a 14px icon, and the amount
+     only shows what hit your balance. This is the whole record — every pot it moved, the
+     note as written, the photo full size, and the way to change it. */
+  function txPotMoves(t, sym){
+    var rows=[];
+    var add=function(label, v, good){
+      if(Math.abs(v)<0.005) return;
+      rows.push('<div class="td-pot"><span>'+esc(label)+'</span>'
+        +'<span class="mono '+good+'">'+(v>0?"+":"\u2212")+fmt(Math.abs(v),sym)+'</span></div>');
+    };
+    add(L("trading")||"Money", balDelta(t), balDelta(t)>0?"up":"down");
+    add(L("debt"), debtDelta(t), debtDelta(t)>0?"down":"up");   // less debt is good
+    add(L("savings"), savDelta(t), savDelta(t)>0?"up":"down");
+    add("Tax set aside", taxDelta(t), "cool");
+    if(sepTrading()) add("Trading pot", tradingDelta(t), tradingDelta(t)>0?"up":"down");
+    return rows.length ? rows.join("")
+      : '<div class="td-pot"><span>Nothing moved</span><span class="mono neu">\u2014</span></div>';
+  }
+  function openTxDetail(id){
+    var t=state.transactions.filter(function(x){ return x.id===id; })[0];
+    if(!t) return;
+    var sym=state.currency, meta=TYPE_META[t.type]||{label:t.type};
+    var d=String(t.date||"").split("-");
+    var full=(MONTHS[(+d[1])-1]||"")+" "+(+d[2])+", "+d[0];
+    var ov=document.createElement("div");
+    ov.className="xsel-ov td-ov";
+    var bits="";
+    if(t.cat) bits+='<div class="td-row"><span>Category</span><b>'+esc(t.cat)+'</b></div>';
+    if(t.inst) bits+='<div class="td-row"><span>Instrument</span><b>'+esc(t.inst)+'</b></div>';
+    else if(t.type==="trade_win"||t.type==="trade_loss")
+      bits+='<div class="td-row"><span>Instrument</span><b class="mut">\u2014 untagged \u2014</b></div>';
+    if(t.auto) bits+='<div class="td-row"><span>Added by</span><b class="mut">Automatically</b></div>';
+    ov.innerHTML='<div class="xsel-sheet td-sheet">'
+      +'<div class="td-head">'
+        +'<div class="td-badge">'+esc(meta.label)+'</div>'
+        +'<div class="td-amt mono">'+fmt(Math.abs(num(t.amount)),sym)+'</div>'
+        +'<div class="td-date">'+esc(full)+'</div>'
+      +'</div>'
+      +'<div class="td-body">'
+        +'<div class="td-sec">What it moved</div>'+txPotMoves(t,sym)
+        +(bits?'<div class="td-sec">Details</div>'+bits:"")
+        +(t.note?'<div class="td-sec">Note</div><div class="td-note">'+esc(t.note)+'</div>':"")
+        +(t.photo?'<div class="td-sec">Photo</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
+      +'</div>'
+      +'<div class="td-foot">'
+        +(t.auto?'<div class="hint" style="margin:0;flex:1">Managed by the allowance tools \u2014 edit it there.</div>'
+                :'<button type="button" class="btn ghost sm" id="tdDel">Delete</button>'
+                 +'<button type="button" class="btn sm" id="tdEdit">Edit</button>')
+        +'<button type="button" class="btn ghost sm" id="tdClose">Close</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add("in"); });
+    var close=function(){
+      ov.classList.remove("in");
+      document.removeEventListener("keydown", onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140);
+    };
+    var onKey=function(e){ if(e.key==="Escape"){ e.preventDefault(); close(); } };
+    document.addEventListener("keydown", onKey);
+    ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
+    ov.querySelector("#tdClose").addEventListener("click", close);
+    var ed=ov.querySelector("#tdEdit");
+    if(ed) ed.addEventListener("click", function(){ close(); startEdit(t.id); });
+    var dl=ov.querySelector("#tdDel");
+    if(dl) dl.addEventListener("click", function(){
+      close();
+      if(editingId===t.id) cancelEdit();   // don't leave a deleted entry loaded in the form
+      deleteWithUndo(t.id);                // same path as the row's bin icon, undo included
+    });
+    if(t.photo){
+      loadPhoto(t.photo, function(url){
+        var box=ov.querySelector("#tdPhoto");
+        if(!box) return;
+        if(!url){ box.textContent="Photo missing."; return; }
+        box.innerHTML='<img src="'+url+'" alt="Receipt">';
+        box.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
+      });
+    }
+  }
+
   function openViewer(txId){
     var tx=state.transactions.filter(function(x){ return x.id===txId; })[0];
     if(!tx) return;
@@ -7865,7 +7978,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.7</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.8</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
