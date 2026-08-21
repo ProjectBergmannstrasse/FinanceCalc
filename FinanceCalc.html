@@ -3928,6 +3928,7 @@ AI_TYPES.join(", "),
      would be counted twice: once as a known event and again inside the daily burn.
      This is a projection from your own numbers, not a prediction, and it says so. */
   var FORECAST_LOOKBACK=90;
+  var FORECAST_MIN_DAYS=14;   // below this, one unusual day dominates the average
   function dailyBurn(){
     var t=todayStr();
     var cut=new Date(); cut.setDate(cut.getDate()-FORECAST_LOOKBACK);
@@ -3973,6 +3974,12 @@ AI_TYPES.join(", "),
     var start=totals().balance;
     var burn=dailyBurn();
     var events=knownEvents(days);
+    // Two ingredients, two confidence levels. Scheduled events are facts. A burn rate
+    // from a couple of days is one purchase wearing a trend's clothes — so below the
+    // minimum span we project the facts only and say the rest is unknown, rather than
+    // extrapolating a laptop into "-$22,000, you run out Tuesday".
+    var thin = burn.perDay>0 && burn.days<FORECAST_MIN_DAYS;
+    var perDay = thin ? 0 : burn.perDay;
     var byDate={};
     events.forEach(function(e){ byDate[e.date]=(byDate[e.date]||0)+e.amount; });
     var series=[], bal=start, low={bal:start, date:todayStr()}, zeroOn=null;
@@ -3980,7 +3987,7 @@ AI_TYPES.join(", "),
     for(var i=0;i<=days;i++){
       var ds=d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate());
       if(i>0){
-        bal-=burn.perDay;
+        bal-=perDay;
         if(byDate[ds]) bal+=byDate[ds];
       }
       series.push({date:ds, bal:bal, event:byDate[ds]||0});
@@ -3988,7 +3995,8 @@ AI_TYPES.join(", "),
       if(bal<0 && !zeroOn) zeroOn=ds;
       d.setDate(d.getDate()+1);
     }
-    return {start:start, series:series, events:events, burn:burn, low:low, zeroOn:zeroOn, end:series[series.length-1].bal};
+    return {start:start, series:series, events:events, burn:burn, low:low, zeroOn:zeroOn,
+            thin:thin, end:series[series.length-1].bal};
   }
 
   /* ---------------- heatmap: UI ---------------- */
@@ -4087,16 +4095,19 @@ AI_TYPES.join(", "),
     var f=forecast(fcDays), sym=state.currency;
     // Nothing to project from: no rules and no spending history would just draw a
     // flat line and pretend it meant something.
-    if(!f.events.length && f.burn.perDay<=0){ card.style.display="none"; return; }
+    if(!f.events.length && (f.thin || f.burn.perDay<=0)){ card.style.display="none"; return; }
     card.style.display="";
     var endEl=document.getElementById("fcEnd");
     endEl.textContent=fmt(f.end,sym);
     endEl.className="fc-num mono "+(f.end>=0?"up":"down");
-    document.getElementById("fcCap").textContent="projected in "+fcDays+" days · "+fmt(f.start,sym)+" today";
+    document.getElementById("fcCap").textContent=(f.thin?"scheduled items only · next ":"projected in ")+fcDays+" days · "+fmt(f.start,sym)+" today";
     document.getElementById("fcChart").innerHTML=fcChartSvg(f);
 
     var warn=document.getElementById("fcWarn");
-    if(f.zeroOn){
+    if(f.thin){
+      // Thin history: report the shape, refuse to name a date.
+      warn.innerHTML='<div class="fc-alert warn"><span>◔</span><span>This counts scheduled items only. <b>'+f.burn.days+' day'+(f.burn.days===1?"":"s")+'</b> of spending isn\'t enough to work out your everyday rate — after about <b>'+FORECAST_MIN_DAYS+' days</b> it gets folded in.</span></div>';
+    } else if(f.zeroOn){
       var daysOut=Math.round((new Date(f.zeroOn)-new Date(todayStr()))/86400000);
       warn.innerHTML='<div class="fc-alert bad"><span>⚠️</span><span>On this path you run out around <b>'+esc(fcShortDate(f.zeroOn))+'</b> — about <b>'+daysOut+' days</b> away.</span></div>';
     } else if(f.low.bal < f.start*0.25 && f.low.bal>=0){
@@ -4112,7 +4123,7 @@ AI_TYPES.join(", "),
     }).join("");
 
     var bits=[];
-    if(f.burn.perDay>0) bits.push("everyday spending of about <b>"+fmt(f.burn.perDay,sym)+"/day</b> (from your last "+f.burn.days+" days)");
+    if(f.burn.perDay>0 && !f.thin) bits.push("everyday spending of about <b>"+fmt(f.burn.perDay,sym)+"/day</b> (from your last "+f.burn.days+" days)");
     if(f.events.length) bits.push("<b>"+f.events.length+"</b> scheduled item"+(f.events.length===1?"":"s"));
     document.getElementById("fcBasis").innerHTML="Based on "+bits.join(" and ")+". It's a projection from your own numbers, not a prediction — one unusual month changes it.";
   }
@@ -6765,7 +6776,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.1</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
