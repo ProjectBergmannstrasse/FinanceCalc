@@ -875,7 +875,8 @@
           <option value="trade_win">Trade — made money</option>
           <option value="trade_loss">Trade — lost money</option>
           <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
-          <option value="borrow">Borrowed / debt went up</option>
+          <option value="borrow_cash">Borrowed cash (into my account)</option>
+          <option value="borrow">Someone paid for me (I owe them)</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
@@ -1661,7 +1662,7 @@
   var TYPE_META = {
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
-    borrow:{label:"DEBT +"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
     to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
@@ -1834,6 +1835,7 @@
   function balDelta(t){
     var a=num(t.amount), sep=sepTrading();
     switch(t.type){
+      case "borrow_cash": return a;   // borrowed money that actually arrived in the account
       case "income": case "withdraw": return a;
       case "trade_win":   return sep ? 0 : a;
       case "alw_trading": return sep ? 0 : a;
@@ -1870,7 +1872,7 @@
     var a=num(t.amount);
     switch(t.type){
       case "pay_debt_balance": case "alw_debt": return -a;
-      case "borrow": return a;
+      case "borrow": case "borrow_cash": return a;
       default: return 0;
     }
   }
@@ -7820,7 +7822,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.5</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.6</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
