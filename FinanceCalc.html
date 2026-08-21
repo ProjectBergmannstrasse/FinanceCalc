@@ -797,6 +797,22 @@
   /* undo-delete toast */
   .undo-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:70;max-width:calc(100vw - 32px)}
   .undo-toast button{background:var(--amber);color:#20160a;border:0;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;flex:none;cursor:pointer}
+
+  /* copy menu */
+  .copy-menu{background:var(--card);border:1px solid var(--bd2);border-radius:16px;padding:8px;
+    width:min(320px,calc(100vw - 40px));box-shadow:0 18px 44px rgba(0,0,0,.5)}
+  .copy-mh{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+    font-weight:700;padding:8px 10px 6px}
+  .copy-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
+    text-align:left;background:transparent;border:0;border-radius:10px;padding:11px 12px;
+    color:var(--tx);font:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    transition:background .15s ease,transform .1s ease}
+  .copy-opt:hover{background:var(--card2)}
+  .copy-opt:active{transform:scale(.98)}
+  .copy-opt:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+  .copy-sub{font-size:12px;font-weight:500;color:var(--mut)}
+  .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
+  .td-copy{margin-right:auto}
 </style>
 </head>
 <body>
@@ -950,6 +966,7 @@
           <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
           <option value="borrow_cash">Borrowed cash (into my account)</option>
           <option value="borrow">Someone paid for me (I owe them)</option>
+          <option value="move_to_debt">Move to debt (owe it instead)</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
@@ -1033,7 +1050,8 @@
         <option value="smallest">Smallest amount</option>
       </select>
       <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
-      <button class="btn ghost sm" id="exportSelBtn" disabled>Export</button>
+      <button class="btn ghost sm" id="copySelBtn" style="display:none">Copy</button>
+      <button class="btn ghost sm" id="exportSelBtn" style="display:none">Export</button>
     </div>
   </div>
   <div class="p-body"><div class="led" id="ledger"></div></div>
@@ -1736,7 +1754,7 @@
   var TYPE_META = {
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
-    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, move_to_debt:{label:"\u2192 DEBT"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
     to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
@@ -1917,6 +1935,7 @@
       case "to_trading":   return sep ? -a : 0;
       case "adjust": return a; // may be negative
       case "spend": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      case "move_to_debt": return a;   // balance recovers by a; the matching debt is added below
       case "trade_loss": return sep ? 0 : -a;
       default: return 0;
     }
@@ -1946,7 +1965,7 @@
     var a=num(t.amount);
     switch(t.type){
       case "pay_debt_balance": case "alw_debt": return -a;
-      case "borrow": case "borrow_cash": return a;
+      case "borrow": case "borrow_cash": case "move_to_debt": return a;
       default: return 0;
     }
   }
@@ -6080,7 +6099,7 @@ AI_TYPES.join(", "),
       // dots (invisible large hit areas + visible small dots)
       for(i=0;i<n;i++){
         var cx2=Xc(i).toFixed(1), cy2=Yv(candles[i].c).toFixed(1);
-        svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'"/>';
+        svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'" style="pointer-events:none"/>';
       }
     } else {
       var bw=Math.max(6, Math.min(step*0.6, 26));
@@ -6124,6 +6143,7 @@ AI_TYPES.join(", "),
 
     // Invisible mouse capture overlay
     svg+='<rect id="cvOverlay" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent" style="cursor:crosshair"/>';
+    // overlay is drawn LAST so it sits above the series and receives every pointer move
 
     svg='<svg id="chartSvg" class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+svg+'</svg>';
     wrap.innerHTML=svg;
@@ -6234,11 +6254,9 @@ AI_TYPES.join(", "),
     overlay.addEventListener("touchmove", function(e){ e.preventDefault(); showCrosshair(e); }, {passive:false});
     overlay.addEventListener("mouseleave", hideCrosshair);
     overlay.addEventListener("touchend", hideCrosshair);
-    // also attach to candle/dot hit areas
-    svgEl.querySelectorAll(".cv-candle,.cv-dot").forEach(function(el){
-      el.addEventListener("mousemove", showCrosshair);
-      el.addEventListener("mouseleave", hideCrosshair);
-    });
+    // one handler on the full-plot overlay is the single source of truth, so the readout
+    // follows the pointer ANYWHERE over the chart — not only when it's on a dot/candle.
+    // (Candles keep pointer-events for their hover tint via CSS; they don't handle moves.)
   }
 
   /* ---------------- render ---------------- */
@@ -6670,6 +6688,11 @@ AI_TYPES.join(", "),
         if(e.target.closest(".del,.edit,.eye-btn,.lsel")) return;
         openTxDetail(+row.getAttribute("data-id"));
       });
+      row.addEventListener("contextmenu", function(e){
+        e.preventDefault();                       // replace the browser menu with ours
+        var t=state.transactions.filter(function(x){ return x.id===+row.getAttribute("data-id"); })[0];
+        if(t) openCopyMenu(t);
+      });
       row.setAttribute("tabindex","0");
       row.addEventListener("keydown", function(e){
         if(e.key==="Enter"){ e.preventDefault(); openTxDetail(+row.getAttribute("data-id")); }
@@ -6820,10 +6843,14 @@ AI_TYPES.join(", "),
   }
   function updateExportBtn(){
     var btn=document.getElementById("exportSelBtn"), chk=document.getElementById("selAllChk");
+    var cpy=document.getElementById("copySelBtn");
     if(!btn||!chk) return;
     var n=selectedCount();
-    btn.disabled = n===0;
-    btn.textContent = n>0 ? "Export ("+n+")" : "Export";
+    // both buttons only exist once something is selected — an action you can't take
+    // shouldn't sit there greyed out taking up the bar
+    btn.style.display = n>0 ? "" : "none";
+    btn.textContent = "Export ("+n+")";
+    if(cpy){ cpy.style.display = n>0 ? "" : "none"; cpy.textContent = "Copy ("+n+")"; }
     var visible=currentVisibleIds();
     if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }
     chk.disabled=false;
@@ -6972,6 +6999,262 @@ AI_TYPES.join(", "),
     return rows.length ? rows.join("")
       : '<div class="td-pot"><span>Nothing moved</span><span class="mono neu">\u2014</span></div>';
   }
+  /* ============================================================
+     COPY A TRANSACTION — text, or a rendered image that matches
+     the detail sheet in the current theme. One place so the row
+     right-click, the detail-sheet button and the selection bar
+     all behave the same.
+     ============================================================ */
+  function themeColors(){
+    var cs=getComputedStyle(document.documentElement);
+    var g=function(n,f){ var v=cs.getPropertyValue(n).trim(); return v||f; };
+    return {
+      bg:g("--bg","#0b0e14"), panel:g("--panel","#121722"), card:g("--card","#161c28"),
+      card2:g("--card2","#1b2230"), bd:g("--bd","#232c3d"),
+      tx:g("--tx","#e6ebf2"), mut:g("--mut","#8b94a7"),
+      up:g("--up","#3ddc84"), down:g("--down","#ff5d5d"), cool:g("--cool","#5aa9e6"),
+      amber:g("--amber","#f4b73f")
+    };
+  }
+  // one transaction as clean plain text: the note (or a built label) and the signed amount
+  function txAsText(t){
+    var sym=state.currency;
+    var signed=(balDelta(t)<0 || t.type==="trade_loss" || t.type==="spend" || t.type==="borrow")
+      ? "-"+fmt(Math.abs(num(t.amount)),sym)
+      : "+"+fmt(Math.abs(num(t.amount)),sym);
+    // prefer the real net effect on the balance where there is one
+    var bd=balDelta(t);
+    if(Math.abs(bd)>=0.005) signed=(bd>0?"+":"-")+fmt(Math.abs(bd),sym);
+    var note=(t.note||"").trim();
+    var meta=TYPE_META[t.type]||{label:t.type};
+    var head=note || (meta.label+(t.inst?(" "+t.inst):""));
+    return head+"  "+signed;
+  }
+  function manyAsText(list){
+    return list.map(txAsText).join("\n");
+  }
+  function copyText(str, msg){
+    var done=function(){ flashSaved(msg||"copied"); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(str).then(done, function(){ legacyCopy(str); done(); });
+    } else { legacyCopy(str); done(); }
+  }
+  function legacyCopy(str){
+    // clipboard API needs https/permission; this works everywhere as a fallback
+    var ta=document.createElement("textarea");
+    ta.value=str; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* ---- render one transaction to a PNG on a <canvas>, matching the sheet ----
+     Canvas rather than screenshotting the DOM: no external library, works offline,
+     and it looks the same on every device. cb(blob, dataUrl). */
+  function renderTxImage(t, withPhoto, cb){
+    var C=themeColors(), sym=state.currency, DPR=2;
+    var meta=TYPE_META[t.type]||{label:t.type};
+    var d=String(t.date||"").split("-");
+    var dateStr=(MONTHS[(+d[1])-1]||"")+" "+(+d[2])+", "+d[0];
+    var W=440, pad=22;
+
+    // gather the pot-move rows as {label, text, colorKey}
+    var moves=[];
+    var addMove=function(label,v,key){ if(Math.abs(v)<0.005) return;
+      moves.push({label:label, text:(v>0?"+":"\u2212")+fmt(Math.abs(v),sym), key:key}); };
+    addMove(L("trading")||"Money", balDelta(t), balDelta(t)>0?"up":"down");
+    addMove(L("debt"), debtDelta(t), debtDelta(t)>0?"up":"down");
+    addMove(L("savings"), savDelta(t), savDelta(t)>0?"up":"down");
+    addMove("Tax set aside", taxDelta(t), "cool");
+    if(sepTrading()) addMove("Trading pot", tradingDelta(t), tradingDelta(t)>0?"up":"down");
+    if(!moves.length) moves.push({label:"Nothing moved", text:"\u2014", key:"mut"});
+
+    var details=[];
+    if(t.cat) details.push(["Category", t.cat]);
+    if(t.inst) details.push(["Instrument", t.inst]);
+    var note=(t.note||"").trim();
+
+    var loadImg=function(next){
+      if(!withPhoto){ next(null); return; }
+      var ps=photosOf(t); if(!ps.length){ next(null); return; }
+      loadPhoto(ps[0], function(url){
+        if(!url){ next(null); return; }
+        var im=new Image(); im.onload=function(){ next(im); }; im.onerror=function(){ next(null); };
+        im.src=url;
+      });
+    };
+
+    loadImg(function(photoImg){
+      // ---- measure height ----
+      var y=pad;
+      y+=34;                       // badge
+      y+=54;                       // big amount
+      y+=26;                       // date
+      y+=18;                       // divider gap
+      y+=22+moves.length*26+10;    // "what it moved"
+      if(details.length) y+=22+details.length*26+10;
+      var noteLines=[];
+      if(note){
+        // wrap note at ~46 chars
+        var words=note.split(/\s+/), line="";
+        words.forEach(function(w){
+          if((line+" "+w).trim().length>46){ noteLines.push(line.trim()); line=w; }
+          else line+=" "+w;
+        });
+        if(line.trim()) noteLines.push(line.trim());
+        y+=22+noteLines.length*22+14;
+      }
+      var photoH=0;
+      if(photoImg){
+        var iw=W-pad*2, ih=Math.min(240, iw*photoImg.height/photoImg.width);
+        photoH=ih; y+=22+ih+10;
+      }
+      var H=y+pad;
+
+      var cv=document.createElement("canvas");
+      cv.width=W*DPR; cv.height=H*DPR;
+      var x=cv.getContext("2d"); x.scale(DPR,DPR);
+      var mono='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+
+      // bg
+      x.fillStyle=C.bg; x.fillRect(0,0,W,H);
+      var cy=pad;
+
+      // badge (centered pill)
+      var badge=meta.label;
+      x.font="700 12px "+mono;
+      var bw=x.measureText(badge).width+24;
+      x.fillStyle=C.card2;
+      roundRect(x,(W-bw)/2,cy,bw,26,13); x.fill();
+      x.fillStyle=C.mut; x.textAlign="center"; x.textBaseline="middle";
+      x.fillText(badge, W/2, cy+13);
+      cy+=44;
+
+      // big amount
+      var bd=balDelta(t);
+      var amtColor = bd<0 ? C.down : (bd>0 ? C.up : C.tx);
+      if(Math.abs(bd)<0.005) amtColor=C.tx;
+      x.font="800 44px "+mono; x.fillStyle=amtColor; x.textAlign="center";
+      var amtStr=(bd<0?"\u2212":"")+sym+Math.abs(num(t.amount)).toFixed(2);
+      x.fillText(amtStr, W/2, cy+22);
+      cy+=58;
+
+      // date
+      x.font="500 15px "+mono; x.fillStyle=C.mut;
+      x.fillText(dateStr, W/2, cy);
+      cy+=28;
+
+      var divider=function(){ x.strokeStyle=C.bd; x.lineWidth=1;
+        x.beginPath(); x.moveTo(pad,cy); x.lineTo(W-pad,cy); x.stroke(); cy+=18; };
+      var section=function(title){
+        x.font="700 11px "+mono; x.fillStyle=C.mut; x.textAlign="left";
+        x.fillText(title.toUpperCase(), pad, cy); cy+=22;
+      };
+      var rowLR=function(label,val,color){
+        x.font="500 15px "+mono; x.textAlign="left"; x.fillStyle=C.tx;
+        x.fillText(label, pad, cy);
+        x.font="700 15px "+mono; x.textAlign="right"; x.fillStyle=color||C.tx;
+        x.fillText(val, W-pad, cy);
+        cy+=26;
+      };
+
+      divider();
+      section("What it moved");
+      moves.forEach(function(m){
+        var col = m.key==="up"?C.up : m.key==="down"?C.down : m.key==="cool"?C.cool : m.key==="mut"?C.mut : C.tx;
+        rowLR(m.label, m.text, col);
+      });
+      cy+=10;
+
+      if(details.length){
+        divider(); section("Details");
+        details.forEach(function(dd){ rowLR(dd[0], dd[1], C.tx); });
+        cy+=10;
+      }
+
+      if(noteLines.length){
+        divider(); section("Note");
+        // note in a rounded box
+        var boxTop=cy-4, boxH=noteLines.length*22+16;
+        x.fillStyle=C.card2; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.fill();
+        x.strokeStyle=C.bd; x.lineWidth=1; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.stroke();
+        x.font="500 15px "+mono; x.fillStyle=C.tx; x.textAlign="left";
+        cy=boxTop+20;
+        noteLines.forEach(function(ln){ x.fillText(ln, pad+14, cy); cy+=22; });
+        cy=boxTop+boxH+14;
+      }
+
+      if(photoImg){
+        divider(); section("Photo");
+        var iw2=W-pad*2, ih2=photoH;
+        roundRectClip(x, pad, cy-4, iw2, ih2, 10, function(){
+          x.drawImage(photoImg, pad, cy-4, iw2, ih2);
+        });
+        cy+=ih2+10;
+      }
+
+      cv.toBlob(function(blob){ cb(blob, cv.toDataURL("image/png")); }, "image/png");
+    });
+  }
+  function roundRect(x,rx,ry,rw,rh,r){
+    x.beginPath();
+    x.moveTo(rx+r,ry); x.arcTo(rx+rw,ry,rx+rw,ry+rh,r);
+    x.arcTo(rx+rw,ry+rh,rx,ry+rh,r); x.arcTo(rx,ry+rh,rx,ry,r);
+    x.arcTo(rx,ry,rx+rw,ry,r); x.closePath();
+  }
+  function roundRectClip(x,rx,ry,rw,rh,r,draw){
+    x.save(); roundRect(x,rx,ry,rw,rh,r); x.clip(); draw(); x.restore();
+  }
+  function copyImageBlob(blob, msg){
+    if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      var item=new ClipboardItem({"image/png":blob});
+      navigator.clipboard.write([item]).then(function(){ flashSaved(msg||"image copied"); },
+        function(){ downloadBlob(blob, "transaction.png"); flashSaved("saved as file"); });
+    } else {
+      // clipboard-image isn't supported here — hand them the file instead of failing
+      downloadBlob(blob, "transaction.png"); flashSaved("saved as file");
+    }
+  }
+  function downloadBlob(blob, name){
+    var url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // the little menu of copy choices, anchored near a point (x,y) or centered
+  function openCopyMenu(t, anchor){
+    var hasPhoto=photosOf(t).length>0;
+    var ov=document.createElement("div");
+    ov.className="xsel-ov copy-ov";
+    ov.innerHTML='<div class="copy-menu">'
+      +'<div class="copy-mh">Copy transaction</div>'
+      +'<button type="button" class="copy-opt" data-k="text">Copy as text'
+        +'<span class="copy-sub">note + amount</span></button>'
+      +'<button type="button" class="copy-opt" data-k="img">Copy as image'
+        +'<span class="copy-sub">the card, exactly as shown</span></button>'
+      +(hasPhoto?'<button type="button" class="copy-opt" data-k="imgphoto">Copy as image + photo'
+        +'<span class="copy-sub">card with the receipt below</span></button>':'')
+      +'<button type="button" class="copy-opt copy-cancel" data-k="cancel">Cancel</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add("in"); });
+    var close=function(){ ov.classList.remove("in");
+      document.removeEventListener("keydown",onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140); };
+    var onKey=function(e){ if(e.key==="Escape"){ e.preventDefault(); close(); } };
+    document.addEventListener("keydown",onKey);
+    ov.addEventListener("click",function(e){ if(e.target===ov) close(); });
+    ov.querySelectorAll(".copy-opt").forEach(function(b){
+      b.addEventListener("click", function(){
+        var k=b.getAttribute("data-k");
+        if(k==="text"){ copyText(txAsText(t), "text copied"); close(); }
+        else if(k==="img"){ flashSaved("rendering…"); renderTxImage(t,false,function(blob){ copyImageBlob(blob); close(); }); }
+        else if(k==="imgphoto"){ flashSaved("rendering…"); renderTxImage(t,true,function(blob){ copyImageBlob(blob); close(); }); }
+        else close();
+      });
+    });
+  }
+
   function openTxDetail(id){
     var t=state.transactions.filter(function(x){ return x.id===id; })[0];
     if(!t) return;
@@ -7000,6 +7283,7 @@ AI_TYPES.join(", "),
             +'</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
       +'</div>'
       +'<div class="td-foot">'
+        +'<button type="button" class="btn ghost sm td-copy" id="tdCopy" title="Copy transaction">\u29c9 Copy</button>'
         +(t.auto?'<div class="hint" style="margin:0;flex:1">Managed by the allowance tools \u2014 edit it there.</div>'
                 :'<button type="button" class="btn ghost sm" id="tdDel">Delete</button>'
                  +'<button type="button" class="btn sm" id="tdEdit">Edit</button>')
@@ -7016,6 +7300,8 @@ AI_TYPES.join(", "),
     document.addEventListener("keydown", onKey);
     ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
     ov.querySelector("#tdClose").addEventListener("click", close);
+    var cp=ov.querySelector("#tdCopy");
+    if(cp) cp.addEventListener("click", function(){ openCopyMenu(t); });
     var ed=ov.querySelector("#tdEdit");
     if(ed) ed.addEventListener("click", function(){ close(); startEdit(t.id); });
     var dl=ov.querySelector("#tdDel");
@@ -7398,6 +7684,14 @@ AI_TYPES.join(", "),
     // select-all + export selected entries as their own .json (separate from the full backup)
     document.getElementById("selAllChk").addEventListener("change", function(e){ toggleSelectAll(e.target.checked); });
     document.getElementById("exportSelBtn").addEventListener("click", exportSelectedClick);
+    var copyBtn=document.getElementById("copySelBtn");
+    if(copyBtn) copyBtn.addEventListener("click", function(){
+      var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+      if(!ids.length) return;
+      var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });
+      if(list.length===1){ openCopyMenu(list[0]); return; }   // one row -> full menu incl. image
+      copyText(manyAsText(list), list.length+" copied");       // many -> a clean text list
+    });
 
     // salary / allowance inputs — debounced so typing doesn't rebuild the whole ledger/chart per keystroke
     var settingsRenderTimer=null;
