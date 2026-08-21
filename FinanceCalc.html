@@ -278,6 +278,52 @@
   .sect-b > div[style*="padding:0 20px"]{padding-left:15px!important;padding-right:15px!important}
   .sect-b .panel{margin-left:0;margin-right:0}
 
+  /* ---- layout board ---- */
+  .ly-presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .ly-preset{position:relative;display:flex;flex-direction:column;gap:5px;padding:10px;text-align:left;
+    background:var(--card2);border:1px solid var(--bd2);border-radius:11px;color:var(--tx);
+    font-family:inherit;cursor:pointer;transition:border-color .13s,background .13s}
+  .ly-preset:hover{border-color:var(--amber)}
+  .ly-preset.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,var(--card2))}
+  .ly-pv{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;height:22px;margin-bottom:2px}
+  .ly-pv-c{border-radius:3px;background:var(--bd2)}
+  .ly-pv-dash{background:var(--amber)}
+  .ly-pv-entries{background:var(--cool)}
+  .ly-pv-settings{background:var(--mut)}
+  .ly-pv-off{background:transparent;border:1px dashed var(--bd2)}
+  .ly-pt{font-size:12.5px;font-weight:700}
+  .ly-pd{font-size:10px;color:var(--mut);line-height:1.3}
+  .ly-pon{position:absolute;top:8px;right:9px;color:var(--amber);font-weight:800;font-size:11px}
+  .ly-help{font-size:11px;color:var(--mut);margin:0 0 9px;padding:7px 9px;border-radius:8px;background:var(--card2)}
+  .ly-help.live{color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,var(--card2))}
+  .ly-board{display:flex;flex-direction:column;gap:8px}
+  .ly-zone{border:1px solid var(--bd);border-radius:11px;padding:9px;background:var(--card2);transition:border-color .13s,background .13s}
+  .ly-zone.live{border-style:dashed;border-color:var(--amber);cursor:pointer}
+  .ly-zone.live:hover{background:color-mix(in srgb,var(--amber) 9%,var(--card2))}
+  .ly-zh{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--mut);margin-bottom:7px;padding:0 2px}
+  .ly-zn{margin-left:auto;font-family:var(--mono);opacity:.8}
+  .ly-cards{display:flex;flex-direction:column;gap:6px}
+  .ly-card{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;
+    background:var(--card);border:1px solid var(--bd2);cursor:pointer;transition:border-color .12s,transform .12s}
+  .ly-card:hover{border-color:var(--amber)}
+  .ly-card:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .ly-card.picked{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 16%,var(--card));transform:scale(.985)}
+  .ly-cn{flex:1;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ly-mini{flex:none;width:22px;height:16px;border-radius:3px;background:var(--bd2);position:relative;overflow:hidden}
+  .ly-mini-chart{background:linear-gradient(to top,var(--amber) 30%,transparent 30%)}
+  .ly-mini-grid{background:repeating-linear-gradient(90deg,var(--cool) 0 4px,transparent 4px 7px)}
+  .ly-mini-bars{background:linear-gradient(to right,var(--up) 60%,var(--bd2) 60%)}
+  .ly-mini-ring{background:radial-gradient(circle at 50% 50%,transparent 34%,var(--mut) 36%)}
+  .ly-ord{flex:none;display:flex;flex-direction:column;gap:2px}
+  .ly-mv{width:24px;height:15px;border:1px solid var(--bd2);background:transparent;color:var(--mut);
+    border-radius:4px;font-size:7px;line-height:1;cursor:pointer;transition:border-color .12s,color .12s}
+  .ly-mv:hover:not(:disabled){border-color:var(--amber);color:var(--tx)}
+  .ly-mv:disabled{opacity:.28;cursor:default}
+  .ly-empty{font-size:10.5px;color:var(--mut);padding:9px;text-align:center;
+    border:1px dashed var(--bd2);border-radius:8px}
+  @media(min-width:560px){ .ly-board{display:grid;grid-template-columns:repeat(2,1fr)} }
+
   .xsel{position:relative;display:block}
   .xsel-native{position:absolute!important;opacity:0;pointer-events:none;width:1px;height:1px;margin:0;padding:0;border:0}
   .xsel-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -314,17 +360,6 @@
     .xsel-sheet{max-width:none;border-radius:18px 18px 0 0;max-height:76vh;transform:translateY(14px)}
   }
 
-  .ly-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--bd);
-    border-radius:9px;background:var(--card);margin-bottom:7px}
-  .ly-ord{display:flex;flex-direction:column;gap:2px;flex:none}
-  .ly-ord button{width:26px;height:19px;border:1px solid var(--bd2);background:transparent;color:var(--mut);
-    border-radius:4px;font-size:8px;cursor:pointer;line-height:1;transition:border-color .13s,color .13s}
-  .ly-ord button:hover:not(:disabled){border-color:var(--amber);color:var(--tx)}
-  .ly-ord button:disabled{opacity:.3;cursor:default}
-  .ly-main{flex:1;min-width:0}
-  .ly-nm{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ly-hint{font-size:10.5px;color:var(--mut);margin-top:1px}
-  .ly-sel{flex:none;width:104px;font-size:12px;padding:5px 6px}
 
   .mc-wrap{margin:10px 0 4px}
   .mc-bar{position:relative;height:34px;border-radius:8px;background:var(--card2);overflow:hidden}
@@ -4643,6 +4678,41 @@ AI_TYPES.join(", "),
     {id:"off",      slot:null,           label:"Hidden"}
   ];
   var LAYOUT_DEFAULT={ chartCard:"dash", hmCard:"entries", budgetCard:"settings", goalCard:"settings" };
+  /* Whole layouts you can see and tap, instead of setting four dropdowns and hoping.
+     Each one is a real arrangement, not a name — tapping applies it immediately and the
+     board below shows exactly what happened. */
+  var LAYOUT_PRESETS=[
+    {k:"minimal",  t:"Minimal",     d:"Just the chart",
+     cfg:{chartCard:"dash", hmCard:"off", budgetCard:"off", goalCard:"off"}},
+    {k:"balanced", t:"Balanced",    d:"Chart up front, the rest tucked away",
+     cfg:{chartCard:"dash", hmCard:"entries", budgetCard:"settings", goalCard:"settings"}},
+    {k:"spending", t:"Spending",    d:"Where it goes, and your caps",
+     cfg:{chartCard:"dash", hmCard:"dash", budgetCard:"dash", goalCard:"settings"}},
+    {k:"all",      t:"Everything",  d:"All four on the dashboard",
+     cfg:{chartCard:"dash", hmCard:"dash", budgetCard:"dash", goalCard:"dash"}}
+  ];
+  function presetMatches(p){
+    var c=layoutCfg();
+    return LAYOUT_CARDS.every(function(card){ return c[card.id]===p.cfg[card.id]; });
+  }
+  function applyPreset(k){
+    var p=LAYOUT_PRESETS.filter(function(x){ return x.k===k; })[0];
+    if(!p) return;
+    state.layout=clone(p.cfg);
+    persistNow(); applyLayout(); render(); renderLayoutUI(); flashSaved(p.t);
+  }
+  // Tap a box, tap where it should go. Not drag: dragging fights the scroll on a phone,
+  // and a long-press that sometimes grabs is worse than a tap that always does.
+  var lyPicked=null;
+  function lyTap(id){
+    lyPicked = (lyPicked===id) ? null : id;
+    renderLayoutUI();
+  }
+  function lyDrop(pageId){
+    if(!lyPicked) return;
+    var id=lyPicked; lyPicked=null;
+    setLayout(id, pageId);
+  }
   function layoutCfg(){
     var L=(state.layout && typeof state.layout==="object") ? state.layout : {};
     var out={};
@@ -4682,28 +4752,70 @@ AI_TYPES.join(", "),
     state.layoutOrder=o;
     persistNow(); applyLayout(); renderLayoutUI();
   }
+  
+  function layoutMiniHtml(cardId){
+    // a rough sketch of what the card actually is, so the box means something
+    if(cardId==="chartCard") return '<span class="ly-mini ly-mini-chart"></span>';
+    if(cardId==="hmCard")    return '<span class="ly-mini ly-mini-grid"></span>';
+    if(cardId==="budgetCard")return '<span class="ly-mini ly-mini-bars"></span>';
+    return '<span class="ly-mini ly-mini-ring"></span>';
+  }
   function renderLayoutUI(){
     var box=document.getElementById("layoutList");
     if(!box) return;
     var cfg=layoutCfg(), order=layoutOrder();
-    box.innerHTML=order.map(function(id,i){
-      var c=LAYOUT_CARDS.filter(function(x){ return x.id===id; })[0];
-      var opts=LAYOUT_PAGES.map(function(p){
-        return '<option value="'+p.id+'"'+(cfg[id]===p.id?" selected":"")+'>'+esc(p.label)+'</option>';
+
+    var presets='<div class="ly-presets">'+LAYOUT_PRESETS.map(function(p){
+      var on=presetMatches(p);
+      return '<button type="button" class="ly-preset'+(on?" on":"")+'" data-p="'+p.k+'">'
+        +'<span class="ly-pv">'+LAYOUT_CARDS.map(function(c){
+            return '<span class="ly-pv-c ly-pv-'+(p.cfg[c.id]||"off")+'"></span>';
+          }).join("")+'</span>'
+        +'<span class="ly-pt">'+esc(p.t)+'</span><span class="ly-pd">'+esc(p.d)+'</span>'
+        +(on?'<span class="ly-pon">✓</span>':'')+'</button>';
+    }).join("")+'</div>';
+
+    var board=LAYOUT_PAGES.map(function(pg){
+      var mine=order.filter(function(id){ return cfg[id]===pg.id; });
+      var cards=mine.map(function(id,i){
+        var c=LAYOUT_CARDS.filter(function(x){ return x.id===id; })[0];
+        var picked=(lyPicked===id);
+        return '<div class="ly-card'+(picked?" picked":"")+'" data-id="'+id+'" role="button" tabindex="0">'
+          +layoutMiniHtml(id)
+          +'<span class="ly-cn">'+esc(c.name)+'</span>'
+          +'<span class="ly-ord">'
+            +'<button type="button" class="ly-mv" data-mv="'+id+'" data-dir="-1"'+(i===0?" disabled":"")+' aria-label="Up">▲</button>'
+            +'<button type="button" class="ly-mv" data-mv="'+id+'" data-dir="1"'+(i===mine.length-1?" disabled":"")+' aria-label="Down">▼</button>'
+          +'</span></div>';
       }).join("");
-      return '<div class="ly-row" data-id="'+id+'">'
-        +'<div class="ly-ord"><button type="button" data-dir="-1"'+(i===0?" disabled":"")+' aria-label="Move up">▲</button>'
-        +'<button type="button" data-dir="1"'+(i===order.length-1?" disabled":"")+' aria-label="Move down">▼</button></div>'
-        +'<div class="ly-main"><div class="ly-nm">'+esc(c.name)+'</div><div class="ly-hint">'+esc(c.hint)+'</div></div>'
-        +'<select class="ly-sel" aria-label="Where to show '+esc(c.name)+'">'+opts+'</select>'
-        +'</div>';
+      var empty = mine.length ? "" : '<div class="ly-empty">'+(lyPicked?"Tap to put it here":"nothing here")+'</div>';
+      return '<div class="ly-zone'+(lyPicked?" live":"")+'" data-page="'+pg.id+'">'
+        +'<div class="ly-zh">'+esc(pg.label)+'<span class="ly-zn">'+mine.length+'</span></div>'
+        +'<div class="ly-cards">'+cards+empty+'</div></div>';
     }).join("");
-    Array.prototype.forEach.call(box.querySelectorAll(".ly-row"), function(row){
-      var id=row.getAttribute("data-id");
-      Array.prototype.forEach.call(row.querySelectorAll("[data-dir]"), function(b){
-        b.addEventListener("click", function(){ moveLayout(id, +b.getAttribute("data-dir")); });
+
+    var help = lyPicked
+      ? '<div class="ly-help live">Now tap a section to move it there.</div>'
+      : '<div class="ly-help">Tap a box, then tap where you want it. ▲▼ reorders.</div>';
+    box.innerHTML = presets + help + '<div class="ly-board">'+board+'</div>';
+
+    Array.prototype.forEach.call(box.querySelectorAll(".ly-preset"), function(b){
+      b.addEventListener("click", function(){ applyPreset(b.getAttribute("data-p")); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll(".ly-mv"), function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();   // the arrows sit inside the tappable box
+        moveLayout(b.getAttribute("data-mv"), +b.getAttribute("data-dir"));
       });
-      row.querySelector(".ly-sel").addEventListener("change", function(e){ setLayout(id, e.target.value); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll(".ly-card"), function(c){
+      c.addEventListener("click", function(e){ e.stopPropagation(); lyTap(c.getAttribute("data-id")); });
+      c.addEventListener("keydown", function(e){
+        if(e.key==="Enter"||e.key===" "){ e.preventDefault(); lyTap(c.getAttribute("data-id")); }
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll(".ly-zone"), function(z){
+      z.addEventListener("click", function(){ lyDrop(z.getAttribute("data-page")); });
     });
   }
   function bindLayout(){
@@ -4711,6 +4823,7 @@ AI_TYPES.join(", "),
     if(r) r.addEventListener("click", function(){
       state.layout=clone(LAYOUT_DEFAULT);
       state.layoutOrder=LAYOUT_CARDS.map(function(c){ return c.id; });
+      lyPicked=null;
       persistNow(); applyLayout(); render(); renderLayoutUI(); flashSaved("layout reset");
     });
   }
@@ -7688,7 +7801,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.1</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v16.2</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
