@@ -1551,8 +1551,13 @@
   }
 
   function totals(){
-    var b=num(state.opening.balance), d=num(state.opening.debt), s=num(state.opening.savings),
-        x=num(state.opening.tax), tr=sepTrading()?num(state.opening.trading):0;
+    // When the split is OFF there is only one pot, so opening trading capital belongs to
+    // the balance. Dropping it (as this used to) meant flipping a display preference
+    // silently deleted that money from net worth.
+    var sep=sepTrading();
+    var b=num(state.opening.balance) + (sep?0:num(state.opening.trading)),
+        d=num(state.opening.debt), s=num(state.opening.savings),
+        x=num(state.opening.tax), tr=sep?num(state.opening.trading):0;
     state.transactions.forEach(function(t){
       b+=balDelta(t); d+=debtDelta(t); s+=savDelta(t); x+=taxDelta(t); tr+=tradingDelta(t);
     });
@@ -6523,7 +6528,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.7</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v14.8</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
