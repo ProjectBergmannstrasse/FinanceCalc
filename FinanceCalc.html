@@ -8,7 +8,7 @@
   :root{
     --bg:#0b0e14; --panel:#121722; --card:#161c28; --card2:#1b2230;
     --bd:#232c3d; --bd2:#2c3648;
-    --tx:#e6ebf2; --mut:#7c8798;
+    --tx:#e6ebf2; --mut:#808b9c;
     --amber:#f4b73f; --amber-dim:#8a6a1f;
     --hm0:#1b2230; --hm1:#4a3a1c; --hm2:#7a5a20; --hm3:#b08328; --hm4:#e0a832; --hm5:#f4b73f;
     --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;
@@ -43,7 +43,7 @@
   [data-theme="emerald"]{
     --bg:#030d07; --panel:#071410; --card:#0b1e14; --card2:#102519;
     --bd:#1a3d26; --bd2:#235234;
-    --tx:#d4f5e2; --mut:#5a8a6e;
+    --tx:#d4f5e2; --mut:#629276;
     --amber:#00ff88; --amber-dim:#007a40;
     --hm0:#102519; --hm1:#12452a; --hm2:#0f6b3d; --hm3:#0a9954; --hm4:#00cc6e; --hm5:#00ff88;
     --up:#00ff88; --down:#ff4466; --cool:#00ccff;
@@ -64,10 +64,10 @@
   [data-theme="paper"]{
     --bg:#f4f1ea; --panel:#ffffff; --card:#faf8f3; --card2:#efece3;
     --bd:#ded9cd; --bd2:#c9c3b4;
-    --tx:#1f1c17; --mut:#777063;
+    --tx:#1f1c17; --mut:#716a5d;
     --amber:#b3730d; --amber-dim:#d9ac6a;
     --hm0:#e8e4da; --hm1:#f0d9b0; --hm2:#e3b978; --hm3:#d19a42; --hm4:#bd8018; --hm5:#8f5a06;
-    --up:#0f7a45; --down:#c22f2f; --cool:#2a6fa8;
+    --up:#0f7a45; --down:#be2b2b; --cool:#2a6fa8;
     --hero-grad:linear-gradient(160deg,#ffffff,#f4f1ea);
     --hero-glow:rgba(179,115,13,.10);
   }
@@ -91,7 +91,7 @@
   [data-theme="synth"]{
     --bg:#120a20; --panel:#1a0f2e; --card:#211339; --card2:#2b1a49;
     --bd:#3d2568; --bd2:#523182;
-    --tx:#f2e6ff; --mut:#9b7cc4;
+    --tx:#f2e6ff; --mut:#9d7ec6;
     --amber:#ff4fd8; --amber-dim:#8f2a79;
     --hm0:#2b1a49; --hm1:#4a2065; --hm2:#772b8e; --hm3:#a834ae; --hm4:#d840c7; --hm5:#ff4fd8;
     --up:#3ff5c4; --down:#ff4f7d; --cool:#4fc3ff;
@@ -500,7 +500,7 @@
 
   /* storage tier badge + health dashboard */
   .tier-badge{border:1px solid var(--bd);background:var(--card);color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.2px;padding:5px 9px;border-radius:20px;cursor:pointer;white-space:nowrap}
-  .tier-badge.emergency{border-color:rgba(255,93,93,.4);color:#ff9a9a;background:rgba(255,93,93,.08)}
+  .tier-badge.emergency{border-color:rgba(255,93,93,.4);color:var(--down);background:rgba(255,93,93,.08)}
   .tier-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--bd);font-size:13px}
   .tier-row:last-child{border-bottom:0}
   .tier-row .tn{display:flex;align-items:center;gap:8px}
@@ -514,8 +514,8 @@
   .datebar b{color:var(--tx);font-weight:700}
 
   /* storage failure banner — only ever shown when a save genuinely couldn't persist */
-  .storage-warn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,93,93,.12);border:1px solid rgba(255,93,93,.35);color:#ff9a9a;border-radius:12px;padding:10px 12px;font-size:13px;margin:-6px 0 16px}
-  .storage-warn button{flex:none;color:#ff9a9a;border-color:rgba(255,93,93,.35)}
+  .storage-warn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,93,93,.12);border:1px solid rgba(255,93,93,.35);color:var(--down);border-radius:12px;padding:10px 12px;font-size:13px;margin:-6px 0 16px}
+  .storage-warn button{flex:none;color:var(--down);border-color:rgba(255,93,93,.35)}
 
   /* Balance hero */
   .hero{background:var(--hero-grad,linear-gradient(160deg,#151b28,#10151f));border:1px solid var(--bd);border-radius:20px;padding:26px 24px 22px;margin-bottom:14px;position:relative;overflow:hidden}
@@ -579,9 +579,9 @@
   .split-row:last-of-type{border-bottom:0}
   .split-row .nm{display:flex;align-items:center;gap:9px;font-size:14px}
   .pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;letter-spacing:.3px}
-  .pill.debt{background:rgba(255,93,93,.14);color:#ff9a9a}
+  .pill.debt{background:rgba(255,93,93,.14);color:var(--down)}
   .pill.trade{background:rgba(93,169,230,.16);color:#9cccf2}
-  .pill.save{background:rgba(61,220,132,.14);color:#8ff0bc}
+  .pill.save{background:rgba(61,220,132,.14);color:var(--up)}
   .split-row input{width:120px;text-align:right}
   .auto-note{font-size:13px;color:var(--mut);margin:9px 0 11px}
   .auto-note b{color:var(--tx)}
@@ -589,7 +589,7 @@
   /* advance notices — shown on the month that gave, and the month that received, an advance */
   .adv-notes{margin:2px 0 4px}
   .adv-note{font-size:13px;padding:9px 12px;border-radius:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-  .adv-note.adv-in{background:rgba(61,220,132,.10);color:#8ff0bc;border:1px solid rgba(61,220,132,.25)}
+  .adv-note.adv-in{background:rgba(61,220,132,.10);color:var(--up);border:1px solid rgba(61,220,132,.25)}
   .adv-note.adv-out{background:rgba(244,183,63,.10);color:var(--amber);border:1px solid rgba(244,183,63,.25)}
   .adv-note.adv-info{background:rgba(90,169,230,.10);color:var(--cool);border:1px solid rgba(90,169,230,.25)}
   .adv-remove{border:1px solid currentColor;background:transparent;color:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;flex:none;opacity:.85}
@@ -659,7 +659,7 @@
   .hint{font-size:13px;color:var(--mut);margin:2px 0 14px}
   .data-btns{display:flex;flex-wrap:wrap;gap:10px}
   textarea{width:100%;min-height:120px;background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:12px;font-family:var(--mono);font-size:13px;margin-top:10px}
-  .warn{color:#ff9a9a}
+  .warn{color:var(--down)}
   hr.sep{border:0;border-top:1px solid var(--bd);margin:16px 0}
   .foot{font-size:13px;color:var(--mut);text-align:center;margin-top:20px;line-height:1.7}
 
@@ -7458,7 +7458,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.8</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v15.9</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
