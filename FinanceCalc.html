@@ -242,6 +242,16 @@
     user-select:none;transition:background .12s}
   .sect-h::-webkit-details-marker{display:none}
   .sect-h:hover{background:var(--card2)}
+  /* MT4/MT5 photo auto-analyze (v1.96) */
+  .mtocr-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .mtocr-sel{font:inherit;font-size:12px;background:var(--card2);color:var(--tx);
+    border:1px solid var(--bd);border-radius:8px;padding:5px 8px}
+  .mtocr-intro{background:var(--card2);border:1px solid var(--bd);border-radius:10px;
+    padding:12px 14px;font-size:12.5px;line-height:1.6;color:var(--mut);margin-bottom:10px}
+  .mtocr-intro b{color:var(--tx)}
+  .mtocr-prog{height:4px;border-radius:3px;background:var(--bd);overflow:hidden;margin-top:8px}
+  .mtocr-prog #mtOcrProgFill{height:100%;width:0%;background:var(--amber,#e8b04b);
+    border-radius:3px;transition:width .25s ease}
   .sect-i{flex:none;font-size:15px;opacity:.9;width:20px;text-align:center}
   .sect-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
   .sect-t{font-size:14px;font-weight:700;letter-spacing:.2px}
@@ -824,40 +834,6 @@
   .copy-sub{font-size:12px;font-weight:500;color:var(--mut)}
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
-
-  /* Monte Carlo Simulator */
-  .mc-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;
-    margin:10px 0;overflow:hidden}
-  .mc-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
-    cursor:pointer;gap:8px;user-select:none}
-  .mc-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;
-    display:flex;align-items:center;gap:7px}
-  .mc-head .mc-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
-  .mc-body{padding:14px 16px 16px}
-  .mc-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-  .mc-inputs .fld{margin:0}
-  .mc-inputs .fld label{font-size:10px}
-  .mc-inputs .fld input,.mc-inputs .fld select{font-size:13px;padding:8px 10px;min-height:40px}
-  .mc-run{width:100%;margin-top:4px}
-  .mc-result{margin-top:14px}
-  .mc-canvas-wrap{position:relative;width:100%;height:200px;border-radius:10px;
-    background:var(--panel);overflow:hidden;margin-bottom:12px}
-  .mc-canvas-wrap canvas{display:block;width:100%;height:100%}
-  .mc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
-  .mc-stat{background:var(--panel);border-radius:10px;padding:9px 10px;text-align:center}
-  .mc-stat .mk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--mut);font-weight:700;margin-bottom:3px}
-  .mc-stat .mv{font-size:16px;font-weight:800}
-  .mc-prob{text-align:center;font-size:12px;color:var(--mut);margin-top:6px;line-height:1.6}
-  .mc-prob b{color:var(--tx)}
-  .mc-bands{display:flex;gap:4px;height:14px;border-radius:7px;overflow:hidden;margin-bottom:6px}
-  .mc-band{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
-  .mc-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--mut);margin-top:4px}
-  .mc-legend span{display:flex;align-items:center;gap:4px}
-  .mc-legend i{width:10px;height:10px;border-radius:2px;flex:none}
-  .mc-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6;
-    border-top:1px solid var(--bd);padding-top:8px}
-  .mc-spinner{text-align:center;color:var(--mut);font-size:12px;padding:30px 0}
 </style>
 </head>
 <body>
@@ -986,50 +962,10 @@
 </div>
 </div>
 
-
-<!-- Monte Carlo Wealth Simulator -->
-<div class="mc-wrap" id="mcWrap">
-  <div class="mc-head" id="mcHead" role="button" aria-expanded="false">
-    <h3>🎲 Wealth Simulator<span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px">Monte Carlo · 10,000 scenarios</span></h3>
-    <span class="mc-caret" id="mcCaret">▶</span>
-  </div>
-  <div class="mc-body" id="mcBody" style="display:none">
-    <div class="mc-inputs">
-      <div class="fld"><label>Current net worth</label>
-        <input class="inp" id="mcNW" inputmode="decimal" placeholder="e.g. 50000"></div>
-      <div class="fld"><label>Monthly savings add</label>
-        <input class="inp" id="mcSave" inputmode="decimal" placeholder="e.g. 2000"></div>
-      <div class="fld"><label>Target (retire/goal)</label>
-        <input class="inp" id="mcTarget" inputmode="decimal" placeholder="e.g. 1000000"></div>
-      <div class="fld"><label>Return profile</label>
-        <select class="inp" id="mcProfile">
-          <option value="conservative">Conservative (6% / 10% vol)</option>
-          <option value="moderate" selected>Moderate (8% / 13% vol)</option>
-          <option value="growth">Growth (10% / 16% vol)</option>
-          <option value="aggressive">Aggressive (12% / 20% vol)</option>
-        </select></div>
-    </div>
-    <div class="fld" style="margin-bottom:10px">
-      <label>Time horizon (years)</label>
-      <input type="range" id="mcYears" min="5" max="50" step="1" value="30"
-        style="width:100%;accent-color:var(--up)">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:2px">
-        <span>5 yr</span><span id="mcYrsLbl" style="font-weight:700;color:var(--tx)">30 yr</span><span>50 yr</span>
-      </div>
-    </div>
-    <button class="btn solid wide mc-run" id="mcRun">Run 10,000 scenarios</button>
-    <div id="mcResult" class="mc-result" style="display:none"></div>
-    <div class="mc-discl">Simulation uses log-normal annual returns with historical volatility.
-      Past market behaviour does not guarantee future results.<br>
-      For personal tracking only — not financial advice.</div>
-  </div>
-</div>
-
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
   <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
-  <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt with your camera" style="display:none">📷 Scan receipt</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1044,14 +980,16 @@
       <div class="fld">
         <label for="fType">What happened</label>
         <select id="fType">
-          <option value="income" id="optIncome">Income</option>
-          <option value="salary">Salary</option>
-          <option value="expense">Expense / spent on something</option>
-          <option value="pay_someone">Pay someone</option>
-          <option value="pay_debt" id="optPayDebt">Pay debt</option>
+          <option value="income" id="optIncome">Money in (one-off)</option>
+          <option value="spend">Spent on something</option>
+          <option value="trade_win">Trade — made money</option>
+          <option value="trade_loss">Trade — lost money</option>
+          <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
+          <option value="borrow_cash">Borrowed cash (into my account)</option>
+          <option value="borrow">Someone paid for me (I owe them)</option>
+          <option value="move_to_debt">Move to debt (owe it instead)</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
-          <option value="move_to_debt">Move to debt (owe it instead)</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
           <option value="from_trading" class="sep-only">Move trading → bank</option>
           <option value="tax_set">Set aside for tax</option>
@@ -1075,7 +1013,7 @@
         <label for="fAmt"><span id="amtLbl">Amount</span></label>
         <input type="number" id="fAmt" step="0.01" inputmode="decimal" placeholder="0.00">
       </div>
-      <div class="fld">
+      <div class="fld" id="splitFld">
         <label for="fSplit">Split between (people)</label>
         <input type="number" id="fSplit" min="1" max="20" step="1" value="1" inputmode="numeric">
       </div>
@@ -1095,6 +1033,25 @@
           <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove all</button>
         </div>
         <div id="fPhotoStrip" class="ph-strip"></div>
+      </div>
+      <div class="fld full" id="mtOcrBar" style="display:none">
+        <div id="mtOcrIntro" class="mtocr-intro" style="display:none">
+          <b>⚡ Statement automation</b> — attach a photo of an MT4/MT5 statement to this
+          trade and it's read on this device (nothing uploaded). <b>Auto</b> fills the form
+          for you the moment it's done; <b>Silent</b> reads in the background and waits for
+          you to tap <b>Fill in</b>. Choose one net entry, or one entry per trade. Change the
+          mode any time in Settings → Trading.
+          <button type="button" class="btn ghost sm" id="mtOcrIntroOk" style="margin-top:8px">Got it</button>
+        </div>
+        <div class="mtocr-row">
+          <span id="mtOcrStatus" class="mut" style="font-size:12px;flex:1">⚡ Attach a statement photo to auto-read it</span>
+          <select id="mtOcrFillMode" class="mtocr-sel">
+            <option value="net">One net entry</option>
+            <option value="each">Each trade separately</option>
+          </select>
+          <button type="button" class="btn ghost sm" id="mtOcrFillBtn" style="display:none">Fill in</button>
+        </div>
+        <div id="mtOcrProg" class="mtocr-prog" style="display:none"><div id="mtOcrProgFill"></div></div>
       </div>
       <div class="fld full">
         <button type="submit" class="btn primary" id="entrySubmitBtn" style="width:100%">Add entry</button>
@@ -1146,6 +1103,8 @@
 <main id="pageTrading" class="page" style="display:none">
   <div class="page-head">
     <h1>📊 Trading</h1>
+    <button type="button" id="mtCsvBtn" class="btn" style="margin-left:auto;font-size:13px" title="Import a CSV exported from the MT5 Statement Analyzer">⬇ Import Analyzer CSV</button>
+    <input type="file" id="mtCsvFile" accept=".csv,text/csv" style="display:none">
   </div>
   <div class="tr-empty" id="trEmpty" style="display:none">
     <b>No trades logged yet.</b><br>
@@ -1289,9 +1248,6 @@
   <span id="undoToastMsg">Entry deleted</span>
   <button type="button" id="undoToastBtn">Undo</button>
 </div>
-
-<!-- receipt scanner hidden camera input -->
-<input type="file" id="scanCamInput" accept="image/*" capture="environment" style="display:none">
 
 <!-- AI auto-fill panel -->
 <div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
@@ -1838,16 +1794,10 @@
     return (typeof v==="string" && v.trim()) ? v.trim() : LABEL_FALLBACK[k];
   }
   var TYPE_META = {
-    // plain-English types
-    salary:     {label:"SALARY"},
-    expense:    {label:"SPENT"},
-    pay_someone:{label:"PAID"},
-    pay_debt:   {label:"DEBT −"},
-    // kept for existing saves
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
-    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, move_to_debt:{label:"→ DEBT"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
-    to_trading:{label:"→ TRADING"}, from_trading:{label:"← BANK"},
+    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, move_to_debt:{label:"\u2192 DEBT"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
   };
@@ -1858,7 +1808,7 @@
     // Neutral defaults. These were 41/30/11 — one household's actual allowance numbers,
     // handed to every new portfolio as if they were universal. Zero means "not set up
     // yet", which is the only honest default for someone else's money.
-    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, isTrader:false, photoQ:"med"},
+    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, isTrader:false, photoQ:"med", mtOcr:"silent", noSplits:false},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
@@ -2020,13 +1970,13 @@
     var a=num(t.amount), sep=sepTrading();
     switch(t.type){
       case "borrow_cash": return a;   // borrowed money that actually arrived in the account
-      case "salary": case "income": case "withdraw": return a;
+      case "income": case "withdraw": return a;
       case "trade_win":   return sep ? 0 : a;
       case "alw_trading": return sep ? 0 : a;
       case "from_trading": return sep ? a : 0;   // meaningless when it's all one pot
       case "to_trading":   return sep ? -a : 0;
       case "adjust": return a; // may be negative
-      case "expense": case "pay_someone": case "spend": case "pay_debt": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      case "spend": case "pay_debt_balance": case "save": case "tax_set": return -a;
       case "move_to_debt": return a;   // balance recovers by a; the matching debt is added below
       case "trade_loss": return sep ? 0 : -a;
       default: return 0;
@@ -2056,7 +2006,7 @@
   function debtDelta(t){
     var a=num(t.amount);
     switch(t.type){
-      case "pay_debt": case "pay_debt_balance": case "alw_debt": return -a;
+      case "pay_debt_balance": case "alw_debt": return -a;
       case "borrow": case "borrow_cash": case "move_to_debt": return a;
       default: return 0;
     }
@@ -2595,58 +2545,6 @@
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
     doPersist();
   }
-
-  /* ============================================================
-     MULTI-TAB REAL-TIME SYNC — BroadcastChannel
-     When you save in Tab A, Tab B instantly sees the change.
-     No server, no polling, no refresh needed.
-
-     Design decisions:
-     · Send the full state JSON (same as what's stored). No diff
-       logic needed; the payload is just the persist output.
-     · Guard with a random per-tab ID so a tab ignores its own
-       broadcasts (otherwise it would re-render on every save).
-     · Guard with savedAt so a slow/late message doesn't rewind
-       state already updated by a newer save.
-     · applyLoaded + render() is the exact same path as a normal
-       boot — reuses all existing logic, nothing duplicated.
-     · Graceful: BroadcastChannel unsupported → silent no-op.
-     ============================================================ */
-  var _tabId = Math.random().toString(36).slice(2);   // unique per tab
-  var _lastApplied = 0;   // savedAt of the most recently applied incoming message
-  var _bc = null;
-
-  function initSync(){
-    if(typeof BroadcastChannel === "undefined"){
-      // browser doesn't support it (very old or certain embedded webviews) — no problem
-      return;
-    }
-    try{
-      _bc = new BroadcastChannel("mymoney_sync");
-      _bc.onmessage = function(ev){
-        var msg = ev.data;
-        if(!msg || msg.tabId === _tabId) return;   // own echo — ignore
-        if(msg.type !== "state") return;
-        if(!msg.json) return;
-        // don't rewind a newer local save with an older remote one
-        try{ var obj=JSON.parse(msg.json); if((obj.savedAt||0) <= _lastApplied) return; }
-        catch(e){ return; }
-        applyLoaded(msg.json);
-        render();
-        checkRecurPrompt();
-        _lastApplied = JSON.parse(msg.json).savedAt || Date.now();
-        flashSavedMsg("\u21C4 synced from another tab");
-      };
-    }catch(e){ _bc = null; }
-  }
-
-  // called by doPersist after a successful write
-  function broadcastState(json){
-    if(!_bc) return;
-    try{ _bc.postMessage({ type:"state", tabId:_tabId, json:json }); }
-    catch(e){}
-  }
-
   function doPersist(){
     var done=false;
     try{
@@ -2654,7 +2552,7 @@
         var json=JSON.stringify(buildRoot());
         var p=window.storage.set(STORE_KEY, json, false);
         if(p && typeof p.then==="function"){
-          p.then(function(){ var j=json; broadcastState(j); flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
+          p.then(function(){ flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
           done=true;
         }
       }
@@ -2662,8 +2560,7 @@
     if(!done) doPersistViaManager();
   }
   function doPersistViaManager(){
-    var _bj=JSON.stringify(buildRoot());
-    StorageManager.write(JSON.parse(_bj)).then(function(){ broadcastState(_bj); flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
+    StorageManager.write(buildRoot()).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
       .catch(function(){ showStorageWarning(); });
   }
   // Two things can write (window.storage, and the StorageManager tier chain), and a
@@ -3894,8 +3791,6 @@ AI_TYPES.join(", "),
   function bindAiUI(){
     document.getElementById("aiBtn").addEventListener("click", openAiPanel);
     document.getElementById("aiPanelClose").addEventListener("click", closeAiPanel);
-    var scanBtn=document.getElementById("scanBtn"); if(scanBtn) scanBtn.addEventListener("click", tapScanReceipt);
-    initReceiptScanner();
     document.getElementById("aiPanelOverlay").addEventListener("click", closeAiPanel);
     document.getElementById("aiHelpBtn").addEventListener("click", aiHelpModal);
 
@@ -4116,7 +4011,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); renderActions(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); renderActions(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -4756,7 +4651,7 @@ AI_TYPES.join(", "),
     {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
     {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
-     has:["Trading","Import trades from a file"]},
+     has:["Trading","Import trades from a file","MT4/MT5 photo auto-analyze"]},
     {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
      has:["Wording","Layout"], ids:["settingsSlot"]},
     {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
@@ -5266,443 +5161,14 @@ AI_TYPES.join(", "),
     persistNow(); render();
     if(cb) cb(list.length);
   }
-
-
-  /* ============================================================
-     MONTE CARLO WEALTH SIMULATOR
-     Runs 10,000 independent simulations of portfolio growth using
-     log-normal annual returns (matching real market behaviour —
-     returns are not normally distributed; their LOG is). Each sim
-     compounds monthly, adds the user's savings each month, and
-     records the year the target was first reached (if ever).
-
-     Outputs:
-       · probability of hitting the target in the horizon
-       · 10th / 25th / 50th / 75th / 90th percentile year
-       · stacked percentile bands over time (wealth fan chart)
-       · year-by-year median wealth line
-     ============================================================ */
-
-  var MC_PROFILES = {
-    conservative: {mean:0.06, std:0.10, label:"Conservative"},
-    moderate:     {mean:0.08, std:0.13, label:"Moderate"},
-    growth:       {mean:0.10, std:0.155,label:"Growth"},
-    aggressive:   {mean:0.12, std:0.20, label:"Aggressive"}
-  };
-
-  // Box-Muller transform: uniform → standard normal
-  function mcRandn(){
-    var u=0, v=0;
-    while(!u) u=Math.random();
-    while(!v) v=Math.random();
-    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-  }
-
-  function runMonteCarlo(netWorth, monthlySavings, target, profileKey, years){
-    var prof = MC_PROFILES[profileKey] || MC_PROFILES.moderate;
-    var SIMS = 10000;
-    // Log-normal parameters — convert arithmetic mean/std to log-space
-    var logMu  = Math.log(1+prof.mean) - 0.5*Math.pow(Math.log(1+prof.std),2);
-    var logSig = Math.log(1+prof.std);
-
-    var reachedYear = new Array(SIMS);     // year target hit, or Infinity
-    // Track wealth at each year across all sims for the fan chart (store percentiles)
-    var yearWealth  = [];   // [year] -> sorted array of ending wealth across all sims
-    for(var y=0;y<=years;y++) yearWealth.push([]);
-
-    yearWealth[0] = new Array(SIMS).fill(netWorth);
-
-    for(var sim=0;sim<SIMS;sim++){
-      var w = netWorth;
-      var hit = -1;
-      for(var yr=1;yr<=years;yr++){
-        // one year of monthly compounding with random annual return
-        var annReturn = Math.exp(logMu + logSig*mcRandn()) - 1;
-        var mRate = Math.pow(1+annReturn, 1/12) - 1;
-        for(var mo=0;mo<12;mo++){
-          w = w*(1+mRate) + monthlySavings;
-        }
-        // clamp to zero — can't go below zero in this model (no leverage/margin)
-        if(w<0) w=0;
-        yearWealth[yr].push(w);
-        if(hit<0 && w>=target) hit=yr;
-      }
-      reachedYear[sim] = hit<0 ? Infinity : hit;
-    }
-
-    // sort each year's wealth array for percentile extraction
-    for(var y2=1;y2<=years;y2++) yearWealth[y2].sort(function(a,b){return a-b;});
-
-    var pct = function(arr, p){
-      var i = Math.max(0, Math.min(arr.length-1, Math.floor(p*(arr.length-1))));
-      return arr[i];
-    };
-
-    var finite = reachedYear.filter(function(x){ return isFinite(x); }).sort(function(a,b){return a-b;});
-    var probPct = (100*finite.length/SIMS);
-
-    return {
-      prob: probPct,
-      finite: finite,
-      p10:  finite.length ? pct(finite, 0.10) : null,
-      p25:  finite.length ? pct(finite, 0.25) : null,
-      p50:  finite.length ? pct(finite, 0.50) : null,
-      p75:  finite.length ? pct(finite, 0.75) : null,
-      p90:  finite.length ? pct(finite, 0.90) : null,
-      yearWealth: yearWealth,
-      years: years,
-      target: target,
-      profile: prof
-    };
-  }
-
-  function mcFmt(v){
-    if(v>=1e9) return "$"+(v/1e9).toFixed(1)+"B";
-    if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
-    if(v>=1e3) return "$"+(v/1e3).toFixed(0)+"K";
-    return "$"+v.toFixed(0);
-  }
-
-  function drawMcChart(canvas, res){
-    var W=canvas.width, H=canvas.height;
-    var ctx=canvas.getContext("2d");
-    ctx.clearRect(0,0,W,H);
-
-    var padL=42, padR=12, padT=14, padB=28;
-    var pw=W-padL-padR, ph=H-padT-padB;
-    var years=res.years;
-
-    // find chart max Y — 95th pct at the end or 1.2× target, whichever is larger
-    var yw=res.yearWealth;
-    var maxY=Math.max(res.target*1.2,
-      yw[years].length ? yw[years][Math.floor(.95*yw[years].length)] : res.target*2);
-
-    var xf=function(yr){ return padL+pw*(yr/years); };
-    var yf=function(v){ return padT+ph*(1-Math.min(v,maxY)/maxY); };
-
-    // percentile band colours (theme-aware)
-    var cs=getComputedStyle(document.documentElement);
-    var up=cs.getPropertyValue("--up").trim()||"#3ddc84";
-    var amber=cs.getPropertyValue("--amber").trim()||"#f4b73f";
-    var mut=cs.getPropertyValue("--mut").trim()||"#8a97a6";
-    var tx=cs.getPropertyValue("--tx").trim()||"#eef3f8";
-    var bd=cs.getPropertyValue("--bd").trim()||"#26313d";
-
-    // draw percentile bands p10-p90, p25-p75 (fan)
-    function band(pLo, pHi, color, alpha){
-      ctx.beginPath();
-      ctx.moveTo(xf(0), yf(yw[0][0]||0));
-      for(var y=0;y<=years;y++){
-        var arr=yw[y];
-        if(!arr.length) continue;
-        var v=arr[Math.max(0,Math.floor(pLo*(arr.length-1)))];
-        ctx.lineTo(xf(y), yf(v));
-      }
-      for(var y2=years;y2>=0;y2--){
-        var arr2=yw[y2];
-        if(!arr2.length) continue;
-        var v2=arr2[Math.min(arr2.length-1,Math.floor(pHi*(arr2.length-1)))];
-        ctx.lineTo(xf(y2), yf(v2));
-      }
-      ctx.closePath();
-      ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
-    }
-    band(0.10, 0.90, up, 0.12);   // wide band
-    band(0.25, 0.75, up, 0.22);   // middle band
-    band(0.40, 0.60, up, 0.30);   // tight band
-
-    // median line
-    ctx.beginPath(); ctx.lineWidth=2.5; ctx.strokeStyle=up; ctx.globalAlpha=0.9;
-    var first=true;
-    for(var y3=0;y3<=years;y3++){
-      var arr3=yw[y3]; if(!arr3.length) continue;
-      var v3=arr3[Math.floor(.5*(arr3.length-1))];
-      first ? ctx.moveTo(xf(y3),yf(v3)) : ctx.lineTo(xf(y3),yf(v3));
-      first=false;
-    }
-    ctx.stroke(); ctx.globalAlpha=1;
-
-    // target line
-    if(res.target<=maxY){
-      var ty=yf(res.target);
-      ctx.beginPath(); ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
-      ctx.strokeStyle=amber; ctx.globalAlpha=0.8;
-      ctx.moveTo(padL,ty); ctx.lineTo(padL+pw,ty); ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha=1;
-      ctx.fillStyle=amber; ctx.font="bold 9px "+getComputedStyle(document.body).fontFamily;
-      ctx.textAlign="left"; ctx.fillText("TARGET",padL+3,ty-3);
-    }
-
-    // x-axis labels
-    ctx.fillStyle=mut; ctx.font="10px monospace"; ctx.textAlign="center";
-    var step=years<=20?5:years<=35?10:10;
-    for(var y4=0;y4<=years;y4+=step){
-      ctx.fillText("yr "+y4, xf(y4), H-6);
-    }
-    // y-axis labels
-    ctx.textAlign="right";
-    for(var i=0;i<=4;i++){
-      var val=maxY*(i/4), yl=yf(val);
-      ctx.fillText(mcFmt(val), padL-4, yl+3);
-      ctx.beginPath(); ctx.strokeStyle=bd; ctx.lineWidth=0.5; ctx.globalAlpha=0.5;
-      ctx.moveTo(padL,yl); ctx.lineTo(padL+pw,yl); ctx.stroke(); ctx.globalAlpha=1;
-    }
-  }
-
-  function renderMcResult(res, sym){
-    sym = sym||"$";
-    var probColor = res.prob>=80 ? "var(--up)" : res.prob>=50 ? "var(--amber)" : "var(--down)";
-    var yearOf = function(p){ return p!=null ? p+"yr" : "—"; };
-
-    var html = '<div class="mc-summary">'
-      +'<div class="mc-stat"><div class="mk">Probability</div>'
-        +'<div class="mv" style="color:'+probColor+'">'+res.prob.toFixed(0)+'%</div></div>'
-      +'<div class="mc-stat"><div class="mk">Median year</div>'
-        +'<div class="mv">'+(res.p50!=null?'yr '+res.p50:'&gt;'+res.years+'yr')+'</div></div>'
-      +'<div class="mc-stat"><div class="mk">Best 1-in-10</div>'
-        +'<div class="mv" style="color:var(--up)">'+(res.p10!=null?'yr '+res.p10:'—')+'</div></div>'
-      +'</div>'
-      +'<div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>'
-      +'<div class="mc-prob">'
-        +'<b>'+res.prob.toFixed(1)+'%</b> of 10,000 scenarios hit your target'
-          +(res.p50!=null?' — most reach it by <b>year '+res.p50+'</b>':'.')
-        +'<br>Worst 10%: '+(res.p90!=null?'year '+res.p90:'never in '+res.years+' yr')
-        +' &nbsp;·&nbsp; Best 10%: '+(res.p10!=null?'year '+res.p10:'—')
-      +'</div>';
-
-    var box = document.getElementById("mcResult");
-    box.innerHTML = html; box.style.display="block";
-
-    // draw after DOM is ready
-    requestAnimationFrame(function(){
-      var canvas = document.getElementById("mcCanvas");
-      if(!canvas) return;
-      var wrap = canvas.parentElement;
-      var DPR = window.devicePixelRatio||1;
-      canvas.width  = wrap.offsetWidth  * DPR;
-      canvas.height = wrap.offsetHeight * DPR;
-      canvas.style.width  = wrap.offsetWidth+"px";
-      canvas.style.height = wrap.offsetHeight+"px";
-      var ctx=canvas.getContext("2d"); ctx.scale(DPR,DPR);
-      drawMcChart(canvas, res);
-    });
-  }
-
-  function bindMonteCarlo(){
-    var head = document.getElementById("mcHead");
-    var body = document.getElementById("mcBody");
-    var caret= document.getElementById("mcCaret");
-    if(!head||!body) return;
-
-    // pre-fill from the app's current net worth
-    var nwEl=document.getElementById("mcNW");
-    if(nwEl){ var t=totals(); if(t.net>0) nwEl.value=Math.round(t.net); }
-
-    // toggle open/close
-    head.addEventListener("click", function(){
-      var open = body.style.display==="none";
-      body.style.display = open?"":"none";
-      if(caret) caret.style.transform = open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open && !nwEl.value){ var t2=totals(); if(t2.net>0) nwEl.value=Math.round(t2.net); }
-    });
-
-    var yrs=document.getElementById("mcYears"), lbl=document.getElementById("mcYrsLbl");
-    if(yrs&&lbl) yrs.addEventListener("input", function(){ lbl.textContent=yrs.value+" yr"; });
-
-    document.getElementById("mcRun").addEventListener("click", function(){
-      var nw   = parseFloat(document.getElementById("mcNW").value);
-      var save = parseFloat(document.getElementById("mcSave").value);
-      var tgt  = parseFloat(document.getElementById("mcTarget").value);
-      var prof = document.getElementById("mcProfile").value;
-      var yrsV = parseInt(document.getElementById("mcYears").value, 10);
-
-      if(!isFinite(nw))  { shake(document.getElementById("mcNW")); return; }
-      if(!isFinite(save)){ shake(document.getElementById("mcSave")); return; }
-      if(!isFinite(tgt)||tgt<=0){ shake(document.getElementById("mcTarget")); return; }
-
-      var btn=document.getElementById("mcRun");
-      btn.textContent="Running…"; btn.disabled=true;
-      document.getElementById("mcResult").innerHTML='<div class="mc-spinner">Simulating 10,000 scenarios…</div>';
-      document.getElementById("mcResult").style.display="block";
-
-      // run async so the spinner actually paints
-      setTimeout(function(){
-        var res = runMonteCarlo(nw, save, tgt, prof, yrsV);
-        renderMcResult(res, state.currency);
-        btn.textContent="Run 10,000 scenarios"; btn.disabled=false;
-      }, 20);
-    });
-  }
-
-  /* ============================================================
-     BILL REMINDERS — Web Notifications for upcoming bills
-     Hooks into the existing recurring system. Fires when the app
-     is open; no server required.
-     ============================================================ */
-  var NOTIF_KEY = "mymoney_notif_sent";   // track what we already fired today
-  var _notifSent = null;   // {date: "YYYY-MM-DD", ids: [ruleId, ...]}
-  function loadNotifSent(){
-    try{ var r=localStorage.getItem(NOTIF_KEY); _notifSent=r?JSON.parse(r):{date:"",ids:[]}; }
-    catch(e){ _notifSent={date:"",ids:[]}; }
-  }
-  function saveNotifSent(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(_notifSent)); }catch(e){} }
-  function billNotifGranted(){ return typeof Notification!=="undefined" && Notification.permission==="granted"; }
-
-  // Ask permission and fire alerts for bills due today or in the next N days
-  function checkBillNotifs(daysAhead){
-    daysAhead = daysAhead || 3;
-    if(typeof Notification==="undefined") return;   // browser doesn't support it
-    loadNotifSent();
-    var todayS = todayStr(), today = new Date(todayS);
-    // build the window of dates to check
-    var window_dates = [];
-    for(var d=0; d<=daysAhead; d++){
-      var dt = new Date(today); dt.setDate(dt.getDate()+d);
-      window_dates.push(dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"));
-    }
-    // which rules have something due in that window?
-    var upcoming = [];
-    recurList().forEach(function(r){
-      if(r.paused) return;
-      window_dates.forEach(function(ds){
-        var dts = dueDates(r, ds);
-        if(dts.indexOf(ds)>=0){
-          var daysUntil = window_dates.indexOf(ds);
-          upcoming.push({rule:r, date:ds, daysUntil:daysUntil});
-        }
-      });
-    });
-    if(!upcoming.length) return;
-    // reset sent-list daily
-    if((_notifSent.date||"") !== todayS){ _notifSent={date:todayS,ids:[]}; }
-    // fire one notification per rule not yet fired today
-    upcoming.forEach(function(item){
-      var key = item.rule.id+"_"+item.date;
-      if(_notifSent.ids.indexOf(key)>=0) return;   // already sent
-      var label = item.rule.note || item.rule.cat || "Bill";
-      var amt = item.rule.amount ? " — "+fmt(item.rule.amount, state.currency) : "";
-      var when = item.daysUntil===0 ? "due today" : "due in "+item.daysUntil+" day"+(item.daysUntil===1?"":"s");
-      try{
-        new Notification("💳 "+label+amt, {
-          body: when.charAt(0).toUpperCase()+when.slice(1),
-          icon: "",
-          tag: key,
-          renotify: false
-        });
-        _notifSent.ids.push(key);
-        saveNotifSent();
-      }catch(e){}
-    });
-  }
-
-  function requestBillNotifs(cb){
-    if(typeof Notification==="undefined"){ if(cb) cb(false); return; }
-    if(Notification.permission==="granted"){ checkBillNotifs(); if(cb) cb(true); return; }
-    if(Notification.permission==="denied"){ if(cb) cb(false); return; }
-    Notification.requestPermission(function(perm){
-      if(perm==="granted"){ checkBillNotifs(); }
-      if(cb) cb(perm==="granted");
-    });
-  }
-
-  // Call this on boot — quietly if permission already granted, else waits for a tap
-
-  /* ============================================================
-     RECEIPT SCANNER — one-tap: pick/snap → AI reads → form fills
-     Thin wrapper around the existing AI pipeline. The camera
-     input opens the device camera directly on mobile; desktop
-     falls back to the file picker.
-     ============================================================ */
-  function initReceiptScanner(){
-    var camInput = document.getElementById("scanCamInput");
-    if(!camInput) return;
-    camInput.addEventListener("change", function(e){
-      var files=Array.prototype.slice.call(e.target.files||[]);
-      if(!files.length) return;
-      // open the AI panel first, then inject the file
-      openAiPanel();
-      var left=files.length;
-      files.forEach(function(f){
-        var r=new FileReader();
-        r.onload=function(){
-          var url=r.result, comma=url.indexOf(",");
-          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
-          if(--left<=0){
-            renderAiThumbs();
-            // auto-run immediately — the user already picked the photo; don't make them tap again
-            var runBtn=document.getElementById("aiRunBtn");
-            if(runBtn && !runBtn.disabled) runBtn.click();
-          }
-        };
-        r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
-        r.readAsDataURL(f);
-      });
-      e.target.value="";
-    });
-  }
-  function tapScanReceipt(){
-    if(!aiConfigured()){
-      // AI not configured — open the panel to explain and let them set up a key
-      openAiPanel();
-      flashSaved("Set up an AI key first — tap the ⚙ in the AI panel");
-      return;
-    }
-    var cam=document.getElementById("scanCamInput"); if(cam) cam.click();
-  }
-
-  function initBillNotifs(){
-    if(typeof Notification==="undefined") return;
-    if(Notification.permission==="granted"){
-      // already granted: check now and again whenever the tab becomes visible
-      checkBillNotifs();
-      document.addEventListener("visibilitychange", function(){
-        if(document.visibilityState==="visible") checkBillNotifs();
-      });
-    }
-    // surface a "Enable bill reminders" button in the recurring section
-    var btn = document.getElementById("billNotifsBtn");
-    if(!btn) return;
-    if(Notification.permission==="granted"){
-      btn.textContent="🔔 Reminders on"; btn.disabled=true;
-    } else if(Notification.permission==="denied"){
-      btn.textContent="🔕 Notifications blocked"; btn.disabled=true;
-    } else {
-      btn.style.display=""; btn.disabled=false;
-      btn.addEventListener("click", function(){
-        requestBillNotifs(function(ok){
-          btn.textContent = ok ? "🔔 Reminders on" : "🔕 Blocked in browser";
-          btn.disabled=true;
-          if(ok) checkBillNotifs();
-        });
-      });
-    }
-  }
-
   function checkRecurPrompt(){
     var el=document.getElementById("recPrompt");
     if(!el) return;
     var pend=pendingRecur();
     if(!pend.length){ el.style.display="none"; return; }
-
-    // split: auto rules go straight to the ledger silently; manual ones get the prompt
-    var autoPend=pend.filter(function(x){ return x.rule.auto; });
-    var manualPend=pend.filter(function(x){ return !x.rule.auto; });
-
-    if(autoPend.length){
-      applyRecur(autoPend, function(n){
-        // only show the toast if the tab is focused, so it's not jarring
-        if(!document.hidden) flashSaved(n+" subscription"+(n===1?"":"s")+" auto-logged");
-        // re-run for any remaining manual ones
-        checkRecurPrompt();
-      });
-      return;   // applyRecur calls checkRecurPrompt again when done
-    }
-
-    if(!manualPend.length){ el.style.display="none"; return; }
-    var total=manualPend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
+    var total=pend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
     document.getElementById("recPromptMsg").innerHTML=
-      "<b>"+manualPend.length+"</b> recurring entr"+(manualPend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
+      "<b>"+pend.length+"</b> recurring entr"+(pend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
     el.style.display="block";
   }
   function ordSuffix(n){
@@ -5724,7 +5190,7 @@ AI_TYPES.join(", "),
       var meta=TYPE_META[r.type]||{label:r.type};
       var title=r.note ? esc(r.note) : esc(meta.label)+(r.cat?" · "+esc(r.cat):"");
       return '<div class="rec-item'+(r.paused?" paused":"")+'" data-id="'+esc(r.id)+'">'
-        +'<div class="rec-main"><div class="rec-t">'+title+(r.auto?' <span style="font-size:10px;background:var(--in);color:#04140b;border-radius:4px;padding:1px 5px;font-weight:800">AUTO</span>':'')+'</div><div class="rec-sub">'+esc(recurDescribe(r))+'</div></div>'
+        +'<div class="rec-main"><div class="rec-t">'+title+'</div><div class="rec-sub">'+esc(recurDescribe(r))+'</div></div>'
         +'<div class="rec-amt mono">'+fmt(Math.abs(num(r.amount)),sym)+'</div>'
         +'<button type="button" class="rec-btn" data-act="pause">'+(r.paused?"Resume":"Pause")+'</button>'
         +'<button type="button" class="rec-btn" data-act="del">Delete</button></div>';
@@ -5777,8 +5243,7 @@ AI_TYPES.join(", "),
         type:document.getElementById("recType").value, amount:amt,
         note:document.getElementById("recNote").value.trim(), freq:freq,
         day: freq==="weekly" ? +start.slice(8,10) : Math.max(1,Math.min(31,parseInt(document.getElementById("recDay").value,10)||1)),
-        startDate:start, lastRun:null, paused:false,
-        auto:document.getElementById('recAuto').checked };
+        startDate:start, lastRun:null, paused:false };
       if(r.type==="spend") r.cat=document.getElementById("recCat").value;
       if(!Array.isArray(state.recurring)) state.recurring=[];
       state.recurring.push(r);
@@ -5788,7 +5253,7 @@ AI_TYPES.join(", "),
     });
     var a2=document.getElementById("recPromptAdd"), n2=document.getElementById("recPromptLater");
     if(a2) a2.addEventListener("click", function(){
-      var pend=pendingRecur().filter(function(x){ return !x.rule.auto; });
+      var pend=pendingRecur();
       if(pend.length) applyRecur(pend, function(n){ flashSaved("added "+n); checkRecurPrompt(); });
     });
     if(n2) n2.addEventListener("click", function(){ document.getElementById("recPrompt").style.display="none"; });
@@ -7133,6 +6598,536 @@ AI_TYPES.join(", "),
   }
 
   var selectedIds={}; // ephemeral UI-only selection for "export selected" — never persisted
+
+  /* =====================================================================================
+     MT4/MT5 PHOTO AUTO-ANALYZE (v1.96)
+     Reads a statement screenshot attached to a trade entry with on-device OCR
+     (Tesseract.js, lazy-loaded once from CDN then browser-cached). Nothing is uploaded.
+     Engine below is the tested analyzer: three layout detectors (header table /
+     single-row deals list / two-line mobile pairs), strict instrument recognition so a
+     stray "buy" in a random photo never fabricates a trade, digit-fragment stitching,
+     and small-image upscaling. Modes: off / auto (fill on completion) / silent (analyze
+     in background, fill on tap — live progress if tapped mid-read).
+     ===================================================================================== */
+  var MTOCR_HEADERS=[
+    {key:"time",re:/\btime\b/i},{key:"symbol",re:/\bsymbol\b|\bitem\b/i},{key:"type",re:/\btype\b/i},
+    {key:"volume",re:/\bvolume\b|\bvol\.?\b|\blots?\b|\bsize\b/i},{key:"price",re:/\bprice\b/i},
+    {key:"sl",re:/^s\s*\/?\s*l$/i},{key:"tp",re:/^t\s*\/?\s*p$/i},
+    {key:"commission",re:/commission|comm\.?/i},{key:"swap",re:/\bswap\b/i},
+    {key:"profit",re:/\bprofit\b|p\s*&?\s*l/i},
+    {key:"id",re:/\bposition\b|\bdeal\b|\border\b|\bticket\b|^#$/i}];
+  var MTOCR_TIME=/\d{1,2}[.:]\d{2}([.:]\d{2})?/;
+  var MTOCR_DIR=/^(buy|sell)$/i;
+  var MTOCR_NUM=/^-?\d[\d,]*\.\d+$/;
+  var MTOCR_INT=/^\d{4,}$/;
+  var MTOCR_CUR=/(USD|EUR|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|XPT|XPD|BTC|ETH|LTC|XRP|BNB|SOL|DOGE|WTI|OIL|SPX|NAS|US30|US500|GER|UK100|GOLD|SILV)/i;
+  function mtOcrInstrument(raw){
+    if(!raw) return false;
+    var s=raw.replace(/[,._]+$/,"").trim();
+    if(MTOCR_DIR.test(s)) return false;
+    if(!/^[A-Za-z][A-Za-z0-9./]{1,14}$/.test(s)) return false;
+    if(MTOCR_CUR.test(s)) return true;
+    if(/^[A-Za-z]{6}$/.test(s) && /^(EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY)/i.test(s)) return true;
+    if(/_$/.test(raw)) return true;
+    return false;
+  }
+  function mtOcrRows(words){
+    var sorted=words.slice().sort(function(a,b){return a.y-b.y;});
+    var rows=[];
+    var hs=sorted.map(function(w){return w.h;}).filter(function(h){return h>0;});
+    var medH=hs.length?hs.slice().sort(function(a,b){return a-b;})[Math.floor(hs.length/2)]:20;
+    var tol=Math.max(12,medH*0.7);
+    sorted.forEach(function(w){
+      var cy=w.y+w.h/2, placed=null;
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        var rcy=r.reduce(function(s,x){return s+x.y+x.h/2;},0)/r.length;
+        if(Math.abs(cy-rcy)<tol){placed=r;break;}
+      }
+      if(placed) placed.push(w); else rows.push([w]);
+    });
+    return rows;
+  }
+  function mtOcrCells(rowWords){
+    var sorted=rowWords.slice().sort(function(a,b){return a.x-b.x;});
+    var hs=sorted.map(function(w){return w.h;}).filter(function(h){return h>0;}).sort(function(a,b){return a-b;});
+    var medH=hs.length?hs[Math.floor(hs.length/2)]:20;
+    var gap=Math.max(45,medH*2.2);
+    var cells=[], cur=[sorted[0]];
+    for(var i=1;i<sorted.length;i++){
+      var prev=cur[cur.length-1];
+      if(sorted[i].x-(prev.x+prev.w)<gap) cur.push(sorted[i]);
+      else{cells.push(cur);cur=[sorted[i]];}
+    }
+    cells.push(cur);
+    return cells.map(function(c){return{text:c.map(function(w){return w.text;}).join(" ").trim(),x:c[0].x};});
+  }
+  function mtOcrStitch(sortedWords){
+    var out=[];
+    for(var i=0;i<sortedWords.length;i++){
+      var w=sortedWords[i], nxt=sortedWords[i+1];
+      if(nxt && /^-?\d{1,3}$/.test(w.text.trim()) && /^\d+\.\d+$/.test(nxt.text.trim())){
+        if(nxt.x-(w.x+w.w) < Math.max(20,w.h)){
+          out.push({text:w.text.trim()+nxt.text.trim(),x:w.x,y:Math.min(w.y,nxt.y),
+                    w:(nxt.x+nxt.w-w.x),h:Math.max(w.h,nxt.h)});
+          i++; continue;
+        }
+      }
+      out.push(w);
+    }
+    return out;
+  }
+  function mtOcrParse(words){
+    if(!words.length) return {trades:[],isStatement:false};
+    var rowsData=mtOcrRows(words)
+      .map(function(r){return r.slice().sort(function(a,b){return a.x-b.x;});})
+      .sort(function(a,b){
+        var ay=Math.min.apply(null,a.map(function(w){return w.y;}));
+        var by=Math.min.apply(null,b.map(function(w){return w.y;}));
+        return ay-by;
+      })
+      .map(function(r){return{words:r,cells:mtOcrCells(r)};})
+      .filter(function(rd){return rd.cells.length;});
+
+    var headerRow=null, headerMap=[];
+    rowsData.forEach(function(rd){
+      var m=rd.cells.map(function(c){
+        var f=MTOCR_HEADERS.filter(function(p){return p.re.test(c.text);});
+        return f.length?f[0].key:null;
+      });
+      if(m.filter(Boolean).length>=3 && !headerRow){headerRow=rd.cells;headerMap=m;}
+    });
+    var trades=[];
+    if(headerRow){
+      rowsData.forEach(function(rd){
+        var cells=rd.cells;
+        if(cells===headerRow) return;
+        if(!cells.some(function(c){return MTOCR_NUM.test(c.text.replace(/,/g,""));})) return;
+        var t={symbol:null,type:null,volume:null,date:null,profit:null};
+        var seenTime=0;
+        cells.forEach(function(cell){
+          var best=null,bd=Infinity;
+          for(var i=0;i<headerRow.length;i++){
+            var d=Math.abs(cell.x-headerRow[i].x);
+            if(d<bd){bd=d;best=headerMap[i];}
+          }
+          if(!best) return;
+          var raw=cell.text.trim(), num=parseFloat(raw.replace(/,/g,""));
+          if(best==="symbol"&&!/^\d+$/.test(raw)) t.symbol=t.symbol||raw;
+          else if(best==="type"&&MTOCR_DIR.test(raw)) t.type=raw.toLowerCase();
+          else if(best==="volume"&&!isNaN(num)) t.volume=num;
+          else if(best==="time"){seenTime++;if(seenTime===1)t.date=raw;}
+          else if(best==="profit"&&!isNaN(num)) t.profit=num;
+        });
+        if(t.symbol||t.type||t.profit!=null) trades.push(t);
+      });
+    } else {
+      rowsData.forEach(function(rd){
+        var cells=rd.cells, dirIdx=-1;
+        for(var i=0;i<cells.length;i++){if(MTOCR_DIR.test(cells[i].text.trim())){dirIdx=i;break;}}
+        if(dirIdx===-1) return;
+        var t={symbol:null,type:cells[dirIdx].text.trim().toLowerCase(),volume:null,date:null,profit:null};
+        var timeCells=cells.filter(function(c){return MTOCR_TIME.test(c.text)&&!/^\d+$/.test(c.text.trim());});
+        if(timeCells[0]) t.date=timeCells[0].text.trim();
+        for(var j=dirIdx+1;j<cells.length;j++){
+          if(mtOcrInstrument(cells[j].text.trim())){t.symbol=cells[j].text.trim().replace(/[,._]+$/,"").toUpperCase();break;}
+        }
+        var volCell=null;
+        for(var k=dirIdx+1;k<cells.length;k++){
+          var r2=cells[k].text.trim().replace(/,/g,"");
+          if(MTOCR_NUM.test(r2)&&!MTOCR_INT.test(r2)){var v=parseFloat(r2);if(v<1000){t.volume=v;volCell=cells[k];}break;}
+        }
+        var nums=cells.filter(function(c){
+          var raw=c.text.trim().replace(/,/g,"");
+          return MTOCR_NUM.test(raw)&&!MTOCR_INT.test(raw)&&c!==volCell;
+        });
+        if(nums.length) t.profit=parseFloat(nums[nums.length-1].text.trim().replace(/,/g,""));
+        var looks=(!!t.symbol)||(t.volume!=null&&nums.length>=2)||(nums.length>=3);
+        if(looks) trades.push(t);
+      });
+      if(!trades.length){
+        var used={};
+        for(var ri=0;ri<rowsData.length;ri++){
+          if(used[ri]) continue;
+          var wa=rowsData[ri].words;
+          var ta=wa.map(function(w){return w.text;}).join(" ");
+          if(!/\b(buy|sell)\b/i.test(ta)) continue;
+          if(!wa.some(function(w){return mtOcrInstrument(w.text.trim());})) continue;
+          var rb=rowsData[ri+1];
+          if(!rb) continue;
+          if(/\b(buy|sell)\b/i.test(rb.words.map(function(w){return w.text;}).join(" "))) continue;
+          var sa=mtOcrStitch(wa), sb=mtOcrStitch(rb.words);
+          var taJ=sa.map(function(w){return w.text;}).join(" ");
+          var tbJ=sb.map(function(w){return w.text;}).join(" ");
+          var sym=wa.filter(function(w){return mtOcrInstrument(w.text.trim());})[0];
+          var dir=taJ.match(/\b(buy|sell)\b/i);
+          var dm=taJ.match(/\d{4}[.\-]\d{2}[.\-]\d{2}(\s+\d{1,2}:\d{2}(:\d{2})?)?/);
+          var da=taJ.match(/-?\d+\.\d+/g)||[];
+          var db=tbJ.match(/-?\d+\.\d+/g)||[];
+          if(!db.length) continue;
+          var t2={symbol:sym?sym.text.replace(/[,._]+$/,"").toUpperCase():null,
+                  type:dir?dir[1].toLowerCase():null,
+                  volume:da.length?parseFloat(da[0]):null,
+                  date:dm?dm[0]:null,
+                  profit:db.length>2?parseFloat(db[2]):null};
+          if(t2.symbol&&t2.type){trades.push(t2);used[ri+1]=true;}
+        }
+      }
+    }
+    return {trades:trades,isStatement:trades.length>0};
+  }
+
+  /* ------- runtime: lazy engine load, background analysis, fill actions ------- */
+  var mtOcr={ state:"idle",           // idle | loading | running | done | failed | nota
+              result:null, error:null,
+              token:0,                // invalidates a run when photos change mid-read
+              progress:0, wantFill:false };
+  function mtOcrMode(){ return (state.settings&&state.settings.mtOcr)||"off"; }
+  function mtOcrIsTradeType(){
+    var v=document.getElementById("fType").value;
+    return v==="trade_win"||v==="trade_loss";
+  }
+  function mtOcrImages(){
+    return pendingPhotos.filter(function(pp){
+      return attIsImage(pp.name, pp.dataUrl);
+    });
+  }
+  function mtOcrLoadEngine(cb){
+    if(typeof Tesseract!=="undefined"){cb(true);return;}
+    if(!navigator.onLine){cb(false);return;}
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js";
+    s.onload=function(){cb(typeof Tesseract!=="undefined");};
+    s.onerror=function(){cb(false);};
+    document.head.appendChild(s);
+  }
+  function mtOcrUpscale(dataUrl, cb){
+    var img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth,h=img.naturalHeight;
+      if(!w||!h){cb(dataUrl,1);return;}
+      var sc=w<900?Math.min(3,Math.max(1,Math.ceil(900/w))):1;
+      if(sc===1){cb(dataUrl,1);return;}
+      try{
+        var c=document.createElement("canvas");
+        c.width=w*sc;c.height=h*sc;
+        var x=c.getContext("2d");
+        x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+        x.drawImage(img,0,0,c.width,c.height);
+        cb(c,sc);
+      }catch(e){cb(dataUrl,1);}
+    };
+    img.onerror=function(){cb(dataUrl,1);};
+    img.src=dataUrl;
+  }
+  function mtOcrStart(){
+    if(mtOcrMode()==="off"||!mtOcrIsTradeType()) return;
+    var imgs=mtOcrImages();
+    if(!imgs.length){mtOcr.state="idle";mtOcr.result=null;mtOcrUI();return;}
+    var myToken=++mtOcr.token;
+    mtOcr.state="loading";mtOcr.progress=0;mtOcr.result=null;mtOcr.error=null;mtOcrUI();
+    mtOcrLoadEngine(function(ok){
+      if(myToken!==mtOcr.token) return;
+      if(!ok){
+        mtOcr.state="failed";
+        mtOcr.error=navigator.onLine?"The reader couldn't load — try again.":"You're offline — the reader needs a connection once, then it's cached.";
+        mtOcrUI();return;
+      }
+      mtOcr.state="running";mtOcrUI();
+      var allTrades=[], idx=0, per=1/imgs.length;
+      function next(){
+        if(myToken!==mtOcr.token) return;
+        if(idx>=imgs.length){
+          mtOcr.result={trades:allTrades,isStatement:allTrades.length>0};
+          mtOcr.state=allTrades.length?"done":"nota";
+          mtOcrUI();
+          if(mtOcr.state==="done"&&(mtOcrMode()==="auto"||mtOcr.wantFill)){mtOcr.wantFill=false;mtOcrFill();}
+          if(mtOcr.state==="nota") mtOcr.wantFill=false;
+          return;
+        }
+        var pp=imgs[idx], n=idx;
+        mtOcrUpscale(pp.dataUrl,function(input,sc){
+          if(myToken!==mtOcr.token) return;
+          Tesseract.recognize(input,"eng",{logger:function(m){
+            if(m.status==="recognizing text"&&myToken===mtOcr.token){
+              mtOcr.progress=(n+m.progress)*per;mtOcrUI();
+            }
+          }}).then(function(res){
+            if(myToken!==mtOcr.token) return;
+            var words=(res.data.words||[]).map(function(w){
+              return{text:w.text,x:w.bbox.x0/sc,y:w.bbox.y0/sc,w:(w.bbox.x1-w.bbox.x0)/sc,h:(w.bbox.y1-w.bbox.y0)/sc};
+            }).filter(function(w){return w.text&&w.text.trim().length;});
+            var r=mtOcrParse(words);
+            allTrades=allTrades.concat(r.trades);
+            idx++;next();
+          }).catch(function(){ if(myToken===mtOcr.token){idx++;next();} });
+        });
+      }
+      next();
+    });
+  }
+  /* =====================================================
+     v1.97 — MT5 STATEMENT ANALYZER CSV IMPORT
+     Accepts the CSV exported by mt5_statement_analyzer.html
+     (columns: symbol,type,volume,open_time,open_price,
+      close_time,close_price,sl,tp,swap,commission,profit)
+     ===================================================== */
+  function mtCsvParse(text){
+    var lines=text.replace(/\r/g,"").split("\n").filter(function(l){return l.trim();});
+    if(!lines.length) return null;
+    function splitLine(l){
+      var out=[],cur="",q=false;
+      for(var i=0;i<l.length;i++){
+        var ch=l[i];
+        if(q){ if(ch==='"'){ if(l[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+        else { if(ch==='"') q=true; else if(ch===','){out.push(cur);cur="";} else cur+=ch; }
+      }
+      out.push(cur); return out;
+    }
+    var head=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
+    if(head.indexOf("profit")<0||head.indexOf("symbol")<0) return null;
+    var rows=[];
+    for(var i=1;i<lines.length;i++){
+      var c=splitLine(lines[i]),o={};
+      head.forEach(function(h,j){o[h]=(c[j]!==undefined?c[j].trim():"");});
+      var p=parseFloat(String(o.profit).replace(/[ ,]/g,""));
+      if(!isFinite(p)) continue;
+      // net P/L per trade = profit + swap + commission when present
+      var sw=parseFloat(String(o.swap||"").replace(/[ ,]/g,""));
+      var cm=parseFloat(String(o.commission||"").replace(/[ ,]/g,""));
+      var net=p+(isFinite(sw)?sw:0)+(isFinite(cm)?cm:0);
+      rows.push({symbol:o.symbol||"", profit:Math.round(net*100)/100,
+                 open_time:o.open_time||"", type:o.type||"", volume:o.volume||""});
+    }
+    return rows;
+  }
+  function mtCsvDate(s){
+    // analyzer times look like "2026.08.12 14:03" or "2026-08-12 14:03"
+    var m=/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/.exec(s||"");
+    if(!m) return null;
+    return m[1]+"-"+("0"+m[2]).slice(-2)+"-"+("0"+m[3]).slice(-2);
+  }
+  function mtCsvImportRows(rows){
+    var live=rows.filter(function(r){return r.profit!==0;});
+    if(!live.length){ flashSaved("no P/L rows found in that CSV"); return; }
+    var noSplits=!!(state.settings&&state.settings.noSplits);
+    var splitEl=document.getElementById("fSplit");
+    var splitN=noSplits?1:(splitEl?(parseInt(splitEl.value,10)||1):1);
+    if(splitN<1) splitN=1;
+    var total=0; live.forEach(function(r){total+=r.profit;});
+    total=Math.round(total*100)/100;
+    appModal({
+      title:"Import "+live.length+" trades from Analyzer CSV?",
+      message:"One entry per trade — <b>"+live.length+"</b> entries, net <b>"
+        +(total>=0?"+":"")+total.toFixed(2)+"</b>"
+        +(splitN>1?"<br>Each amount split "+splitN+" ways (your share recorded).":"")
+        +"<br><span class='mut'>Dates come from each trade's open time.</span>",
+      confirmText:"Import",
+      cancelText:"Cancel",
+      onConfirm:function(){ mtCsvCommit(live,splitN); }
+    });
+  }
+  function mtCsvCommit(rows,splitN){
+    var added=0,lastDate=null;
+    rows.forEach(function(r){
+      var full=Math.abs(r.profit);
+      var amt=splitN>1?Math.round((full/splitN)*100)/100:full;
+      if(!amt) return;
+      var d=mtCsvDate(r.open_time)||todayStr();
+      lastDate=d;
+      var tx={id:freshIdBase(),date:d,
+              type:(r.profit>=0?"trade_win":"trade_loss"),amount:amt};
+      if(r.symbol) tx.inst=r.symbol.replace(/_+$/,"");
+      var bits=["Analyzer CSV"];
+      if(r.open_time) bits.push(r.open_time);
+      if(splitN>1) bits.push("Split "+splitN+" ways — "+fmt(full)+" total, your share "+fmt(amt));
+      tx.note=bits.join(" · ");
+      state.transactions.push(tx);
+      mirrorNewTransaction(tx);
+      added++;
+    });
+    if(!added){ flashSaved("nothing imported"); return; }
+    recordAction("Imported "+added+" trades from an Analyzer CSV");
+    if(lastDate) state.selectedMonths=[monthKey(lastDate)];
+    persist();render();
+    flashSaved("added "+added+" trades from CSV");
+  }
+  function bindMtCsvImport(){
+    var btn=document.getElementById("mtCsvBtn");
+    var inp=document.getElementById("mtCsvFile");
+    if(!btn||!inp) return;
+    btn.addEventListener("click",function(){ inp.value=""; inp.click(); });
+    inp.addEventListener("change",function(){
+      var f=inp.files&&inp.files[0]; if(!f) return;
+      var rd=new FileReader();
+      rd.onload=function(){
+        var rows=mtCsvParse(String(rd.result||""));
+        if(!rows){ appModal({title:"Not an Analyzer CSV",message:"That file doesn't look like a CSV exported from the MT5 Statement Analyzer (needs symbol + profit columns).",confirmText:"OK"}); return; }
+        mtCsvImportRows(rows);
+      };
+      rd.onerror=function(){ flashSaved("couldn't read that file"); };
+      rd.readAsText(f);
+    });
+  }
+
+  function mtOcrNet(trades){
+    var n=0;trades.forEach(function(t){if(typeof t.profit==="number")n+=t.profit;});
+    return Math.round(n*100)/100;
+  }
+  function mtOcrDominantInst(trades){
+    var c={};trades.forEach(function(t){if(t.symbol){var s=t.symbol.replace(/_+$/,"");c[s]=(c[s]||0)+1;}});
+    var best=null,bn=0;Object.keys(c).forEach(function(k){if(c[k]>bn){bn=c[k];best=k;}});
+    return best;
+  }
+  function mtOcrFill(){
+    var r=mtOcr.result;
+    if(!r||!r.trades.length) return;
+    var modeSel=document.getElementById("mtOcrFillMode");
+    var fillMode=modeSel?modeSel.value:"net";
+    if(fillMode==="each"){ mtOcrFillEach(r.trades); return; }
+    var net=mtOcrNet(r.trades);
+    document.getElementById("fType").value = net>=0?"trade_win":"trade_loss";
+    typeUI();
+    document.getElementById("fAmt").value = Math.abs(net).toFixed(2);
+    var inst=mtOcrDominantInst(r.trades);
+    if(inst) document.getElementById("fInst").value=inst;
+    var noteEl=document.getElementById("fNote");
+    if(!noteEl.value.trim())
+      noteEl.value="MT statement: "+r.trades.length+" trade"+(r.trades.length>1?"s":"")+", net "+(net>=0?"+":"")+net.toFixed(2);
+    flashSaved("filled from statement — check, then Add entry");
+    mtOcrUI();
+  }
+  function mtOcrFillEach(trades){
+    var rows=trades.filter(function(t){return typeof t.profit==="number"&&t.profit!==0;});
+    if(!rows.length){flashSaved("no P/L amounts to import");return;}
+    var noSplits=!!(state.settings&&state.settings.noSplits);
+    var splitN=noSplits?1:(parseInt(document.getElementById("fSplit").value,10)||1);
+    if(splitN<1) splitN=1;
+    var total=mtOcrNet(rows);
+    appModal({
+      title:"Add "+rows.length+" separate trades?",
+      message:"One entry per trade from the photo — <b>"+rows.length+"</b> entries, net <b>"
+        +(total>=0?"+":"")+total.toFixed(2)+"</b>"
+        +(splitN>1?"<br>Each amount split "+splitN+" ways (your share recorded).":"")
+        +"<br><span class='mut'>The photo attaches to the first entry.</span>",
+      confirmText:"Add them", cancelText:"Cancel",
+      onConfirm:function(){
+        var date=document.getElementById("fDate").value||todayStr();
+        var added=0;
+        rows.forEach(function(t,i){
+          var amtFull=Math.abs(t.profit);
+          var amt=splitN>1?Math.round((amtFull/splitN)*100)/100:amtFull;
+          if(!amt) return;
+          var tx={id:freshIdBase(),date:date,
+                  type:(t.profit>=0?"trade_win":"trade_loss"),amount:amt};
+          if(t.symbol) tx.inst=t.symbol.replace(/_+$/,"");
+          var noteBits=[];
+          if(t.date) noteBits.push(t.date);
+          if(splitN>1) noteBits.push("Split "+splitN+" ways — "+fmt(amtFull)+" total, your share "+fmt(amt));
+          if(noteBits.length) tx.note=noteBits.join(" · ");
+          if(i===0&&pendingPhotos.length){
+            var pids=[];
+            pendingPhotos.forEach(function(pp){
+              var nid=newPhotoId(tx.id,pids);pids.push(nid);
+              savePhoto(nid,pp.dataUrl,null,pp.name);
+            });
+            setPhotos(tx,pids);
+          }
+          state.transactions.push(tx);
+          mirrorNewTransaction(tx);
+          added++;
+        });
+        recordAction("Imported "+added+" trades from a statement photo");
+        state.selectedMonths=[monthKey(date)];
+        persist();render();
+        document.getElementById("fAmt").value="";document.getElementById("fNote").value="";
+        document.getElementById("fInst").value="";
+        clearPhotoPick();
+        mtOcr.state="idle";mtOcr.result=null;mtOcrUI();
+        flashSaved("added "+added+" trades");
+      }
+    });
+  }
+  function mtOcrUI(){
+    var bar=document.getElementById("mtOcrBar");
+    if(!bar) return;
+    var on = mtOcrMode()!=="off" && mtOcrIsTradeType();
+    bar.style.display = on?"flex":"none";
+    if(!on) return;
+    // one-time grey walkthrough
+    var intro=document.getElementById("mtOcrIntro");
+    var seen=false;try{seen=!!localStorage.getItem("mymoney_mtocr_intro");}catch(e){}
+    intro.style.display=seen?"none":"block";
+    var st=document.getElementById("mtOcrStatus");
+    var btn=document.getElementById("mtOcrFillBtn");
+    var prog=document.getElementById("mtOcrProg");
+    var fill=document.getElementById("mtOcrProgFill");
+    var imgs=mtOcrImages().length;
+    var showProg = (mtOcr.state==="running"||mtOcr.state==="loading") && (mtOcrMode()==="auto"||mtOcr.wantFill);
+    prog.style.display=showProg?"block":"none";
+    if(showProg) fill.style.width=Math.round(mtOcr.progress*100)+"%";
+    btn.style.display="none";
+    if(!imgs){ st.textContent="⚡ Attach a statement photo to auto-read it"; return; }
+    if(mtOcr.state==="loading"){ st.textContent="⚡ Getting the reader ready…"; }
+    else if(mtOcr.state==="running"){
+      st.textContent=(mtOcrMode()==="auto"||mtOcr.wantFill)
+        ? "⚡ Reading the statement… "+Math.round(mtOcr.progress*100)+"%"
+        : "⚡ Reading in the background…";
+      if(mtOcrMode()==="silent"&&!mtOcr.wantFill) btn.style.display="inline-block";
+    }
+    else if(mtOcr.state==="done"){
+      var n=mtOcr.result.trades.length, net=mtOcrNet(mtOcr.result.trades);
+      st.textContent="⚡ Read "+n+" trade"+(n>1?"s":"")+", net "+(net>=0?"+":"")+net.toFixed(2);
+      if(mtOcrMode()==="silent") btn.style.display="inline-block";
+    }
+    else if(mtOcr.state==="nota"){ st.textContent="⚡ That photo doesn't look like an MT4/MT5 statement — ignored"; }
+    else if(mtOcr.state==="failed"){ st.textContent="⚡ "+(mtOcr.error||"Couldn't read the photo"); }
+  }
+  function applyNoSplits(){
+    var hide=!!(state.settings&&state.settings.noSplits);
+    var fld=document.getElementById("splitFld");
+    if(fld) fld.style.display=hide?"none":"";
+    if(hide){
+      var s=document.getElementById("fSplit");if(s)s.value="1";
+      var h=document.getElementById("splitHint");if(h)h.style.display="none";
+    }
+  }
+  function bindMtOcr(){
+    var sel=document.getElementById("setMtOcr");
+    if(sel){
+      sel.addEventListener("change",function(){
+        if(!state.settings)state.settings={};
+        state.settings.mtOcr=sel.value;
+        persistNow();flashSaved("saved");mtOcrUI();
+      });
+    }
+    var ns=document.getElementById("setNoSplits");
+    if(ns){
+      ns.addEventListener("change",function(){
+        if(!state.settings)state.settings={};
+        state.settings.noSplits=ns.checked;
+        persistNow();flashSaved("saved");applyNoSplits();
+      });
+    }
+    var ok=document.getElementById("mtOcrIntroOk");
+    if(ok) ok.addEventListener("click",function(){
+      try{localStorage.setItem("mymoney_mtocr_intro","1");}catch(e){}
+      document.getElementById("mtOcrIntro").style.display="none";
+    });
+    var btn=document.getElementById("mtOcrFillBtn");
+    if(btn) btn.addEventListener("click",function(){
+      if(mtOcr.state==="done"){mtOcrFill();}
+      else if(mtOcr.state==="running"||mtOcr.state==="loading"){mtOcr.wantFill=true;mtOcrUI();}
+      else{mtOcrStart();mtOcr.wantFill=true;}
+    });
+  }
+  function fillMtOcrSettings(){
+    var sel=document.getElementById("setMtOcr");
+    if(sel) sel.value=mtOcrMode();
+    var ns=document.getElementById("setNoSplits");
+    if(ns) ns.checked=!!(state.settings&&state.settings.noSplits);
+  }
+
   var editingId=null;      // id of the transaction currently loaded into the form for editing, or null
   /* Freshly picked in the form, not yet saved. A list now, and `keep` holds the ids of
      photos already on the entry being edited — so adding a third photo doesn't silently
@@ -7150,11 +7145,15 @@ AI_TYPES.join(", "),
     if(isTrade) refreshInstList();
     var lbl=document.getElementById("amtLbl");
     lbl.textContent = (v==="adjust")?"Amount (use − for a drop)":"Amount";
+    applyNoSplits();                                    // v1.96
+    mtOcrUI();                                          // v1.96
+    if(isTrade && mtOcr.state==="idle" && mtOcrImages().length) mtOcrStart();  // v1.96
   }
   function clearPhotoPick(){
     pendingPhotos=[]; keepPhotos=[]; photoCleared=true;
     var fPhotoEl=document.getElementById("fPhoto"); if(fPhotoEl) fPhotoEl.value="";
     renderPhotoStrip();
+    mtOcr.token++; mtOcr.state="idle"; mtOcr.result=null; mtOcr.wantFill=false; mtOcrUI();  // v1.96
   }
   // One strip showing both what's already saved and what's just been picked — they look
   // the same to the person, so they shouldn't be in two different places.
@@ -7201,6 +7200,8 @@ AI_TYPES.join(", "),
       strip.appendChild(c);
       c.querySelector(".ph-x").addEventListener("click", function(){
         pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip();
+        mtOcr.token++; mtOcr.state="idle"; mtOcr.result=null; mtOcr.wantFill=false;  // v1.96
+        if(mtOcrImages().length) mtOcrStart(); else mtOcrUI();                       // v1.96
       });
     });
   }
@@ -8205,6 +8206,7 @@ AI_TYPES.join(", "),
             fPhoto.value="";
             renderPhotoStrip();
             if(over>0) flashSaved("added "+files.length+" — "+PHOTO_MAX+" is the limit");
+            mtOcrStart();   // v1.96: statement photos start reading immediately in the background
           }
         });
       });
@@ -8860,8 +8862,9 @@ AI_TYPES.join(", "),
     bindPhotoQ();
     bindChartMode();
     bindTraderToggle();
+    bindMtOcr();        // v1.96
+    bindMtCsvImport();  // v1.97 — MT5 Statement Analyzer CSV bridge
     bindLayout();
-    bindMonteCarlo();
     bindRecurring();
     bindGoals();
     bindTrash();
@@ -8884,9 +8887,7 @@ AI_TYPES.join(", "),
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
-      initBillNotifs();
     });
-    initSync();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -9137,7 +9138,6 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Repeats</div>
     <div class="hint">Rent, salary, subscriptions. Nothing is ever added silently — when something's due you get asked on the dashboard first.</div>
-    <button class="btn ghost sm" id="billNotifsBtn" style="display:none;margin-top:10px">🔔 Enable bill reminders</button>
     <div id="recList"></div>
     <button class="btn ghost sm" id="recAddBtn" style="width:100%;margin-top:8px">+ Add a repeat</button>
     <div id="recForm" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bd2);border-radius:10px;background:var(--card)">
@@ -9157,7 +9157,6 @@ AI_TYPES.join(", "),
       <div class="fld" id="recDayFld"><label for="recDay">Day of month</label><input type="number" id="recDay" min="1" max="31" step="1" value="1">
         <div class="subhint" id="recDayHint">31 becomes the last day in shorter months.</div></div>
       <div class="fld"><label for="recStart">Starting from</label><input type="date" id="recStart"></div>
-      <div class="fld" style="display:flex;align-items:center;gap:10px;padding:10px 0 2px"><label class="pf-switch-lbl" for="recAuto" style="flex:1;cursor:pointer"><span style="font-weight:700">Auto-add when due</span><span class="mut" style="display:block;font-size:11px;margin-top:2px">Logs automatically on the due date — no prompt</span></label><input type="checkbox" id="recAuto" class="pf-switch" style="width:auto;height:auto"></div>
       <div class="data-btns">
         <button class="btn primary sm" id="recSaveBtn">Save</button>
         <button class="btn ghost sm" id="recCancelBtn">Cancel</button>
@@ -9208,6 +9207,25 @@ AI_TYPES.join(", "),
         <button class="btn ghost sm" id="csvCancelBtn">Cancel</button>
       </div>
     </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- MT4/MT5 photo auto-analyze -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">MT4/MT5 photo auto-analyze</div>
+    <div class="hint">Attach a screenshot of an MT4/MT5 statement to a trade entry and it's read on this device with local OCR — nothing is uploaded. Non-statement photos are simply ignored. Needs a connection once to fetch the reader (~3&nbsp;MB), then it's cached.</div>
+    <div class="fld"><label for="setMtOcr">When a statement photo is attached</label>
+      <select id="setMtOcr">
+        <option value="off">Off — never analyze photos</option>
+        <option value="auto">Auto — analyze and fill the form for me</option>
+        <option value="silent">Silent — analyze in background, fill when I tap</option>
+      </select>
+    </div>
+    <label class="chk" style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;margin-top:6px">
+      <input type="checkbox" id="setNoSplits" style="margin-top:2px">
+      <span>Don't do splits for trades — hides the “Split between (people)” field everywhere. Entries you already split stay exactly as they are.</span>
+    </label>
   </div>
 
   <hr class="sep" style="margin:20px">
@@ -9274,7 +9292,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v1.97</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
