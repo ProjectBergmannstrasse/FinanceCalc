@@ -1050,7 +1050,7 @@
         <option value="smallest">Smallest amount</option>
       </select>
       <label class="sel-all" title="Select all entries currently shown"><input type="checkbox" id="selAllChk"><span>All</span></label>
-      <button class="btn ghost sm" id="copySelBtn" style="display:none">Copy</button>
+      <button class="btn ghost sm" id="copySelBtn" style="display:none">📋 Copy</button>
       <button class="btn ghost sm" id="exportSelBtn" style="display:none">Export</button>
     </div>
   </div>
@@ -6850,7 +6850,7 @@ AI_TYPES.join(", "),
     // shouldn't sit there greyed out taking up the bar
     btn.style.display = n>0 ? "" : "none";
     btn.textContent = "Export ("+n+")";
-    if(cpy){ cpy.style.display = n>0 ? "" : "none"; cpy.textContent = "Copy ("+n+")"; }
+    if(cpy){ cpy.style.display = n>0 ? "" : "none"; cpy.textContent = "📋 Copy ("+n+")"; }
     var visible=currentVisibleIds();
     if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }
     chk.disabled=false;
@@ -7283,7 +7283,7 @@ AI_TYPES.join(", "),
             +'</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
       +'</div>'
       +'<div class="td-foot">'
-        +'<button type="button" class="btn ghost sm td-copy" id="tdCopy" title="Copy transaction">\u29c9 Copy</button>'
+        +'<button type="button" class="btn ghost sm td-copy" id="tdCopy" title="Copy transaction">📋 Copy</button>'
         +(t.auto?'<div class="hint" style="margin:0;flex:1">Managed by the allowance tools \u2014 edit it there.</div>'
                 :'<button type="button" class="btn ghost sm" id="tdDel">Delete</button>'
                  +'<button type="button" class="btn sm" id="tdEdit">Edit</button>')
