@@ -2522,6 +2522,58 @@
     if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; }
     doPersist();
   }
+
+  /* ============================================================
+     MULTI-TAB REAL-TIME SYNC — BroadcastChannel
+     When you save in Tab A, Tab B instantly sees the change.
+     No server, no polling, no refresh needed.
+
+     Design decisions:
+     · Send the full state JSON (same as what's stored). No diff
+       logic needed; the payload is just the persist output.
+     · Guard with a random per-tab ID so a tab ignores its own
+       broadcasts (otherwise it would re-render on every save).
+     · Guard with savedAt so a slow/late message doesn't rewind
+       state already updated by a newer save.
+     · applyLoaded + render() is the exact same path as a normal
+       boot — reuses all existing logic, nothing duplicated.
+     · Graceful: BroadcastChannel unsupported → silent no-op.
+     ============================================================ */
+  var _tabId = Math.random().toString(36).slice(2);   // unique per tab
+  var _lastApplied = 0;   // savedAt of the most recently applied incoming message
+  var _bc = null;
+
+  function initSync(){
+    if(typeof BroadcastChannel === "undefined"){
+      // browser doesn't support it (very old or certain embedded webviews) — no problem
+      return;
+    }
+    try{
+      _bc = new BroadcastChannel("mymoney_sync");
+      _bc.onmessage = function(ev){
+        var msg = ev.data;
+        if(!msg || msg.tabId === _tabId) return;   // own echo — ignore
+        if(msg.type !== "state") return;
+        if(!msg.json) return;
+        // don't rewind a newer local save with an older remote one
+        try{ var obj=JSON.parse(msg.json); if((obj.savedAt||0) <= _lastApplied) return; }
+        catch(e){ return; }
+        applyLoaded(msg.json);
+        render();
+        checkRecurPrompt();
+        _lastApplied = JSON.parse(msg.json).savedAt || Date.now();
+        flashSavedMsg("\u21C4 synced from another tab");
+      };
+    }catch(e){ _bc = null; }
+  }
+
+  // called by doPersist after a successful write
+  function broadcastState(json){
+    if(!_bc) return;
+    try{ _bc.postMessage({ type:"state", tabId:_tabId, json:json }); }
+    catch(e){}
+  }
+
   function doPersist(){
     var done=false;
     try{
@@ -2529,7 +2581,7 @@
         var json=JSON.stringify(buildRoot());
         var p=window.storage.set(STORE_KEY, json, false);
         if(p && typeof p.then==="function"){
-          p.then(function(){ flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
+          p.then(function(){ var j=json; broadcastState(j); flashSaved(); hideStorageWarning(); }).catch(function(){ doPersistViaManager(); });
           done=true;
         }
       }
@@ -2537,7 +2589,8 @@
     if(!done) doPersistViaManager();
   }
   function doPersistViaManager(){
-    StorageManager.write(buildRoot()).then(function(){ flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
+    var _bj=JSON.stringify(buildRoot());
+    StorageManager.write(JSON.parse(_bj)).then(function(){ broadcastState(_bj); flashSaved(); hideStorageWarning(); refreshStorageBadge(); })
       .catch(function(){ showStorageWarning(); });
   }
   // Two things can write (window.storage, and the StorageManager tier chain), and a
@@ -8491,6 +8544,7 @@ AI_TYPES.join(", "),
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
     });
+    initSync();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
