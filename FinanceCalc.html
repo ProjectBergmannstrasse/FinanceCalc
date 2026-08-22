@@ -858,6 +858,36 @@
   .mc-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6;
     border-top:1px solid var(--bd);padding-top:8px}
   .mc-spinner{text-align:center;color:var(--mut);font-size:12px;padding:30px 0}
+
+  /* ── Financial Auditor ───────────────────────────────────────── */
+  .aud-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
+  .aud-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
+  .aud-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;flex:1}
+  .aud-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
+  .aud-body{padding:0 16px 16px}
+  .aud-tier{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .aud-tier-btn{flex:1;min-width:90px;font-size:12px;min-height:36px;padding:6px 10px;text-align:center}
+  .aud-tier-btn.on{background:var(--up);color:#04140b;border-color:var(--up)}
+  .aud-query{display:flex;gap:8px;margin-bottom:12px}
+  .aud-query input{flex:1}
+  .aud-findings{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .aud-finding{border-radius:11px;padding:11px 13px;border:1px solid transparent}
+  .aud-finding.warn{background:rgba(244,183,63,.1);border-color:rgba(244,183,63,.3)}
+  .aud-finding.flag{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3)}
+  .aud-finding.ok{background:rgba(61,220,132,.08);border-color:rgba(61,220,132,.25)}
+  .aud-finding.info{background:var(--panel);border-color:var(--bd)}
+  .aud-finding .af-title{font-size:12.5px;font-weight:700;margin-bottom:3px}
+  .aud-finding .af-body{font-size:12px;color:var(--mut);line-height:1.55}
+  .aud-finding .af-icon{float:right;font-size:18px;margin-left:8px}
+  .aud-run{width:100%;margin-bottom:10px}
+  .aud-llm-bar{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--mut);display:flex;align-items:center;gap:8px}
+  .aud-llm-dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .aud-spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--bd2);border-top-color:var(--up);border-radius:50%;animation:spin .6s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .aud-llm-resp{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:12px;font-size:13px;line-height:1.65;white-space:pre-wrap;margin-top:8px}
+  .aud-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px;line-height:1.6}
+  .aud-progress{height:4px;background:var(--bd);border-radius:2px;margin:8px 0}
+  .aud-progress-bar{height:100%;background:var(--up);border-radius:2px;transition:width .3s ease;width:0}
 </style>
 </head>
 <body>
@@ -1022,6 +1052,65 @@
     <div class="mc-discl">Simulation uses log-normal annual returns with historical volatility.
       Past market behaviour does not guarantee future results.<br>
       For personal tracking only — not financial advice.</div>
+  </div>
+</div>
+
+
+<!-- Local LLM Financial Auditor -->
+<div class="aud-wrap" id="audWrap">
+  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
+    <h3>🔍 Financial Auditor
+      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
+    </h3>
+    <span class="aud-caret" id="audCaret">▶</span>
+  </div>
+  <div class="aud-body" id="audBody" style="display:none">
+    <div class="aud-llm-bar" id="audLlmBar">
+      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+      <span id="audLlmStatus">Checking for on-device AI…</span>
+    </div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
+    </div>
+    <!-- Rules panel -->
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <!-- On-device AI panel -->
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-query">
+        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
+        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      </div>
+      <div id="audAiResp"></div>
+    </div>
+    <!-- WebLLM panel -->
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
+          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
+          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
+          with no internet, no API key, no data leaving your device.
+        </div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div>
+        </div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
+      Not financial advice — for personal tracking only.</div>
   </div>
 </div>
 
@@ -5488,6 +5577,326 @@ AI_TYPES.join(", "),
     });
   }
 
+  /* ============================================================
+     FINANCIAL AUDITOR — three tiers, all local
+
+     TIER 1 — Rules engine (offline, zero download, always works)
+       Statistical analysis of your actual transaction data:
+       anomaly detection, duplicate finder, velocity spikes,
+       category drift, cash-flow stress, dormant debts.
+       Output is generated plain English, not canned strings.
+
+     TIER 2 — Chrome built-in AI (window.ai.languageModel)
+       Ships with Chrome 127+; no download, no API key, fully local.
+       Falls back to unavailable message on other browsers.
+
+     TIER 3 — WebLLM (Llama 3.2 1B via WebGPU)
+       One-time ~660MB download, then permanently cached offline.
+       Runs on the device GPU, no network after first load.
+  ============================================================ */
+
+  /* ── Tier 1: Rules Engine ──────────────────────────────────── */
+  function runAuditRules(){
+    var txs=sortedTx(), t=totals(), sym=state.currency;
+    var now=new Date(), nowM=monthKey(todayStr());
+    var findings=[];
+
+    function add(level, icon, title, body){
+      findings.push({level:level, icon:icon, title:title, body:body});
+    }
+    function fmtA(v){ return sym+Math.abs(v).toFixed(2); }
+
+    // ── 1. Net worth health ────────────────────────────────────
+    if(t.net<0) add("flag","🚨","Negative net worth",
+      "Your net worth is "+fmtA(t.net)+" in the red. Debt ("+fmtA(t.debt)+") exceeds your assets.");
+    else if(t.net>0) add("ok","✅","Net worth positive",
+      "Net worth "+fmtA(t.net)+". Balance "+fmtA(t.balance)+" · savings "+fmtA(t.savings)+(t.debt>0?" · debt "+fmtA(t.debt):"")+".");
+
+    // ── 2. Duplicate detection (same amount same day) ──────────
+    var seen={};
+    txs.forEach(function(tx){ var k=tx.date+"_"+num(tx.amount).toFixed(2)+"_"+(tx.type||"");
+      seen[k]=(seen[k]||0)+1; });
+    var dupes=Object.entries(seen).filter(function(e){ return e[1]>1; });
+    if(dupes.length) add("warn","⚠️","Possible duplicate entries",
+      dupes.length+" set"+(dupes.length>1?"s":"")+" of transactions share the same date and amount. "
+      +"Check: "+dupes.map(function(d){ var p=d[0].split("_"); return sym+p[1]+" on "+p[0]; }).slice(0,3).join(", ")+".");
+
+    // ── 3. Spending velocity (this month vs prior 3-month avg) ─
+    var byMonth={};
+    txs.forEach(function(tx){
+      if(balDelta(tx)>=0) return;  // only outflows
+      var m=tx.date?tx.date.slice(0,7):""; if(!m) return;
+      byMonth[m]=(byMonth[m]||0)+Math.abs(balDelta(tx));
+    });
+    var months=Object.keys(byMonth).sort();
+    var thisMSpend=byMonth[nowM]||0;
+    var priorMonths=months.filter(function(m){ return m<nowM; }).slice(-3);
+    if(priorMonths.length>=2){
+      var avg=priorMonths.reduce(function(a,m){ return a+(byMonth[m]||0); },0)/priorMonths.length;
+      if(avg>0&&thisMSpend>avg*1.4) add("warn","📈","Spending spike this month",
+        "You've spent "+fmtA(thisMSpend)+" so far this month, "
+        +Math.round((thisMSpend/avg-1)*100)+"% above your recent average of "+fmtA(avg)+"/mo.");
+      else if(avg>0&&thisMSpend<avg*0.6&&new Date().getDate()>15) add("info","💡","Spending well below average",
+        "Only "+fmtA(thisMSpend)+" spent this month vs an average of "+fmtA(avg)+".");
+    }
+
+    // ── 4. Category concentration ──────────────────────────────
+    var byCat={};
+    txs.filter(function(tx){ return tx.cat&&balDelta(tx)<0; }).forEach(function(tx){
+      byCat[tx.cat]=(byCat[tx.cat]||0)+Math.abs(balDelta(tx)); });
+    var catArr=Object.entries(byCat).sort(function(a,b){ return b[1]-a[1]; });
+    var totalSpend=catArr.reduce(function(a,e){ return a+e[1]; },0);
+    if(catArr.length&&totalSpend>0){
+      var top=catArr[0], pct=Math.round(top[1]/totalSpend*100);
+      if(pct>=40) add("warn","🏷️","One category dominates spending",
+        top[0]+" is "+pct+"% of all categorised spending ("+fmtA(top[1])+"). "
+        +(pct>=60?"Consider whether that's intentional.":"Worth watching."));
+      add("info","📊","Top spending categories",
+        catArr.slice(0,4).map(function(e){
+          return e[0]+": "+fmtA(e[1])+" ("+Math.round(e[1]/totalSpend*100)+"%)";
+        }).join("  ·  "));
+    }
+
+    // ── 5. Debt age — has any debt been sitting a long time? ───
+    if(t.debt>0){
+      var debtTxs=txs.filter(function(tx){ return debtDelta(tx)>0; });
+      if(debtTxs.length){
+        var oldest=debtTxs[0].date;
+        var daysOld=Math.floor((now-new Date(oldest))/864e5);
+        if(daysOld>60) add("warn","💳","Debt outstanding "+daysOld+" days",
+          "Oldest unpaid debt entry is from "+oldest+". Current debt balance: "+fmtA(t.debt)+".");
+      }
+    }
+
+    // ── 6. Savings rate ────────────────────────────────────────
+    var totalIn=txs.reduce(function(a,tx){ return a+(balDelta(tx)>0?balDelta(tx):0); },0);
+    var totalSaved=txs.reduce(function(a,tx){ return a+(savDelta(tx)>0?savDelta(tx):0); },0);
+    if(totalIn>0){
+      var sRate=Math.round(totalSaved/totalIn*100);
+      var level=sRate>=20?"ok":sRate>=10?"info":"warn";
+      add(level, sRate>=20?"🏦":sRate>=10?"💰":"💸", "Savings rate: "+sRate+"%",
+        "You've saved "+fmtA(totalSaved)+" out of "+fmtA(totalIn)+" income — a "+sRate+"% rate. "
+        +(sRate>=20?"Strong. Keep it up.":sRate>=10?"Decent. Aim for 20%+.":"Low. Try automating a recurring save."));
+    }
+
+    // ── 7. Round-number test (fraud / estimation signal) ───────
+    var rounds=txs.filter(function(tx){ return num(tx.amount)>0&&num(tx.amount)%50===0; });
+    if(rounds.length>txs.length*0.4&&txs.length>10)
+      add("info","🔢","Many round-number transactions",
+        rounds.length+" of "+txs.length+" entries are multiples of 50. "
+        +"This can indicate estimated rather than exact figures.");
+
+    // ── 8. Large single outflow ────────────────────────────────
+    var outflows=txs.filter(function(tx){ return balDelta(tx)<0; })
+      .sort(function(a,b){ return balDelta(a)-balDelta(b); });
+    if(outflows.length){
+      var big=outflows[0], bigAmt=Math.abs(balDelta(big));
+      var avgOut=outflows.reduce(function(a,t){ return a+Math.abs(balDelta(t)); },0)/outflows.length;
+      if(bigAmt>avgOut*5) add("info","🔎","Largest single outflow",
+        fmtA(bigAmt)+" on "+big.date+(big.note?" ("+big.note+")":"")
+        +" — "+Math.round(bigAmt/avgOut)+"× your average transaction.");
+    }
+
+    // ── 9. Positive cash-flow check ────────────────────────────
+    var netFlow=txs.reduce(function(a,tx){ return a+balDelta(tx); },0);
+    if(netFlow<0) add("flag","⬇️","Negative cash flow overall",
+      "Total outflows exceed inflows by "+fmtA(Math.abs(netFlow))+". "
+      +"Your recorded spending has consumed more than your income.");
+    else if(netFlow>0&&txs.length>3) add("ok","⬆️","Positive cash flow",
+      "Net cash flow is +"+fmtA(netFlow)+" across all recorded entries. Income exceeds spending.");
+
+    if(!findings.length) add("ok","✅","Nothing flagged","Your financial data looks clean. Add more transactions for deeper analysis.");
+    return findings;
+  }
+
+  function renderAuditFindings(findings){
+    var box=document.getElementById("audFindings"); if(!box) return;
+    box.innerHTML=findings.map(function(f){
+      return '<div class="aud-finding '+f.level+'">'
+        +'<span class="af-icon">'+f.icon+'</span>'
+        +'<div class="af-title">'+esc(f.title)+'</div>'
+        +'<div class="af-body">'+esc(f.body)+'</div></div>';
+    }).join("");
+    box.style.animation="none"; void box.offsetWidth; box.style.animation="";
+  }
+
+  /* ── Tier 2: Chrome built-in AI (window.ai.languageModel) ──── */
+  var _aiSession=null;
+  async function initBuiltinAi(){
+    var bar=document.getElementById("audLlmBar");
+    var dot=document.getElementById("audLlmDot");
+    var lbl=document.getElementById("audLlmStatus");
+    var ebtn=document.getElementById("audEngineLabel");
+    if(!bar) return false;
+    try{
+      if(typeof window.ai==="undefined"||typeof window.ai.languageModel==="undefined"){
+        dot.style.background="var(--mut)";
+        lbl.textContent="Chrome built-in AI not available on this browser.";
+        return false;
+      }
+      var caps=await window.ai.languageModel.capabilities();
+      if(caps.available==="no"){
+        dot.style.background="var(--mut)"; lbl.textContent="Chrome AI available but no model downloaded yet."; return false;
+      }
+      if(caps.available==="after-download"){
+        dot.style.background="var(--amber)"; lbl.textContent="Chrome AI: downloading model (one-time)…";
+      }
+      _aiSession=await window.ai.languageModel.create({
+        systemPrompt:"You are a personal finance assistant. The user will share their financial summary and ask questions. Be concise, specific, and actionable. Do not give generic advice — refer to the actual numbers provided."
+      });
+      dot.style.background="var(--up)";
+      lbl.textContent="Chrome built-in AI ready (Gemini Nano, fully local)";
+      if(ebtn) ebtn.textContent="Chrome AI";
+      return true;
+    }catch(e){ dot.style.background="var(--mut)";
+      lbl.textContent="Chrome AI error: "+String(e).slice(0,80); return false; }
+  }
+  function financialContext(){
+    var t=totals(), sym=state.currency, txs=sortedTx();
+    var totalIn=txs.reduce(function(a,x){ return a+(balDelta(x)>0?balDelta(x):0); },0);
+    var totalOut=txs.reduce(function(a,x){ return a+(balDelta(x)<0?Math.abs(balDelta(x)):0); },0);
+    var byCat={};
+    txs.filter(function(x){ return x.cat&&balDelta(x)<0; }).forEach(function(x){ byCat[x.cat]=(byCat[x.cat]||0)+Math.abs(balDelta(x)); });
+    var catStr=Object.entries(byCat).sort(function(a,b){return b[1]-a[1];}).slice(0,5)
+      .map(function(e){return e[0]+": "+sym+e[1].toFixed(0);}).join(", ");
+    return "My finances: net worth "+sym+t.net.toFixed(2)
+      +", balance "+sym+t.balance.toFixed(2)
+      +", debt "+sym+t.debt.toFixed(2)
+      +", savings "+sym+t.savings.toFixed(2)
+      +", "+txs.length+" transactions total"
+      +", total in "+sym+totalIn.toFixed(0)
+      +", total out "+sym+totalOut.toFixed(0)
+      +(catStr?", top spending: "+catStr:"")
+      +". ";
+  }
+  async function askBuiltinAi(query){
+    if(!_aiSession) return null;
+    var ctx=financialContext();
+    return await _aiSession.prompt(ctx+"\n\nQuestion: "+query);
+  }
+
+  /* ── Tier 3: WebLLM (Llama 3.2 1B, WebGPU) ─────────────────── */
+  var _wllmEngine=null, _wllmLoaded=false;
+  function loadWebllm(){
+    var btn=document.getElementById("wllmLoadBtn");
+    var prog=document.getElementById("wllmProgress");
+    var bar=document.getElementById("wllmBar");
+    var sta=document.getElementById("wllmLoadStatus");
+    // WebLLM needs its own runtime (~2MB JS) — unavoidable for in-browser LLM
+    // The model weights (~660MB for Llama 3.2 1B Q4) are downloaded once and cached
+    var SCRIPT_URL="https://esm.run/@mlc-ai/web-llm";
+    var MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+    if(!btn||!prog||!bar||!sta) return;
+    btn.disabled=true; btn.textContent="Loading runtime…";
+    prog.style.display=""; sta.style.display="";
+    sta.textContent="Loading WebLLM runtime (~2MB)…";
+    // dynamically load the WebLLM runtime — the only external load in the whole app
+    var script=document.createElement("script");
+    script.type="module";
+    script.textContent=[
+      'import * as webllm from "'+SCRIPT_URL+'";',
+      'const engine=await webllm.CreateMLCEngine("'+MODEL+'",{',
+      '  initProgressCallback:function(p){',
+      '    var b=document.getElementById("wllmBar");',
+      '    var s=document.getElementById("wllmLoadStatus");',
+      '    if(b) b.style.width=(p.progress*100).toFixed(0)+"%";',
+      '    if(s) s.textContent=p.text||"Loading…";',
+      '  }',
+      '});',
+      'window._wllmEngine=engine;',
+      'window._wllmLoaded=true;',
+      'document.getElementById("wllmLoadBtn").style.display="none";',
+      'document.getElementById("wllmProgress").style.display="none";',
+      'document.getElementById("wllmLoadStatus").textContent="Llama 3.2 1B ready (WebGPU)";',
+      'document.getElementById("wllmLoadStatus").style.color="var(--up)";',
+      'document.getElementById("audWebllmChat").style.display="";',
+      'document.getElementById("audEngineLabel").textContent="WebLLM";',
+    ].join("\n");
+    script.onerror=function(){
+      btn.disabled=false; btn.textContent="Load model (660MB, once)";
+      prog.style.display="none"; sta.textContent="Failed to load runtime. Check your connection.";
+    };
+    document.head.appendChild(script);
+  }
+  async function askWebllm(query){
+    var eng=window._wllmEngine; if(!eng) return null;
+    var ctx=financialContext();
+    var r=await eng.chat.completions.create({
+      messages:[
+        {role:"system",content:"You are a personal finance assistant. Be concise and specific to the numbers provided."},
+        {role:"user",content:ctx+"\n\nQuestion: "+query}
+      ], temperature:0.4, max_tokens:300
+    });
+    return r.choices[0].message.content;
+  }
+
+  /* ── bind all three tiers ────────────────────────────────────── */
+  function bindAuditor(){
+    var head=document.getElementById("audHead");
+    var body=document.getElementById("audBody");
+    var caret=document.getElementById("audCaret");
+    if(!head||!body) return;
+    var _tier="rules";
+    function showTier(t){
+      _tier=t;
+      ["rules","ai","webllm"].forEach(function(id){
+        var btn=document.getElementById("audBtn"+id.charAt(0).toUpperCase()+id.slice(1));
+        var panel=document.getElementById("audPanel"+id.charAt(0).toUpperCase()+id.slice(1));
+        if(btn) btn.classList.toggle("on",id===t);
+        if(panel) panel.style.display=id===t?"":"none";
+      });
+    }
+    document.querySelectorAll(".aud-tier-btn").forEach(function(b){
+      b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
+    });
+    head.addEventListener("click",function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded",open?"true":"false");
+      if(open) initBuiltinAi().then(function(){});
+    });
+    // rules
+    var runBtn=document.getElementById("audRunRules");
+    if(runBtn) runBtn.addEventListener("click",function(){
+      runBtn.textContent="Auditing…"; runBtn.disabled=true;
+      setTimeout(function(){
+        var f=runAuditRules();
+        renderAuditFindings(f);
+        runBtn.textContent="Run audit"; runBtn.disabled=false;
+      },20);
+    });
+    // Chrome AI
+    var askBtn=document.getElementById("audAskBtn");
+    if(askBtn) askBtn.addEventListener("click",async function(){
+      var q=document.getElementById("audQuery").value.trim();
+      var resp=document.getElementById("audAiResp"); if(!resp||!q) return;
+      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Thinking…</div>';
+      try{
+        var ans=await askBuiltinAi(q);
+        resp.innerHTML=ans
+          ?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
+          :'<div class="aud-llm-resp" style="color:var(--amber)">Chrome built-in AI not available. Try the Rules tab or load WebLLM.</div>';
+      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
+    });
+    document.getElementById("audQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") askBtn.click(); });
+    // WebLLM
+    var wLoad=document.getElementById("wllmLoadBtn");
+    if(wLoad) wLoad.addEventListener("click",loadWebllm);
+    var wAsk=document.getElementById("wllmAskBtn");
+    if(wAsk) wAsk.addEventListener("click",async function(){
+      var q=document.getElementById("wllmQuery").value.trim();
+      var resp=document.getElementById("wllmResp"); if(!resp||!q) return;
+      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Generating…</div>';
+      try{
+        var ans=await askWebllm(q);
+        resp.innerHTML=ans?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
+          :'<div class="aud-llm-resp" style="color:var(--amber)">No response. Is the model loaded?</div>';
+      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
+    });
+    document.getElementById("wllmQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") wAsk.click(); });
+  }
+
   function bindMonteCarlo(){
     var head = document.getElementById("mcHead");
     var body = document.getElementById("mcBody");
@@ -9024,6 +9433,7 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    bindAuditor();
     bindMonteCarlo();
     bindRecurring();
     bindGoals();
