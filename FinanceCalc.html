@@ -970,16 +970,14 @@
       <div class="fld">
         <label for="fType">What happened</label>
         <select id="fType">
-          <option value="income" id="optIncome">Money in (one-off)</option>
-          <option value="spend">Spent on something</option>
-          <option value="trade_win">Trade — made money</option>
-          <option value="trade_loss">Trade — lost money</option>
-          <option value="pay_debt_balance" id="optPayDebt">Pay down debt</option>
-          <option value="borrow_cash">Borrowed cash (into my account)</option>
-          <option value="borrow">Someone paid for me (I owe them)</option>
-          <option value="move_to_debt">Move to debt (owe it instead)</option>
+          <option value="income" id="optIncome">Income</option>
+          <option value="salary">Salary</option>
+          <option value="expense">Expense / spent on something</option>
+          <option value="pay_someone">Pay someone</option>
+          <option value="pay_debt" id="optPayDebt">Pay debt</option>
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
+          <option value="move_to_debt">Move to debt (owe it instead)</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
           <option value="from_trading" class="sep-only">Move trading → bank</option>
           <option value="tax_set">Set aside for tax</option>
@@ -1763,10 +1761,16 @@
     return (typeof v==="string" && v.trim()) ? v.trim() : LABEL_FALLBACK[k];
   }
   var TYPE_META = {
+    // plain-English types
+    salary:     {label:"SALARY"},
+    expense:    {label:"SPENT"},
+    pay_someone:{label:"PAID"},
+    pay_debt:   {label:"DEBT −"},
+    // kept for existing saves
     income:{label:"IN"}, spend:{label:"SPENT"}, trade_win:{label:"TRADE +"},
     trade_loss:{label:"TRADE −"}, pay_debt_balance:{label:"DEBT −"},
-    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, move_to_debt:{label:"\u2192 DEBT"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
-    to_trading:{label:"→ TRADING"}, from_trading:{label:"← TO BANK"},
+    borrow:{label:"DEBT +"}, borrow_cash:{label:"BORROWED"}, move_to_debt:{label:"→ DEBT"}, save:{label:"SAVE"}, withdraw:{label:"UNSAVE"},
+    to_trading:{label:"→ TRADING"}, from_trading:{label:"← BANK"},
     adjust:{label:"ADJUST"}, alw_debt:{label:"DEBT −"}, alw_savings:{label:"SAVE"},
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
   };
@@ -1939,13 +1943,13 @@
     var a=num(t.amount), sep=sepTrading();
     switch(t.type){
       case "borrow_cash": return a;   // borrowed money that actually arrived in the account
-      case "income": case "withdraw": return a;
+      case "salary": case "income": case "withdraw": return a;
       case "trade_win":   return sep ? 0 : a;
       case "alw_trading": return sep ? 0 : a;
       case "from_trading": return sep ? a : 0;   // meaningless when it's all one pot
       case "to_trading":   return sep ? -a : 0;
       case "adjust": return a; // may be negative
-      case "spend": case "pay_debt_balance": case "save": case "tax_set": return -a;
+      case "expense": case "pay_someone": case "spend": case "pay_debt": case "pay_debt_balance": case "save": case "tax_set": return -a;
       case "move_to_debt": return a;   // balance recovers by a; the matching debt is added below
       case "trade_loss": return sep ? 0 : -a;
       default: return 0;
@@ -1975,7 +1979,7 @@
   function debtDelta(t){
     var a=num(t.amount);
     switch(t.type){
-      case "pay_debt_balance": case "alw_debt": return -a;
+      case "pay_debt": case "pay_debt_balance": case "alw_debt": return -a;
       case "borrow": case "borrow_cash": case "move_to_debt": return a;
       default: return 0;
     }
