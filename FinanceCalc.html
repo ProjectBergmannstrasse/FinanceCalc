@@ -6742,7 +6742,11 @@ AI_TYPES.join(", "),
           return MTOCR_NUM.test(raw)&&!MTOCR_INT.test(raw)&&c!==volCell;
         });
         if(nums.length) t.profit=parseFloat(nums[nums.length-1].text.trim().replace(/,/g,""));
-        var looks=(!!t.symbol)||(t.volume!=null&&nums.length>=2)||(nums.length>=3);
+        // v1.98 STRICT WHITELIST: a header-less row only counts as a trade if it has a
+        // REAL instrument (mtOcrInstrument) AND a buy/sell direction. A bare number grid
+        // (e.g. an Apple Notes table) has neither -> "not MT4/MT5, ignored". This
+        // deliberately replaces the old looser test that accepted 3 numbers alone.
+        var looks=(!!t.symbol)&&(!!t.type);
         if(looks) trades.push(t);
       });
       if(!trades.length){
@@ -6820,6 +6824,78 @@ AI_TYPES.join(", "),
     img.onerror=function(){cb(dataUrl,1);};
     img.src=dataUrl;
   }
+  /* =====================================================
+     v1.98 — SANDBOXED IMAGE FOLDER (Stage 1)
+     Every image the analyzer looks at is filed into its own
+     IndexedDB bucket, completely separate from app data:
+     verdict "accepted" (parsed as MT4/MT5) or "ignored"
+     (didn't clear the whitelist bar). Nothing is uploaded;
+     this is the local staging area later stages (consent /
+     outbox) will read from. All calls are fail-safe: if IDB
+     is unavailable the app carries on unaffected.
+     ===================================================== */
+  var MT_SANDBOX_DB="mymoney_mtocr_sandbox", MT_SANDBOX_STORE="images", MT_SANDBOX_MAX=200;
+  function mtSandboxOpen(cb){
+    try{
+      var req=indexedDB.open(MT_SANDBOX_DB,1);
+      req.onupgradeneeded=function(){
+        try{
+          var db=req.result;
+          if(!db.objectStoreNames.contains(MT_SANDBOX_STORE)){
+            var st=db.createObjectStore(MT_SANDBOX_STORE,{keyPath:"id",autoIncrement:true});
+            st.createIndex("ts","ts");
+            st.createIndex("verdict","verdict");
+          }
+        }catch(e){}
+      };
+      req.onsuccess=function(){cb(req.result);};
+      req.onerror=function(){cb(null);};
+    }catch(e){cb(null);}
+  }
+  function mtSandboxSave(entry){
+    mtSandboxOpen(function(db){
+      if(!db) return;
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readwrite"),st=tx.objectStore(MT_SANDBOX_STORE);
+        st.add(entry);
+        // cap the bucket so it can never grow unbounded — trim oldest beyond MT_SANDBOX_MAX
+        var cnt=st.count();
+        cnt.onsuccess=function(){
+          if(cnt.result<=MT_SANDBOX_MAX) return;
+          var over=cnt.result-MT_SANDBOX_MAX, cur=st.index("ts").openCursor();
+          cur.onsuccess=function(){
+            var c=cur.result;
+            if(c&&over>0){ c.delete(); over--; c.continue(); }
+          };
+        };
+        tx.oncomplete=function(){db.close();};
+        tx.onerror=function(){db.close();};
+      }catch(e){try{db.close();}catch(e2){}}
+    });
+  }
+  function mtSandboxList(cb){
+    mtSandboxOpen(function(db){
+      if(!db){cb([]);return;}
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readonly");
+        var g=tx.objectStore(MT_SANDBOX_STORE).getAll();
+        g.onsuccess=function(){cb(g.result||[]);db.close();};
+        g.onerror=function(){cb([]);db.close();};
+      }catch(e){cb([]);try{db.close();}catch(e2){}}
+    });
+  }
+  function mtSandboxClear(cb){
+    mtSandboxOpen(function(db){
+      if(!db){if(cb)cb(false);return;}
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readwrite");
+        tx.objectStore(MT_SANDBOX_STORE).clear();
+        tx.oncomplete=function(){db.close();if(cb)cb(true);};
+        tx.onerror=function(){db.close();if(cb)cb(false);};
+      }catch(e){try{db.close();}catch(e2){}if(cb)cb(false);}
+    });
+  }
+
   function mtOcrStart(){
     if(mtOcrMode()==="off"||!mtOcrIsTradeType()) return;
     var imgs=mtOcrImages();
@@ -6858,6 +6934,11 @@ AI_TYPES.join(", "),
               return{text:w.text,x:w.bbox.x0/sc,y:w.bbox.y0/sc,w:(w.bbox.x1-w.bbox.x0)/sc,h:(w.bbox.y1-w.bbox.y0)/sc};
             }).filter(function(w){return w.text&&w.text.trim().length;});
             var r=mtOcrParse(words);
+            // v1.98: file the analyzed image into the sandboxed bucket with its verdict
+            mtSandboxSave({ts:Date.now(),name:pp.name||("image_"+(n+1)),dataUrl:pp.dataUrl,
+                           verdict:r.trades.length?"accepted":"ignored",
+                           tradeCount:r.trades.length,
+                           reason:r.trades.length?"parsed as MT4/MT5":"not MT4/MT5 — no instrument + buy/sell and no statement header"});
             allTrades=allTrades.concat(r.trades);
             idx++;next();
           }).catch(function(){ if(myToken===mtOcr.token){idx++;next();} });
@@ -9292,7 +9373,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v1.97</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v1.98</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
