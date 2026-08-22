@@ -840,17 +840,53 @@
   .ti-row{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;border-top:1px solid var(--bd);align-items:center}
   .ti-row input{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px}
   .ti-lab{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
-  .pers-ov{position:fixed;inset:0;background:var(--bg);z-index:80;overflow:auto;display:none}
-  .pers-ov.on{display:block}
-  .pers-bar{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--bd);display:flex;gap:6px;overflow-x:auto;padding:10px 14px;z-index:2;-webkit-overflow-scrolling:touch}
-  .pers-bar button{flex:none;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer}
-  .pers-bar button.on{background:var(--tx);color:var(--bg)}
-  .pers-sec{padding:20px 18px;border-bottom:1px solid var(--bd)}
-  .pers-sec h3{margin:0 0 12px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
-  .pers-opt{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0}
+  .pers-ov{position:fixed;inset:0;background:var(--bg);z-index:80;display:none;flex-direction:column;opacity:0;transition:opacity .22s ease}
+  .pers-ov.on{display:flex}
+  .pers-ov.vis{opacity:1}
+  .pers-hd{display:flex;align-items:center;gap:12px;padding:16px 18px 12px;flex:none}
+  .pers-hd h2{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
+  .pers-back{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;width:38px;height:38px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+  .pers-back:active{transform:scale(.93)}
+  .pers-pages{flex:1;overflow:auto;padding:4px 16px calc(96px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+  .pers-page{display:none}
+  .pers-page.on{display:block;animation:persIn .28s cubic-bezier(.22,1,.36,1)}
+  @keyframes persIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .pers-card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:4px 16px;margin-bottom:14px;animation:persIn .28s cubic-bezier(.22,1,.36,1) backwards}
+  .pers-card:nth-child(2){animation-delay:.05s}.pers-card:nth-child(3){animation-delay:.1s}
+  .pers-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--bd)}
+  .pers-row:last-child{border-bottom:0}
+  .pers-row .lab{font-size:14px;font-weight:600}
+  .pers-row .sub{font-size:11.5px;color:var(--mut);margin-top:2px;line-height:1.45}
+  .pers-sw{position:relative;width:50px;height:30px;border-radius:999px;background:var(--bd);flex:none;cursor:pointer;border:0;transition:background .2s;padding:0}
+  .pers-sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.34,1.56,.64,1)}
+  .pers-sw.on{background:var(--tx)}
+  .pers-sw.on::after{transform:translateX(20px)}
+  .pers-sw:active::after{width:28px}
+  .pers-seg{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;flex:none}
+  .pers-seg button{border:0;background:transparent;color:var(--mut);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
+  .pers-seg button:active{transform:scale(.94)}
+  .pers-seg button.on{background:var(--tx);color:var(--bg)}
+  .pers-themes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 0}
+  .pers-th{border:2px solid var(--bd);border-radius:14px;padding:10px 6px 8px;text-align:center;cursor:pointer;background:var(--card);color:var(--tx);transition:transform .15s,border-color .2s}
+  .pers-th:active{transform:scale(.93)}
+  .pers-th.on{border-color:var(--tx)}
+  .pers-th .sw2{width:100%;height:34px;border-radius:9px;margin-bottom:7px;border:1px solid var(--bd)}
+  .pers-th .nm{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
+  .pers-bar2{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(420px,100vw - 24px);background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--bd);border-radius:18px;display:flex;padding:6px;z-index:82;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .pers-bar2 .pill{position:absolute;top:6px;bottom:6px;border-radius:13px;background:var(--tx);transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);z-index:0}
+  .pers-tab{position:relative;z-index:1;flex:1;border:0;background:transparent;color:var(--mut);min-height:50px;border-radius:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:color .2s;padding:4px 2px}
+  .pers-tab:active{transform:scale(.93)}
+  .pers-tab .ic{font-size:17px;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+  .pers-tab .lb{font-size:10.5px;font-weight:700}
+  .pers-tab.on{color:var(--bg)}
+  .pers-tab.on .ic{transform:translateY(-1px) scale(1.16)}
   .act-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
   .act-filters button{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer}
   .act-filters button.on{background:var(--tx);color:var(--bg)}
+  .cndl-read{font-size:11.5px;color:var(--mut);padding:8px 2px 0;line-height:1.5;font-variant-numeric:tabular-nums;min-height:32px}
+  .cndl{transition:opacity .15s}
+  #cndlSvg:hover .cndl{opacity:.45}
+  #cndlSvg .cndl:hover{opacity:1}
   .tr-step{display:flex;align-items:center;gap:6px}
   .tr-step .arrow{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;width:32px;height:32px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
   body[data-device="touch"] .tr-step .arrow{display:flex}
@@ -5637,6 +5673,101 @@ AI_TYPES.join(", "),
     if(inst && inst!=="__all") list=list.filter(function(t){ return (t.inst||"— untagged —")===inst; });
     return list;
   }
+  /* ================= v2.08 — CANDLESTICK EQUITY CHART =================
+     The timeframe stepper sets what ONE CANDLE represents (1d / 3d / 4d / 1w),
+     not a lookback window. Trades are bucketed into periods and each bucket
+     becomes a real OHLC candle drawn from the running equity balance:
+       open  = equity at the start of the period
+       close = equity at the end of the period
+       high  = highest the running equity reached inside the period
+       low   = lowest it reached
+     Body + wick, hollow/filled by direction so it survives a greyscale
+     screenshot, with a zero line and a hover readout. */
+  var CANDLE_TF=7;   // days per candle; default 1w
+  var CANDLE_LABELS={1:"1d",3:"3d",4:"4d",7:"1w"};
+  function candleBuild(list, days){
+    var rows=list.slice().filter(function(t){return t.date;})
+      .sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+    if(!rows.length) return [];
+    function dnum(d){ var p=String(d).split("-"); return Date.UTC(+p[0],(+p[1]||1)-1,+p[2]||1)/86400000; }
+    var first=dnum(rows[0].date), eq=0, out=[], cur=null;
+    rows.forEach(function(t){
+      var bucket=Math.floor((dnum(t.date)-first)/days);
+      if(!cur||cur.b!==bucket){
+        if(cur) out.push(cur);
+        cur={b:bucket,open:eq,high:eq,low:eq,close:eq,n:0,
+             from:rows[0].date,date:t.date};
+      }
+      var amt=num(t.amount);
+      eq += (t.type==="trade_loss") ? -Math.abs(amt) : Math.abs(amt);
+      cur.close=eq; cur.n++;
+      if(eq>cur.high)cur.high=eq;
+      if(eq<cur.low)cur.low=eq;
+    });
+    if(cur) out.push(cur);
+    return out;
+  }
+  function candleSvg(candles, sym){
+    if(!candles.length) return "";
+    if(candles.length===1){
+      var c0=candles[0];
+      return '<div class="hint" style="margin:0">Only one '+(CANDLE_LABELS[CANDLE_TF]||CANDLE_TF+"d")
+        +' period so far — '+c0.n+' trade'+(c0.n===1?"":"s")+', closing at '+esc(fmt(c0.close,sym))
+        +'. Pick a shorter candle to see more.</div>';
+    }
+    var w=680,h=150,padT=10,padB=18,padX=8;
+    var his=candles.map(function(c){return c.high;}).concat([0]);
+    var los=candles.map(function(c){return c.low;}).concat([0]);
+    var max=Math.max.apply(null,his), min=Math.min.apply(null,los);
+    var span=(max-min)||1;
+    var n=candles.length;
+    var slot=(w-padX*2)/n;
+    var bodyW=Math.max(2,Math.min(18,slot*0.62));
+    function Y(v){ return (h-padB-((v-min)/span)*(h-padT-padB)).toFixed(1); }
+    var zeroY=Y(0);
+    var parts=candles.map(function(c,i){
+      var cx=padX+slot*i+slot/2;
+      var up=c.close>=c.open;
+      var yO=+Y(c.open), yC=+Y(c.close);
+      var top=Math.min(yO,yC), bot=Math.max(yO,yC);
+      var bh=Math.max(1.5,bot-top);
+      var stroke=up?"var(--up)":"var(--down)";
+      // hollow body for up, filled for down — direction survives greyscale
+      var fill=up?"var(--bg)":"var(--down)";
+      return '<g class="cndl" data-i="'+i+'">'
+        +'<line x1="'+cx.toFixed(1)+'" y1="'+Y(c.high)+'" x2="'+cx.toFixed(1)+'" y2="'+Y(c.low)+'" stroke="'+stroke+'" stroke-width="1.2"/>'
+        +'<rect x="'+(cx-bodyW/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bodyW.toFixed(1)+'" height="'+bh.toFixed(1)+'" '
+          +'fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.4" rx="1"/>'
+        +'<rect class="cndl-hit" x="'+(padX+slot*i).toFixed(1)+'" y="0" width="'+slot.toFixed(1)+'" height="'+h+'" fill="transparent"/>'
+        +'</g>';
+    }).join("");
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" id="cndlSvg" style="width:100%;height:150px;display:block">'
+      +'<line x1="0" y1="'+zeroY+'" x2="'+w+'" y2="'+zeroY+'" stroke="var(--bd2)" stroke-dasharray="3 3"/>'
+      +parts+'</svg>'
+      +'<div class="cndl-read" id="cndlRead"><b>'+n+'</b> '+(CANDLE_LABELS[CANDLE_TF]||CANDLE_TF+"d")
+      +' candles · each one is '+(CANDLE_TF===1?"a day":CANDLE_TF===7?"a week":CANDLE_TF+" days")
+      +' of trading · hollow = up, filled = down</div>';
+  }
+  function candleBind(list, sym){
+    var svg=document.getElementById("cndlSvg"), read=document.getElementById("cndlRead");
+    if(!svg||!read) return;
+    var candles=candleBuild(list,CANDLE_TF);
+    var base=read.innerHTML;
+    Array.prototype.forEach.call(svg.querySelectorAll(".cndl"),function(g){
+      var i=+g.getAttribute("data-i"), c=candles[i];
+      function show(){
+        if(!c) return;
+        var dir=c.close>=c.open?"▲":"▼";
+        read.innerHTML='<b>'+dir+' '+esc(c.date)+'</b> · O '+esc(fmt(c.open,sym))
+          +' · H '+esc(fmt(c.high,sym))+' · L '+esc(fmt(c.low,sym))
+          +' · C '+esc(fmt(c.close,sym))+' · '+c.n+' trade'+(c.n===1?"":"s");
+      }
+      g.addEventListener("mouseenter",show);
+      g.addEventListener("touchstart",show,{passive:true});
+      g.addEventListener("mouseleave",function(){read.innerHTML=base;});
+    });
+  }
+
   function equityCurveSvg(curve){
     if(curve.length<2) return "";
     var w=680,h=110,pad=6;
@@ -5767,7 +5898,8 @@ AI_TYPES.join(", "),
     wrEl.textContent=(s.winRate*100).toFixed(1)+"%";
     wrEl.className="tr-wr mono "+(s.expectancy>=0?"up":"down");
     subEl.innerHTML="win rate · "+s.wins+"W / "+s.losses+"L over "+s.n+" trade"+(s.n===1?"":"s");
-    document.getElementById("trCurve").innerHTML=equityCurveSvg(s.curve);
+    document.getElementById("trCurve").innerHTML=candleSvg(candleBuild(list,CANDLE_TF),sym);
+    candleBind(list,sym);
 
     function cell(k,v,cls){ return '<div class="tr-cell"><div class="tr-k">'+k+'</div><div class="tr-v mono '+(cls||"")+'">'+v+'</div></div>'; }
     var pf=s.profitFactor===Infinity?"∞":s.profitFactor.toFixed(2);
@@ -6935,90 +7067,175 @@ AI_TYPES.join(", "),
   }
 
   /* ================= v2.01 - STAGE 4: PERSONALIZE VIEW ================= */
-  var PERS_SECTIONS=[["persApp","Appearance"],["persTrade","Trading"],["persBehav","Behaviour"],["persDevice","Device"],["persPrivacy","Privacy"]];
+  /* v2.07 — Personalize rebuilt as app-grade UI: floating pill tab bar with sliding
+     indicator, page fade+rise per switch, iOS-style toggle switches, segmented
+     controls, animated theme swatch grid, press feedback on everything. */
+  var PERS_TABS=[["app","🎨","Look"],["trade","📈","Trading"],["behav","⚙️","Behaviour"],["device","📱","Device"],["priv","🔒","Privacy"]];
+  var PERS_THEME_KEYS=[["mono","#000"],["dark","#0b0e14"],["emerald","#00ff88"],["paper","#f4f1ea"],["light","#f6f7f9"],["synth","#ff4fd8"],["ice","#38c6f4"]];
+  function persSw(id,lab,sub){
+    return '<div class="pers-row"><div><div class="lab">'+lab+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>'
+      +'<button type="button" class="pers-sw" id="'+id+'" role="switch" aria-checked="false" aria-label="'+lab+'"></button></div>';
+  }
+  function persSeg(id,lab,sub,opts){
+    return '<div class="pers-row"><div><div class="lab">'+lab+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>'
+      +'<div class="pers-seg" id="'+id+'">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>';}).join('')+'</div></div>';
+  }
+  function persSegSet(id,val){
+    var seg=document.getElementById(id); if(!seg) return;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===val);});
+  }
+  function persSegBind(id,cb){
+    var seg=document.getElementById(id); if(!seg) return;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){
+      b.addEventListener('click',function(){
+        persSegSet(id,b.getAttribute('data-v')); cb(b.getAttribute('data-v'));
+      });
+    });
+  }
+  function persSwSet(id,on){
+    var b=document.getElementById(id); if(!b) return;
+    b.classList.toggle('on',!!on); b.setAttribute('aria-checked',on?'true':'false');
+  }
+  function persSwBind(id,cb){
+    var b=document.getElementById(id); if(!b) return;
+    b.addEventListener('click',function(){
+      var on=!b.classList.contains('on'); persSwSet(id,on);
+      if(navigator.vibrate) try{navigator.vibrate(8);}catch(e){}
+      cb(on);
+    });
+  }
   function persEnsure(){
     if(document.getElementById("persOv")) return;
     var ov=document.createElement("div");
     ov.className="pers-ov"; ov.id="persOv";
     ov.innerHTML=
-      '<div class="pers-bar" id="persBar">'
-        +'<button type="button" id="persClose">\u2190 Done</button>'
-        +PERS_SECTIONS.map(function(s){return '<button type="button" class="pers-jump" data-t="'+s[0]+'">'+s[1]+'</button>';}).join("")
+      '<div class="pers-hd"><button type="button" class="pers-back" id="persClose" aria-label="Close">←</button><h2>Personalize</h2></div>'
+      +'<div class="pers-pages" id="persPages">'
+
+      +'<div class="pers-page" data-pg="app">'
+        +'<div class="pers-card"><div class="pers-themes" id="persThemes">'
+          +PERS_THEME_KEYS.map(function(t){return '<button type="button" class="pers-th" data-th="'+t[0]+'"><div class="sw2" style="background:'+t[1]+'"></div><div class="nm">'+t[0]+'</div></button>';}).join('')
+        +'</div></div>'
       +'</div>'
-      +'<div class="pers-sec" id="persApp"><h3>Appearance</h3>'
-        +'<div class="pers-opt"><span>Theme</span><select id="persTheme"></select></div>'
+
+      +'<div class="pers-page" data-pg="trade">'
+        +'<div class="pers-card">'
+          +persSw('persTrader','Trader mode','Unlocks the Trading page, instruments and trade entry types.')
+          +persSeg('persMtOcr','Statement reading','Photos of MT4/MT5 statements read on this device — nothing uploaded.',[["off","Off"],["auto","Auto"],["silent","Silent"]])
+          +persSw('persNoSplits','No splits for trades','Hides the split field on trade entries. Existing entries never change.')
+        +'</div>'
       +'</div>'
-      +'<div class="pers-sec" id="persTrade"><h3>Trading</h3>'
-        +'<div class="pers-opt"><span>Trader mode</span><input type="checkbox" id="persTrader"></div>'
-        +'<div class="pers-opt"><span>Statement photo reading</span><select id="persMtOcr"><option value="off">Off</option><option value="auto">Auto</option><option value="silent">Silent</option></select></div>'
-        +'<div class="pers-opt"><span>Don\u2019t do splits for trades</span><input type="checkbox" id="persNoSplits"></div>'
+
+      +'<div class="pers-page" data-pg="behav">'
+        +'<div class="pers-card">'
+          +persSw('persDraft','Draft safety','If the app closes mid-entry, what you typed is offered back next time.')
+        +'</div>'
       +'</div>'
-      +'<div class="pers-sec" id="persBehav"><h3>Behaviour</h3>'
-        +'<div class="pers-opt"><span>Keep a draft if the app closes mid-entry</span><input type="checkbox" id="persDraft" checked></div>'
+
+      +'<div class="pers-page" data-pg="device">'
+        +'<div class="pers-card">'
+          +persSeg('persDevType','Device type','Touch shows tap-arrows on the chart stepper.',[["auto","Auto"],["touch","Touch"],["desktop","Desktop"]])
+        +'</div>'
       +'</div>'
-      +'<div class="pers-sec" id="persDevice"><h3>Device</h3>'
-        +'<div class="pers-opt"><span>Device type (shows chart tap-arrows on touch)</span><select id="persDevType"><option value="auto">Auto-detect</option><option value="touch">Touch (phone/tablet)</option><option value="desktop">Desktop</option></select></div>'
+
+      +'<div class="pers-page" data-pg="priv">'
+        +'<div class="pers-card">'
+          +persSeg('persConsent','Share flagged images','Helps improve statement reading. Items only ever wait in a local outbox on this device — this version never transmits.',[["never","Never"],["wifi","Wi-Fi"],["any","Wi-Fi+data"]])
+          +'<div class="pers-row"><div><div class="lab">Terms &amp; privacy</div><div class="sub">Plain-language, on-device-only policy.</div></div>'
+          +'<button type="button" class="btn ghost sm" id="persTos">Read</button></div>'
+        +'</div>'
       +'</div>'
-      +'<div class="pers-sec" id="persPrivacy"><h3>Privacy</h3>'
-        +'<div class="pers-opt"><span>Share flagged images &amp; suggestions to improve reading</span><select id="persConsent"><option value="never">Never</option><option value="wifi">Wi-Fi only</option><option value="any">Wi-Fi + data</option></select></div>'
-        +'<div class="pers-opt"><span>Terms &amp; privacy</span><button type="button" class="btn ghost sm" id="persTos">Read</button></div>'
-        +'<div class="hint" style="margin:4px 0 0">Nothing ever leaves this device unless you choose a sharing option above. Flagged images wait in a local outbox and only queue when your choice allows it.</div>'
+
+      +'</div>'
+      +'<div class="pers-bar2" id="persBar" role="tablist"><div class="pill" id="persPill"></div>'
+        +PERS_TABS.map(function(t,i){return '<button type="button" class="pers-tab'+(i===0?' on':'')+'" role="tab" aria-selected="'+(i===0)+'" data-pg="'+t[0]+'"><span class="ic">'+t[1]+'</span><span class="lb">'+t[2]+'</span></button>';}).join('')
       +'</div>';
     document.body.appendChild(ov);
-    var sel=document.getElementById("persTheme");
-    ["mono","dark","emerald","paper","light","synth","ice"].forEach(function(k){
-      var o=document.createElement("option");o.value=k;o.textContent=k.charAt(0).toUpperCase()+k.slice(1);sel.appendChild(o);
-    });
-    sel.addEventListener("change",function(){
-      var btn=document.querySelector('.theme-opt[data-theme-key="'+sel.value+'"]');
-      if(btn) btn.click(); else { document.documentElement.setAttribute("data-theme",sel.value==="dark"?"":sel.value); try{localStorage.setItem("mymoney_theme",sel.value);}catch(e){} }
-      flashSaved("theme applied");
-    });
-    document.getElementById("persTrader").addEventListener("change",function(e){
-      var c=document.getElementById("sIsTrader");
-      if(c){c.checked=e.target.checked;c.dispatchEvent(new Event("change"));}
-    });
-    document.getElementById("persMtOcr").addEventListener("change",function(e){
-      if(!state.settings)state.settings={};
-      state.settings.mtOcr=e.target.value;persistNow();mtOcrUI();flashSaved("saved");
-    });
-    document.getElementById("persNoSplits").addEventListener("change",function(e){
-      if(!state.settings)state.settings={};
-      state.settings.noSplits=e.target.checked;persistNow();applyNoSplits();flashSaved("saved");
-    });
-    document.getElementById("persDraft").addEventListener("change",function(e){
-      if(!state.settings)state.settings={};
-      state.settings.draftSafety=e.target.checked;persistNow();flashSaved("saved");
-    });
-    document.getElementById("persDevType").addEventListener("change",function(e){
-      if(!state.settings)state.settings={};
-      state.settings.deviceType=e.target.value;persistNow();applyDeviceType();flashSaved("saved");
-    });
-    document.getElementById("persConsent").addEventListener("change",function(e){
-      if(!state.settings)state.settings={};
-      state.settings.shareConsent=e.target.value;persistNow();flashSaved("saved");
-    });
-    document.getElementById("persTos").addEventListener("click",showTosModal);
-    document.getElementById("persClose").addEventListener("click",function(){ov.classList.remove("on");});
-    Array.prototype.forEach.call(ov.querySelectorAll(".pers-jump"),function(b){
-      b.addEventListener("click",function(){
-        var t=document.getElementById(b.getAttribute("data-t"));
-        if(t) t.scrollIntoView({behavior:"smooth",block:"start"});
-        Array.prototype.forEach.call(ov.querySelectorAll(".pers-jump"),function(x){x.classList.toggle("on",x===b);});
+
+    // tab bar: sliding pill + page switch with retriggered fade/rise
+    function persAlignPill(){
+      var on=ov.querySelector('.pers-tab.on'), pill=document.getElementById('persPill');
+      if(!on||!pill) return;
+      pill.style.left=on.offsetLeft+'px'; pill.style.width=on.offsetWidth+'px';
+    }
+    function persGo(pg){
+      Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){
+        var on=t.getAttribute('data-pg')===pg;
+        t.classList.toggle('on',on); t.setAttribute('aria-selected',on?'true':'false');
       });
+      Array.prototype.forEach.call(ov.querySelectorAll('.pers-page'),function(p){
+        var on=p.getAttribute('data-pg')===pg;
+        if(on){p.classList.remove('on');void p.offsetWidth;p.classList.add('on');}
+        else p.classList.remove('on');
+      });
+      persAlignPill();
+    }
+    Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){
+      t.addEventListener('click',function(){persGo(t.getAttribute('data-pg'));});
+    });
+    window.addEventListener('resize',persAlignPill);
+    ov.__go=persGo; ov.__align=persAlignPill;
+
+    // theme grid
+    Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(b){
+      b.addEventListener('click',function(){
+        var k=b.getAttribute('data-th');
+        Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(x){x.classList.toggle('on',x===b);});
+        var real=document.querySelector('.theme-opt[data-theme-key="'+k+'"]');
+        if(real) real.click();
+        else{document.documentElement.setAttribute('data-theme',k==='dark'?'':k);try{localStorage.setItem('mymoney_theme',k);}catch(e){}}
+        flashSaved('theme applied');
+      });
+    });
+
+    // live-apply wiring
+    persSwBind('persTrader',function(on){
+      var c=document.getElementById('sIsTrader');
+      if(c){c.checked=on;c.dispatchEvent(new Event('change'));}
+    });
+    persSegBind('persMtOcr',function(v){
+      if(!state.settings)state.settings={};
+      state.settings.mtOcr=v;persistNow();mtOcrUI();flashSaved('saved');
+    });
+    persSwBind('persNoSplits',function(on){
+      if(!state.settings)state.settings={};
+      state.settings.noSplits=on;persistNow();applyNoSplits();flashSaved('saved');
+    });
+    persSwBind('persDraft',function(on){
+      if(!state.settings)state.settings={};
+      state.settings.draftSafety=on;persistNow();flashSaved('saved');
+    });
+    persSegBind('persDevType',function(v){
+      if(!state.settings)state.settings={};
+      state.settings.deviceType=v;persistNow();applyDeviceType();flashSaved('saved');
+    });
+    persSegBind('persConsent',function(v){
+      if(!state.settings)state.settings={};
+      state.settings.shareConsent=v;persistNow();flashSaved('saved');
+    });
+    document.getElementById('persTos').addEventListener('click',showTosModal);
+    document.getElementById('persClose').addEventListener('click',function(){
+      ov.classList.remove('vis');
+      setTimeout(function(){ov.classList.remove('on');},220);
     });
   }
   function persOpen(){
     persEnsure();
+    var ov=document.getElementById("persOv");
     var s=state.settings||{};
-    document.getElementById("persTheme").value=(function(){try{return localStorage.getItem("mymoney_theme")||"mono";}catch(e){return "mono";}})();
-    document.getElementById("persTrader").checked=!!s.isTrader;
-    document.getElementById("persMtOcr").value=s.mtOcr||"off";
-    document.getElementById("persNoSplits").checked=!!s.noSplits;
-    document.getElementById("persDraft").checked=s.draftSafety!==false;
-    document.getElementById("persDevType").value=s.deviceType||"auto";
-    document.getElementById("persConsent").value=s.shareConsent||"never";
-    document.getElementById("persOv").classList.add("on");
+    var th=(function(){try{return localStorage.getItem("mymoney_theme")||"mono";}catch(e){return "mono";}})();
+    Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(b){b.classList.toggle('on',b.getAttribute('data-th')===th);});
+    persSwSet('persTrader',!!s.isTrader);
+    persSegSet('persMtOcr',s.mtOcr||'off');
+    persSwSet('persNoSplits',!!s.noSplits);
+    persSwSet('persDraft',s.draftSafety!==false);
+    persSegSet('persDevType',s.deviceType||'auto');
+    persSegSet('persConsent',s.shareConsent||'never');
+    ov.classList.add('on');
+    requestAnimationFrame(function(){
+      ov.classList.add('vis');
+      ov.__go('app'); ov.__align();
+    });
   }
   function bindPersonalize(){
     var b=document.getElementById("persOpenBtn");
@@ -7179,11 +7396,18 @@ AI_TYPES.join(", "),
     var seg=document.getElementById("trPeriod");
     if(!seg||seg.getAttribute("data-stepped")) return;
     seg.setAttribute("data-stepped","1");
+    // v2.08: these set the CANDLE PERIOD (what one candlestick covers), not a filter
     ["7","4","3","1"].forEach(function(d){
       var b=document.createElement("button");
-      b.type="button";b.setAttribute("data-p",d);
-      b.textContent=(d==="7"?"1w":d+"d");
+      b.type="button";b.setAttribute("data-p",d);b.setAttribute("data-tf","1");
+      b.textContent=CANDLE_LABELS[d]||(d+"d");
+      b.title="Each candle = "+(d==="1"?"one day":d==="7"?"one week":d+" days");
       seg.insertBefore(b,seg.firstChild);
+      b.addEventListener("click",function(){
+        CANDLE_TF=parseInt(d,10);
+        Array.prototype.forEach.call(seg.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});
+        renderTradingPage();
+      });
     });
     var wrap=document.createElement("div");
     wrap.className="tr-step";
@@ -9852,7 +10076,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.06</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.08</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
