@@ -682,6 +682,17 @@
   .act-w{font-size:10.5px;color:var(--mut);font-family:var(--mono)}
   .act-u{flex:none}
 
+  .td-media{background:var(--card2);padding:8px;border-radius:9px}
+  .td-media audio{width:100%;margin-top:6px}
+  .td-media video{width:100%;border-radius:7px;margin-top:6px;max-height:280px}
+  .td-pdf{width:100%;height:320px;border:0;border-radius:7px;background:#fff}
+  .td-fname{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .td-file{display:flex;align-items:center;gap:9px;background:var(--card2);padding:11px;border-radius:9px}
+  .td-fic{font-size:22px}
+  .td-fnm{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ph-doc{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--card2)}
+  .ph-ic{font-size:22px;line-height:1}
+  .ph-nm{font-size:8px;color:var(--mut);max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
   .ph-strip{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
   .ph-strip:empty{margin-top:0}
   .ph-thumb{position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;
@@ -1006,8 +1017,8 @@
       <div class="fld full">
         <label>Photos / receipts (optional)</label>
         <div class="photo-pick">
-          <input type="file" id="fPhoto" multiple accept="image/*,.heic,.heif,.png,.jpg,.jpeg,.webp,.gif,.bmp" style="display:none">
-          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach photos</button>
+          <input type="file" id="fPhoto" multiple accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.heic,.heif,.mp3,.wav,.m4a,.mp4,.mov,.webm,.zip,.exe,.iso,.html,.css,.js,.json,image/*,audio/*,video/*" style="display:none">
+          <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach files</button>
           <span id="fPhotoName" class="mut" style="font-size:12px"></span>
           <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove all</button>
         </div>
@@ -2263,6 +2274,7 @@
      OPFS → File System Access → legacy WebKit FS → IndexedDB → localStorage. */
   var photoCache={};       // in-memory: id -> dataURL, for fast repeat reads this session
   var photoExtMap={};      // in-memory: id -> file extension (the file-based tiers name files "{id}.{ext}")
+  var attNames={};         // in-memory: id -> original filename (so any file type shows its real name + icon)
   var photoExtMapLoaded=false;
   function photoKey(id){ return STORE_KEY+"_ph_"+id; }
   function mimeToExt(mime){
@@ -2273,10 +2285,11 @@
   async function loadPhotoExtMap(){
     if(photoExtMapLoaded) return;
     photoExtMapLoaded=true;
-    try{ var store=await idbStore("meta","readonly"); var saved=await reqToPromise(store.get("photoExtMap")); if(saved) photoExtMap=Object.assign({}, saved, photoExtMap); }
+    try{ var store=await idbStore("meta","readonly"); var saved=await reqToPromise(store.get("photoExtMap")); if(saved) photoExtMap=Object.assign({}, saved, photoExtMap);
+      var nmSaved=await reqToPromise(store.get("attNames")); if(nmSaved) attNames=Object.assign({}, nmSaved, attNames); }
     catch(e){}
   }
-  async function savePhotoExtMap(){ try{ var store=await idbStore("meta","readwrite"); await reqToPromise(store.put(photoExtMap,"photoExtMap")); }catch(e){} }
+  async function savePhotoExtMap(){ try{ var store=await idbStore("meta","readwrite"); await reqToPromise(store.put(photoExtMap,"photoExtMap")); await reqToPromise(store.put(attNames,"attNames")); }catch(e){} }
   /* ---- photos, plural ----
      An entry used to hold ONE photo id, keyed by the transaction id. Now it holds a list.
      photosOf() reads BOTH shapes, so nothing migrates and no existing save is rewritten:
@@ -2300,10 +2313,11 @@
     return id;
   }
   var PHOTO_MAX=8;   // a receipt has a few sides, not fifty; keeps one entry from eating the quota
-  function savePhoto(id, dataUrl, cb){
+  function savePhoto(id, dataUrl, cb, name){
     photoCache[id]=dataUrl;
-    var ext=extFromDataUrl(dataUrl);
+    var ext=(name && attExt(name,dataUrl)) || extFromDataUrl(dataUrl);
     photoExtMap[id]=ext;
+    if(name){ attNames[id]=name; savePhotoExtMap(); }
     var done=false;
     try{
       if(window.storage && typeof window.storage.set==="function"){
@@ -2411,6 +2425,41 @@
     img.onerror=bail;
     setTimeout(bail, 4000);   // never leave the user staring at nothing
     try{ img.src=dataUrl; }catch(e){ bail(); }
+  }
+  /* ---- attachments: any file type, stored as the exact original (never compressed) ---- */
+  var ATT_ICONS={pdf:"\uD83D\uDCD5",docx:"\uD83D\uDCD8",doc:"\uD83D\uDCD8",txt:"\uD83D\uDCC4",csv:"\uD83D\uDCCA",
+    xlsx:"\uD83D\uDCD7",xls:"\uD83D\uDCD7",jpg:"\uD83D\uDDBC\uFE0F",jpeg:"\uD83D\uDDBC\uFE0F",png:"\uD83D\uDDBC\uFE0F",
+    gif:"\uD83D\uDDBC\uFE0F",svg:"\uD83D\uDDBC\uFE0F",webp:"\uD83D\uDDBC\uFE0F",bmp:"\uD83D\uDDBC\uFE0F",
+    mp3:"\uD83C\uDFB5",wav:"\uD83C\uDFB5",m4a:"\uD83C\uDFB5",mp4:"\uD83C\uDFAC",mov:"\uD83C\uDFAC",webm:"\uD83C\uDFAC",
+    zip:"\uD83D\uDDDC\uFE0F",exe:"\u2699\uFE0F",iso:"\uD83D\uDCBF",html:"\uD83C\uDF10",css:"\uD83C\uDFA8",
+    js:"\uD83D\uDCDC",json:"\uD83D\uDD24"};
+  var ATT_IMG=["jpg","jpeg","png","gif","svg","webp","bmp","heic","heif"];
+  var ATT_AUD=["mp3","wav","m4a"];
+  var ATT_VID=["mp4","mov","webm"];
+  function attExt(name,dataUrl){
+    var m=/\.([a-z0-9]+)$/i.exec(name||""); if(m) return m[1].toLowerCase();
+    if(dataUrl){ var d=/^data:([^;,]+)/.exec(dataUrl); if(d){ var t=d[1];
+      if(/pdf/.test(t))return"pdf"; if(/image\/(\w+)/.test(t))return RegExp.$1;
+      if(/audio\/(\w+)/.test(t))return RegExp.$1; if(/video\/(\w+)/.test(t))return RegExp.$1; } }
+    return "";
+  }
+  function attIcon(name,dataUrl){ return ATT_ICONS[attExt(name,dataUrl)]||"\uD83D\uDCCE"; }
+  function attIsImage(name,dataUrl){ var e=attExt(name,dataUrl);
+    return ATT_IMG.indexOf(e)>=0 || /^data:image\//.test(dataUrl||""); }
+  function attKind(name,dataUrl){ var e=attExt(name,dataUrl);
+    if(attIsImage(name,dataUrl)) return "image";
+    if(ATT_AUD.indexOf(e)>=0 || /^data:audio\//.test(dataUrl||"")) return "audio";
+    if(ATT_VID.indexOf(e)>=0 || /^data:video\//.test(dataUrl||"")) return "video";
+    if(e==="pdf" || /^data:application\/pdf/.test(dataUrl||"")) return "pdf";
+    return "file";
+  }
+  // read a file to a data URL with NO processing — exact original bytes
+  function readFileRaw(file, cb){
+    var r=new FileReader();
+    r.onload=function(){ cb({dataUrl:r.result, name:file.name||"file",
+      wasBytes:file.size||dataUrlBytes(r.result), nowBytes:file.size||dataUrlBytes(r.result)}); };
+    r.onerror=function(){ cb(null); };
+    r.readAsDataURL(file);
   }
   function processImage(file, cb){
     var nm=file.name||"photo";
@@ -6533,7 +6582,7 @@ AI_TYPES.join(", "),
     if(!strip) return;
     var total=keepPhotos.length+pendingPhotos.length;
     var nm=document.getElementById("fPhotoName");
-    if(nm) nm.textContent = total ? total+" photo"+(total===1?"":"s")
+    if(nm) nm.textContent = total ? total+" file"+(total===1?"":"s")
       +(total>=PHOTO_MAX?" (max)":"") : "";
     var clr=document.getElementById("fPhotoClear");
     if(clr) clr.style.display = total ? "inline-block" : "none";
@@ -6542,9 +6591,15 @@ AI_TYPES.join(", "),
     strip.innerHTML="";
     keepPhotos.forEach(function(id,i){
       var c=document.createElement("div"); c.className="ph-thumb"; c.setAttribute("data-keep",id);
-      c.innerHTML='<img alt="Photo '+(i+1)+'"><button type="button" class="ph-x" title="Remove">×</button>';
+      var nm=(attNames[id]||"");
+      c.innerHTML='<button type="button" class="ph-x" title="Remove">×</button>';
       strip.appendChild(c);
-      loadPhoto(id, function(url){ if(url) c.querySelector("img").src=url; });
+      loadPhoto(id, function(url){
+        if(!url) return;
+        if(attIsImage(nm,url)){ var im=new Image(); im.alt="Attachment "+(i+1); im.src=url; c.insertBefore(im,c.firstChild); }
+        else { var d=document.createElement("div"); d.className="ph-doc";
+          d.innerHTML='<span class="ph-ic">'+attIcon(nm,url)+'</span>'; c.insertBefore(d,c.firstChild); }
+      });
       c.querySelector(".ph-x").addEventListener("click", function(){
         keepPhotos=keepPhotos.filter(function(x){ return x!==id; });
         photoCleared=true; renderPhotoStrip();
@@ -6557,7 +6612,10 @@ AI_TYPES.join(", "),
         note=kbTxt(pp.wasBytes)+" → "+kbTxt(pp.nowBytes);
       else if(pp.nowBytes||pp.wasBytes) note=kbTxt(pp.nowBytes||pp.wasBytes);
       c.title=(pp.name||"photo")+(note?" · "+note:"");
-      c.innerHTML='<img src="'+pp.dataUrl+'" alt="New photo '+(i+1)+'"><button type="button" class="ph-x" title="Remove">×</button>'
+      var inner = attIsImage(pp.name,pp.dataUrl)
+        ? '<img src="'+pp.dataUrl+'" alt="New attachment '+(i+1)+'">'
+        : '<div class="ph-doc"><span class="ph-ic">'+attIcon(pp.name,pp.dataUrl)+'</span><span class="ph-nm">'+esc((pp.name||"file").slice(0,14))+'</span></div>';
+      c.innerHTML=inner+'<button type="button" class="ph-x" title="Remove">×</button>'
         +(note?'<span class="ph-kb">'+esc(note)+'</span>':'');
       strip.appendChild(c);
       c.querySelector(".ph-x").addEventListener("click", function(){
@@ -7243,6 +7301,13 @@ AI_TYPES.join(", "),
     });
   }
 
+  function attDownload(dataUrl, name){
+    try{
+      var a=document.createElement("a"); a.href=dataUrl; a.download=name||"file";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      flashSaved("downloaded");
+    }catch(e){ flashSaved("couldn't download"); }
+  }
   function openTxDetail(id){
     var t=state.transactions.filter(function(x){ return x.id===id; })[0];
     if(!t) return;
@@ -7267,7 +7332,7 @@ AI_TYPES.join(", "),
         +'<div class="td-sec">What it moved</div>'+txPotMoves(t,sym)
         +(bits?'<div class="td-sec">Details</div>'+bits:"")
         +(t.note?'<div class="td-sec">Note</div><div class="td-note">'+esc(t.note)+'</div>':"")
-        +(photosOf(t).length?'<div class="td-sec">'+(photosOf(t).length>1?photosOf(t).length+" photos":"Photo")
+        +(photosOf(t).length?'<div class="td-sec">'+(photosOf(t).length>1?photosOf(t).length+" attachments":"Attachment")
             +'</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
       +'</div>'
       +'<div class="td-foot">'
@@ -7310,8 +7375,28 @@ AI_TYPES.join(", "),
           box.appendChild(cell);
           loadPhoto(pid, function(url){
             if(!url){ cell.textContent="missing"; return; }
-            cell.innerHTML='<img src="'+url+'" alt="Receipt '+(i+1)+'">';
-            cell.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
+            var nm=attNames[pid]||"", kind=attKind(nm,url);
+            if(kind==="image"){
+              cell.innerHTML='<img src="'+url+'" alt="Attachment '+(i+1)+'">';
+              cell.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
+            } else if(kind==="audio"){
+              cell.classList.add("td-media");
+              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"audio")+'</div><audio src="'+url+'" controls></audio>';
+            } else if(kind==="video"){
+              cell.classList.add("td-media");
+              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"video")+'</div><video src="'+url+'" controls playsinline></video>';
+            } else if(kind==="pdf"){
+              cell.classList.add("td-media");
+              cell.innerHTML='<embed type="application/pdf" src="'+url+'" class="td-pdf">'
+                +'<button type="button" class="btn ghost sm td-open">Open '+esc(nm||"PDF")+'</button>';
+              cell.querySelector(".td-open").addEventListener("click", function(){ attDownload(url,nm||"file.pdf"); });
+            } else {
+              cell.classList.add("td-file");
+              cell.innerHTML='<span class="td-fic">'+attIcon(nm,url)+'</span>'
+                +'<span class="td-fnm">'+esc(nm||"file")+'</span>'
+                +'<button type="button" class="btn ghost sm td-open">Download</button>';
+              cell.querySelector(".td-open").addEventListener("click", function(){ attDownload(url,nm||"file"); });
+            }
           });
         });
       }
@@ -7513,16 +7598,15 @@ AI_TYPES.join(", "),
         if(nmEl) nmEl.textContent="that's the most ("+PHOTO_MAX+")";
         fPhoto.value=""; return;
       }
-      if(nmEl) nmEl.textContent="reading "+files.length+" photo"+(files.length===1?"":"s")+"…";
+      if(nmEl) nmEl.textContent="reading "+files.length+" file"+(files.length===1?"":"s")+"…";
       var left=files.length;
       files.forEach(function(f){
-        processImage(f, function(res){
+        readFileRaw(f, function(res){       // NEVER compress — exact original bytes
           if(res) pendingPhotos.push(res);
           photoCleared=false;
           if(--left===0){
-            fPhoto.value="";           // so picking the same file again still fires change
+            fPhoto.value="";
             renderPhotoStrip();
-            // silently dropping someone's photos would be worse than saying so
             if(over>0) flashSaved("added "+files.length+" — "+PHOTO_MAX+" is the limit");
           }
         });
@@ -7577,7 +7661,7 @@ AI_TYPES.join(", "),
           pendingPhotos.forEach(function(pp){
             var nid=newPhotoId(tx.id, ids);
             ids.push(nid);
-            savePhoto(nid, pp.dataUrl);
+            savePhoto(nid, pp.dataUrl, null, pp.name);
           });
           setPhotos(tx, ids);
         })();
@@ -7598,7 +7682,7 @@ AI_TYPES.join(", "),
           pendingPhotos.forEach(function(pp){
             var nid=newPhotoId(tx2.id, pids);
             pids.push(nid);
-            savePhoto(nid, pp.dataUrl);
+            savePhoto(nid, pp.dataUrl, null, pp.name);
           });
           setPhotos(tx2, pids);
         }
