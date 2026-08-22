@@ -834,6 +834,34 @@
   .copy-sub{font-size:12px;font-weight:500;color:var(--mut)}
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
+  /* ===== v1.99–v2.06 staged additions ===== */
+  .ti-wrap{border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+  .ti-head{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--card);color:var(--tx);border:0;padding:10px 12px;font-size:13px;font-weight:700;cursor:pointer}
+  .ti-row{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;border-top:1px solid var(--bd);align-items:center}
+  .ti-row input{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px}
+  .ti-lab{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
+  .pers-ov{position:fixed;inset:0;background:var(--bg);z-index:80;overflow:auto;display:none}
+  .pers-ov.on{display:block}
+  .pers-bar{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--bd);display:flex;gap:6px;overflow-x:auto;padding:10px 14px;z-index:2;-webkit-overflow-scrolling:touch}
+  .pers-bar button{flex:none;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer}
+  .pers-bar button.on{background:var(--tx);color:var(--bg)}
+  .pers-sec{padding:20px 18px;border-bottom:1px solid var(--bd)}
+  .pers-sec h3{margin:0 0 12px;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
+  .pers-opt{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0}
+  .act-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+  .act-filters button{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer}
+  .act-filters button.on{background:var(--tx);color:var(--bg)}
+  .tr-step{display:flex;align-items:center;gap:6px}
+  .tr-step .arrow{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;width:32px;height:32px;font-size:15px;cursor:pointer;display:none;align-items:center;justify-content:center}
+  body[data-device="touch"] .tr-step .arrow{display:flex}
+  [data-theme="light"]{--bg:#f6f7f9;--card:#ffffff;--bd:#d7dbe2;--bd2:#b9bfca;--tx:#14161a;--mut:#5c6472;--amber:#b3730d}
+  [data-theme="light"] .seg button.on{background:#14161a;color:#ffffff}
+  [data-theme="light"] .btn.primary{background:#14161a;color:#ffffff}
+  @media(max-width:430px){
+    .ti-row,.ti-lab{grid-template-columns:1fr 1fr;row-gap:4px}
+    .pers-sec{padding:16px 12px}
+    .page-head{flex-wrap:wrap;gap:8px}
+  }
 </style>
 </head>
 <body>
@@ -1052,6 +1080,16 @@
           <button type="button" class="btn ghost sm" id="mtOcrFillBtn" style="display:none">Fill in</button>
         </div>
         <div id="mtOcrProg" class="mtocr-prog" style="display:none"><div id="mtOcrProgFill"></div></div>
+      </div>
+      <!-- v1.99 Stage 2: Trade Info — auto-filled from the statement read, hidden if nothing found -->
+      <div class="fld full ti-wrap" id="tiWrap" style="display:none">
+        <button type="button" class="ti-head" id="tiHead">
+          <span>📋 Trade info <span class="mut" id="tiCount"></span></span><span id="tiChev">▾</span>
+        </button>
+        <div id="tiBody" style="display:none">
+          <div id="tiRows"></div>
+          <button type="button" class="btn ghost sm" id="tiToNote" style="margin-top:8px">Add to note</button>
+        </div>
       </div>
       <div class="fld full">
         <button type="submit" class="btn primary" id="entrySubmitBtn" style="width:100%">Add entry</button>
@@ -4011,7 +4049,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); renderActions(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); bindActFilters(); renderActionsFiltered(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -6718,6 +6756,7 @@ AI_TYPES.join(", "),
           else if(best==="volume"&&!isNaN(num)) t.volume=num;
           else if(best==="time"){seenTime++;if(seenTime===1)t.date=raw;}
           else if(best==="profit"&&!isNaN(num)) t.profit=num;
+          else if(best==="id"&&/^\d{4,}$/.test(raw)) t.ticket=raw;   // v1.99 Stage 2
         });
         if(t.symbol||t.type||t.profit!=null) trades.push(t);
       });
@@ -6780,6 +6819,440 @@ AI_TYPES.join(", "),
     }
     return {trades:trades,isStatement:trades.length>0};
   }
+
+  /* ############################################################################
+     STAGED BUILD v1.99 -> v2.06 (from master handoff roadmap)
+     Each block below is one stage; all additive, all fail-safe.
+     ############################################################################ */
+
+  /* ---------- shared: option-picker modal (used by onboarding + consent) ---------- */
+  function pickModal(title, msg, options, cb){
+    closeModal();
+    var ov=document.createElement("div");
+    ov.className="mdl-ov"; ov.id="mdlOv";
+    ov.innerHTML='<div class="mdl" role="dialog" aria-modal="true">'
+      +'<div class="mdl-hd">'+esc(title)+'</div>'
+      +(msg?'<div class="mdl-bd">'+msg+'</div>':'')
+      +'<div class="mdl-ft" style="flex-direction:column;gap:8px">'
+      +options.map(function(o,i){return '<button type="button" class="btn '+(i===0?"primary":"ghost")+' sm pick-o" data-v="'+esc(o.value)+'" style="width:100%">'+esc(o.label)+'</button>';}).join("")
+      +'</div></div>';
+    document.body.appendChild(ov);
+    Array.prototype.forEach.call(ov.querySelectorAll(".pick-o"),function(b){
+      b.addEventListener("click",function(){closeModal();cb(b.getAttribute("data-v"));});
+    });
+  }
+
+  /* ================= v1.99 - STAGE 2: TRADE INFO SECTION ================= */
+  function tradeInfoTrades(){
+    return (mtOcr.state==="done"&&mtOcr.result&&mtOcr.result.trades)?mtOcr.result.trades:[];
+  }
+  function tradeInfoSync(){
+    var wrap=document.getElementById("tiWrap");
+    if(!wrap) return;
+    var trades=tradeInfoTrades();
+    if(!trades.length){wrap.style.display="none";return;}
+    wrap.style.display="block";
+    var c=document.getElementById("tiCount");
+    if(c) c.textContent="("+trades.length+" trade"+(trades.length===1?"":"s")+" found)";
+    var rows=document.getElementById("tiRows");
+    if(!rows) return;
+    rows.innerHTML='<div class="ti-lab"><span>Instrument</span><span>Ticket #</span><span>Time</span><span>P&L</span></div>'
+      +trades.map(function(t,i){
+        return '<div class="ti-row" data-i="'+i+'">'
+          +'<input class="ti-f" data-k="symbol" value="'+esc(t.symbol||"")+'" placeholder="&mdash;">'
+          +'<input class="ti-f" data-k="ticket" value="'+esc(t.ticket||"")+'" placeholder="&mdash;">'
+          +'<input class="ti-f" data-k="date" value="'+esc(t.date||"")+'" placeholder="&mdash;">'
+          +'<input class="ti-f" data-k="profit" value="'+(t.profit!=null?t.profit:"")+'" placeholder="&mdash;">'
+          +'</div>';
+      }).join("");
+    Array.prototype.forEach.call(rows.querySelectorAll(".ti-f"),function(inp){
+      inp.addEventListener("change",function(){
+        var row=inp.closest(".ti-row"), i=+row.getAttribute("data-i"), k=inp.getAttribute("data-k");
+        var tr=tradeInfoTrades()[i]; if(!tr) return;
+        tr[k]=(k==="profit")?(parseFloat(inp.value)||null):(inp.value.trim()||null);
+      });
+    });
+  }
+  function bindTradeInfo(){
+    var head=document.getElementById("tiHead"), body=document.getElementById("tiBody"), chev=document.getElementById("tiChev");
+    if(!head) return;
+    head.addEventListener("click",function(){
+      var open=body.style.display!=="none";
+      body.style.display=open?"none":"block";
+      chev.textContent=open?"\u25be":"\u25b4";
+    });
+    var toNote=document.getElementById("tiToNote");
+    if(toNote) toNote.addEventListener("click",function(){
+      var trades=tradeInfoTrades(); if(!trades.length) return;
+      var bits=trades.map(function(t){
+        var p=[];
+        if(t.symbol)p.push(t.symbol);
+        if(t.ticket)p.push("#"+t.ticket);
+        if(t.date)p.push(t.date);
+        if(t.profit!=null)p.push((t.profit>=0?"+":"")+t.profit);
+        return p.join(" ");
+      }).filter(Boolean);
+      var noteEl=document.getElementById("fNote");
+      var add=bits.join(" \u00b7 ");
+      noteEl.value=noteEl.value.trim()?noteEl.value.trim()+" \u00b7 "+add:add;
+      flashSaved("trade info added to note");
+    });
+  }
+
+  /* ================= v2.00 - STAGE 3: TRADER-PROFILE ONBOARDING ================= */
+  function traderOnboarding(){
+    if(state.settings&&state.settings.traderProfile) return;
+    pickModal("Which platform do you trade on?",
+      "This tunes the app to how your statements look.",
+      [{label:"MetaTrader 5 (MT5)",value:"mt5"},{label:"MetaTrader 4 (MT4)",value:"mt4"},
+       {label:"Broker app",value:"broker"},{label:"Other / not sure",value:"other"}],
+      function(platform){
+        if(!state.settings) state.settings={};
+        state.settings.traderProfile={platform:platform,at:Date.now()};
+        var unlocked=(platform==="mt5"||platform==="mt4");
+        if(unlocked&&!state.settings.mtOcr) state.settings.mtOcr="silent";
+        pickModal("Is trading money separate?",
+          unlocked?"Statement photo auto-fill is now on (Silent mode) \u2014 attach a screenshot to a trade entry and it reads itself.":"",
+          [{label:"Yes \u2014 keep trading money separate",value:"yes"},{label:"No \u2014 one pot",value:"no"}],
+          function(sep){
+            state.settings.sepTrading=(sep==="yes");
+            pickModal("Do you split trade results with anyone?",
+              "e.g. a 50/50 arrangement \u2014 splits stay available per entry either way.",
+              [{label:"Yes, I split",value:"split"},{label:"No, all mine",value:"solo"}],
+              function(sp){
+                state.settings.noSplits=(sp==="solo");
+                persistNow(); applyNoSplits(); applyTraderMode(); refreshSelects(); render();
+                recordAction("Set up trader profile");
+                flashSaved("trader profile saved");
+              });
+          });
+      });
+  }
+  function bindTraderOnboarding(){
+    var c=document.getElementById("sIsTrader");
+    if(!c) return;
+    c.addEventListener("change",function(){ if(c.checked) setTimeout(traderOnboarding,150); });
+  }
+
+  /* ================= v2.01 - STAGE 4: PERSONALIZE VIEW ================= */
+  var PERS_SECTIONS=[["persApp","Appearance"],["persTrade","Trading"],["persBehav","Behaviour"],["persDevice","Device"],["persPrivacy","Privacy"]];
+  function persEnsure(){
+    if(document.getElementById("persOv")) return;
+    var ov=document.createElement("div");
+    ov.className="pers-ov"; ov.id="persOv";
+    ov.innerHTML=
+      '<div class="pers-bar" id="persBar">'
+        +'<button type="button" id="persClose">\u2190 Done</button>'
+        +PERS_SECTIONS.map(function(s){return '<button type="button" class="pers-jump" data-t="'+s[0]+'">'+s[1]+'</button>';}).join("")
+      +'</div>'
+      +'<div class="pers-sec" id="persApp"><h3>Appearance</h3>'
+        +'<div class="pers-opt"><span>Theme</span><select id="persTheme"></select></div>'
+      +'</div>'
+      +'<div class="pers-sec" id="persTrade"><h3>Trading</h3>'
+        +'<div class="pers-opt"><span>Trader mode</span><input type="checkbox" id="persTrader"></div>'
+        +'<div class="pers-opt"><span>Statement photo reading</span><select id="persMtOcr"><option value="off">Off</option><option value="auto">Auto</option><option value="silent">Silent</option></select></div>'
+        +'<div class="pers-opt"><span>Don\u2019t do splits for trades</span><input type="checkbox" id="persNoSplits"></div>'
+      +'</div>'
+      +'<div class="pers-sec" id="persBehav"><h3>Behaviour</h3>'
+        +'<div class="pers-opt"><span>Keep a draft if the app closes mid-entry</span><input type="checkbox" id="persDraft" checked></div>'
+      +'</div>'
+      +'<div class="pers-sec" id="persDevice"><h3>Device</h3>'
+        +'<div class="pers-opt"><span>Device type (shows chart tap-arrows on touch)</span><select id="persDevType"><option value="auto">Auto-detect</option><option value="touch">Touch (phone/tablet)</option><option value="desktop">Desktop</option></select></div>'
+      +'</div>'
+      +'<div class="pers-sec" id="persPrivacy"><h3>Privacy</h3>'
+        +'<div class="pers-opt"><span>Share flagged images &amp; suggestions to improve reading</span><select id="persConsent"><option value="never">Never</option><option value="wifi">Wi-Fi only</option><option value="any">Wi-Fi + data</option></select></div>'
+        +'<div class="pers-opt"><span>Terms &amp; privacy</span><button type="button" class="btn ghost sm" id="persTos">Read</button></div>'
+        +'<div class="hint" style="margin:4px 0 0">Nothing ever leaves this device unless you choose a sharing option above. Flagged images wait in a local outbox and only queue when your choice allows it.</div>'
+      +'</div>';
+    document.body.appendChild(ov);
+    var sel=document.getElementById("persTheme");
+    ["mono","dark","emerald","paper","light","synth","ice"].forEach(function(k){
+      var o=document.createElement("option");o.value=k;o.textContent=k.charAt(0).toUpperCase()+k.slice(1);sel.appendChild(o);
+    });
+    sel.addEventListener("change",function(){
+      var btn=document.querySelector('.theme-opt[data-theme-key="'+sel.value+'"]');
+      if(btn) btn.click(); else { document.documentElement.setAttribute("data-theme",sel.value==="dark"?"":sel.value); try{localStorage.setItem("mymoney_theme",sel.value);}catch(e){} }
+      flashSaved("theme applied");
+    });
+    document.getElementById("persTrader").addEventListener("change",function(e){
+      var c=document.getElementById("sIsTrader");
+      if(c){c.checked=e.target.checked;c.dispatchEvent(new Event("change"));}
+    });
+    document.getElementById("persMtOcr").addEventListener("change",function(e){
+      if(!state.settings)state.settings={};
+      state.settings.mtOcr=e.target.value;persistNow();mtOcrUI();flashSaved("saved");
+    });
+    document.getElementById("persNoSplits").addEventListener("change",function(e){
+      if(!state.settings)state.settings={};
+      state.settings.noSplits=e.target.checked;persistNow();applyNoSplits();flashSaved("saved");
+    });
+    document.getElementById("persDraft").addEventListener("change",function(e){
+      if(!state.settings)state.settings={};
+      state.settings.draftSafety=e.target.checked;persistNow();flashSaved("saved");
+    });
+    document.getElementById("persDevType").addEventListener("change",function(e){
+      if(!state.settings)state.settings={};
+      state.settings.deviceType=e.target.value;persistNow();applyDeviceType();flashSaved("saved");
+    });
+    document.getElementById("persConsent").addEventListener("change",function(e){
+      if(!state.settings)state.settings={};
+      state.settings.shareConsent=e.target.value;persistNow();flashSaved("saved");
+    });
+    document.getElementById("persTos").addEventListener("click",showTosModal);
+    document.getElementById("persClose").addEventListener("click",function(){ov.classList.remove("on");});
+    Array.prototype.forEach.call(ov.querySelectorAll(".pers-jump"),function(b){
+      b.addEventListener("click",function(){
+        var t=document.getElementById(b.getAttribute("data-t"));
+        if(t) t.scrollIntoView({behavior:"smooth",block:"start"});
+        Array.prototype.forEach.call(ov.querySelectorAll(".pers-jump"),function(x){x.classList.toggle("on",x===b);});
+      });
+    });
+  }
+  function persOpen(){
+    persEnsure();
+    var s=state.settings||{};
+    document.getElementById("persTheme").value=(function(){try{return localStorage.getItem("mymoney_theme")||"mono";}catch(e){return "mono";}})();
+    document.getElementById("persTrader").checked=!!s.isTrader;
+    document.getElementById("persMtOcr").value=s.mtOcr||"off";
+    document.getElementById("persNoSplits").checked=!!s.noSplits;
+    document.getElementById("persDraft").checked=s.draftSafety!==false;
+    document.getElementById("persDevType").value=s.deviceType||"auto";
+    document.getElementById("persConsent").value=s.shareConsent||"never";
+    document.getElementById("persOv").classList.add("on");
+  }
+  function bindPersonalize(){
+    var b=document.getElementById("persOpenBtn");
+    if(b) b.addEventListener("click",persOpen);
+  }
+
+  /* ================= v2.02 - STAGE 5: CRASH / BATTERY DRAFT SAFETY ================= */
+  var DRAFT_KEY="mymoney_entry_draft", DRAFT_FIELDS=["fDate","fType","fAmt","fInst","fNote","fSplit"];
+  function draftEnabled(){ return !(state.settings&&state.settings.draftSafety===false); }
+  function draftSave(){
+    if(!draftEnabled()) return;
+    try{
+      var d={at:Date.now()};
+      var any=false;
+      DRAFT_FIELDS.forEach(function(id){
+        var el=document.getElementById(id);
+        if(el&&el.value){d[id]=el.value;if(id==="fAmt"||id==="fNote"||id==="fInst")any=true;}
+      });
+      if(any) localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
+      else localStorage.removeItem(DRAFT_KEY);
+    }catch(e){}
+  }
+  function draftClear(){ try{localStorage.removeItem(DRAFT_KEY);}catch(e){} }
+  function draftRestore(){
+    if(!draftEnabled()) return;
+    var d=null;
+    try{d=JSON.parse(localStorage.getItem(DRAFT_KEY)||"null");}catch(e){}
+    if(!d||!d.at||Date.now()-d.at>48*3600*1000){draftClear();return;}
+    appModal({
+      title:"Pick up where you left off?",
+      message:"An entry was in progress when the app last closed"
+        +(d.fNote?" \u2014 <b>"+esc(String(d.fNote).slice(0,60))+"</b>":"")+".",
+      confirmText:"Restore it", cancelText:"Discard",
+      onConfirm:function(){
+        DRAFT_FIELDS.forEach(function(id){
+          var el=document.getElementById(id);
+          if(el&&d[id]!=null){el.value=d[id];el.dispatchEvent(new Event("change"));}
+        });
+        flashSaved("draft restored");
+      }
+    });
+    draftClear();
+  }
+  function bindDraftSafety(){
+    DRAFT_FIELDS.forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el) return;
+      el.addEventListener("input",draftSave);
+      el.addEventListener("change",draftSave);
+    });
+    var form=document.getElementById("entrySubmitBtn");
+    if(form) form.addEventListener("click",function(){setTimeout(draftClear,400);});
+    window.addEventListener("pagehide",draftSave);
+    setTimeout(draftRestore,600);
+  }
+
+  /* ================= v2.03 - STAGE 6: RECENT ACTIONS FILTERS + ARCHIVE ================= */
+  var ACT_ARCHIVE_DB="mymoney_actions_archive";
+  var ACT_FILTERS=[["1m",60],["2m",120],["10m",600],["1h",3600],["10h",36000],["1d",86400],["1w",604800],["1mo",2592000],["1y",31536000],["all",0]];
+  var actFilter="all";
+  function actArchiveSave(a){
+    try{
+      var req=indexedDB.open(ACT_ARCHIVE_DB,1);
+      req.onupgradeneeded=function(){try{req.result.createObjectStore("acts",{keyPath:"at"});}catch(e){}};
+      req.onsuccess=function(){
+        try{
+          var db=req.result,tx=db.transaction("acts","readwrite");
+          tx.objectStore("acts").put({label:a.label,at:a.at});
+          tx.oncomplete=function(){db.close();};tx.onerror=function(){db.close();};
+        }catch(e){}
+      };
+    }catch(e){}
+  }
+  function actArchiveList(cb){
+    try{
+      var req=indexedDB.open(ACT_ARCHIVE_DB,1);
+      req.onupgradeneeded=function(){try{req.result.createObjectStore("acts",{keyPath:"at"});}catch(e){}};
+      req.onsuccess=function(){
+        try{
+          var db=req.result,g=db.transaction("acts","readonly").objectStore("acts").getAll();
+          g.onsuccess=function(){cb(g.result||[]);db.close();};
+          g.onerror=function(){cb([]);db.close();};
+        }catch(e){cb([]);}
+      };
+      req.onerror=function(){cb([]);};
+    }catch(e){cb([]);}
+  }
+  function bindActFilters(){
+    var box=document.getElementById("actList");
+    if(!box||document.getElementById("actFilters")) return;
+    var bar=document.createElement("div");
+    bar.className="act-filters"; bar.id="actFilters";
+    bar.innerHTML=ACT_FILTERS.map(function(f){
+      return '<button type="button" data-f="'+f[0]+'" class="'+(f[0]===actFilter?"on":"")+'">'+f[0]+'</button>';
+    }).join("");
+    box.parentNode.insertBefore(bar,box);
+    Array.prototype.forEach.call(bar.querySelectorAll("button"),function(b){
+      b.addEventListener("click",function(){
+        actFilter=b.getAttribute("data-f");
+        Array.prototype.forEach.call(bar.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});
+        renderActionsFiltered();
+      });
+    });
+  }
+  function renderActionsFiltered(){
+    renderActions();
+    var box=document.getElementById("actList");
+    if(!box) return;
+    var secs=(ACT_FILTERS.filter(function(f){return f[0]===actFilter;})[0]||[null,0])[1];
+    if(secs>0){
+      var rows=box.querySelectorAll(".act-row");
+      ACTIONS.forEach(function(a,i){
+        if(rows[i]&&(Date.now()-a.at)/1000>secs) rows[i].style.display="none";
+      });
+    }
+    if(actFilter==="all"){
+      actArchiveList(function(arch){
+        if(!arch.length) return;
+        arch.sort(function(a,b){return b.at-a.at;});
+        var live={}; ACTIONS.forEach(function(a){live[a.at]=1;});
+        var older=arch.filter(function(a){return !live[a.at];}).slice(0,100);
+        if(!older.length) return;
+        var div=document.createElement("div");
+        div.innerHTML='<div class="hint" style="margin:10px 0 6px">Older (archived \u2014 view only, undo window has passed)</div>'
+          +older.map(function(a){
+            return '<div class="act-row"><div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+new Date(a.at).toLocaleString()+'</span></div></div>';
+          }).join("");
+        box.appendChild(div);
+      });
+    }
+  }
+
+  /* ================= v2.04 - STAGE 7: CHART TIMEFRAME STEPPER ================= */
+  var TR_STEPS=["1","3","4","7","30","90","365","all"];
+  function trStepTo(val){
+    var seg=document.getElementById("trPeriod");
+    if(!seg) return;
+    var btn=seg.querySelector('button[data-p="'+val+'"]');
+    if(btn) btn.click();
+  }
+  function trCurrent(){
+    var seg=document.getElementById("trPeriod");
+    var on=seg?seg.querySelector("button.on"):null;
+    return on?on.getAttribute("data-p"):"all";
+  }
+  function trStep(dir){
+    var i=TR_STEPS.indexOf(trCurrent());
+    if(i<0)i=TR_STEPS.length-1;
+    var n=Math.min(TR_STEPS.length-1,Math.max(0,i+dir));
+    trStepTo(TR_STEPS[n]);
+  }
+  function applyDeviceType(){
+    var s=(state.settings&&state.settings.deviceType)||"auto";
+    var touch=(s==="touch")||(s==="auto"&&("ontouchstart" in window||navigator.maxTouchPoints>0));
+    document.body.setAttribute("data-device",touch?"touch":"desktop");
+  }
+  function bindChartStepper(){
+    var seg=document.getElementById("trPeriod");
+    if(!seg||seg.getAttribute("data-stepped")) return;
+    seg.setAttribute("data-stepped","1");
+    ["7","4","3","1"].forEach(function(d){
+      var b=document.createElement("button");
+      b.type="button";b.setAttribute("data-p",d);
+      b.textContent=(d==="7"?"1w":d+"d");
+      seg.insertBefore(b,seg.firstChild);
+    });
+    var wrap=document.createElement("div");
+    wrap.className="tr-step";
+    seg.parentNode.insertBefore(wrap,seg);
+    var L=document.createElement("button");L.type="button";L.className="arrow";L.textContent="\u2039";
+    var R=document.createElement("button");R.type="button";R.className="arrow";R.textContent="\u203a";
+    wrap.appendChild(L);wrap.appendChild(seg);wrap.appendChild(R);
+    L.addEventListener("click",function(){trStep(-1);});
+    R.addEventListener("click",function(){trStep(1);});
+    document.addEventListener("keydown",function(e){
+      var pg=document.getElementById("pageTrading");
+      if(!pg||pg.style.display==="none") return;
+      if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+      if(e.key==="ArrowLeft"){trStep(-1);e.preventDefault();}
+      if(e.key==="ArrowRight"){trStep(1);e.preventDefault();}
+    });
+    applyDeviceType();
+  }
+
+  /* ================= v2.06 - STAGE 9: CONSENT + LOCAL OUTBOX + ToS ================= */
+  function consentAllowsNow(){
+    var c=(state.settings&&state.settings.shareConsent)||"never";
+    if(c==="never") return false;
+    if(c==="any") return true;
+    try{
+      var conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+      if(conn&&conn.type) return conn.type==="wifi"||conn.type==="ethernet";
+    }catch(e){}
+    return false;
+  }
+  function outboxQueue(entry){
+    if(!consentAllowsNow()) return;
+    mtSandboxOpen(function(db){
+      if(!db) return;
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readwrite");
+        tx.objectStore(MT_SANDBOX_STORE).add(Object.assign({outbox:true,queuedAt:Date.now()},entry));
+        tx.oncomplete=function(){db.close();};tx.onerror=function(){db.close();};
+      }catch(e){try{db.close();}catch(e2){}}
+    });
+  }
+  function showTosModal(){
+    appModal({
+      title:"Terms & Privacy \u2014 My Money",
+      message:'<div style="max-height:50vh;overflow:auto;font-size:12px;line-height:1.55">'
+        +'<b>Plain-language summary</b><br>'
+        +'\u2022 All your data lives in this browser on this device. There is no account and no server.<br>'
+        +'\u2022 Statement photos are read on-device. Nothing is uploaded.<br>'
+        +'\u2022 If you choose a sharing option under Privacy, flagged images and suggestions are placed in a <b>local outbox only</b>; a future update may offer to send them, and will ask again before anything transmits.<br>'
+        +'\u2022 "Never" (the default) guarantees nothing is ever queued.<br>'
+        +'\u2022 Backups are your responsibility \u2014 export CSVs regularly; clearing browser data erases everything.<br>'
+        +'\u2022 Provided as-is by ProjectBergmannstrasse, contact 67ace67a@gmail.com. Not financial advice.<br><br>'
+        +'A GitHub-ready standalone copy of this page ships alongside the app as <b>tos_privacy.html</b>.'
+        +'</div>',
+      confirmText:"Close"
+    });
+  }
+
+  /* ---------- staged-module binder ---------- */
+  function bindStagedModules(){
+    bindTradeInfo();
+    bindTraderOnboarding();
+    bindPersonalize();
+    bindDraftSafety();
+    bindActFilters();
+    bindChartStepper();
+    applyDeviceType();
+  }
+
 
   /* ------- runtime: lazy engine load, background analysis, fill actions ------- */
   var mtOcr={ state:"idle",           // idle | loading | running | done | failed | nota
@@ -7130,6 +7603,7 @@ AI_TYPES.join(", "),
     });
   }
   function mtOcrUI(){
+    if(typeof tradeInfoSync==="function") tradeInfoSync();   // v1.99 Stage 2
     var bar=document.getElementById("mtOcrBar");
     if(!bar) return;
     var on = mtOcrMode()!=="off" && mtOcrIsTradeType();
@@ -7650,7 +8124,9 @@ AI_TYPES.join(", "),
   var ACTIONS=[], ACTIONS_MAX=12;
   function recordAction(label){
     try{
-      ACTIONS.unshift({ label:label, at:Date.now(), snap:JSON.stringify(state) });
+      var __a={ label:label, at:Date.now(), snap:JSON.stringify(state) };
+      ACTIONS.unshift(__a);
+      actArchiveSave(__a);   // v2.03: light copy (label+time) into the sandboxed archive
       if(ACTIONS.length>ACTIONS_MAX) ACTIONS.pop();
     }catch(e){ return; }   // a snapshot that can't be taken must never block the action
     renderActions();
@@ -8158,6 +8634,7 @@ AI_TYPES.join(", "),
       {key:"dark",   label:"🌑 Dark",   swatch:"#0b0e14", ring:"#f4b73f"},
       {key:"emerald",label:"💚 Matrix", swatch:"#00ff88"},
       {key:"paper",  label:"📄 Paper",  swatch:"#f4f1ea", ring:"#b3730d"},
+      {key:"light",  label:"☀️ Light",  swatch:"#f6f7f9", ring:"#14161a"},
       {key:"synth",  label:"🌆 Synth",  swatch:"#ff4fd8"},
       {key:"ice",    label:"🧊 Ice",    swatch:"#38c6f4"}
     ];
@@ -8937,6 +9414,7 @@ AI_TYPES.join(", "),
     loadAiCfg();
     fillProviderSelects();
     bindAiUI();
+    bindStagedModules(); // v1.99-v2.06 staged roadmap
     bindTradingPage();
     bindLabelInputs();
     bindCsvImport();
@@ -8979,6 +9457,7 @@ AI_TYPES.join(", "),
 <main id="pageSettings" class="page" style="display:none">
   <div class="page-head">
     <h1>⚙️ Settings</h1>
+    <button type="button" class="btn ghost sm" id="persOpenBtn" style="margin-left:auto">✨ Personalize</button>
   </div>
 
   <!-- Theme picker -->
@@ -9373,7 +9852,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v1.98</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.06</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
