@@ -824,6 +824,40 @@
   .copy-sub{font-size:12px;font-weight:500;color:var(--mut)}
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
+
+  /* Monte Carlo Simulator */
+  .mc-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;
+    margin:10px 0;overflow:hidden}
+  .mc-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
+    cursor:pointer;gap:8px;user-select:none}
+  .mc-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;
+    display:flex;align-items:center;gap:7px}
+  .mc-head .mc-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
+  .mc-body{padding:14px 16px 16px}
+  .mc-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .mc-inputs .fld{margin:0}
+  .mc-inputs .fld label{font-size:10px}
+  .mc-inputs .fld input,.mc-inputs .fld select{font-size:13px;padding:8px 10px;min-height:40px}
+  .mc-run{width:100%;margin-top:4px}
+  .mc-result{margin-top:14px}
+  .mc-canvas-wrap{position:relative;width:100%;height:200px;border-radius:10px;
+    background:var(--panel);overflow:hidden;margin-bottom:12px}
+  .mc-canvas-wrap canvas{display:block;width:100%;height:100%}
+  .mc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+  .mc-stat{background:var(--panel);border-radius:10px;padding:9px 10px;text-align:center}
+  .mc-stat .mk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--mut);font-weight:700;margin-bottom:3px}
+  .mc-stat .mv{font-size:16px;font-weight:800}
+  .mc-prob{text-align:center;font-size:12px;color:var(--mut);margin-top:6px;line-height:1.6}
+  .mc-prob b{color:var(--tx)}
+  .mc-bands{display:flex;gap:4px;height:14px;border-radius:7px;overflow:hidden;margin-bottom:6px}
+  .mc-band{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
+  .mc-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--mut);margin-top:4px}
+  .mc-legend span{display:flex;align-items:center;gap:4px}
+  .mc-legend i{width:10px;height:10px;border-radius:2px;flex:none}
+  .mc-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6;
+    border-top:1px solid var(--bd);padding-top:8px}
+  .mc-spinner{text-align:center;color:var(--mut);font-size:12px;padding:30px 0}
 </style>
 </head>
 <body>
@@ -950,6 +984,45 @@
   </div>
   <div class="p-body" id="chartWrap"></div>
 </div>
+</div>
+
+
+<!-- Monte Carlo Wealth Simulator -->
+<div class="mc-wrap" id="mcWrap">
+  <div class="mc-head" id="mcHead" role="button" aria-expanded="false">
+    <h3>🎲 Wealth Simulator<span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px">Monte Carlo · 10,000 scenarios</span></h3>
+    <span class="mc-caret" id="mcCaret">▶</span>
+  </div>
+  <div class="mc-body" id="mcBody" style="display:none">
+    <div class="mc-inputs">
+      <div class="fld"><label>Current net worth</label>
+        <input class="inp" id="mcNW" inputmode="decimal" placeholder="e.g. 50000"></div>
+      <div class="fld"><label>Monthly savings add</label>
+        <input class="inp" id="mcSave" inputmode="decimal" placeholder="e.g. 2000"></div>
+      <div class="fld"><label>Target (retire/goal)</label>
+        <input class="inp" id="mcTarget" inputmode="decimal" placeholder="e.g. 1000000"></div>
+      <div class="fld"><label>Return profile</label>
+        <select class="inp" id="mcProfile">
+          <option value="conservative">Conservative (6% / 10% vol)</option>
+          <option value="moderate" selected>Moderate (8% / 13% vol)</option>
+          <option value="growth">Growth (10% / 16% vol)</option>
+          <option value="aggressive">Aggressive (12% / 20% vol)</option>
+        </select></div>
+    </div>
+    <div class="fld" style="margin-bottom:10px">
+      <label>Time horizon (years)</label>
+      <input type="range" id="mcYears" min="5" max="50" step="1" value="30"
+        style="width:100%;accent-color:var(--up)">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:2px">
+        <span>5 yr</span><span id="mcYrsLbl" style="font-weight:700;color:var(--tx)">30 yr</span><span>50 yr</span>
+      </div>
+    </div>
+    <button class="btn solid wide mc-run" id="mcRun">Run 10,000 scenarios</button>
+    <div id="mcResult" class="mc-result" style="display:none"></div>
+    <div class="mc-discl">Simulation uses log-normal annual returns with historical volatility.
+      Past market behaviour does not guarantee future results.<br>
+      For personal tracking only — not financial advice.</div>
+  </div>
 </div>
 
 <main id="pageLedger" class="page" style="display:none">
@@ -5194,6 +5267,274 @@ AI_TYPES.join(", "),
     if(cb) cb(list.length);
   }
 
+
+  /* ============================================================
+     MONTE CARLO WEALTH SIMULATOR
+     Runs 10,000 independent simulations of portfolio growth using
+     log-normal annual returns (matching real market behaviour —
+     returns are not normally distributed; their LOG is). Each sim
+     compounds monthly, adds the user's savings each month, and
+     records the year the target was first reached (if ever).
+
+     Outputs:
+       · probability of hitting the target in the horizon
+       · 10th / 25th / 50th / 75th / 90th percentile year
+       · stacked percentile bands over time (wealth fan chart)
+       · year-by-year median wealth line
+     ============================================================ */
+
+  var MC_PROFILES = {
+    conservative: {mean:0.06, std:0.10, label:"Conservative"},
+    moderate:     {mean:0.08, std:0.13, label:"Moderate"},
+    growth:       {mean:0.10, std:0.155,label:"Growth"},
+    aggressive:   {mean:0.12, std:0.20, label:"Aggressive"}
+  };
+
+  // Box-Muller transform: uniform → standard normal
+  function mcRandn(){
+    var u=0, v=0;
+    while(!u) u=Math.random();
+    while(!v) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  function runMonteCarlo(netWorth, monthlySavings, target, profileKey, years){
+    var prof = MC_PROFILES[profileKey] || MC_PROFILES.moderate;
+    var SIMS = 10000;
+    // Log-normal parameters — convert arithmetic mean/std to log-space
+    var logMu  = Math.log(1+prof.mean) - 0.5*Math.pow(Math.log(1+prof.std),2);
+    var logSig = Math.log(1+prof.std);
+
+    var reachedYear = new Array(SIMS);     // year target hit, or Infinity
+    // Track wealth at each year across all sims for the fan chart (store percentiles)
+    var yearWealth  = [];   // [year] -> sorted array of ending wealth across all sims
+    for(var y=0;y<=years;y++) yearWealth.push([]);
+
+    yearWealth[0] = new Array(SIMS).fill(netWorth);
+
+    for(var sim=0;sim<SIMS;sim++){
+      var w = netWorth;
+      var hit = -1;
+      for(var yr=1;yr<=years;yr++){
+        // one year of monthly compounding with random annual return
+        var annReturn = Math.exp(logMu + logSig*mcRandn()) - 1;
+        var mRate = Math.pow(1+annReturn, 1/12) - 1;
+        for(var mo=0;mo<12;mo++){
+          w = w*(1+mRate) + monthlySavings;
+        }
+        // clamp to zero — can't go below zero in this model (no leverage/margin)
+        if(w<0) w=0;
+        yearWealth[yr].push(w);
+        if(hit<0 && w>=target) hit=yr;
+      }
+      reachedYear[sim] = hit<0 ? Infinity : hit;
+    }
+
+    // sort each year's wealth array for percentile extraction
+    for(var y2=1;y2<=years;y2++) yearWealth[y2].sort(function(a,b){return a-b;});
+
+    var pct = function(arr, p){
+      var i = Math.max(0, Math.min(arr.length-1, Math.floor(p*(arr.length-1))));
+      return arr[i];
+    };
+
+    var finite = reachedYear.filter(function(x){ return isFinite(x); }).sort(function(a,b){return a-b;});
+    var probPct = (100*finite.length/SIMS);
+
+    return {
+      prob: probPct,
+      finite: finite,
+      p10:  finite.length ? pct(finite, 0.10) : null,
+      p25:  finite.length ? pct(finite, 0.25) : null,
+      p50:  finite.length ? pct(finite, 0.50) : null,
+      p75:  finite.length ? pct(finite, 0.75) : null,
+      p90:  finite.length ? pct(finite, 0.90) : null,
+      yearWealth: yearWealth,
+      years: years,
+      target: target,
+      profile: prof
+    };
+  }
+
+  function mcFmt(v){
+    if(v>=1e9) return "$"+(v/1e9).toFixed(1)+"B";
+    if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
+    if(v>=1e3) return "$"+(v/1e3).toFixed(0)+"K";
+    return "$"+v.toFixed(0);
+  }
+
+  function drawMcChart(canvas, res){
+    var W=canvas.width, H=canvas.height;
+    var ctx=canvas.getContext("2d");
+    ctx.clearRect(0,0,W,H);
+
+    var padL=42, padR=12, padT=14, padB=28;
+    var pw=W-padL-padR, ph=H-padT-padB;
+    var years=res.years;
+
+    // find chart max Y — 95th pct at the end or 1.2× target, whichever is larger
+    var yw=res.yearWealth;
+    var maxY=Math.max(res.target*1.2,
+      yw[years].length ? yw[years][Math.floor(.95*yw[years].length)] : res.target*2);
+
+    var xf=function(yr){ return padL+pw*(yr/years); };
+    var yf=function(v){ return padT+ph*(1-Math.min(v,maxY)/maxY); };
+
+    // percentile band colours (theme-aware)
+    var cs=getComputedStyle(document.documentElement);
+    var up=cs.getPropertyValue("--up").trim()||"#3ddc84";
+    var amber=cs.getPropertyValue("--amber").trim()||"#f4b73f";
+    var mut=cs.getPropertyValue("--mut").trim()||"#8a97a6";
+    var tx=cs.getPropertyValue("--tx").trim()||"#eef3f8";
+    var bd=cs.getPropertyValue("--bd").trim()||"#26313d";
+
+    // draw percentile bands p10-p90, p25-p75 (fan)
+    function band(pLo, pHi, color, alpha){
+      ctx.beginPath();
+      ctx.moveTo(xf(0), yf(yw[0][0]||0));
+      for(var y=0;y<=years;y++){
+        var arr=yw[y];
+        if(!arr.length) continue;
+        var v=arr[Math.max(0,Math.floor(pLo*(arr.length-1)))];
+        ctx.lineTo(xf(y), yf(v));
+      }
+      for(var y2=years;y2>=0;y2--){
+        var arr2=yw[y2];
+        if(!arr2.length) continue;
+        var v2=arr2[Math.min(arr2.length-1,Math.floor(pHi*(arr2.length-1)))];
+        ctx.lineTo(xf(y2), yf(v2));
+      }
+      ctx.closePath();
+      ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
+    }
+    band(0.10, 0.90, up, 0.12);   // wide band
+    band(0.25, 0.75, up, 0.22);   // middle band
+    band(0.40, 0.60, up, 0.30);   // tight band
+
+    // median line
+    ctx.beginPath(); ctx.lineWidth=2.5; ctx.strokeStyle=up; ctx.globalAlpha=0.9;
+    var first=true;
+    for(var y3=0;y3<=years;y3++){
+      var arr3=yw[y3]; if(!arr3.length) continue;
+      var v3=arr3[Math.floor(.5*(arr3.length-1))];
+      first ? ctx.moveTo(xf(y3),yf(v3)) : ctx.lineTo(xf(y3),yf(v3));
+      first=false;
+    }
+    ctx.stroke(); ctx.globalAlpha=1;
+
+    // target line
+    if(res.target<=maxY){
+      var ty=yf(res.target);
+      ctx.beginPath(); ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
+      ctx.strokeStyle=amber; ctx.globalAlpha=0.8;
+      ctx.moveTo(padL,ty); ctx.lineTo(padL+pw,ty); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha=1;
+      ctx.fillStyle=amber; ctx.font="bold 9px "+getComputedStyle(document.body).fontFamily;
+      ctx.textAlign="left"; ctx.fillText("TARGET",padL+3,ty-3);
+    }
+
+    // x-axis labels
+    ctx.fillStyle=mut; ctx.font="10px monospace"; ctx.textAlign="center";
+    var step=years<=20?5:years<=35?10:10;
+    for(var y4=0;y4<=years;y4+=step){
+      ctx.fillText("yr "+y4, xf(y4), H-6);
+    }
+    // y-axis labels
+    ctx.textAlign="right";
+    for(var i=0;i<=4;i++){
+      var val=maxY*(i/4), yl=yf(val);
+      ctx.fillText(mcFmt(val), padL-4, yl+3);
+      ctx.beginPath(); ctx.strokeStyle=bd; ctx.lineWidth=0.5; ctx.globalAlpha=0.5;
+      ctx.moveTo(padL,yl); ctx.lineTo(padL+pw,yl); ctx.stroke(); ctx.globalAlpha=1;
+    }
+  }
+
+  function renderMcResult(res, sym){
+    sym = sym||"$";
+    var probColor = res.prob>=80 ? "var(--up)" : res.prob>=50 ? "var(--amber)" : "var(--down)";
+    var yearOf = function(p){ return p!=null ? p+"yr" : "—"; };
+
+    var html = '<div class="mc-summary">'
+      +'<div class="mc-stat"><div class="mk">Probability</div>'
+        +'<div class="mv" style="color:'+probColor+'">'+res.prob.toFixed(0)+'%</div></div>'
+      +'<div class="mc-stat"><div class="mk">Median year</div>'
+        +'<div class="mv">'+(res.p50!=null?'yr '+res.p50:'&gt;'+res.years+'yr')+'</div></div>'
+      +'<div class="mc-stat"><div class="mk">Best 1-in-10</div>'
+        +'<div class="mv" style="color:var(--up)">'+(res.p10!=null?'yr '+res.p10:'—')+'</div></div>'
+      +'</div>'
+      +'<div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>'
+      +'<div class="mc-prob">'
+        +'<b>'+res.prob.toFixed(1)+'%</b> of 10,000 scenarios hit your target'
+          +(res.p50!=null?' — most reach it by <b>year '+res.p50+'</b>':'.')
+        +'<br>Worst 10%: '+(res.p90!=null?'year '+res.p90:'never in '+res.years+' yr')
+        +' &nbsp;·&nbsp; Best 10%: '+(res.p10!=null?'year '+res.p10:'—')
+      +'</div>';
+
+    var box = document.getElementById("mcResult");
+    box.innerHTML = html; box.style.display="block";
+
+    // draw after DOM is ready
+    requestAnimationFrame(function(){
+      var canvas = document.getElementById("mcCanvas");
+      if(!canvas) return;
+      var wrap = canvas.parentElement;
+      var DPR = window.devicePixelRatio||1;
+      canvas.width  = wrap.offsetWidth  * DPR;
+      canvas.height = wrap.offsetHeight * DPR;
+      canvas.style.width  = wrap.offsetWidth+"px";
+      canvas.style.height = wrap.offsetHeight+"px";
+      var ctx=canvas.getContext("2d"); ctx.scale(DPR,DPR);
+      drawMcChart(canvas, res);
+    });
+  }
+
+  function bindMonteCarlo(){
+    var head = document.getElementById("mcHead");
+    var body = document.getElementById("mcBody");
+    var caret= document.getElementById("mcCaret");
+    if(!head||!body) return;
+
+    // pre-fill from the app's current net worth
+    var nwEl=document.getElementById("mcNW");
+    if(nwEl){ var t=totals(); if(t.net>0) nwEl.value=Math.round(t.net); }
+
+    // toggle open/close
+    head.addEventListener("click", function(){
+      var open = body.style.display==="none";
+      body.style.display = open?"":"none";
+      if(caret) caret.style.transform = open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(open && !nwEl.value){ var t2=totals(); if(t2.net>0) nwEl.value=Math.round(t2.net); }
+    });
+
+    var yrs=document.getElementById("mcYears"), lbl=document.getElementById("mcYrsLbl");
+    if(yrs&&lbl) yrs.addEventListener("input", function(){ lbl.textContent=yrs.value+" yr"; });
+
+    document.getElementById("mcRun").addEventListener("click", function(){
+      var nw   = parseFloat(document.getElementById("mcNW").value);
+      var save = parseFloat(document.getElementById("mcSave").value);
+      var tgt  = parseFloat(document.getElementById("mcTarget").value);
+      var prof = document.getElementById("mcProfile").value;
+      var yrsV = parseInt(document.getElementById("mcYears").value, 10);
+
+      if(!isFinite(nw))  { shake(document.getElementById("mcNW")); return; }
+      if(!isFinite(save)){ shake(document.getElementById("mcSave")); return; }
+      if(!isFinite(tgt)||tgt<=0){ shake(document.getElementById("mcTarget")); return; }
+
+      var btn=document.getElementById("mcRun");
+      btn.textContent="Running…"; btn.disabled=true;
+      document.getElementById("mcResult").innerHTML='<div class="mc-spinner">Simulating 10,000 scenarios…</div>';
+      document.getElementById("mcResult").style.display="block";
+
+      // run async so the spinner actually paints
+      setTimeout(function(){
+        var res = runMonteCarlo(nw, save, tgt, prof, yrsV);
+        renderMcResult(res, state.currency);
+        btn.textContent="Run 10,000 scenarios"; btn.disabled=false;
+      }, 20);
+    });
+  }
+
   /* ============================================================
      BILL REMINDERS — Web Notifications for upcoming bills
      Hooks into the existing recurring system. Fires when the app
@@ -8520,6 +8861,7 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    bindMonteCarlo();
     bindRecurring();
     bindGoals();
     bindTrash();
