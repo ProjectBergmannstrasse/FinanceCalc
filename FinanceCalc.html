@@ -238,6 +238,35 @@
 
   .sect{border:1px solid var(--bd);border-radius:12px;background:var(--card);margin:0 20px 8px;overflow:hidden}
   .sect[open]{border-color:var(--bd2)}
+
+  /* v2.42 drill-in settings */
+  .set-stage{position:relative;overflow:hidden}
+  .set-list{display:flex;flex-direction:column;gap:8px;padding:0 20px;transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .2s}
+  .set-stage.drilled .set-list{transform:translateX(-12%);opacity:0;pointer-events:none}
+  .set-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;cursor:pointer;
+    background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 16px;color:var(--tx);
+    transition:background .12s,border-color .12s,transform .08s}
+  .set-row:hover{background:var(--card2);border-color:var(--bd2)}
+  .set-row:active{transform:scale(.99)}
+  .set-row-i{font-size:19px;width:26px;text-align:center;flex:none;color:var(--tx)}
+  .set-row-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .set-row-t{font-size:15px;font-weight:700}
+  .set-row-s{font-size:12px;color:var(--mut)}
+  .set-row-c{font-size:22px;color:var(--mut);flex:none;line-height:1}
+  .set-panels{position:absolute;inset:0;pointer-events:none}
+  .set-panel{position:absolute;inset:0;transform:translateX(100%);opacity:0;
+    transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .2s;overflow-y:auto;pointer-events:none;
+    background:var(--bg)}
+  .set-panel.in{transform:translateX(0);opacity:1;pointer-events:auto}
+  .set-panel-h{display:flex;align-items:center;gap:12px;padding:2px 20px 14px;position:sticky;top:0;background:var(--bg);z-index:2}
+  .set-back{background:var(--card);border:1px solid var(--bd);color:var(--tx);border-radius:9px;
+    padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;flex:none;transition:background .12s}
+  .set-back:hover{background:var(--card2)}
+  .set-panel-t{font-size:17px;font-weight:800;letter-spacing:.2px}
+  .set-panel-b{padding:0 20px 30px;display:flex;flex-direction:column;gap:12px}
+  .set-subbox{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 15px}
+  .set-subbox > div[style*="text-transform:uppercase"]:first-child{margin-top:0}
+  .set-subbox .panel{margin:0;border:none;background:transparent;padding:0}
   .sect-h{display:flex;align-items:center;gap:12px;padding:14px 15px;cursor:pointer;list-style:none;
     user-select:none;transition:background .12s}
   .sect-h::-webkit-details-marker{display:none}
@@ -258,7 +287,16 @@
   .sect-s{font-size:11px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sect-c{flex:none;color:var(--mut);font-size:11px;transition:transform .16s}
   .sect[open] .sect-c{transform:rotate(90deg)}
-  .sect-b{padding:2px 0 14px;border-top:1px solid var(--bd)}
+  .sect-b{padding:10px 10px 12px;border-top:1px solid var(--bd)}
+  .subcard{border:1px solid var(--bd);border-radius:10px;background:var(--bg);margin:8px 0;overflow:hidden}
+  .subcard:first-child{margin-top:2px}
+  .subcard-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;font-size:13px;font-weight:700}
+  .subcard-h::-webkit-details-marker{display:none}
+  .subcard-t{text-transform:capitalize;letter-spacing:.2px}
+  .subcard-c{color:var(--mut);font-size:12px;transition:transform .18s}
+  details.subcard[open] .subcard-c{transform:rotate(90deg)}
+  .subcard-b{padding:0 14px 14px;border-top:1px solid var(--bd)}
+  .subcard-b > div[style*="text-transform:uppercase"]:first-child{margin-top:0}
   /* inner blocks already carry their own 20px padding — don't double it up */
   .sect-b > div{padding-left:15px;padding-right:15px}
   .sect-b > div[style*="padding:0 20px"]{padding-left:15px!important;padding-right:15px!important}
@@ -414,6 +452,23 @@
   .tr-controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
   .tr-controls .seg{flex:none}
   .tr-controls select{flex:1;max-width:220px}
+  .tr-group{margin-bottom:14px}
+  .tr-group-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:0 2px 8px;display:flex;align-items:center;gap:7px}
+  .tr-group-n{background:var(--bd);color:var(--tx);border-radius:999px;padding:1px 8px;font-size:10.5px}
+  .tr-card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 13px;margin-bottom:8px}
+  .tr-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+  .tr-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:999px;background:var(--bd);color:var(--tx)}
+  .tr-badge-neg{background:rgba(217,83,79,.16);color:var(--down)}
+  .tr-badge-pos{background:rgba(92,184,92,.16);color:var(--up)}
+  .tr-card-amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px}
+  .tr-amt-neg{color:var(--down)} .tr-amt-pos{color:var(--up)}
+  .tr-card-nm{font-size:13.5px;font-weight:600;margin-bottom:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tr-card-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11.5px;color:var(--mut);margin-bottom:10px}
+  .tr-pill{border:1px solid var(--bd);border-radius:999px;padding:1px 8px;font-variant-numeric:tabular-nums}
+  .tr-pill-soon{border-color:var(--down);color:var(--down)}
+  .tr-restore{width:100%;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:9px;padding:8px;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .12s}
+  .tr-restore:hover{background:var(--bd)}
+  .tr-restore:active{transform:scale(.98)}
   .tr-empty{padding:26px 18px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.6;border:1px dashed var(--bd2);border-radius:12px}
   .tr-empty b{color:var(--tx)}
   .ins{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border-radius:9px;margin-bottom:7px;
@@ -583,7 +638,13 @@
   .icon-btn:hover{color:var(--tx);border-color:var(--bd2)}
 
   /* chart */
-  #chartWrap{padding:6px 8px 4px}
+  #chartWrap{padding:6px 8px 4px;min-height:210px}
+  .chart-gear-panel{margin:0 12px 12px;padding:10px 12px;background:var(--card);border:1px solid var(--bd);border-radius:12px}
+  .cg-head{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:8px;font-weight:700}
+  .cg-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;font-size:13px;border-top:1px solid var(--bd)}
+  .cg-row:first-of-type{border-top:none}
+  .cg-row select{background:var(--bg);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:6px 8px;font-size:12.5px;font-family:inherit}
+  .cg-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--amber)}
   .tf-seg{flex-wrap:nowrap}
   .tf-seg button{min-width:34px;padding:6px 9px;font-size:11.5px;font-weight:800;letter-spacing:.3px;font-variant-numeric:tabular-nums}
   .tf-seg button:active{transform:scale(.94)}
@@ -599,12 +660,89 @@
   .exp-track{height:10px;border-radius:999px;background:var(--bg);border:1px solid var(--bd);overflow:hidden}
   .exp-fill{height:100%;width:0;background:var(--tx);border-radius:999px;transition:width .18s ease}
   .exp-meta{display:flex;justify-content:space-between;margin-top:9px;font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+
+  .beta-tag{font-size:9px;font-weight:800;letter-spacing:.5px;background:var(--amber);color:#20160a;padding:1px 6px;border-radius:999px;vertical-align:middle;margin-left:4px}
+  .sync-status{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);padding:8px 10px;background:var(--card);border:1px solid var(--bd);border-radius:10px;margin-bottom:12px}
+  .sync-dot{width:9px;height:9px;border-radius:50%;background:var(--up);flex:none;transition:background .2s}
+  .sync-dot.pending{background:var(--amber);animation:syncPulse 1.1s ease-in-out infinite}
+  .sync-dot.offline{background:var(--down)}
+  @keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .share-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .share-actions .btn{flex:1 1 auto;font-size:12.5px}
+  .shared-list,.activity-list{display:flex;flex-direction:column;gap:8px}
+  .share-row{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+  .share-row .sr-main{flex:1 1 auto;min-width:0}
+  .share-row .sr-mode{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:2px 7px;border-radius:999px;flex:none}
+  .sr-mode.view{background:var(--bd);color:var(--tx)}
+  .sr-mode.edit{background:var(--amber);color:#20160a}
+  .sr-mode.off{background:var(--down);color:#fff;opacity:.7}
+  .sr-url{font-size:11px;color:var(--mut);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sr-btns{display:flex;gap:6px;flex:none}
+  .sr-btns button{font-size:11px;padding:5px 9px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:7px;cursor:pointer}
+  .activity-row{display:flex;gap:9px;padding:7px 10px;background:var(--card);border:1px solid var(--bd);border-radius:9px;font-size:12px}
+  .activity-row .ar-when{color:var(--mut);flex:none;font-variant-numeric:tabular-nums}
+  .activity-row .ar-txt{flex:1 1 auto;min-width:0}
   .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;cursor:pointer;flex-wrap:nowrap;max-width:100%}
   .chk input[type="checkbox"]{flex:0 0 auto;width:18px;height:18px;accent-color:var(--amber);margin-top:2px}
   .chk > span{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;word-break:break-word}
-  .pan-seg button{min-width:30px;padding:6px 8px;font-size:13px;font-weight:800}
-  .pan-seg button:disabled{opacity:.3;cursor:default}
-  .pan-seg button:active:not(:disabled){transform:scale(.9)}
+
+
+/* v2.26 — custom categories */
+.cat-add{display:flex;gap:8px}
+.cat-add input{flex:1 1 auto;min-width:0;background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:9px 11px;color:var(--tx);font-size:13px;font-family:inherit}
+.cat-add input:focus{outline:none;border-color:var(--amber)}
+.cat-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.cat-row{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--bg);border:1px solid var(--bd);border-radius:9px}
+.cat-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.cat-used{flex:0 0 auto;font-size:11px;color:var(--mut)}
+.cat-del{flex:0 0 auto;border:none;background:transparent;color:#e06a5c;cursor:pointer;font-size:14px;font-weight:800;padding:2px 6px;border-radius:6px}
+.cat-del:hover{background:rgba(224,106,92,.12)}
+/* v2.25 — global search */
+.gs-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:40px 14px}
+.gs-panel{background:var(--card);border:1px solid var(--bd);border-radius:16px;width:min(560px,100%);max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.gs-head{display:flex;gap:10px;padding:14px;border-bottom:1px solid var(--bd)}
+.gs-head input{flex:1 1 auto;min-width:0;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;color:var(--tx);font-size:14px;font-family:inherit}
+.gs-head input:focus{outline:none;border-color:var(--amber)}
+.gs-results{overflow-y:auto;padding:8px}
+.gs-hint{padding:26px 14px;text-align:center;color:var(--mut);font-size:13px}
+.gs-row{display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:10px;cursor:pointer}
+.gs-row:hover{background:var(--bg)}
+.gs-badge{flex:0 0 auto;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:3px 7px;border-radius:999px;background:var(--bg);border:1px solid var(--bd);color:var(--mut)}
+.gs-main{flex:1 1 auto;min-width:0}
+.gs-title{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs-sub{font-size:11px;color:var(--mut);margin-top:1px}
+.gs-amt{flex:0 0 auto;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.gs-count{padding:6px 12px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+
+/* v2.25 — pie / horizontal bar / radial picker */
+.chart-empty{padding:34px 18px;text-align:center;color:var(--mut);font-size:13px;line-height:1.6}
+.pie-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:6px 4px}
+.pie-svg{width:210px;height:200px;flex:0 0 auto}
+.pie-legend{flex:1 1 200px;min-width:180px;display:flex;flex-direction:column;gap:7px}
+.pie-leg-row{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:3px 6px;border-radius:8px;transition:background .12s}
+.pie-leg-row.on{background:var(--bd)}
+.pie-dot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+.pie-leg-cat{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pie-leg-amt{flex:0 0 auto;color:var(--mut);font-variant-numeric:tabular-nums}
+.hbar-wrap{padding:8px 6px;display:flex;flex-direction:column;gap:13px}
+.hbar-total{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;margin-bottom:2px}
+.hbar-row{display:flex;flex-direction:column;gap:5px}
+.hbar-top{display:flex;justify-content:space-between;font-size:12.5px;gap:10px}
+.hbar-cat{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar-amt{color:var(--mut);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.hbar-track{height:12px;border-radius:6px;background:var(--bg);overflow:hidden}
+.hbar-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.cpick-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:40;opacity:0;transition:opacity .16s}
+.cpick-ov.in{opacity:1}
+.cpick-ring{position:relative;width:170px;height:170px}
+.cpick-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:var(--card);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.15;color:var(--mut);text-transform:uppercase;letter-spacing:.4px}
+.cpick-item{position:absolute;top:50%;left:50%;margin:-27px 0 0 -27px;width:54px;height:54px;border-radius:50%;background:var(--card);border:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;transition:transform .18s cubic-bezier(.22,1,.36,1),background .12s;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.cpick-ov.in .cpick-item{}
+.cpick-item .cpick-lbl{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--tx)}
+.cpick-item.on{background:var(--amber)}
+.cpick-item.on .cpick-lbl{color:#20160a}
+.cpick-item:active{filter:brightness(1.1)}
+
   .tf-badge{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);border:1px solid var(--bd);border-radius:999px;padding:3px 8px;white-space:nowrap}
   .tf-note{font-size:11px;color:var(--mut);padding:2px 4px 6px;font-variant-numeric:tabular-nums}
   @media(max-width:520px){
@@ -612,7 +750,8 @@
     .tf-seg{order:3;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
     .tf-seg button{flex:1 0 auto}
   }
-  svg.chart{width:100%;height:auto;aspect-ratio:720/220;display:block}
+  svg.chart{width:100%;height:210px;display:block}
+  #chartWrap{min-height:210px}
 
   /* entry form */
   form.entry{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -714,6 +853,10 @@
   .tg-go{flex:none;color:var(--mut);font-size:13px}
 
   .act-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+  .act-badge{flex:none;font-size:9.5px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:5px;background:var(--bd);color:var(--tx)}
+  .act-badge.act-neg{background:rgba(217,83,79,.18);color:var(--down)}
+  .act-badge.act-pos{background:rgba(92,184,92,.18);color:var(--up)}
+  .act-badge.act-mut{background:var(--bd);color:var(--mut)}
   .act-row:last-child{border-bottom:0}
   .act-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
   .act-t b{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -884,6 +1027,19 @@
     .page-head{flex-wrap:wrap;gap:8px}
   }
 </style>
+  <!-- v2.36: Supabase client for live sharing (beta). Public anon key — safe to ship.
+       Real protection is the Row Level Security rules in the database, not this key. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPA_URL  = "https://hubiicpwhpwvawoxnjjy.supabase.co";
+    window.SUPA_KEY  = "sb_publishable_g-g4d7Ip_ZNy71kjRm7P8g_jEti5mHK";
+    window.__supa = null;
+    try{
+      if(window.supabase && window.supabase.createClient){
+        window.__supa = window.supabase.createClient(window.SUPA_URL, window.SUPA_KEY);
+      }
+    }catch(e){ window.__supa = null; }
+  </script>
 </head>
 <body>
 
@@ -1001,16 +1157,16 @@
     <h2><span class="tick">▚</span> Balance over time</h2>
     <div style="display:flex;gap:8px;align-items:center">
       <div class="seg tf-seg" id="chartTf" role="group" aria-label="Candle timeframe"></div>
-      <div class="seg pan-seg" id="chartZoom" role="group" aria-label="Zoom chart"><button type="button" data-zoom="in" title="Zoom in (fewer candles)">+</button><button type="button" data-zoom="out" title="Zoom out (more candles)">−</button></div>
-      <div class="seg pan-seg" id="chartPan" role="group" aria-label="Scroll chart"><button type="button" data-pan="older" title="Scroll to older">◂</button><button type="button" data-pan="newer" title="Scroll to newer">▸</button></div>
       <div class="seg" id="chartSeg">
         <button data-t="candle">Candles</button>
         <button data-t="line">Line</button>
       </div>
-      <button class="icon-btn" id="chartToggle" title="Show / hide">▾</button>
+      <button type="button" class="icon-btn" id="chartGear" title="Chart settings">⚙</button>
+      <button type="button" class="icon-btn" id="chartToggle" title="Show / hide">▾</button>
     </div>
   </div>
-  <div class="p-body" id="chartWrap"></div>
+  <div class="p-body" id="chartWrap" title="Tap to change chart type"></div>
+  <div class="chart-gear-panel" id="chartGearPanel" style="display:none"></div>
 </div>
 </div>
 
@@ -1350,6 +1506,18 @@
   <div id="portfolioList" class="pf-list"></div>
   <div class="pf-foot">
     <button type="button" class="btn primary sm" id="portfolioAddBtn" style="width:100%">+ New portfolio</button>
+  </div>
+</div>
+
+
+<!-- v2.25 Global search modal -->
+<div id="gsearchOv" class="gs-ov" style="display:none">
+  <div class="gs-panel">
+    <div class="gs-head">
+      <input type="text" id="gsearchInput" placeholder="Search entries, trades, notes, categories, amounts…" autocomplete="off">
+      <button type="button" id="gsearchClose" class="btn ghost sm">Close</button>
+    </div>
+    <div class="gs-results" id="gsearchResults"><div class="gs-hint">Type to search across everything you\'ve logged.</div></div>
   </div>
 </div>
 
@@ -1872,6 +2040,7 @@
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
+    customCats:[],  // v2.26: user-added spending categories (built-ins stay in the HTML)
     budgets:{},   // {category: monthlyLimit} — empty means no caps, which is the default
     recurring:[], // [{id,type,amount,cat,note,freq,day,startDate,lastRun,paused}]
     goals:[],     // [{id,name,target,by,createdAt}] — measured against the savings pot
@@ -4195,7 +4364,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillChartDebt(); fillMiscSettings(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); bindActFilters(); renderActionsFiltered(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillChartDebt(); fillMiscSettings(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); syncCategoryOptions(); renderCategoryEditor(); bindActFilters(); renderActionsFiltered(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -4320,7 +4489,7 @@ AI_TYPES.join(", "),
      lost user data four times through bugs; a mis-tap shouldn't be a fifth way.
      Photos deliberately survive in the bin — a restore that brings back the entry but
      not its receipt isn't a restore. */
-  var TRASH_DAYS=30, TRASH_MAX=300;
+  var TRASH_DAYS=Infinity, TRASH_MAX=2000;   // v2.41: all-time — deleted items never expire
   function trashList(){ return Array.isArray(state.trash) ? state.trash : []; }
   function trashAge(item){ return Math.floor((Date.now()-(item.at||0))/86400000); }
   function trashDaysLeft(item){ return Math.max(0, TRASH_DAYS-trashAge(item)); }
@@ -4334,6 +4503,7 @@ AI_TYPES.join(", "),
     }
   }
   function purgeTrash(){
+    if(TRASH_DAYS===Infinity) return 0;   // v2.41: all-time retention, nothing expires
     if(!Array.isArray(state.trash) || !state.trash.length) return 0;
     var keep=[], n=0;
     state.trash.forEach(function(item){
@@ -4380,32 +4550,65 @@ AI_TYPES.join(", "),
   }
 
   /* ---------------- trash: UI ---------------- */
+  /* v2.38: Recently deleted, reorganised. Items are grouped into time buckets
+     (Today / Yesterday / This week / Earlier), each bucket a labelled section, each
+     entry a clean card with name, type badge, amount (coloured), date, attachment
+     count and an expiry pill. Far easier to scan than the old flat list. */
+  function trashBucket(at){
+    var d=new Date(at), now=new Date();
+    if(d.toDateString()===now.toDateString()) return {k:0,label:"Today"};
+    var y=new Date(now.getTime()-86400000);
+    if(d.toDateString()===y.toDateString()) return {k:1,label:"Yesterday"};
+    if((now-d)/86400000<7) return {k:2,label:"This week"};
+    return {k:3,label:"Earlier"};
+  }
   function renderTrash(){
     var box=document.getElementById("trashList");
     if(!box) return;
     var items=trashList(), sym=state.currency;
     document.getElementById("trashBtns").style.display=items.length?"":"none";
     if(!items.length){ box.innerHTML='<div class="tr-empty-msg">Nothing deleted recently.</div>'; return; }
-    box.innerHTML=items.slice(0,60).map(function(item,i){
-      var t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||"?"};
-      var nm=(t.note||t.cat||meta.label||"Entry");
-      var left=trashDaysLeft(item);
-      var when = left<=0 ? "going now" : (left===1 ? "1 day left" : left+" days left");
-      return '<div class="tr-item" data-i="'+i+'">'
-        +'<div class="tr-item-main"><div class="tr-item-nm">'+esc(nm)+'</div>'
-        +'<div class="tr-item-sub">'+esc(t.date||"")+' · '+esc(meta.label)+(photosOf(t).length?" · 📎"+(photosOf(t).length>1?photosOf(t).length:""):"")+' · <span class="'+(left<=5?"tr-soon":"")+'">'+when+'</span></div></div>'
-        +'<div class="tr-item-amt">'+fmt(num(t.amount),sym)+'</div>'
-        +'<button type="button" class="tr-item-btn" data-i="'+i+'">Restore</button>'
+
+    // keep original index for restore, then group by time bucket
+    var withIdx=items.map(function(item,i){ return {item:item, i:i}; });
+    var buckets={};
+    withIdx.slice(0,80).forEach(function(w){
+      var b=trashBucket(w.item.at||0);
+      (buckets[b.k]=buckets[b.k]||{label:b.label, rows:[]}).rows.push(w);
+    });
+
+    var html="";
+    [0,1,2,3].forEach(function(bk){
+      var g=buckets[bk]; if(!g) return;
+      html+='<div class="tr-group"><div class="tr-group-h">'+esc(g.label)+' <span class="tr-group-n">'+g.rows.length+'</span></div>';
+      html+=g.rows.map(function(w){
+        var item=w.item, t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||"?"};
+        var nm=(t.note||t.cat||meta.label||"Entry");
+        var amt=num(t.amount);
+        var sign=(t.type==="spend"||t.type==="trade_loss"||t.type==="pay_debt_balance"||t.type==="save")?"neg":"pos";
+        var pc=photosOf(t).length;
+        return '<div class="tr-card" data-i="'+w.i+'">'
+          +'<div class="tr-card-top">'
+            +'<span class="tr-badge tr-badge-'+sign+'">'+esc(meta.label)+'</span>'
+            +'<span class="tr-card-amt tr-amt-'+sign+'">'+fmt(amt,sym)+'</span>'
+          +'</div>'
+          +'<div class="tr-card-nm">'+esc(nm)+'</div>'
+          +'<div class="tr-card-meta">'
+            +'<span>'+esc(t.date||"—")+'</span>'
+            +(pc?'<span>📎 '+pc+'</span>':"")
+          +'</div>'
+          +'<button type="button" class="tr-restore" data-i="'+w.i+'">↩ Restore</button>'
         +'</div>';
-    }).join("")+(items.length>60?'<div class="tr-empty-msg">…and '+(items.length-60)+' more</div>':"");
-    Array.prototype.forEach.call(box.querySelectorAll(".tr-item-btn"), function(b){
+      }).join("");
+      html+='</div>';
+    });
+    if(items.length>80) html+='<div class="tr-empty-msg">…and '+(items.length-80)+' more</div>';
+    box.innerHTML=html;
+
+    Array.prototype.forEach.call(box.querySelectorAll(".tr-restore"), function(b){
       b.addEventListener("click", function(){
         var tx=restoreFromTrash(+b.getAttribute("data-i"));
-        if(tx){
-          resetLedgerView();
-          render(); renderTrash();
-          flashSaved("restored");
-        }
+        if(tx){ resetLedgerView(); render(); renderTrash(); flashSaved("restored"); }
       });
     });
   }
@@ -4829,6 +5032,9 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
+  /* v2.35: exactly 5 top-level settings categories. Your money and Trading stay
+     separate; spending categories fold into Layout & wording; Automation, AI Mode,
+     Global search, Sharing and Data all consolidate under Extras as sub-items. */
   var SETTINGS_GROUPS=[
     {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
      has:["Appearance"]},
@@ -4836,14 +5042,12 @@ AI_TYPES.join(", "),
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
     {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
      has:["Trading","Import trades from a file","MT4/MT5 photo auto-analyze"]},
-    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
-     has:["Wording","Layout"], ids:["settingsSlot"]},
-    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
-     has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
-     ids:["aiSection"]},
-    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Cards, wording, spending categories",
+     has:["Wording","Layout","Miscellaneous"], ids:["settingsSlot"]},
+    {k:"extra", t:"Extras",            i:"⋯", sub:"Automation, AI, search, sharing, data",
+     has:["Repeats","Monthly budgets","Savings goals","Beta features",
+          "Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
+     ids:["aiSection"]}
   ];
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
@@ -4864,8 +5068,7 @@ AI_TYPES.join(", "),
   // Jumping to a section from elsewhere (e.g. "set up AI") has to open it, or it
   // scrolls to a collapsed row and looks broken.
   function openSettingsSection(k){
-    var det=document.querySelector('details.sect[data-k="'+k+'"]');
-    if(det) det.open=true;
+    if(typeof openSetPanel==="function") openSetPanel(k);
   }
   // AI and Advanced hide their own blocks. A section header promising something that
   // isn't in there is worse than no header.
@@ -4885,47 +5088,100 @@ AI_TYPES.join(", "),
     var plan=[], cur=null;
     kids.forEach(function(el, idx){
       if(idx===0) return;
-      if(el.tagName==="HR") return;               // sections separate themselves now
+      if(el.tagName==="HR") return;
       var byId=null;
       SETTINGS_GROUPS.forEach(function(g){ if(g.ids && g.ids.indexOf(el.id)>=0) byId=g.k; });
       var k = byId || groupForHeading(settingsHeadingOf(el)) || cur;
-      if(!k) return;                              // nothing to belong to — leave it alone
+      if(!k) return;
       cur=k;
       plan.push({el:el, k:k});
     });
     if(!plan.length) return;
-    var boxes={};
+
+    /* v2.42: DRILL-IN settings. Level 1 is a clean list of the category rows. Tapping a
+       row slides in a separate panel (from the right) holding that category's sections,
+       with a Back button to slide out again. No nested accordions — each category opens
+       its own contained panel. Unlimited categories & sub-sections; nothing is capped. */
+    var stage=document.createElement("div");
+    stage.className="set-stage";
+    var list=document.createElement("div");
+    list.className="set-list";
+    var panelWrap=document.createElement("div");
+    panelWrap.className="set-panels";
+    stage.appendChild(list); stage.appendChild(panelWrap);
+    page.appendChild(stage);
+
+    var panels={};
     SETTINGS_GROUPS.forEach(function(g){
       if(!plan.some(function(x){ return x.k===g.k; })) return;
-      var det=document.createElement("details");
-      det.className="sect"; det.setAttribute("data-k", g.k);
-      det.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
-        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span>'
-        +'<span class="sect-s">'+esc(g.sub)+'</span></span>'
-        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
-      page.appendChild(det);
-      boxes[g.k]=det.querySelector(".sect-b");
-      det.addEventListener("toggle", function(){
-        try{
-          var open=JSON.parse(localStorage.getItem("mymoney_sect")||"{}");
-          open[g.k]=det.open;
-          localStorage.setItem("mymoney_sect", JSON.stringify(open));
-        }catch(e){}
-      });
+      var count=plan.filter(function(x){return x.k===g.k;}).length;
+
+      // level-1 row
+      var row=document.createElement("button");
+      row.type="button"; row.className="set-row"; row.setAttribute("data-k",g.k);
+      row.innerHTML='<span class="set-row-i">'+g.i+'</span>'
+        +'<span class="set-row-tt"><span class="set-row-t">'+esc(g.t)+'</span>'
+        +'<span class="set-row-s">'+esc(g.sub)+'</span></span>'
+        +'<span class="set-row-c">›</span>';
+      list.appendChild(row);
+
+      // the slide-in panel for this category
+      var panel=document.createElement("div");
+      panel.className="set-panel"; panel.setAttribute("data-k",g.k);
+      var phead=document.createElement("div");
+      phead.className="set-panel-h";
+      phead.innerHTML='<button type="button" class="set-back">‹ Back</button>'
+        +'<span class="set-panel-t">'+esc(g.t)+'</span>';
+      var pbody=document.createElement("div");
+      pbody.className="set-panel-b";
+      panel.appendChild(phead); panel.appendChild(pbody);
+      panelWrap.appendChild(panel);
+      panels[g.k]={panel:panel, body:pbody};
+
+      row.addEventListener("click", function(){ openSetPanel(g.k); });
+      phead.querySelector(".set-back").addEventListener("click", closeSetPanel);
     });
-    // move, don't clone — every listener bound at startup survives the move
-    plan.forEach(function(x){ if(boxes[x.k]) boxes[x.k].appendChild(x.el); });
-    // strip the now-orphaned separators
+
+    // move each section into its category panel, each wrapped in a clean sub-box
+    plan.forEach(function(x){
+      var P=panels[x.k]; if(!P) return;
+      var headEl=x.el.querySelector && x.el.querySelector('div[style*="text-transform:uppercase"]');
+      var title=headEl ? headEl.textContent.replace(/\s+/g," ").trim() : "";
+      var sub=document.createElement("div");
+      sub.className="set-subbox";
+      if(title){
+        // keep the section's own heading visible inside its sub-box
+      }
+      sub.appendChild(x.el);
+      P.body.appendChild(sub);
+    });
+
+    // strip orphaned separators
     Array.prototype.slice.call(page.children).forEach(function(el){
       if(el.tagName==="HR") el.parentNode.removeChild(el);
     });
-    try{
-      var open=JSON.parse(localStorage.getItem("mymoney_sect")||"{}");
-      Array.prototype.forEach.call(page.querySelectorAll("details.sect"), function(det){
-        if(open[det.getAttribute("data-k")]) det.open=true;
-      });
-    }catch(e){}
+
     page._sect=true;
+  }
+  function openSetPanel(k){
+    var page=document.getElementById("pageSettings");
+    var stage=page&&page.querySelector(".set-stage");
+    if(!stage) return;
+    var panel=stage.querySelector('.set-panel[data-k="'+k+'"]');
+    if(!panel) return;
+    stage.classList.add("drilled");
+    Array.prototype.forEach.call(stage.querySelectorAll(".set-panel"),function(p){ p.classList.remove("in"); });
+    panel.classList.add("in");
+    var b=panel.querySelector(".set-panel-b"); if(b) b.scrollTop=0;
+    try{ localStorage.setItem("mymoney_setpanel", k); }catch(e){}
+  }
+  function closeSetPanel(){
+    var page=document.getElementById("pageSettings");
+    var stage=page&&page.querySelector(".set-stage");
+    if(!stage) return;
+    stage.classList.remove("drilled");
+    Array.prototype.forEach.call(stage.querySelectorAll(".set-panel"),function(p){ p.classList.remove("in"); });
+    try{ localStorage.removeItem("mymoney_setpanel"); }catch(e){}
   }
 
   
@@ -6500,6 +6756,7 @@ AI_TYPES.join(", "),
         if(!grp.length) continue;
         var hi=-Infinity, lo=Infinity, cnt=0;
         grp.forEach(function(g){ if(g.h>hi)hi=g.h; if(g.l<lo)lo=g.l; cnt+=(g.n||0); });
+        if(cnt===0) continue;   // v2.22: no activity in this group -> no candle (no gap)
         var lbl = tf.months===12 ? ("'"+String(grp[0].key).slice(2,4))
                 : (monthLabel(grp[0].key)+(grp.length>1?"–"+monthLabel(grp[grp.length-1].key).split(" ")[0]:""));
         out.push({key:grp[0].key,label:lbl,
@@ -6526,6 +6783,12 @@ AI_TYPES.join(", "),
       var carry=open0, guard=0;
       for(var b=0;b<=total&&guard++<4000;b++){
         var arr=buckets[b]||[];
+        /* v2.22: skip periods with NO trades instead of drawing a flat doji. A flat
+           o=h=l=c candle rendered as a thin horizontal line, which looked like gaps
+           in the chart when zoomed in. Real candlestick charts simply omit empty
+           periods (like weekends on a stock chart) — the balance still carries
+           forward, so the next real candle opens exactly where the last one closed. */
+        if(!arr.length) continue;
         var o=carry, h=carry, l=carry, c=carry;
         arr.forEach(function(t){ c+=chartDelta(t); if(c>h)h=c; if(c<l)l=c; });
         var startD=tfDayStr(first+b*days);
@@ -6593,7 +6856,6 @@ AI_TYPES.join(", "),
       b.addEventListener("click",function(){
         if(!state.settings) state.settings={};
         state.settings.chartTf=b.getAttribute("data-tf");
-        state.chartPan=0;   // v2.20: snap back to newest on timeframe change
         persistNow(); renderChartTfBar(); buildChart();
       });
     });
@@ -6611,6 +6873,389 @@ AI_TYPES.join(", "),
   }
 
   /* ---------------- chart rendering (TradingView-style crosshair) ---------------- */
+  /* ================= v2.25 — PIE & HORIZONTAL BAR (spending by category) =================
+     Two new chart types for the Balance-over-time card, chosen from a radial picker that
+     opens ON the chart. Pie and Bar both show SPENDING BY CATEGORY for the periods
+     currently selected (the same scope the rest of the dashboard uses), sourced only
+     from categories you've actually logged on "Spent on something" entries. */
+  var CHART_TYPES=[
+    {k:"line",   label:"Line",   icon:"line"},
+    {k:"candle", label:"Candles",icon:"candle"},
+    {k:"pie",    label:"Pie",    icon:"pie"},
+    {k:"bar",    label:"Bars",   icon:"bar"}
+  ];
+  var CAT_PALETTE=["#e0a233","#4a90d9","#5cb85c","#d9534f","#9b59b6","#16a085","#e67e22","#7f8c8d","#c0392b","#2980b9","#27ae60","#8e44ad"];
+  function chartScope(){
+    // mirror whatever month scope the dashboard is showing
+    var sm=state.selectedMonths;
+    if(!sm || (sm.length===1 && sm[0]==="all")) return "all";
+    return sm;
+  }
+  function spendCats(){
+    var s=summaryFor(chartScope());
+    var arr=Object.keys(s.cats||{}).map(function(k){ return {cat:k, amt:s.cats[k]}; })
+             .filter(function(x){ return x.amt>0; })
+             .sort(function(a,b){ return b.amt-a.amt; });
+    return arr;
+  }
+  function pieChartSvg(sym){
+    var cats=spendCats();
+    if(!cats.length) return '<div class="chart-empty">No spending logged for this period yet. Pie and bar views show where your money went, by category.</div>';
+    var total=cats.reduce(function(a,c){ return a+c.amt; },0);
+    var cx=118, cy=112, r=92, W=720, H=210;
+    var ang=-Math.PI/2, paths="", legend="";
+    cats.forEach(function(c,i){
+      var frac=c.amt/total, a2=ang+frac*Math.PI*2;
+      var large=frac>0.5?1:0;
+      var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
+      var x2=cx+r*Math.cos(a2),  y2=cy+r*Math.sin(a2);
+      var col=CAT_PALETTE[i%CAT_PALETTE.length];
+      var pct=(frac*100).toFixed(frac<0.1?1:0);
+      if(frac>=0.9999){
+        // single category — draw a full circle, an arc can't
+        paths+='<circle class="pie-slice" data-idx="'+i+'" data-cat="'+esc(c.cat)+'" data-pct="'+pct+'" data-amt="'+esc(fmt(c.amt,sym))+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+col+'" style="cursor:pointer;transition:opacity .12s"/>';
+      } else {
+        paths+='<path class="pie-slice" data-idx="'+i+'" data-cat="'+esc(c.cat)+'" data-pct="'+pct+'" data-amt="'+esc(fmt(c.amt,sym))+'" d="M '+cx+' '+cy+' L '+x1.toFixed(1)+' '+y1.toFixed(1)+
+               ' A '+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(1)+' '+y2.toFixed(1)+' Z" fill="'+col+'" stroke="var(--card)" stroke-width="1.5" style="cursor:pointer;transition:opacity .12s"/>';
+      }
+      ang=a2;
+      legend+='<div class="pie-leg-row" data-idx="'+i+'" style="cursor:pointer"><span class="pie-dot" style="background:'+col+'"></span>'+
+              '<span class="pie-leg-cat">'+esc(c.cat)+'</span>'+
+              '<span class="pie-leg-amt">'+esc(fmt(c.amt,sym))+' · '+pct+'%</span></div>';
+    });
+    return '<div class="pie-wrap">'+
+      '<svg viewBox="0 0 236 224" class="pie-svg" preserveAspectRatio="xMidYMid meet">'+paths+
+      '<circle cx="'+cx+'" cy="'+cy+'" r="46" fill="var(--card)"/>'+
+      '<text id="pieCenterTop" x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="12" font-family="'+MFONT+'" fill="var(--mut)">spent</text>'+
+      '<text id="pieCenterMain" x="'+cx+'" y="'+(cy+15)+'" text-anchor="middle" font-size="15" font-weight="700" font-family="'+MFONT+'" fill="var(--tx)">'+esc(fmtShort(total,sym))+'</text>'+
+      '</svg>'+
+      '<div class="pie-legend">'+legend+'</div></div>';
+  }
+
+  /* v2.32: pie hover. Hovering (or tapping) a slice dims the others, highlights the
+     matching legend row, and shows that category's name + % in the donut centre.
+     Leaving resets the centre to the total. Works for slice OR legend hover. */
+  function bindPieHover(){
+    var wrap=document.getElementById("chartWrap");
+    if(!wrap) return;
+    var slices=wrap.querySelectorAll(".pie-slice");
+    var rows=wrap.querySelectorAll(".pie-leg-row");
+    var top=document.getElementById("pieCenterTop");
+    var main=document.getElementById("pieCenterMain");
+    var defTop=top?top.textContent:"spent";
+    var defMain=main?main.textContent:"";
+    function highlight(idx){
+      slices.forEach(function(s){ s.style.opacity = (s.getAttribute("data-idx")===String(idx))?"1":"0.28"; });
+      rows.forEach(function(rw){ rw.classList.toggle("on", rw.getAttribute("data-idx")===String(idx)); });
+      var sl=wrap.querySelector('.pie-slice[data-idx="'+idx+'"]');
+      if(sl&&top&&main){
+        top.textContent=sl.getAttribute("data-cat");
+        main.textContent=sl.getAttribute("data-pct")+"% · "+sl.getAttribute("data-amt");
+      }
+    }
+    function reset(){
+      slices.forEach(function(s){ s.style.opacity="1"; });
+      rows.forEach(function(rw){ rw.classList.remove("on"); });
+      if(top) top.textContent=defTop;
+      if(main) main.textContent=defMain;
+    }
+    slices.forEach(function(s){
+      var idx=s.getAttribute("data-idx");
+      s.addEventListener("mouseenter",function(){ highlight(idx); });
+      s.addEventListener("mouseleave",reset);
+      s.addEventListener("touchstart",function(){ highlight(idx); },{passive:true});
+    });
+    rows.forEach(function(rw){
+      var idx=rw.getAttribute("data-idx");
+      rw.addEventListener("mouseenter",function(){ highlight(idx); });
+      rw.addEventListener("mouseleave",reset);
+      rw.addEventListener("touchstart",function(){ highlight(idx); },{passive:true});
+    });
+    // tapping empty space on the pie resets on touch devices
+    wrap.addEventListener("touchend",function(e){ if(e.target===wrap) reset(); },{passive:true});
+  }
+  function barChartSvg(sym){
+    var cats=spendCats();
+    if(!cats.length) return '<div class="chart-empty">No spending logged for this period yet. Pie and bar views show where your money went, by category.</div>';
+    var max=cats[0].amt, total=cats.reduce(function(a,c){return a+c.amt;},0);
+    var rows=cats.map(function(c,i){
+      var w=Math.max(2,(c.amt/max)*100), col=CAT_PALETTE[i%CAT_PALETTE.length];
+      var pct=(c.amt/total*100).toFixed(c.amt/total<0.1?1:0);
+      return '<div class="hbar-row">'+
+        '<div class="hbar-top"><span class="hbar-cat">'+esc(c.cat)+'</span>'+
+        '<span class="hbar-amt">'+esc(fmt(c.amt,sym))+' · '+pct+'%</span></div>'+
+        '<div class="hbar-track"><div class="hbar-fill" style="width:'+w.toFixed(1)+'%;background:'+col+'"></div></div>'+
+      '</div>';
+    }).join("");
+    return '<div class="hbar-wrap"><div class="hbar-total">Total spent · '+esc(fmt(total,sym))+'</div>'+rows+'</div>';
+  }
+  /* radial picker — a little ring of chart-type options that pops open ON the chart */
+  function chartTypeIcon(kind,on){
+    var c=on?"#20160a":"var(--tx)";
+    if(kind==="line")   return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="'+c+'" stroke-width="2"><polyline points="3,17 9,11 13,14 21,6"/></svg>';
+    if(kind==="candle") return '<svg viewBox="0 0 24 24" width="20" height="20" stroke="'+c+'" stroke-width="2"><line x1="7" y1="3" x2="7" y2="21"/><rect x="4.5" y="8" width="5" height="8" fill="'+c+'"/><line x1="17" y1="3" x2="17" y2="21"/><rect x="14.5" y="6" width="5" height="7" fill="none"/></svg>';
+    if(kind==="pie")    return '<svg viewBox="0 0 24 24" width="20" height="20" fill="'+c+'"><path d="M12 2a10 10 0 1 0 10 10h-10z" opacity="0.5"/><path d="M12 2v10h10A10 10 0 0 0 12 2z"/></svg>';
+    if(kind==="bar")    return '<svg viewBox="0 0 24 24" width="20" height="20" fill="'+c+'"><rect x="3" y="5" width="16" height="3"/><rect x="3" y="10.5" width="11" height="3"/><rect x="3" y="16" width="7" height="3"/></svg>';
+    return "";
+  }
+
+  /* v2.31: chart settings wheel. A small ⚙ on the chart head opens an inline panel
+     with chart-related toggles. Built to be extended — add rows to CHART_GEAR_ROWS. */
+  var CHART_GEAR_ROWS=[
+    {id:"gearScale", label:"Balance chart counts", kind:"select",
+      opts:[["cash","Cash only (ignore debt)"],["net","After debt"]],
+      get:function(){return (state.settings&&state.settings.chartDebt)||"cash";},
+      set:function(v){ if(!state.settings)state.settings={}; state.settings.chartDebt=v; persistNow(); buildChart(); }},
+    {id:"gearType", label:"Chart type", kind:"select",
+      opts:[["candle","Candles"],["line","Line"],["pie","Pie (spending)"],["bar","Bars (spending)"]],
+      get:function(){return state.chartType||"candle";},
+      set:function(v){ state.chartType=v; persist(); buildChart(); syncChartSeg(); }},
+    {id:"gearLabels", label:"Show date labels", kind:"toggle",
+      get:function(){return (state.settings&&state.settings.chartLabels)!==false;},
+      set:function(v){ if(!state.settings)state.settings={}; state.settings.chartLabels=v; persistNow(); buildChart(); }}
+  ];
+  function renderChartGear(){
+    var panel=document.getElementById("chartGearPanel");
+    if(!panel) return;
+    panel.innerHTML='<div class="cg-head">Chart settings</div>'+
+      CHART_GEAR_ROWS.map(function(r){
+        if(r.kind==="toggle"){
+          return '<label class="cg-row"><span>'+esc(r.label)+'</span>'+
+            '<input type="checkbox" class="cg-in" data-gear="'+r.id+'"'+(r.get()?" checked":"")+'></label>';
+        }
+        var opts=r.opts.map(function(o){return '<option value="'+o[0]+'"'+(r.get()===o[0]?" selected":"")+'>'+esc(o[1])+'</option>';}).join("");
+        return '<label class="cg-row"><span>'+esc(r.label)+'</span><select class="cg-in" data-gear="'+r.id+'">'+opts+'</select></label>';
+      }).join("");
+    Array.prototype.forEach.call(panel.querySelectorAll(".cg-in"),function(el){
+      var row=CHART_GEAR_ROWS.filter(function(r){return r.id===el.getAttribute("data-gear");})[0];
+      if(!row) return;
+      var evt=el.type==="checkbox"?"change":"change";
+      el.addEventListener(evt,function(){ row.set(el.type==="checkbox"?el.checked:el.value); renderChartGear(); });
+    });
+  }
+  function toggleChartGear(){
+    var panel=document.getElementById("chartGearPanel");
+    if(!panel) return;
+    if(panel.style.display==="none"||!panel.style.display){ renderChartGear(); panel.style.display="block"; }
+    else panel.style.display="none";
+  }
+  function bindChartGear(){
+    var g=document.getElementById("chartGear");
+    if(g) g.addEventListener("click",function(e){ e.stopPropagation(); toggleChartGear(); });
+  }
+  function openChartPicker(){
+    closeChartPicker();
+    var wrap=document.getElementById("chartWrap");
+    if(!wrap) return;
+    var ov=document.createElement("div");
+    ov.id="chartPicker"; ov.className="cpick-ov";
+    var items=CHART_TYPES.map(function(t,i){
+      var on=state.chartType===t.k;
+      var ang=(-90 + i*(360/CHART_TYPES.length))*Math.PI/180;
+      var R=58, x=Math.cos(ang)*R, y=Math.sin(ang)*R;
+      return '<button type="button" class="cpick-item'+(on?" on":"")+'" data-ct="'+t.k+'" '+
+        'style="transform:translate('+x.toFixed(0)+'px,'+y.toFixed(0)+'px)" title="'+t.label+'">'+
+        chartTypeIcon(t.k,on)+'<span class="cpick-lbl">'+t.label+'</span></button>';
+    }).join("");
+    ov.innerHTML='<div class="cpick-ring"><div class="cpick-hub">chart<br>type</div>'+items+'</div>';
+    wrap.style.position="relative";
+    wrap.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add("in"); });
+    ov.addEventListener("click", function(e){
+      var btn=e.target.closest?e.target.closest(".cpick-item"):null;
+      if(btn){
+        state.chartType=btn.getAttribute("data-ct");
+        persist(); closeChartPicker(); buildChart(); syncChartSeg();
+        return;
+      }
+      if(e.target===ov) closeChartPicker();   // tap the backdrop to dismiss
+    });
+  }
+  function closeChartPicker(){
+    var ov=document.getElementById("chartPicker");
+    if(ov){ ov.classList.remove("in"); setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },180); }
+  }
+  function syncChartSeg(){
+    Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
+      b.classList.toggle("on", b.getAttribute("data-t")===state.chartType);
+    });
+  }
+
+
+  /* ================= v2.25 — GLOBAL SEARCH =================
+     Searches every transaction (all pages, all time) by note, category, instrument,
+     type label, date, and amount. Tapping a result opens it for editing on the Entries
+     page. Reuses the same field set as the ledger search but with no scope limit. */
+  function globalSearch(q){
+    q=(q||"").trim().toLowerCase();
+    if(!q) return [];
+    var qNum=parseFloat(q.replace(/[^0-9.\-]/g,""));
+    var hasNum=!isNaN(qNum) && /[0-9]/.test(q);
+    var out=[];
+    state.transactions.forEach(function(t){
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var hay=((t.note||"")+" "+(t.cat||"")+" "+(t.inst||"")+" "+(meta.label||"")+" "+(t.date||"")).toLowerCase();
+      var hit = hay.indexOf(q)>=0;
+      if(!hit && hasNum){ var a=Math.abs(num(t.amount)); if(Math.abs(a-Math.abs(qNum))<0.005) hit=true; }
+      if(hit) out.push(t);
+    });
+    out.sort(function(a,b){ return (a.date<b.date?1:a.date>b.date?-1:0); }); // newest first
+    return out;
+  }
+  function renderGlobalResults(q){
+    var box=document.getElementById("gsearchResults");
+    if(!box) return;
+    if(!q || !q.trim()){ box.innerHTML='<div class="gs-hint">Type to search across everything you\'ve logged.</div>'; return; }
+    var res=globalSearch(q);
+    if(!res.length){ box.innerHTML='<div class="gs-hint">Nothing matches “'+esc(q)+'”.</div>'; return; }
+    var sym=state.currency;
+    var html='<div class="gs-count">'+res.length+' result'+(res.length===1?"":"s")+'</div>';
+    res.slice(0,200).forEach(function(t){
+      var meta=TYPE_META[t.type]||{label:t.type};
+      var title=esc(t.note || t.cat || t.inst || meta.label || "Entry");
+      var sub=esc((meta.label||"")+" · "+(t.date||""))+(t.cat?(" · "+esc(t.cat)):"");
+      var neg=(balDelta(t)<0);
+      html+='<div class="gs-row" data-id="'+t.id+'">'
+        +'<span class="gs-badge">'+esc((meta.label||"?").slice(0,10))+'</span>'
+        +'<div class="gs-main"><div class="gs-title">'+title+'</div><div class="gs-sub">'+sub+'</div></div>'
+        +'<div class="gs-amt '+(neg?"down":"up")+'">'+(neg?"-":"+")+esc(fmt(Math.abs(num(t.amount)),sym))+'</div>'
+        +'</div>';
+    });
+    if(res.length>200) html+='<div class="gs-count">+'+(res.length-200)+' more — refine your search</div>';
+    box.innerHTML=html;
+    Array.prototype.forEach.call(box.querySelectorAll(".gs-row"), function(r){
+      r.addEventListener("click", function(){
+        var id=+r.getAttribute("data-id");
+        closeGlobalSearch();
+        setTab("pageLedger");
+        try{ startEdit(id); }catch(e){}
+        // scroll the opened entry into view
+        setTimeout(function(){
+          var row=document.querySelector('#ledger [data-id="'+id+'"]');
+          if(row&&row.scrollIntoView) row.scrollIntoView({block:"center",behavior:"smooth"});
+        },120);
+      });
+    });
+  }
+  function openGlobalSearch(){
+    var ov=document.getElementById("gsearchOv");
+    if(!ov) return;
+    ov.style.display="flex";
+    var inp=document.getElementById("gsearchInput");
+    if(inp){ inp.value=""; renderGlobalResults(""); setTimeout(function(){ inp.focus(); },40); }
+  }
+  function closeGlobalSearch(){
+    var ov=document.getElementById("gsearchOv");
+    if(ov) ov.style.display="none";
+  }
+  function bindGlobalSearch(){
+    var open=document.getElementById("openGlobalSearch");
+    if(open) open.addEventListener("click", openGlobalSearch);
+    var close=document.getElementById("gsearchClose");
+    if(close) close.addEventListener("click", closeGlobalSearch);
+    var inp=document.getElementById("gsearchInput");
+    if(inp){
+      var deb=null;
+      inp.addEventListener("input", function(){
+        clearTimeout(deb);
+        deb=setTimeout(function(){ renderGlobalResults(inp.value); }, 160);
+      });
+      inp.addEventListener("keydown", function(e){ if(e.key==="Escape") closeGlobalSearch(); });
+    }
+    var ov=document.getElementById("gsearchOv");
+    if(ov) ov.addEventListener("click", function(e){ if(e.target===ov) closeGlobalSearch(); });
+  }
+
+  /* ================= v2.26 — CUSTOM CATEGORIES (minimal & isolated) =================
+     The seven built-in categories stay hardcoded in the #fCat <select>. The user can
+     add extra ones (stored in state.customCats). We only ever APPEND missing <option>s
+     — we never rebuild or clear the select — so nothing that reads fCat (entry, edit,
+     AI import, pie/bar) can be disturbed. "Other" is always present via the HTML seed. */
+  function builtinCats(){ return ["Snacks","Food","Toys","Stationery","Shopping","Games","Other"]; }
+  function allCategories(){
+    var seen={}, out=[];
+    builtinCats().concat(state.customCats||[]).forEach(function(c){
+      c=(c||"").trim(); if(!c) return;
+      var k=c.toLowerCase(); if(seen[k]) return; seen[k]=1;
+      if(k!=="other") out.push(c);
+    });
+    out.push("Other");
+    return out;
+  }
+  function syncCategoryOptions(){
+    var sel=document.getElementById("fCat");
+    if(!sel) return;
+    var have={};
+    Array.prototype.forEach.call(sel.options, function(o){ have[o.textContent.trim().toLowerCase()]=1; });
+    (state.customCats||[]).forEach(function(c){
+      c=(c||"").trim(); if(!c) return;
+      if(have[c.toLowerCase()]) return;
+      // insert before the trailing "Other" option so Other stays last
+      var opt=document.createElement("option"); opt.textContent=c;
+      var otherOpt=Array.prototype.filter.call(sel.options,function(o){return o.textContent.trim().toLowerCase()==="other";})[0];
+      if(otherOpt) sel.insertBefore(opt, otherOpt); else sel.appendChild(opt);
+      have[c.toLowerCase()]=1;
+    });
+  }
+  // when editing, make sure the entry's own category is selectable even if it was later removed
+  function ensureCatOption(cat){
+    cat=(cat||"").trim(); if(!cat) return;
+    var sel=document.getElementById("fCat"); if(!sel) return;
+    var exists=Array.prototype.some.call(sel.options,function(o){return o.textContent.trim().toLowerCase()===cat.toLowerCase();});
+    if(!exists){ var opt=document.createElement("option"); opt.textContent=cat; sel.appendChild(opt); }
+  }
+  function addCategory(name){
+    name=(name||"").trim();
+    if(!name) return false;
+    if(name.length>28) name=name.slice(0,28);
+    var k=name.toLowerCase();
+    if(allCategories().some(function(c){return c.toLowerCase()===k;})){ if(typeof showToast==="function") showToast("That category already exists."); return false; }
+    if(!state.customCats) state.customCats=[];
+    state.customCats.push(name);
+    persist(); syncCategoryOptions(); renderCategoryEditor();
+    return true;
+  }
+  function removeCategory(name){
+    // only custom ones are removable; built-ins & Other stay
+    if(builtinCats().some(function(c){return c.toLowerCase()===name.toLowerCase();})) return;
+    var used=state.transactions.filter(function(t){return t.type==="spend" && (t.cat||"")===name;}).length;
+    var msg = used>0 ? ("Remove \u201c"+name+"\u201d? "+used+" "+(used===1?"entry":"entries")+" will move to \u201cOther\u201d.") : ("Remove \u201c"+name+"\u201d?");
+    if(!confirm(msg)) return;
+    state.customCats=(state.customCats||[]).filter(function(c){return c!==name;});
+    if(used>0) state.transactions.forEach(function(t){ if(t.type==="spend" && t.cat===name) t.cat="Other"; });
+    // remove the <option> too (if present and not selected-critical)
+    var sel=document.getElementById("fCat");
+    if(sel){ Array.prototype.slice.call(sel.options).forEach(function(o){ if(o.textContent.trim()===name) sel.removeChild(o); }); }
+    persist(); renderCategoryEditor();
+    if(typeof render==="function") render();
+    if(typeof showToast==="function") showToast(used>0?(used+" moved to Other."):"Category removed.");
+  }
+  function renderCategoryEditor(){
+    var box=document.getElementById("catEditorList");
+    if(!box) return;
+    var custom=(state.customCats||[]).slice();
+    var html=builtinCats().filter(function(c){return c.toLowerCase()!=="other";}).map(function(c){
+      return '<div class="cat-row"><span class="cat-name">'+esc(c)+'</span><span class="cat-used">built-in</span></div>';
+    }).join("");
+    html+=custom.map(function(c){
+      var used=state.transactions.filter(function(t){return t.type==="spend" && (t.cat||"")===c;}).length;
+      return '<div class="cat-row"><span class="cat-name">'+esc(c)+'</span>'
+        +'<span class="cat-used">'+(used?used+" used":"custom")+'</span>'
+        +'<button type="button" class="cat-del" data-cat="'+esc(c)+'" title="Remove">\u2715</button></div>';
+    }).join("");
+    html+='<div class="cat-row"><span class="cat-name">Other</span><span class="cat-used">always on</span></div>';
+    box.innerHTML=html;
+    Array.prototype.forEach.call(box.querySelectorAll(".cat-del"), function(b){
+      b.addEventListener("click", function(){ removeCategory(b.getAttribute("data-cat")); });
+    });
+  }
+  function bindCategoryEditor(){
+    var add=document.getElementById("catAddBtn"), inp=document.getElementById("catAddInput");
+    function go(){ if(inp && addCategory(inp.value)){ inp.value=""; inp.focus(); } }
+    if(add) add.addEventListener("click", go);
+    if(inp) inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+  }
+
   function buildChart(){
     var CC=chartColors();   // resolved per build, so a theme switch repaints correctly
     var UP=CC.up, DOWN=CC.down, GRID=CC.grid, ZERO=CC.zero, AXTX=CC.ax, DOJI=CC.doji, AMBER=CC.amber, COOL=CC.cool;
@@ -6619,55 +7264,36 @@ AI_TYPES.join(", "),
     wrap.style.display="block"; document.getElementById("chartToggle").textContent="▾";
 
     renderChartTfBar();
-    var allCandles=computeSeries();
-    /* v2.20: TradingView-style VISIBLE WINDOW. The axis autoscales to whatever candles
-       are in view, so — exactly like TV — you scroll a giant candle off-frame to read
-       the small moves around it. We keep at most CHART_VIEW candles on screen and let
-       the user pan with drag (or the ◂ ▸ buttons). chartPan is the right-edge offset in
-       candles from the newest. */
-    /* v2.21: zoomable window. chartZoom = how many candles fill the screen. Smaller
-       zoom = fewer candles = more detail AND room to pan. Defaults to showing all when
-       the series is short, but never more than 24; you can zoom in to 6. */
-    if(state.chartZoom==null) state.chartZoom = Math.min(allCandles.length, 18);
-    state.chartZoom = Math.max(6, Math.min(state.chartZoom, Math.max(6, allCandles.length)));
-    var CHART_VIEW=Math.min(allCandles.length, state.chartZoom);
-    if(state.chartPan==null) state.chartPan=0;
-    var maxPan=Math.max(0, allCandles.length-CHART_VIEW);
-    if(state.chartPan>maxPan) state.chartPan=maxPan;  // re-clamp after any zoom change
-    if(state.chartPan<0) state.chartPan=0;
-    var endIdx=allCandles.length-state.chartPan;
-    var startIdx=Math.max(0, endIdx-CHART_VIEW);
-    var candles=allCandles.slice(startIdx, endIdx);
+    // v2.25: the timeframe bar only makes sense for time-series (line/candle); hide it
+    // for the category views (pie/bar), which aggregate spending regardless of period width.
+    var _tf=document.getElementById("chartTf");
+    var _catView=(state.chartType==="pie"||state.chartType==="bar");
+    if(_tf) _tf.style.display=_catView?"none":"";
+    if(_catView){
+      wrap.innerHTML = (state.chartType==="pie") ? pieChartSvg(state.currency) : barChartSvg(state.currency);
+      if(state.chartType==="pie") bindPieHover();   // v2.32: hover a slice -> name + %
+      syncChartSeg();
+      return;   // category views are self-contained; skip all the candle/axis machinery
+    }
+    // v2.24: plain chart — show every candle for the chosen timeframe, auto-fit the axis.
+    // Use the timeframe buttons (D/W/M/…) to change how much each candle covers.
+    var candles=computeSeries();
     var debtNote=chartCountsDebt()?"after debt":"cash only";
     var sym=state.currency;
     var W=720, H=210, padL=52, padR=14, padT=16, padB=28;
     var n=candles.length;
     var plotW=W-padL-padR, plotH=H-padT-padB;
 
-    /* v2.17: Y-axis is clipped to the RANGE OF THE VISIBLE CANDLES ONLY (enterprise
-       standard). Whatever giant spike sits off-screen at another timeframe is ignored,
-       so the axis auto-zooms into the moves you can actually see. Log scale was
-       rejected on purpose: a balance can hit 0 or go negative and log(0)/log(-x) is
-       undefined, which would crash the chart on any overdraft. Min/max handles
-       positive, negative and zero cleanly. */
+    // Auto-fit the axis to the candles' own high/low, with a small margin. Plain and
+    // simple — no zoom, no pan, no scale modes.
     var lo=Infinity, hi=-Infinity, i;
     for(i=0;i<n;i++){
       if(candles[i].l<lo) lo=candles[i].l;
       if(candles[i].h>hi) hi=candles[i].h;
     }
     if(!isFinite(lo)||!isFinite(hi)){ lo=-1; hi=1; }
-    /* v2.20: true TradingView-style autoscale. The axis fits the high→low of the
-       candles CURRENTLY IN VIEW, with TradingView's standard ~10%/10% scale margins.
-       This is deliberately the same behaviour as a real TV chart: if a huge candle is
-       in the visible window it WILL compress the smaller ones — that's correct, not a
-       bug. To read small moves in isolation, switch to a shorter timeframe (D/3D/W) so
-       the big candle isn't in frame — exactly how you'd do it on TradingView.
-       (Log scale is intentionally not used: a balance can be 0 or negative and
-       log(0)/log(-x) is undefined, which would break the axis on any overdraft.) */
-    if(hi===lo){ var b=Math.abs(hi)||1; lo-=b*0.5; hi+=b*0.5; }   // flat window still readable
-    var range=hi-lo;
-    var mTop=range*0.10, mBot=range*0.10;   // TradingView default scale margins
-    hi+=mTop; lo-=mBot; range=hi-lo;
+    if(hi===lo){ var b=Math.abs(hi)||1; lo-=b*0.5; hi+=b*0.5; }   // flat range still readable
+    var range=hi-lo, pad=range*0.10; hi+=pad; lo-=pad; range=hi-lo;
     function Yv(v){ return padT + plotH*(1-(v-lo)/range); }
     var step=plotW/n;
     function Xc(idx){ return padL + step*idx + step/2; }
@@ -6689,7 +7315,11 @@ AI_TYPES.join(", "),
            'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+fmtShort(gv,sym)+'</text>';
     });
 
-    var labelEvery = n>18?3:(n>10?2:1);
+    // v2.31: space labels so they never overlap — roughly one per 46px of plot width,
+    // and respect the "Show date labels" toggle in the chart gear.
+    var showLabels=(state.settings&&state.settings.chartLabels)!==false;
+    var maxLabels=Math.max(2, Math.floor(plotW/46));
+    var labelEvery=Math.max(1, Math.ceil(n/maxLabels));
     var isLine = state.chartType==="line";
 
     if(isLine){
@@ -6728,7 +7358,7 @@ AI_TYPES.join(", "),
     }
 
     // x-axis labels
-    for(i=0;i<n;i++){
+    for(i=0;showLabels&&i<n;i++){
       if(i%labelEvery!==0 && i!==n-1) continue;
       svg+='<text x="'+Xc(i).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" '+
            'font-size="9" font-family="'+MFONT+'" fill="'+AXTX+'">'+esc(seriesLabel(candles[i]))+'</text>';
@@ -6755,7 +7385,7 @@ AI_TYPES.join(", "),
     svg+='<rect id="cvOverlay" x="'+padL+'" y="'+padT+'" width="'+plotW+'" height="'+plotH+'" fill="transparent" style="cursor:crosshair"/>';
     // overlay is drawn LAST so it sits above the series and receives every pointer move
 
-    svg='<svg id="chartSvg" class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+svg+'</svg>';
+    svg='<svg id="chartSvg" class="chart" width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" style="width:100%;height:'+H+'px;display:block">'+svg+'</svg>';
     wrap.innerHTML=svg;
 
     // ---- crosshair interaction ----
@@ -6800,7 +7430,7 @@ AI_TYPES.join(", "),
       hLine.style.display="";
 
       // y-axis price label
-      var dispPrice=isLine?c.c:priceAtCursor;
+      var dispPrice=c.c;   // always the real closing balance for this candle
       var yLabelY=(valY-6).toFixed(1);
       yBg.setAttribute("y",yLabelY); yBg.setAttribute("width",padL); yBg.style.display="";
       yTxt.setAttribute("y",(parseFloat(yLabelY)+10).toFixed(1));
@@ -6860,64 +7490,10 @@ AI_TYPES.join(", "),
       [vLine,hLine,yBg,yTxt,xBg,xTxt,tipBg,tipTxt,dotEl].forEach(function(el){ el.style.display="none"; });
     }
 
-    overlay.addEventListener("mousemove", function(e){ if(!panDrag.on) showCrosshair(e); });
-    overlay.addEventListener("touchmove", function(e){ e.preventDefault(); if(!panDrag.on) showCrosshair(e); }, {passive:false});
+    overlay.addEventListener("mousemove", showCrosshair);
+    overlay.addEventListener("touchmove", function(e){ e.preventDefault(); showCrosshair(e); }, {passive:false});
     overlay.addEventListener("mouseleave", hideCrosshair);
-    overlay.addEventListener("touchend", function(){ hideCrosshair(); panDrag.on=false; });
-
-    /* v2.20: pan the visible window. Buttons step; drag scrolls. Each `step`px of
-       horizontal drag moves one candle, so it feels like grabbing the chart. */
-    var zoomBar=document.getElementById("chartZoom");
-    if(zoomBar){
-      var zinB=zoomBar.querySelector('[data-zoom="in"]');
-      var zoutB=zoomBar.querySelector('[data-zoom="out"]');
-      if(zinB) zinB.disabled = CHART_VIEW<=6;
-      if(zoutB) zoutB.disabled = CHART_VIEW>=allCandles.length;
-      zoomBar.querySelectorAll("button").forEach(function(b){
-        b.addEventListener("click", function(){
-          var dir=b.getAttribute("data-zoom");
-          // keep the newest edge anchored while zooming
-          state.chartZoom = dir==="in" ? Math.max(6, state.chartZoom-4)
-                                        : Math.min(allCandles.length, state.chartZoom+4);
-          persistNow(); buildChart();
-        });
-      });
-    }
-    var panBar=document.getElementById("chartPan");
-    if(panBar){
-      var olderB=panBar.querySelector('[data-pan="older"]');
-      var newerB=panBar.querySelector('[data-pan="newer"]');
-      if(olderB) olderB.disabled = state.chartPan>=maxPan;
-      if(newerB) newerB.disabled = state.chartPan<=0;
-      panBar.querySelectorAll("button").forEach(function(b){
-        b.addEventListener("click", function(){
-          var d=b.getAttribute("data-pan")==="older"?1:-1;
-          state.chartPan=Math.max(0,Math.min(maxPan, state.chartPan + d*Math.max(1,Math.floor(CHART_VIEW/2))));
-          persistNow(); buildChart();
-        });
-      });
-    }
-    // grab-to-scroll on the plot
-    var panDrag={on:false, x0:0, pan0:0};
-    function panStart(clientX){ panDrag.on=true; panDrag.x0=clientX; panDrag.pan0=state.chartPan; hideCrosshair(); svgEl.style.cursor="grabbing"; }
-    function panMove(clientX){
-      if(!panDrag.on) return;
-      var rect=svgEl.getBoundingClientRect();
-      var dxCandles=Math.round(((clientX-panDrag.x0)/rect.width*W)/step);
-      var np=Math.max(0, Math.min(maxPan, panDrag.pan0 + dxCandles));  // drag right -> older
-      if(np!==state.chartPan){ state.chartPan=np; buildChart(); }
-    }
-    function panEnd(){ if(panDrag.on){ panDrag.on=false; persistNow(); } if(svgEl) svgEl.style.cursor="crosshair"; }
-    // pan is available whenever the window doesn't already show the whole series
-    if(maxPan>0){
-      overlay.style.cursor="grab";
-      overlay.addEventListener("mousedown", function(e){ panStart(e.clientX); e.preventDefault(); });
-      window.addEventListener("mousemove", function(e){ panMove(e.clientX); });
-      window.addEventListener("mouseup", panEnd);
-      overlay.addEventListener("touchstart", function(e){ if(e.touches[0]) panStart(e.touches[0].clientX); }, {passive:true});
-      overlay.addEventListener("touchmove", function(e){ if(e.touches[0]) panMove(e.touches[0].clientX); }, {passive:true});
-      overlay.addEventListener("touchend", panEnd);
-    }
+    overlay.addEventListener("touchend", hideCrosshair);
   }
 
   /* ---------------- render ---------------- */
@@ -7566,20 +8142,49 @@ AI_TYPES.join(", "),
       req.onerror=function(){cb([]);};
     }catch(e){cb([]);}
   }
+  /* v2.40: only show filter windows the data is actually old enough for. If your
+     oldest saved change is 3 days back, showing "1 week / 1 month / 1 year" is
+     pointless — they'd all equal "all". We find the oldest action (live + archived),
+     keep filters whose span <= that age, and always keep the shortest one and "all".
+     The bar re-renders as history grows, so longer windows appear over time. */
+  function actOldestAt(cb){
+    var oldest = ACTIONS.length ? Math.min.apply(null, ACTIONS.map(function(a){return a.at;})) : Date.now();
+    actArchiveList(function(arch){
+      arch.forEach(function(a){ if(a.at<oldest) oldest=a.at; });
+      cb(oldest);
+    });
+  }
+  function availableActFilters(oldestAt){
+    var ageSec=(Date.now()-oldestAt)/1000;
+    var avail=ACT_FILTERS.filter(function(f){ return f[1]===0 || f[1]<=ageSec; });
+    // always keep at least the shortest window + "all"
+    if(avail.length<2){
+      avail=[ACT_FILTERS[0]];
+      if(ACT_FILTERS[ACT_FILTERS.length-1][1]===0) avail.push(ACT_FILTERS[ACT_FILTERS.length-1]);
+    }
+    return avail;
+  }
   function bindActFilters(){
     var box=document.getElementById("actList");
-    if(!box||document.getElementById("actFilters")) return;
-    var bar=document.createElement("div");
-    bar.className="act-filters"; bar.id="actFilters";
-    bar.innerHTML=ACT_FILTERS.map(function(f){
-      return '<button type="button" data-f="'+f[0]+'" class="'+(f[0]===actFilter?"on":"")+'">'+f[0]+'</button>';
-    }).join("");
-    box.parentNode.insertBefore(bar,box);
-    Array.prototype.forEach.call(bar.querySelectorAll("button"),function(b){
-      b.addEventListener("click",function(){
-        actFilter=b.getAttribute("data-f");
-        Array.prototype.forEach.call(bar.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});
-        renderActionsFiltered();
+    if(!box) return;
+    var existing=document.getElementById("actFilters");
+    actOldestAt(function(oldest){
+      var avail=availableActFilters(oldest);
+      // if the current filter is no longer available, fall back to "all"
+      if(!avail.some(function(f){return f[0]===actFilter;})) actFilter="all";
+      var bar=existing || document.createElement("div");
+      bar.className="act-filters"; bar.id="actFilters";
+      bar.innerHTML=avail.map(function(f){
+        var label=f[0]==="all"?"all":f[0];
+        return '<button type="button" data-f="'+f[0]+'" class="'+(f[0]===actFilter?"on":"")+'">'+label+'</button>';
+      }).join("");
+      if(!existing) box.parentNode.insertBefore(bar,box);
+      Array.prototype.forEach.call(bar.querySelectorAll("button"),function(b){
+        b.addEventListener("click",function(){
+          actFilter=b.getAttribute("data-f");
+          Array.prototype.forEach.call(bar.querySelectorAll("button"),function(x){x.classList.toggle("on",x===b);});
+          renderActionsFiltered();
+        });
       });
     });
   }
@@ -7611,7 +8216,8 @@ AI_TYPES.join(", "),
       div.innerHTML='<div class="hint" style="margin:10px 0 6px">Earlier \u2014 '+older.length+' change'+(older.length===1?"":"s")
           +' (history only; undo covers this session)</div>'
         +shown.map(function(a){
-          return '<div class="act-row"><div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+esc(actWhen(a.at))+'</span></div></div>';
+          var ab=actionBadge(a.label);
+          return '<div class="act-row">'+(ab.badge?'<span class="act-badge act-'+ab.cls+'">'+ab.badge+'</span>':"")+'<div class="act-t"><b>'+esc(ab.rest)+'</b><span class="act-w">'+esc(actWhen(a.at))+'</span></div></div>';
         }).join("")
         +(older.length>shown.length?'<div class="hint" style="margin:6px 0 0">+'+(older.length-shown.length)+' more not shown</div>':"");
       box.appendChild(div);
@@ -8367,7 +8973,7 @@ AI_TYPES.join(", "),
     document.getElementById("fDate").value=tx.date;
     document.getElementById("fType").value=tx.type;
     typeUI();
-    if(tx.type==="spend") document.getElementById("fCat").value=tx.cat||"Other";
+    if(tx.type==="spend"){ ensureCatOption(tx.cat); document.getElementById("fCat").value=tx.cat||"Other"; }
     refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
@@ -8585,7 +9191,207 @@ AI_TYPES.join(", "),
      Undoing an older change necessarily undoes the newer ones too, because state goes
      back to how it was before it. The confirm says so rather than surprising anyone. */
   var ACTIONS=[], ACTIONS_MAX=12;
+  /* ================================================================
+     v2.33 — PORTFOLIO SHARING + OFFLINE SYNC  (BETA)
+     ----------------------------------------------------------------
+     OFFLINE-FIRST design: nothing here ever blocks normal use. Every
+     change is saved locally instantly (unchanged). When sharing is on,
+     each change is ALSO queued; the queue flushes to the backend the
+     moment the device is online (hooks into the v2.16 NET system).
+
+     Right now the "backend" is a LOCAL MOCK (SHARE_BACKEND) so the whole
+     flow — links, view/edit modes, revoke, activity log, sync status —
+     is fully visible and testable with no server. Swapping in real
+     Supabase = replacing the four SHARE_BACKEND methods (see go-live
+     package). The app code above/around this never changes.
+     ================================================================ */
+  var SHARE_KEY = STORE_KEY + "_share";
+  var SHARE = { enabled:false, links:[], activity:[], queue:[], flushing:false };
+
+  function shareLoad(){
+    try{
+      var raw = (window.storage && window.storage.get) ? null : localStorage.getItem(SHARE_KEY);
+      if(raw){ var o=JSON.parse(raw); SHARE.enabled=!!o.enabled; SHARE.links=o.links||[]; SHARE.activity=o.activity||[]; SHARE.queue=o.queue||[]; }
+    }catch(e){}
+  }
+  function shareSave(){
+    try{ localStorage.setItem(SHARE_KEY, JSON.stringify({enabled:SHARE.enabled,links:SHARE.links,activity:SHARE.activity,queue:SHARE.queue})); }catch(e){}
+  }
+  function shareId(){ return Math.random().toString(36).slice(2,10); }
+  function shareNow(){ return Date.now(); }
+
+  /* ---- the swappable backend. MOCK today; Supabase calls drop in here. ---- */
+  /* v2.36 — REAL Supabase backend. If the library didn't load (offline first run,
+     CDN blocked), every method degrades to a local no-op so the app never breaks —
+     changes just stay queued until Supabase is reachable. A stable per-device owner
+     id ties your rows together without needing accounts. */
+  function shareOwnerId(){
+    var k="mymoney_owner_id";
+    var v=null; try{ v=localStorage.getItem(k); }catch(e){}
+    if(!v){ v="dev_"+shareId()+shareId(); try{ localStorage.setItem(k,v); }catch(e){} }
+    return v;
+  }
+  function supaReady(){ return !!(window.__supa); }
+  var SHARE_BACKEND = {
+    // push the whole current portfolio (upsert one row keyed by owner)
+    push: function(batch){
+      if(!supaReady()) return Promise.reject(new Error("offline"));
+      var payload={ owner:shareOwnerId(), data:buildRoot(), updated_at:new Date().toISOString() };
+      return window.__supa.from("portfolios").upsert(payload,{onConflict:"owner"})
+        .then(function(r){ if(r.error) throw r.error; return {ok:true, saved:batch.length}; });
+    },
+    // create a share link row, return the openable URL
+    createLink: function(mode){
+      if(!supaReady()) return Promise.reject(new Error("offline"));
+      var owner=shareOwnerId();
+      // ensure the portfolio row exists first, then make the link
+      return window.__supa.from("portfolios").upsert({owner:owner, data:buildRoot(), updated_at:new Date().toISOString()},{onConflict:"owner"})
+        .then(function(){ return window.__supa.from("share_links").insert({owner:owner, mode:mode}).select().single(); })
+        .then(function(r){
+          if(r.error) throw r.error;
+          var id=r.data.id;
+          var url=window.SUPA_URL.replace(/\/$/,"")+"/functions/v1/view?link="+id;
+          // simpler: a hash link back to THIS app file, carrying the link id
+          url=(location.origin&&location.origin!=="null"?location.origin+location.pathname:"")+"#share="+id;
+          if(!url||url==="#share="+id) url="Open this app and add #share="+id;
+          return { id:id, mode:mode, url:url, createdAt:shareNow() };
+        });
+    },
+    revoke: function(id){
+      if(!supaReady()) return Promise.reject(new Error("offline"));
+      return window.__supa.from("share_links").update({revoked:true}).eq("id",id)
+        .then(function(r){ if(r.error) throw r.error; return {ok:true}; });
+    },
+    fetchActivity: function(){
+      if(!supaReady()) return Promise.resolve([]);
+      return window.__supa.from("activity").select("*").eq("owner",shareOwnerId()).order("at",{ascending:false}).limit(50)
+        .then(function(r){ return (r.error||!r.data)?[]:r.data.map(function(a){return {at:new Date(a.at).getTime(), txt:(a.actor||"Someone")+" "+a.action};}); });
+    }
+  };
+
+  function shareLog(txt){
+    SHARE.activity.unshift({ at:shareNow(), txt:txt });
+    if(SHARE.activity.length>200) SHARE.activity.pop();
+    shareSave(); renderShareActivity();
+  }
+
+  /* ---- the sync queue: the heart of offline-first ---- */
+  function shareEnqueue(kind){
+    if(!SHARE.enabled) return;
+    SHARE.queue.push({ at:shareNow(), kind:kind||"change" });
+    shareSave(); updateSyncStatus();
+    shareFlush();   // try now; if offline it simply no-ops until reconnect
+  }
+  function shareFlush(){
+    if(!SHARE.enabled || SHARE.flushing || !SHARE.queue.length) return;
+    if(typeof NET!=="undefined" && !NET.online){ updateSyncStatus(); return; }  // wait for reconnect
+    SHARE.flushing=true; updateSyncStatus();
+    var batch=SHARE.queue.slice();
+    SHARE_BACKEND.push(batch).then(function(r){
+      // drop the flushed items (anything queued during the push stays)
+      SHARE.queue = SHARE.queue.slice(batch.length);
+      SHARE.flushing=false;
+      shareSave(); updateSyncStatus();
+      if(SHARE.queue.length) shareFlush();   // more arrived mid-flight
+    }).catch(function(){
+      SHARE.flushing=false; updateSyncStatus();   // will retry on next change / reconnect
+    });
+  }
+
+  function updateSyncStatus(){
+    var dot=document.getElementById("syncDot"), msg=document.getElementById("syncMsg");
+    if(!dot||!msg) return;
+    var offline = (typeof NET!=="undefined" && !NET.online);
+    if(offline && SHARE.queue.length){
+      dot.className="sync-dot offline";
+      msg.textContent="Offline — "+SHARE.queue.length+" change"+(SHARE.queue.length===1?"":"s")+" will back up when you reconnect";
+    } else if(SHARE.flushing || SHARE.queue.length){
+      dot.className="sync-dot pending";
+      msg.textContent = SHARE.flushing ? "Backing up…" : (SHARE.queue.length+" change"+(SHARE.queue.length===1?"":"s")+" to back up");
+    } else {
+      dot.className="sync-dot";
+      msg.textContent="All backed up";
+    }
+  }
+
+  function renderSharedLinks(){
+    var box=document.getElementById("sharedLinksList");
+    if(!box) return;
+    if(!SHARE.links.length){ box.innerHTML='<div class="hint" style="margin:0">No links shared yet.</div>'; return; }
+    box.innerHTML = SHARE.links.map(function(l){
+      var modeCls = l.revoked?"off":l.mode;
+      var modeTxt = l.revoked?"revoked":l.mode;
+      return '<div class="share-row">'+
+        '<span class="sr-mode '+modeCls+'">'+esc(modeTxt)+'</span>'+
+        '<div class="sr-main"><div class="sr-url">'+esc(l.url)+'</div></div>'+
+        '<div class="sr-btns">'+
+          (l.revoked?'':'<button data-copy="'+esc(l.url)+'">Copy</button>')+
+          (l.revoked?'':'<button data-revoke="'+esc(l.id)+'">Disable</button>')+
+        '</div></div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll("[data-copy]"),function(b){
+      b.addEventListener("click",function(){ copyText(b.getAttribute("data-copy")); flashSaved("link copied"); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll("[data-revoke]"),function(b){
+      b.addEventListener("click",function(){ shareRevoke(b.getAttribute("data-revoke")); });
+    });
+  }
+  function renderShareActivity(){
+    var box=document.getElementById("shareActivityList");
+    if(!box) return;
+    if(!SHARE.activity.length){ box.innerHTML='<div class="hint" style="margin:0">No activity yet.</div>'; return; }
+    box.innerHTML = SHARE.activity.slice(0,50).map(function(a){
+      return '<div class="activity-row"><span class="ar-when">'+esc(actWhen(a.at))+'</span><span class="ar-txt">'+esc(a.txt)+'</span></div>';
+    }).join("");
+  }
+
+  function shareCreate(mode){
+    if(!SHARE.enabled) return;
+    SHARE_BACKEND.createLink(mode).then(function(link){
+      SHARE.links.unshift(link); shareSave();
+      renderSharedLinks();
+      shareLog("You created a "+mode+" link");
+      copyText(link.url); flashSaved(mode+" link created & copied");
+    });
+  }
+  function shareRevoke(id){
+    var l=SHARE.links.filter(function(x){return x.id===id;})[0];
+    if(!l) return;
+    SHARE_BACKEND.revoke(id).then(function(){
+      l.revoked=true; shareSave(); renderSharedLinks();
+      shareLog("You disabled a "+l.mode+" link");
+    });
+  }
+
+  function setShareEnabled(on){
+    SHARE.enabled=on; shareSave();
+    var body=document.getElementById("betaShareBody");
+    if(body) body.style.display = on?"block":"none";
+    var hint=document.getElementById("betaShareHint");
+    if(hint) hint.textContent = on
+      ? "On. Changes queue locally and back up when you're online."
+      : "";
+    if(on){ renderSharedLinks(); renderShareActivity(); updateSyncStatus(); shareFlush(); }
+  }
+
+  function bindShareBeta(){
+    shareLoad();
+    var en=document.getElementById("betaShareEnable");
+    if(en){ en.checked=SHARE.enabled; en.addEventListener("change",function(){ setShareEnabled(en.checked); }); }
+    var v=document.getElementById("shareViewBtn"); if(v) v.addEventListener("click",function(){ shareCreate("view"); });
+    var e=document.getElementById("shareEditBtn"); if(e) e.addEventListener("click",function(){ shareCreate("edit"); });
+    var setup=document.getElementById("betaSetupBtn"); if(setup) setup.addEventListener("click",showShareSetup);
+    if(SHARE.enabled) setShareEnabled(true);
+    // flush whenever the device comes back online (offline-first backup)
+    if(typeof onNetChange==="function") onNetChange(function(online){ if(online) shareFlush(); updateSyncStatus(); });
+  }
+
+  function showShareSetup(){
+    alert("To make links work for other people (free):\n\n1. Create a free Supabase project (no card needed)\n2. Run the provided SQL to create the tables + security rules\n3. Paste your project URL + key into the app\n4. (Optional) Add a free UptimeRobot ping so it never sleeps\n\nThe full step-by-step package is included with this build (SHARE_SETUP).");
+  }
+
   function recordAction(label){
+    try{ if(typeof shareEnqueue==="function") shareEnqueue(label); }catch(_){}
     var __at=Date.now();
     // v2.12: archive FIRST so the all-time history records the change even when the
     // undo snapshot can't be taken (huge state / quota pressure). History and undo are
@@ -8613,6 +9419,20 @@ AI_TYPES.join(", "),
     if(s<3600) return Math.floor(s/60)+"m ago";
     return Math.floor(s/3600)+"h ago";
   }
+  /* v2.41: compact action rows. The leading verb (Deleted/Added/Edited/Imported/…)
+     becomes a small coloured badge so a column of deletes doesn't read as
+     "deleted / deleted / deleted"; the rest of the label stays as the detail. */
+  var ACT_VERBS={ "deleted":{s:"DEL",c:"neg"}, "added":{s:"ADD",c:"pos"},
+    "edited":{s:"EDIT",c:"mut"}, "imported":{s:"IMP",c:"pos"}, "restored":{s:"RES",c:"pos"},
+    "tagged":{s:"TAG",c:"mut"}, "set":{s:"SET",c:"mut"}, "layout:":{s:"LAY",c:"mut"} };
+  function actionBadge(label){
+    var w=(label||"").split(" ")[0].toLowerCase();
+    var v=ACT_VERBS[w];
+    if(!v) return {badge:"", cls:"", rest:label};
+    var rest=label.slice(label.indexOf(" ")+1);
+    if(w==="layout:") rest=label.slice(label.indexOf(" ")+1);
+    return {badge:v.s, cls:v.c, rest:rest||label};
+  }
   function renderActions(){
     var box=document.getElementById("actList");
     if(!box) return;
@@ -8623,8 +9443,10 @@ AI_TYPES.join(", "),
       return;
     }
     box.innerHTML=ACTIONS.map(function(a,i){
+      var ab=actionBadge(a.label);
       return '<div class="act-row">'
-        +'<div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+actionAgo(a.at)+'</span></div>'
+        +(ab.badge?'<span class="act-badge act-'+ab.cls+'">'+ab.badge+'</span>':"")
+        +'<div class="act-t"><b>'+esc(ab.rest)+'</b><span class="act-w">'+actionAgo(a.at)+'</span></div>'
         +'<button type="button" class="btn ghost sm act-u" data-i="'+i+'">Undo</button></div>';
     }).join("");
     Array.prototype.forEach.call(box.querySelectorAll(".act-u"), function(b){
@@ -9192,9 +10014,27 @@ AI_TYPES.join(", "),
     Array.prototype.forEach.call(document.querySelectorAll("#chartSeg button"), function(b){
       b.addEventListener("click", function(){ state.chartType=b.getAttribute("data-t"); persist(); render(); });
     });
+    // v2.25: click the chart body to open the radial chart-type picker
+    var _cw=document.getElementById("chartWrap");
+    if(_cw && !_cw._pickBound){
+      _cw._pickBound=true;
+      _cw.addEventListener("click", function(e){
+        // ignore clicks that land on the crosshair overlay drag etc. — just open the ring
+        if(document.getElementById("chartPicker")) return;
+        if(state.chartCollapsed) return;
+        openChartPicker();
+      });
+    }
     // collapse chart
-    document.getElementById("chartToggle").addEventListener("click", function(){
-      state.chartCollapsed=!state.chartCollapsed; persist(); buildChart();
+    bindChartGear();   // v2.31
+    bindShareBeta();   // v2.33 sharing + offline sync (beta)
+    document.getElementById("chartToggle").addEventListener("click", function(e){
+      // v2.27: stop the event reaching the chart-body "tap to change type" handler,
+      // and rebuild BEFORE persisting so a storage hiccup can never block the open/close.
+      e.stopPropagation(); e.preventDefault();
+      state.chartCollapsed=!state.chartCollapsed;
+      buildChart();
+      try{ persist(); }catch(_){}
     });
 
     // type -> show/hide category & adjust label
@@ -9912,6 +10752,9 @@ AI_TYPES.join(", "),
     bindCopyRows();
     bindTabs();
     bindConnectivity();   // v2.16: live online/offline
+    bindGlobalSearch();   // v2.25
+    bindCategoryEditor(); // v2.26
+    syncCategoryOptions();// v2.26 (append-only; never clears the select)
     refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
@@ -10333,6 +11176,57 @@ AI_TYPES.join(", "),
 
   <hr class="sep" style="margin:20px">
 
+  <!-- Miscellaneous -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Miscellaneous</div>
+    <div class="fld"><label>Global search</label>
+      <button type="button" class="btn" id="openGlobalSearch" style="width:100%">🔎 Search everything</button>
+      <div class="hint" style="margin:4px 0 0">Find any entry, trade or note across your whole history — by text, category, amount or date.</div>
+    </div>
+    <div class="fld"><label>Spending categories</label>
+      <div class="cat-add"><input type="text" id="catAddInput" maxlength="28" placeholder="Add a category…" autocomplete="off"><button type="button" class="btn" id="catAddBtn">Add</button></div>
+      <div id="catEditorList" class="cat-list"></div>
+      <div class="hint" style="margin:6px 0 0">Built-ins can\'t be removed. Removing a custom one moves its entries to “Other”.</div>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
+  <!-- Beta features -->
+  <div style="padding:0 20px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:6px">Beta features <span class="beta-tag">BETA</span></div>
+    <div class="subhint" style="margin-bottom:12px">Experimental. May change or break. Off by default.</div>
+
+    <div class="fld">
+      <label>Portfolio sharing &amp; cloud backup</label>
+      <div class="chk" style="margin:2px 0 8px">
+        <input type="checkbox" id="betaShareEnable">
+        <span>Turn on sharing &amp; auto-backup. When this device goes back online, changes back up automatically; you can share view or edit links.</span>
+      </div>
+      <div class="hint" id="betaShareHint" style="margin:0 0 10px"></div>
+
+      <div id="betaShareBody" style="display:none">
+        <div class="sync-status" id="syncStatus"><span class="sync-dot" id="syncDot"></span><span id="syncMsg">All backed up</span></div>
+
+        <div class="share-actions">
+          <button type="button" class="btn" id="shareViewBtn">🔗 Share view-only link</button>
+          <button type="button" class="btn" id="shareEditBtn">✏️ Share edit link</button>
+        </div>
+
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin:16px 0 8px">Shared links</div>
+        <div id="sharedLinksList" class="shared-list"><div class="hint" style="margin:0">No links shared yet.</div></div>
+
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin:16px 0 8px">Activity log</div>
+        <div id="shareActivityList" class="activity-list"><div class="hint" style="margin:0">No activity yet.</div></div>
+
+        <div class="hint" style="margin:12px 0 0">Currently running on a local preview (mock). To make links work for other people, connect the free cloud backend — tap below for the setup steps.</div>
+        <button type="button" class="btn ghost sm" id="betaSetupBtn" style="margin-top:8px">📦 How to go live (free)</button>
+      </div>
+    </div>
+  </div>
+
+  <hr class="sep" style="margin:20px">
+
   <!-- Support -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Support</div>
@@ -10362,7 +11256,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.21</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.42</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
