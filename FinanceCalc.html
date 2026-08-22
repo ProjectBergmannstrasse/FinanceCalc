@@ -2278,8 +2278,22 @@
   var photoExtMapLoaded=false;
   function photoKey(id){ return STORE_KEY+"_ph_"+id; }
   function mimeToExt(mime){
-    var m={"image/jpeg":"jpg","image/jpg":"jpg","image/png":"png","image/gif":"gif","image/webp":"webp","image/bmp":"bmp","image/heic":"heic","image/heif":"heif"};
-    return m[mime]||"jpg";
+    var m={
+      "image/jpeg":"jpg","image/jpg":"jpg","image/png":"png","image/gif":"gif","image/webp":"webp",
+      "image/bmp":"bmp","image/heic":"heic","image/heif":"heif","image/svg+xml":"svg",
+      "audio/mpeg":"mp3","audio/mp3":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/wave":"wav",
+      "audio/mp4":"m4a","audio/x-m4a":"m4a","audio/aac":"m4a","audio/webm":"webm","audio/ogg":"ogg",
+      "video/mp4":"mp4","video/quicktime":"mov","video/webm":"webm","video/x-msvideo":"avi",
+      "application/pdf":"pdf","text/plain":"txt","text/csv":"csv","text/html":"html","text/css":"css",
+      "application/json":"json","text/javascript":"js","application/javascript":"js",
+      "application/zip":"zip","application/x-msdownload":"exe","application/x-iso9660-image":"iso",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":"docx",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"xlsx",
+      "application/msword":"doc","application/vnd.ms-excel":"xls"
+    };
+    // fall back to the mime subtype (audio/mpeg -> "mpeg") rather than pretending it's a jpg
+    if(m[mime]) return m[mime];
+    var sub=/\/([\w.+-]+)$/.exec(mime||""); return sub?sub[1].replace("+xml","").replace("x-",""):"bin";
   }
   function extFromDataUrl(dataUrl){ var m=/^data:([^;]+);/.exec(dataUrl||""); return mimeToExt(m?m[1]:""); }
   async function loadPhotoExtMap(){
@@ -2433,14 +2447,12 @@
     mp3:"\uD83C\uDFB5",wav:"\uD83C\uDFB5",m4a:"\uD83C\uDFB5",mp4:"\uD83C\uDFAC",mov:"\uD83C\uDFAC",webm:"\uD83C\uDFAC",
     zip:"\uD83D\uDDDC\uFE0F",exe:"\u2699\uFE0F",iso:"\uD83D\uDCBF",html:"\uD83C\uDF10",css:"\uD83C\uDFA8",
     js:"\uD83D\uDCDC",json:"\uD83D\uDD24"};
-  var ATT_IMG=["jpg","jpeg","png","gif","svg","webp","bmp","heic","heif"];
-  var ATT_AUD=["mp3","wav","m4a"];
-  var ATT_VID=["mp4","mov","webm"];
+  var ATT_IMG=["jpg","jpeg","png","gif","svg","webp","bmp","heic","heif","svg+xml"];
+  var ATT_AUD=["mp3","wav","m4a","mpeg","aac","ogg","wave","x-wav","x-m4a"];
+  var ATT_VID=["mp4","mov","webm","quicktime","avi"];
   function attExt(name,dataUrl){
     var m=/\.([a-z0-9]+)$/i.exec(name||""); if(m) return m[1].toLowerCase();
-    if(dataUrl){ var d=/^data:([^;,]+)/.exec(dataUrl); if(d){ var t=d[1];
-      if(/pdf/.test(t))return"pdf"; if(/image\/(\w+)/.test(t))return RegExp.$1;
-      if(/audio\/(\w+)/.test(t))return RegExp.$1; if(/video\/(\w+)/.test(t))return RegExp.$1; } }
+    if(dataUrl){ var d=/^data:([^;,]+)/.exec(dataUrl); if(d) return mimeToExt(d[1]); }
     return "";
   }
   function attIcon(name,dataUrl){ return ATT_ICONS[attExt(name,dataUrl)]||"\uD83D\uDCCE"; }
