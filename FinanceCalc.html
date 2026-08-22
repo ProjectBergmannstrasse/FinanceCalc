@@ -587,6 +587,21 @@
   .tf-seg{flex-wrap:nowrap}
   .tf-seg button{min-width:34px;padding:6px 9px;font-size:11.5px;font-weight:800;letter-spacing:.3px;font-variant-numeric:tabular-nums}
   .tf-seg button:active{transform:scale(.94)}
+  .off-banner{position:fixed;left:50%;transform:translateX(-50%) translateY(-16px);top:calc(10px + env(safe-area-inset-top,0px));width:min(560px,100vw - 24px);background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;z-index:120;box-shadow:0 10px 34px rgba(0,0,0,.4);opacity:0;transition:transform .26s cubic-bezier(.22,1,.36,1),opacity .26s}
+  .off-banner.in{transform:translateX(-50%) translateY(0);opacity:1}
+  .off-banner span{flex:1 1 auto;min-width:0;font-size:12.5px;line-height:1.5;color:var(--tx)}
+  .off-banner button{flex:none;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer}
+  .off-banner button:active{transform:scale(.94)}
+  .exp-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:130;opacity:0;transition:opacity .2s}
+  .exp-ov.in{opacity:1}
+  .exp-card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:20px 22px;width:min(360px,100vw - 40px)}
+  .exp-title{font-size:14px;font-weight:800;margin-bottom:14px}
+  .exp-track{height:10px;border-radius:999px;background:var(--bg);border:1px solid var(--bd);overflow:hidden}
+  .exp-fill{height:100%;width:0;background:var(--tx);border-radius:999px;transition:width .18s ease}
+  .exp-meta{display:flex;justify-content:space-between;margin-top:9px;font-size:11.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;cursor:pointer;flex-wrap:nowrap;max-width:100%}
+  .chk input[type="checkbox"]{flex:0 0 auto;width:18px;height:18px;accent-color:var(--amber);margin-top:2px}
+  .chk > span{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;word-break:break-word}
   .tf-badge{font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);border:1px solid var(--bd);border-radius:999px;padding:3px 8px;white-space:nowrap}
   .tf-note{font-size:11px;color:var(--mut);padding:2px 4px 6px;font-variant-numeric:tabular-nums}
   @media(max-width:520px){
@@ -850,46 +865,6 @@
   .ti-row{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;border-top:1px solid var(--bd);align-items:center}
   .ti-row input{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font-size:12px}
   .ti-lab{display:grid;grid-template-columns:1.2fr 1fr 1.4fr .9fr;gap:6px;padding:6px 12px;font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--mut)}
-  .pers-ov{position:fixed;inset:0;background:var(--bg);z-index:80;display:none;flex-direction:column;opacity:0;transition:opacity .22s ease}
-  .pers-ov.on{display:flex}
-  .pers-ov.vis{opacity:1}
-  .pers-hd{display:flex;align-items:center;gap:12px;padding:16px 18px 12px;flex:none}
-  .pers-hd h2{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0}
-  .pers-back{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;width:38px;height:38px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
-  .pers-back:active{transform:scale(.93)}
-  .pers-pages{flex:1;overflow:auto;padding:4px 16px calc(96px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
-  .pers-page{display:none}
-  .pers-page.on{display:block;animation:persIn .28s cubic-bezier(.22,1,.36,1)}
-  @keyframes persIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .pers-card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:4px 16px;margin-bottom:14px;animation:persIn .28s cubic-bezier(.22,1,.36,1) backwards}
-  .pers-card:nth-child(2){animation-delay:.05s}.pers-card:nth-child(3){animation-delay:.1s}
-  .pers-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--bd)}
-  .pers-row:last-child{border-bottom:0}
-  .pers-row .lab{font-size:14px;font-weight:600}
-  .pers-row .sub{font-size:11.5px;color:var(--mut);margin-top:2px;line-height:1.45}
-  .pers-sw{position:relative;width:50px;height:30px;border-radius:999px;background:var(--bd);flex:none;cursor:pointer;border:0;transition:background .2s;padding:0}
-  .pers-sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.34,1.56,.64,1)}
-  .pers-sw.on{background:var(--tx)}
-  .pers-sw.on::after{transform:translateX(20px)}
-  .pers-sw:active::after{width:28px}
-  .pers-seg{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:11px;padding:3px;gap:2px;flex:none}
-  .pers-seg button{border:0;background:transparent;color:var(--mut);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
-  .pers-seg button:active{transform:scale(.94)}
-  .pers-seg button.on{background:var(--tx);color:var(--bg)}
-  .pers-themes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 0}
-  .pers-th{border:2px solid var(--bd);border-radius:14px;padding:10px 6px 8px;text-align:center;cursor:pointer;background:var(--card);color:var(--tx);transition:transform .15s,border-color .2s}
-  .pers-th:active{transform:scale(.93)}
-  .pers-th.on{border-color:var(--tx)}
-  .pers-th .sw2{width:100%;height:34px;border-radius:9px;margin-bottom:7px;border:1px solid var(--bd)}
-  .pers-th .nm{font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase}
-  .pers-bar2{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(420px,100vw - 24px);background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--bd);border-radius:18px;display:flex;padding:6px;z-index:82;box-shadow:0 8px 30px rgba(0,0,0,.35)}
-  .pers-bar2 .pill{position:absolute;top:6px;bottom:6px;border-radius:13px;background:var(--tx);transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);z-index:0}
-  .pers-tab{position:relative;z-index:1;flex:1;border:0;background:transparent;color:var(--mut);min-height:50px;border-radius:13px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:color .2s;padding:4px 2px}
-  .pers-tab:active{transform:scale(.93)}
-  .pers-tab .ic{font-size:17px;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
-  .pers-tab .lb{font-size:10.5px;font-weight:700}
-  .pers-tab.on{color:var(--bg)}
-  .pers-tab.on .ic{transform:translateY(-1px) scale(1.16)}
   .act-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
   .act-filters button{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer}
   .act-filters button.on{background:var(--tx);color:var(--bg)}
@@ -903,7 +878,6 @@
   [data-theme="light"] .btn.primary{background:#14161a;color:#ffffff}
   @media(max-width:430px){
     .ti-row,.ti-lab{grid-template-columns:1fr 1fr;row-gap:4px}
-    .pers-sec{padding:16px 12px}
     .page-head{flex-wrap:wrap;gap:8px}
   }
 </style>
@@ -1038,7 +1012,7 @@
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
-  <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
+  <button type="button" id="aiBtn" class="ai-launch" data-needs-net title="AI auto-fill from images">🤖 Fill from an image</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1186,8 +1160,6 @@
 <main id="pageTrading" class="page" style="display:none">
   <div class="page-head">
     <h1>📊 Trading</h1>
-    <button type="button" id="mtCsvBtn" class="btn" style="margin-left:auto;font-size:13px" title="Import a CSV exported from the MT5 Statement Analyzer">⬇ Import Analyzer CSV</button>
-    <input type="file" id="mtCsvFile" accept=".csv,text/csv" style="display:none">
   </div>
   <div class="tr-empty" id="trEmpty" style="display:none">
     <b>No trades logged yet.</b><br>
@@ -2011,8 +1983,13 @@
     // here on purpose: typeUI() already shows it only for trade types, and a non-trader
     // can't select one. (This used to name "fInstWrap", an id that doesn't exist, so it
     // silently did nothing.)
-    var sw=document.getElementById("sepTradingWrap");
-    if(sw) sw.style.display = on ? "" : "none";
+    /* v2.14: every trading-only question now appears ONLY when "Do you trade?" is on.
+       Previously the bank-split question was gated but CSV import and photo auto-analyze
+       were always visible, so a non-trader saw settings that could never apply to them. */
+    ["sepTradingWrap","csvImportWrap","csvImportSep","mtPhotoWrap","mtPhotoSep"].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el) el.style.display = on ? "" : "none";
+    });
     var sel=document.getElementById("fType");
     if(sel) Array.prototype.forEach.call(sel.querySelectorAll("option"), function(o){
       if(/^(trade_win|trade_loss|to_trading|from_trading|alw_trading)$/.test(o.value)) o.hidden = !on;
@@ -3102,7 +3079,7 @@
   }
   function aiConfigured(){ return !!(aiCfg.keyA && aiCfg.provA); }
   function aiCrossChecking(){ return !!(aiCfg.keyA && aiCfg.keyB && aiCfg.provB); }
-  function aiOnline(){ return navigator.onLine!==false; }
+  function aiOnline(){ return (typeof NET!=="undefined") ? NET.online : (navigator.onLine!==false); }
 
   var AI_TYPES=["income","spend","trade_win","trade_loss","pay_debt_balance","borrow","save","withdraw","tax_set","tax_pay","adjust"];
 
@@ -3707,6 +3684,125 @@ AI_TYPES.join(", "),
 
   // Everything AI is gated on being online — the section and the button vanish entirely
   // offline rather than sitting there dead and failing when tapped.
+  /* ================= v2.16 — LIVE CONNECTIVITY =================
+     One source of truth for online/offline, updated instantly by the browser's own
+     online/offline events (event-driven — zero polling, so it costs no memory or CPU
+     while idle). Everything that needs the network subscribes; nothing asks "are we
+     online?" on a timer. A one-time dismissable banner shows the moment you drop off.
+     ============================================================ */
+  var NET={ online: (navigator.onLine!==false), subs: [], bannerDismissed:false };
+  function netIsOnline(){ return NET.online; }
+  function onNetChange(fn){ NET.subs.push(fn); }
+  function netApply(){
+    NET.subs.forEach(function(fn){ try{ fn(NET.online); }catch(e){} });
+    // toggle every online-only control in one pass
+    Array.prototype.forEach.call(document.querySelectorAll("[data-needs-net]"), function(el){
+      el.style.display = NET.online ? "" : "none";
+    });
+  }
+  function showOfflineBanner(){
+    if(NET.bannerDismissed) return;
+    if(document.getElementById("offBanner")) return;
+    var b=document.createElement("div");
+    b.id="offBanner"; b.className="off-banner";
+    b.innerHTML='<span>📴 You\u2019re offline. Everything here still works \u2014 entries, charts, search, backups. Only online extras (AI, live prices) are paused until you\u2019re back.</span>'
+      +'<button type="button" id="offBannerOk">Got it</button>';
+    document.body.appendChild(b);
+    requestAnimationFrame(function(){ b.classList.add("in"); });
+    document.getElementById("offBannerOk").addEventListener("click", function(){
+      NET.bannerDismissed=true; hideOfflineBanner();
+    });
+  }
+  function hideOfflineBanner(){
+    var b=document.getElementById("offBanner");
+    if(!b) return;
+    b.classList.remove("in");
+    setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 240);
+  }
+  function netSet(on){
+    if(NET.online===on) return;
+    NET.online=on;
+    if(!on) showOfflineBanner(); else { hideOfflineBanner(); }
+    netApply();
+    if(typeof refreshAiVisibility==="function") refreshAiVisibility();
+  }
+  function bindConnectivity(){
+    window.addEventListener("online",  function(){ netSet(true);  });
+    window.addEventListener("offline", function(){ netSet(false); });
+    netApply();
+    if(!NET.online) showOfflineBanner();
+  }
+
+  /* ================= v2.16 — MEASURED EXPORT PROGRESS BAR =================
+     Backups download with a live bar whose estimate comes from MEASURING the actual
+     write speed (bytes flushed / elapsed), refined as it runs — not a guess and not a
+     network call (an export is a local file write; connection speed is irrelevant to
+     it). For a small JSON it's near-instant; for a big one with photos the bar fills
+     smoothly and the "~Ns left" figure sharpens as real throughput is known. */
+  function exportWithProgress(getJsonOrBlob, filename, label){
+    var ov=document.createElement("div");
+    ov.className="exp-ov";
+    ov.innerHTML='<div class="exp-card">'
+      +'<div class="exp-title">'+esc(label||"Preparing backup")+'</div>'
+      +'<div class="exp-track"><div class="exp-fill" id="expFill"></div></div>'
+      +'<div class="exp-meta"><span id="expPct">0%</span><span id="expEta">measuring\u2026</span></div>'
+      +'</div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add("in"); });
+    var fill=ov.querySelector("#expFill"), pct=ov.querySelector("#expPct"), eta=ov.querySelector("#expEta");
+    var t0=performance.now(), done=false;
+
+    function finishWith(blob){
+      done=true;
+      var total=blob.size||1, start=performance.now();
+      // Stream the blob through a reader so the bar reflects real bytes moved, and
+      // the ETA is derived from measured MB/s rather than assumed.
+      var reader=blob.stream ? blob.stream().getReader() : null;
+      if(!reader){
+        // older engine: no streams — write straight out, show a quick determinate fill
+        fill.style.width="100%"; pct.textContent="100%"; eta.textContent="done";
+        downloadBlob(blob, filename);
+        setTimeout(close, 500); return;
+      }
+      var moved=0;
+      (function pump(){
+        reader.read().then(function(r){
+          if(r.done){
+            fill.style.width="100%"; pct.textContent="100%"; eta.textContent="done";
+            downloadBlob(blob, filename);
+            setTimeout(close, 500); return;
+          }
+          moved += r.value.length;
+          var frac=Math.min(1, moved/total);
+          var el=(performance.now()-start)/1000;
+          var rate=el>0 ? moved/el : 0;                 // bytes/sec, measured
+          var remain=rate>0 ? (total-moved)/rate : 0;    // seconds left, from real rate
+          fill.style.width=(frac*100).toFixed(1)+"%";
+          pct.textContent=Math.round(frac*100)+"%";
+          eta.textContent = frac>=1 ? "done"
+            : (rate>0 ? ("~"+(remain<1?"<1":Math.ceil(remain))+"s left · "+fmtRate(rate)) : "measuring\u2026");
+          pump();
+        }).catch(function(){ downloadBlob(blob, filename); close(); });
+      })();
+    }
+    function fmtRate(bps){
+      if(bps>1048576) return (bps/1048576).toFixed(1)+" MB/s";
+      if(bps>1024) return (bps/1024).toFixed(0)+" KB/s";
+      return Math.round(bps)+" B/s";
+    }
+    function close(){ ov.classList.remove("in"); setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 240); }
+
+    // getJsonOrBlob may be sync-returning or callback-based (exportData is a callback)
+    var maybe=getJsonOrBlob(function(result){
+      var blob=(result instanceof Blob) ? result : new Blob([result],{type:"application/json"});
+      finishWith(blob);
+    });
+    if(maybe!==undefined && !done){
+      var blob=(maybe instanceof Blob) ? maybe : new Blob([maybe],{type:"application/json"});
+      finishWith(blob);
+    }
+  }
+
   function refreshAiVisibility(){
     var on=aiOnline();
     var sec=document.getElementById("aiSection");
@@ -4094,7 +4190,7 @@ AI_TYPES.join(", "),
       } else el.style.display="none";
     });
     try{ window.scrollTo(0,0); }catch(e){} // older/embedded webviews don't all have it
-    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillChartDebt(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); bindActFilters(); renderActionsFiltered(); }
+    if(page==="pageSettings"){ render(); fillLabelInputs(); fillPhotoQ(); fillChartMode(); fillChartDebt(); fillMiscSettings(); fillTraderToggle(); fillMtOcrSettings(); renderLayoutUI(); renderBudgetSettings(); renderRecurList(); renderGoalSettings(); renderTrash(); bindActFilters(); renderActionsFiltered(); }
     if(page==="pageTrading") renderTradingPage();
   }
   function bindTabs(){
@@ -6297,6 +6393,38 @@ AI_TYPES.join(", "),
     var b=num(state.opening.balance);
     return chartCountsDebt() ? (b-num(state.opening.debt)) : b;
   }
+  /* v2.13: three settings that briefly lived in a separate view now sit in Settings. */
+  function bindMiscSettings(){
+    var d=document.getElementById("setDraftSafety");
+    if(d) d.addEventListener("change",function(){
+      if(!state.settings) state.settings={};
+      state.settings.draftSafety=(d.value==="on");
+      persistNow(); flashSaved("saved");
+    });
+    var dv=document.getElementById("setDeviceType");
+    if(dv) dv.addEventListener("change",function(){
+      if(!state.settings) state.settings={};
+      state.settings.deviceType=dv.value;
+      persistNow(); applyDeviceType(); flashSaved("saved");
+    });
+    var sc=document.getElementById("setShareConsent");
+    if(sc) sc.addEventListener("change",function(){
+      if(!state.settings) state.settings={};
+      state.settings.shareConsent=sc.value;
+      persistNow(); flashSaved("saved");
+    });
+    var tb=document.getElementById("setTosBtn");
+    if(tb) tb.addEventListener("click",showTosModal);
+  }
+  function fillMiscSettings(){
+    var s2=state.settings||{};
+    var d=document.getElementById("setDraftSafety");
+    if(d) d.value=(s2.draftSafety===false)?"off":"on";
+    var dv=document.getElementById("setDeviceType");
+    if(dv) dv.value=s2.deviceType||"auto";
+    var sc=document.getElementById("setShareConsent");
+    if(sc) sc.value=s2.shareConsent||"never";
+  }
   function bindChartDebt(){
     var sel=document.getElementById("setChartDebt");
     if(!sel) return;
@@ -6492,13 +6620,20 @@ AI_TYPES.join(", "),
     var n=candles.length;
     var plotW=W-padL-padR, plotH=H-padT-padB;
 
+    /* v2.17: Y-axis is clipped to the RANGE OF THE VISIBLE CANDLES ONLY (enterprise
+       standard). Whatever giant spike sits off-screen at another timeframe is ignored,
+       so the axis auto-zooms into the moves you can actually see. Log scale was
+       rejected on purpose: a balance can hit 0 or go negative and log(0)/log(-x) is
+       undefined, which would crash the chart on any overdraft. Min/max handles
+       positive, negative and zero cleanly. */
     var lo=Infinity, hi=-Infinity, i;
     for(i=0;i<n;i++){
       if(candles[i].l<lo) lo=candles[i].l;
       if(candles[i].h>hi) hi=candles[i].h;
     }
-    if(!isFinite(lo)||!isFinite(hi)||hi===lo){ lo=lo-1; hi=hi+1; }
-    var range=hi-lo, pad=range*0.12; hi+=pad; lo-=pad; range=hi-lo;
+    if(!isFinite(lo)||!isFinite(hi)){ lo=-1; hi=1; }
+    if(hi===lo){ var b=Math.abs(hi)||1; lo-=b*0.5; hi+=b*0.5; }   // flat window still readable
+    var range=hi-lo, pad=range*0.08; hi+=pad; lo-=pad; range=hi-lo;
     function Yv(v){ return padT + plotH*(1-(v-lo)/range); }
     var step=plotW/n;
     function Xc(idx){ return padL + step*idx + step/2; }
@@ -6507,6 +6642,8 @@ AI_TYPES.join(", "),
     var svg='';
 
     // gridlines
+    // gridlines: top, bottom, middle — plus a zero line ONLY when the visible window
+    // actually straddles zero (otherwise forcing 0 in re-squashes everything).
     var gridVals=[hi, lo, (hi+lo)/2];
     if(lo<0 && hi>0) gridVals.push(0);
     gridVals.forEach(function(gv){
@@ -6695,7 +6832,6 @@ AI_TYPES.join(", "),
     overlay.addEventListener("touchend", hideCrosshair);
     // one handler on the full-plot overlay is the single source of truth, so the readout
     // follows the pointer ANYWHERE over the chart — not only when it's on a dot/candle.
-    // (Candles keep pointer-events for their hover tint via CSS; they don't handle moves.)
   }
 
   /* ---------------- render ---------------- */
@@ -7071,16 +7207,36 @@ AI_TYPES.join(", "),
         var cells=rd.cells, dirIdx=-1;
         for(var i=0;i<cells.length;i++){if(MTOCR_DIR.test(cells[i].text.trim())){dirIdx=i;break;}}
         if(dirIdx===-1) return;
-        var t={symbol:null,type:cells[dirIdx].text.trim().toLowerCase(),volume:null,date:null,profit:null};
+        var t={symbol:null,type:cells[dirIdx].text.trim().toLowerCase(),volume:null,date:null,profit:null,ticket:null};
         var timeCells=cells.filter(function(c){return MTOCR_TIME.test(c.text)&&!/^\d+$/.test(c.text.trim());});
         if(timeCells[0]) t.date=timeCells[0].text.trim();
+        /* v2.12: TICKET NUMBER in the header-less layout. MT4/MT5 puts a long bare
+           integer (position/deal id) next to the time, before buy/sell. It was never
+           captured, so Trade Info always showed a blank ticket. Longest 6+ digit
+           run wins, so a 4-digit stray can't be mistaken for one. */
+        var symIdx=-1;
         for(var j=dirIdx+1;j<cells.length;j++){
-          if(mtOcrInstrument(cells[j].text.trim())){t.symbol=cells[j].text.trim().replace(/[,._]+$/,"").toUpperCase();break;}
+          if(mtOcrInstrument(cells[j].text.trim())){
+            t.symbol=cells[j].text.trim().replace(/[,._]+$/,"").toUpperCase(); symIdx=j; break;
+          }
         }
+        var bestTicket=null;
+        cells.forEach(function(c){
+          var raw=c.text.trim().replace(/[ ,]/g,"");
+          if(/^\d{6,}$/.test(raw) && (!bestTicket || raw.length>bestTicket.length)) bestTicket=raw;
+        });
+        if(bestTicket) t.ticket=bestTicket;
+        /* v2.12: VOLUME was taking whichever decimal came first after buy/sell, which
+           on statements that put P&L before the lot size (e.g. "buy  -0.16  0.01")
+           recorded the loss as the lot size. Lots are positive, under 1000, and sit
+           BEFORE the instrument — all three now required. */
         var volCell=null;
         for(var k=dirIdx+1;k<cells.length;k++){
+          if(symIdx>=0 && k>=symIdx) break;              // lots come before the symbol
           var r2=cells[k].text.trim().replace(/,/g,"");
-          if(MTOCR_NUM.test(r2)&&!MTOCR_INT.test(r2)){var v=parseFloat(r2);if(v<1000){t.volume=v;volCell=cells[k];}break;}
+          if(!MTOCR_NUM.test(r2)||MTOCR_INT.test(r2)) continue;
+          var v=parseFloat(r2);
+          if(v>0 && v<1000){ t.volume=v; volCell=cells[k]; break; }   // never negative
         }
         var nums=cells.filter(function(c){
           var raw=c.text.trim().replace(/,/g,"");
@@ -7114,7 +7270,9 @@ AI_TYPES.join(", "),
           var da=taJ.match(/-?\d+\.\d+/g)||[];
           var db=tbJ.match(/-?\d+\.\d+/g)||[];
           if(!db.length) continue;
+          var tk=taJ.match(/\b\d{6,}\b/);
           var t2={symbol:sym?sym.text.replace(/[,._]+$/,"").toUpperCase():null,
+                  ticket:tk?tk[0]:null,
                   type:dir?dir[1].toLowerCase():null,
                   volume:da.length?parseFloat(da[0]):null,
                   date:dm?dm[0]:null,
@@ -7241,189 +7399,6 @@ AI_TYPES.join(", "),
   }
 
   /* ================= v2.01 - STAGE 4: PERSONALIZE VIEW ================= */
-  /* v2.07 — Personalize rebuilt as app-grade UI: floating pill tab bar with sliding
-     indicator, page fade+rise per switch, iOS-style toggle switches, segmented
-     controls, animated theme swatch grid, press feedback on everything. */
-  var PERS_TABS=[["app","🎨","Look"],["trade","📈","Trading"],["behav","⚙️","Behaviour"],["device","📱","Device"],["priv","🔒","Privacy"]];
-  var PERS_THEME_KEYS=[["mono","#000"],["dark","#0b0e14"],["emerald","#00ff88"],["paper","#f4f1ea"],["light","#f6f7f9"],["synth","#ff4fd8"],["ice","#38c6f4"]];
-  function persSw(id,lab,sub){
-    return '<div class="pers-row"><div><div class="lab">'+lab+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>'
-      +'<button type="button" class="pers-sw" id="'+id+'" role="switch" aria-checked="false" aria-label="'+lab+'"></button></div>';
-  }
-  function persSeg(id,lab,sub,opts){
-    return '<div class="pers-row"><div><div class="lab">'+lab+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>'
-      +'<div class="pers-seg" id="'+id+'">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>';}).join('')+'</div></div>';
-  }
-  function persSegSet(id,val){
-    var seg=document.getElementById(id); if(!seg) return;
-    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){b.classList.toggle('on',b.getAttribute('data-v')===val);});
-  }
-  function persSegBind(id,cb){
-    var seg=document.getElementById(id); if(!seg) return;
-    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(b){
-      b.addEventListener('click',function(){
-        persSegSet(id,b.getAttribute('data-v')); cb(b.getAttribute('data-v'));
-      });
-    });
-  }
-  function persSwSet(id,on){
-    var b=document.getElementById(id); if(!b) return;
-    b.classList.toggle('on',!!on); b.setAttribute('aria-checked',on?'true':'false');
-  }
-  function persSwBind(id,cb){
-    var b=document.getElementById(id); if(!b) return;
-    b.addEventListener('click',function(){
-      var on=!b.classList.contains('on'); persSwSet(id,on);
-      if(navigator.vibrate) try{navigator.vibrate(8);}catch(e){}
-      cb(on);
-    });
-  }
-  function persEnsure(){
-    if(document.getElementById("persOv")) return;
-    var ov=document.createElement("div");
-    ov.className="pers-ov"; ov.id="persOv";
-    ov.innerHTML=
-      '<div class="pers-hd"><button type="button" class="pers-back" id="persClose" aria-label="Close">←</button><h2>Personalize</h2></div>'
-      +'<div class="pers-pages" id="persPages">'
-
-      +'<div class="pers-page" data-pg="app">'
-        +'<div class="pers-card"><div class="pers-themes" id="persThemes">'
-          +PERS_THEME_KEYS.map(function(t){return '<button type="button" class="pers-th" data-th="'+t[0]+'"><div class="sw2" style="background:'+t[1]+'"></div><div class="nm">'+t[0]+'</div></button>';}).join('')
-        +'</div></div>'
-      +'</div>'
-
-      +'<div class="pers-page" data-pg="trade">'
-        +'<div class="pers-card">'
-          +persSw('persTrader','Trader mode','Unlocks the Trading page, instruments and trade entry types.')
-          +persSeg('persMtOcr','Statement reading','Photos of MT4/MT5 statements read on this device — nothing uploaded.',[["off","Off"],["auto","Auto"],["silent","Silent"]])
-          +persSw('persNoSplits','No splits for trades','Hides the split field on trade entries. Existing entries never change.')
-        +'</div>'
-        +'<div class="pers-card">'
-          +persSeg('persChartDebt','Balance chart counts','Cash only shows what you can spend. After debt subtracts what you owe, so borrowing and repaying read as flat.',[["cash","Cash only"],["net","After debt"]])
-        +'</div>'
-      +'</div>'
-
-      +'<div class="pers-page" data-pg="behav">'
-        +'<div class="pers-card">'
-          +persSw('persDraft','Draft safety','If the app closes mid-entry, what you typed is offered back next time.')
-        +'</div>'
-      +'</div>'
-
-      +'<div class="pers-page" data-pg="device">'
-        +'<div class="pers-card">'
-          +persSeg('persDevType','Device type','Touch shows tap-arrows on the chart stepper.',[["auto","Auto"],["touch","Touch"],["desktop","Desktop"]])
-        +'</div>'
-      +'</div>'
-
-      +'<div class="pers-page" data-pg="priv">'
-        +'<div class="pers-card">'
-          +persSeg('persConsent','Share flagged images','Helps improve statement reading. Items only ever wait in a local outbox on this device — this version never transmits.',[["never","Never"],["wifi","Wi-Fi"],["any","Wi-Fi+data"]])
-          +'<div class="pers-row"><div><div class="lab">Terms &amp; privacy</div><div class="sub">Plain-language, on-device-only policy.</div></div>'
-          +'<button type="button" class="btn ghost sm" id="persTos">Read</button></div>'
-        +'</div>'
-      +'</div>'
-
-      +'</div>'
-      +'<div class="pers-bar2" id="persBar" role="tablist"><div class="pill" id="persPill"></div>'
-        +PERS_TABS.map(function(t,i){return '<button type="button" class="pers-tab'+(i===0?' on':'')+'" role="tab" aria-selected="'+(i===0)+'" data-pg="'+t[0]+'"><span class="ic">'+t[1]+'</span><span class="lb">'+t[2]+'</span></button>';}).join('')
-      +'</div>';
-    document.body.appendChild(ov);
-
-    // tab bar: sliding pill + page switch with retriggered fade/rise
-    function persAlignPill(){
-      var on=ov.querySelector('.pers-tab.on'), pill=document.getElementById('persPill');
-      if(!on||!pill) return;
-      pill.style.left=on.offsetLeft+'px'; pill.style.width=on.offsetWidth+'px';
-    }
-    function persGo(pg){
-      Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){
-        var on=t.getAttribute('data-pg')===pg;
-        t.classList.toggle('on',on); t.setAttribute('aria-selected',on?'true':'false');
-      });
-      Array.prototype.forEach.call(ov.querySelectorAll('.pers-page'),function(p){
-        var on=p.getAttribute('data-pg')===pg;
-        if(on){p.classList.remove('on');void p.offsetWidth;p.classList.add('on');}
-        else p.classList.remove('on');
-      });
-      persAlignPill();
-    }
-    Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){
-      t.addEventListener('click',function(){persGo(t.getAttribute('data-pg'));});
-    });
-    window.addEventListener('resize',persAlignPill);
-    ov.__go=persGo; ov.__align=persAlignPill;
-
-    // theme grid
-    Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(b){
-      b.addEventListener('click',function(){
-        var k=b.getAttribute('data-th');
-        Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(x){x.classList.toggle('on',x===b);});
-        var real=document.querySelector('.theme-opt[data-theme-key="'+k+'"]');
-        if(real) real.click();
-        else{document.documentElement.setAttribute('data-theme',k==='dark'?'':k);try{localStorage.setItem('mymoney_theme',k);}catch(e){}}
-        flashSaved('theme applied');
-      });
-    });
-
-    // live-apply wiring
-    persSwBind('persTrader',function(on){
-      var c=document.getElementById('sIsTrader');
-      if(c){c.checked=on;c.dispatchEvent(new Event('change'));}
-    });
-    persSegBind('persMtOcr',function(v){
-      if(!state.settings)state.settings={};
-      state.settings.mtOcr=v;persistNow();mtOcrUI();flashSaved('saved');
-    });
-    persSwBind('persNoSplits',function(on){
-      if(!state.settings)state.settings={};
-      state.settings.noSplits=on;persistNow();applyNoSplits();flashSaved('saved');
-    });
-    persSwBind('persDraft',function(on){
-      if(!state.settings)state.settings={};
-      state.settings.draftSafety=on;persistNow();flashSaved('saved');
-    });
-    persSegBind('persChartDebt',function(v){
-      if(!state.settings)state.settings={};
-      state.settings.chartDebt=v;persistNow();fillChartDebt();buildChart();flashSaved('saved');
-    });
-    persSegBind('persDevType',function(v){
-      if(!state.settings)state.settings={};
-      state.settings.deviceType=v;persistNow();applyDeviceType();flashSaved('saved');
-    });
-    persSegBind('persConsent',function(v){
-      if(!state.settings)state.settings={};
-      state.settings.shareConsent=v;persistNow();flashSaved('saved');
-    });
-    document.getElementById('persTos').addEventListener('click',showTosModal);
-    document.getElementById('persClose').addEventListener('click',function(){
-      ov.classList.remove('vis');
-      setTimeout(function(){ov.classList.remove('on');},220);
-    });
-  }
-  function persOpen(){
-    persEnsure();
-    var ov=document.getElementById("persOv");
-    var s=state.settings||{};
-    var th=(function(){try{return localStorage.getItem("mymoney_theme")||"mono";}catch(e){return "mono";}})();
-    Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(b){b.classList.toggle('on',b.getAttribute('data-th')===th);});
-    persSwSet('persTrader',!!s.isTrader);
-    persSegSet('persMtOcr',s.mtOcr||'off');
-    persSwSet('persNoSplits',!!s.noSplits);
-    persSwSet('persDraft',s.draftSafety!==false);
-    persSegSet('persChartDebt',s.chartDebt||'cash');
-    persSegSet('persDevType',s.deviceType||'auto');
-    persSegSet('persConsent',s.shareConsent||'never');
-    ov.classList.add('on');
-    requestAnimationFrame(function(){
-      ov.classList.add('vis');
-      ov.__go('app'); ov.__align();
-    });
-  }
-  function bindPersonalize(){
-    var b=document.getElementById("persOpenBtn");
-    if(b) b.addEventListener("click",persOpen);
-  }
-
   /* ================= v2.02 - STAGE 5: CRASH / BATTERY DRAFT SAFETY ================= */
   var DRAFT_KEY="mymoney_entry_draft", DRAFT_FIELDS=["fDate","fType","fAmt","fInst","fNote","fSplit"];
   function draftEnabled(){ return !(state.settings&&state.settings.draftSafety===false); }
@@ -7522,6 +7497,11 @@ AI_TYPES.join(", "),
       });
     });
   }
+  /* v2.12: this list used to be session-only \u2014 reload and it was empty. Every action
+     is now archived as it happens and read back on load, so the history is ALL-TIME
+     from this version onward. Undo still only reaches this session, because an undo
+     needs the full state snapshot and snapshots are far too large to keep forever;
+     archived rows are therefore labelled as history only. */
   function renderActionsFiltered(){
     renderActions();
     var box=document.getElementById("actList");
@@ -7533,21 +7513,23 @@ AI_TYPES.join(", "),
         if(rows[i]&&(Date.now()-a.at)/1000>secs) rows[i].style.display="none";
       });
     }
-    if(actFilter==="all"){
-      actArchiveList(function(arch){
-        if(!arch.length) return;
-        arch.sort(function(a,b){return b.at-a.at;});
-        var live={}; ACTIONS.forEach(function(a){live[a.at]=1;});
-        var older=arch.filter(function(a){return !live[a.at];}).slice(0,100);
-        if(!older.length) return;
-        var div=document.createElement("div");
-        div.innerHTML='<div class="hint" style="margin:10px 0 6px">Older (archived \u2014 view only, undo window has passed)</div>'
-          +older.map(function(a){
-            return '<div class="act-row"><div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+new Date(a.at).toLocaleString()+'</span></div></div>';
-          }).join("");
-        box.appendChild(div);
-      });
-    }
+    actArchiveList(function(arch){
+      if(!arch.length) return;
+      arch.sort(function(a,b){return b.at-a.at;});
+      var live={}; ACTIONS.forEach(function(a){live[a.at]=1;});
+      var older=arch.filter(function(a){return !live[a.at];});
+      if(secs>0) older=older.filter(function(a){return (Date.now()-a.at)/1000<=secs;});
+      var shown=older.slice(0,200);
+      if(!shown.length) return;
+      var div=document.createElement("div");
+      div.innerHTML='<div class="hint" style="margin:10px 0 6px">Earlier \u2014 '+older.length+' change'+(older.length===1?"":"s")
+          +' (history only; undo covers this session)</div>'
+        +shown.map(function(a){
+          return '<div class="act-row"><div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+esc(actWhen(a.at))+'</span></div></div>';
+        }).join("")
+        +(older.length>shown.length?'<div class="hint" style="margin:6px 0 0">+'+(older.length-shown.length)+' more not shown</div>':"");
+      box.appendChild(div);
+    });
   }
 
   /* ================= v2.04 - STAGE 7: CHART TIMEFRAME STEPPER ================= */
@@ -7641,7 +7623,6 @@ AI_TYPES.join(", "),
   function bindStagedModules(){
     bindTradeInfo();
     bindTraderOnboarding();
-    bindPersonalize();
     bindDraftSafety();
     bindActFilters();
     bindChartStepper();
@@ -7904,6 +7885,7 @@ AI_TYPES.join(", "),
   function bindMtCsvImport(){
     var btn=document.getElementById("mtCsvBtn");
     var inp=document.getElementById("mtCsvFile");
+    if(!btn||!inp) return;   // v2.15: Trading-tab button removed; import lives in Settings now
     if(!btn||!inp) return;
     btn.addEventListener("click",function(){ inp.value=""; inp.click(); });
     inp.addEventListener("change",function(){
@@ -8518,13 +8500,25 @@ AI_TYPES.join(", "),
      back to how it was before it. The confirm says so rather than surprising anyone. */
   var ACTIONS=[], ACTIONS_MAX=12;
   function recordAction(label){
+    var __at=Date.now();
+    // v2.12: archive FIRST so the all-time history records the change even when the
+    // undo snapshot can't be taken (huge state / quota pressure). History and undo are
+    // independent now — losing undo no longer silently loses the record too.
+    actArchiveSave({label:label, at:__at});
     try{
-      var __a={ label:label, at:Date.now(), snap:JSON.stringify(state) };
+      var __a={ label:label, at:__at, snap:JSON.stringify(state) };
       ACTIONS.unshift(__a);
-      actArchiveSave(__a);   // v2.03: light copy (label+time) into the sandboxed archive
       if(ACTIONS.length>ACTIONS_MAX) ACTIONS.pop();
-    }catch(e){ return; }   // a snapshot that can't be taken must never block the action
-    renderActions();
+    }catch(e){ renderActionsFiltered(); return; }
+    renderActionsFiltered();
+  }
+  function actWhen(ms){
+    var d=new Date(ms), now=new Date();
+    var hhmm=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+    if(d.toDateString()===now.toDateString()) return "today "+hhmm;
+    var yst=new Date(now.getTime()-86400000);
+    if(d.toDateString()===yst.toDateString()) return "yesterday "+hhmm;
+    return d.getDate()+" "+MONTHS[d.getMonth()]+" "+hhmm;
   }
   function actionAgo(ms){
     var s=Math.floor((Date.now()-ms)/1000);
@@ -8539,7 +8533,7 @@ AI_TYPES.join(", "),
     var n=document.getElementById("actCount");
     if(n) n.textContent = ACTIONS.length ? ACTIONS.length+" change"+(ACTIONS.length===1?"":"s") : "";
     if(!ACTIONS.length){
-      box.innerHTML='<div class="hint" style="margin:0">Nothing to undo yet. Changes you make appear here, newest first.</div>';
+      box.innerHTML='<div class="hint" style="margin:0">Nothing to undo from this session. Earlier changes, if any, are listed below.</div>';
       return;
     }
     box.innerHTML=ACTIONS.map(function(a,i){
@@ -9503,6 +9497,11 @@ AI_TYPES.join(", "),
       flashSaved("preparing…");
       exportData(function(json){
         try{
+          // v2.16: measured-speed progress bar instead of a silent instant download
+          exportWithProgress(function(cb){ cb(new Blob([json],{type:"application/json"})); },
+            "my-money-backup.json", "Backing up everything");
+          return;
+          /* unreachable legacy path kept for reference */
           var blob=new Blob([json],{type:"application/json"});
           var url=URL.createObjectURL(blob);
           var a=document.createElement("a"); a.href=url; a.download="my-money-backup.json";
@@ -9816,6 +9815,7 @@ AI_TYPES.join(", "),
     bindPhotoQ();
     bindChartMode();
     bindChartDebt();      // v2.10
+    bindMiscSettings();   // v2.13
     bindTraderToggle();
     bindMtOcr();        // v1.96
     bindMtCsvImport();  // v1.97 — MT5 Statement Analyzer CSV bridge
@@ -9825,6 +9825,7 @@ AI_TYPES.join(", "),
     bindTrash();
     bindCopyRows();
     bindTabs();
+    bindConnectivity();   // v2.16: live online/offline
     refreshAiVisibility();
     // A debounced save that never fires because the tab closed is a lost entry.
     // pagehide covers iOS Safari, where beforeunload is unreliable.
@@ -9853,7 +9854,6 @@ AI_TYPES.join(", "),
 <main id="pageSettings" class="page" style="display:none">
   <div class="page-head">
     <h1>⚙️ Settings</h1>
-    <button type="button" class="btn ghost sm" id="persOpenBtn" style="margin-left:auto">✨ Personalize</button>
   </div>
 
   <!-- Theme picker -->
@@ -10128,10 +10128,10 @@ AI_TYPES.join(", "),
     <div id="budgetInputs"></div>
   </div>
 
-  <hr class="sep" style="margin:20px">
+  <hr class="sep" style="margin:20px" id="csvImportSep">
 
-  <!-- CSV import -->
-  <div style="padding:0 20px">
+  <!-- CSV import — trading only -->
+  <div style="padding:0 20px" id="csvImportWrap">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Import trades from a file</div>
     <div class="hint">Paste an MT4/MT5 statement or any CSV. It works out the columns, shows you what it found, and skips anything already in your ledger.</div>
     <div class="data-btns">
@@ -10165,10 +10165,10 @@ AI_TYPES.join(", "),
     </div>
   </div>
 
-  <hr class="sep" style="margin:20px">
+  <hr class="sep" style="margin:20px" id="mtPhotoSep">
 
-  <!-- MT4/MT5 photo auto-analyze -->
-  <div style="padding:0 20px">
+  <!-- MT4/MT5 photo auto-analyze — trading only -->
+  <div style="padding:0 20px" id="mtPhotoWrap">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">MT4/MT5 photo auto-analyze</div>
     <div class="hint">Attach a screenshot of an MT4/MT5 statement to a trade entry and it's read on this device with local OCR — nothing is uploaded. Non-statement photos are simply ignored. Needs a connection once to fetch the reader (~3&nbsp;MB), then it's cached.</div>
     <div class="fld"><label for="setMtOcr">When a statement photo is attached</label>
@@ -10208,6 +10208,27 @@ AI_TYPES.join(", "),
         <option value="net">After debt — cash minus what you owe</option>
       </select>
       <div class="hint" id="chartDebtHint" style="margin:4px 0 0"></div>
+    </div>
+    <div class="fld"><label for="setDraftSafety">If the app closes mid-entry</label>
+      <select id="setDraftSafety">
+        <option value="on">Keep a draft and offer it back (recommended)</option>
+        <option value="off">Discard it</option>
+      </select>
+    </div>
+    <div class="fld"><label for="setDeviceType">Device type</label>
+      <select id="setDeviceType">
+        <option value="auto">Detect automatically</option>
+        <option value="touch">Touch — phone or tablet</option>
+        <option value="desktop">Desktop</option>
+      </select>
+    </div>
+    <div class="fld"><label for="setShareConsent">Share flagged statement images</label>
+      <select id="setShareConsent">
+        <option value="never">Never (recommended)</option>
+        <option value="wifi">Wi-Fi only</option>
+        <option value="any">Wi-Fi or mobile data</option>
+      </select>
+      <div class="hint" style="margin:4px 0 0">Helps improve statement reading. Anything allowed here only ever waits in a local outbox on this device — this version never transmits. <button type="button" class="btn ghost sm" id="setTosBtn" style="margin-top:6px">Terms &amp; privacy</button></div>
     </div>
     <div class="fld"><label for="setPhotoQ">Photo quality</label>
       <select id="setPhotoQ">
@@ -10255,7 +10276,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.11</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.18</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
