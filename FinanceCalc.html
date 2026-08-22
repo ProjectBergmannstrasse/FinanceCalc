@@ -6632,8 +6632,16 @@ AI_TYPES.join(", "),
       if(candles[i].h>hi) hi=candles[i].h;
     }
     if(!isFinite(lo)||!isFinite(hi)){ lo=-1; hi=1; }
+    /* v2.19: fill the plot with the ACTUAL price action. The axis was spanning the
+       full high→low of the window, so if candles swung wide but opened/closed close
+       together, the bodies came out as flat slivers — "a memecoin". We now tighten
+       the axis to the tightest band that still contains every wick, then give it only
+       a small breathing margin, so the real moves use most of the vertical space. */
     if(hi===lo){ var b=Math.abs(hi)||1; lo-=b*0.5; hi+=b*0.5; }   // flat window still readable
-    var range=hi-lo, pad=range*0.08; hi+=pad; lo-=pad; range=hi-lo;
+    var range=hi-lo;
+    // margin scales down as the range grows, so small books aren't over-padded and big
+    // ones aren't wasted — but never less than a hair so top/bottom candles aren't clipped.
+    var pad=Math.max(range*0.04, 0.5); hi+=pad; lo-=pad; range=hi-lo;
     function Yv(v){ return padT + plotH*(1-(v-lo)/range); }
     var step=plotW/n;
     function Xc(idx){ return padL + step*idx + step/2; }
@@ -6678,13 +6686,13 @@ AI_TYPES.join(", "),
         svg+='<circle class="cv-dot" cx="'+cx2+'" cy="'+cy2+'" r="3" fill="'+AMBER+'" data-i="'+i+'" style="pointer-events:none"/>';
       }
     } else {
-      var bw=Math.max(6, Math.min(step*0.6, 26));
+      var bw=Math.max(7, Math.min(step*0.68, 30));
       for(i=0;i<n;i++){
         var c=candles[i], cx=Xc(i);
         var isUp=c.c>=c.o;
         var col=(Math.abs(c.c-c.o)<0.001)?DOJI:(isUp?UP:DOWN);
         var yH=Yv(c.h), yL=Yv(c.l), yO=Yv(c.o), yC=Yv(c.c);
-        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),3);
+        var top=Math.min(yO,yC), bh=Math.max(Math.abs(yO-yC),4);
         svg+='<g class="cv-candle" data-i="'+i+'">';
         svg+='<rect x="'+(cx-step/2).toFixed(1)+'" y="'+padT+'" width="'+step.toFixed(1)+'" height="'+plotH+'" fill="transparent"/>';
         svg+='<line x1="'+cx.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="2"/>';
@@ -10276,7 +10284,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.18</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v2.19</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
