@@ -955,7 +955,7 @@
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
-  <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from a photo</button>
+  <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1015,7 +1015,7 @@
         <input type="text" id="fNote" placeholder="e.g. birthday money, gold trade, pencil case">
       </div>
       <div class="fld full">
-        <label>Photos / receipts (optional)</label>
+        <label>Files &amp; receipts (optional)</label>
         <div class="photo-pick">
           <input type="file" id="fPhoto" multiple accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.heic,.heif,.mp3,.wav,.m4a,.mp4,.mov,.webm,.zip,.exe,.iso,.html,.css,.js,.json,image/*,audio/*,video/*" style="display:none">
           <button type="button" class="btn ghost sm" id="fPhotoBtn">📎 Attach files</button>
@@ -1193,9 +1193,9 @@
 <!-- image viewer -->
 <div id="viewer" class="viewer" style="display:none">
   <div class="viewer-inner">
-    <div class="viewer-bar"><span id="viewerTitle">Photo</span><button class="icon-btn" id="viewerClose" aria-label="Close" title="Close">✕</button></div>
+    <div class="viewer-bar"><span id="viewerTitle">Files</span><button class="icon-btn" id="viewerClose" aria-label="Close" title="Close">✕</button></div>
     <div class="viewer-body" id="viewerBody"></div>
-    <div class="viewer-foot"><button class="btn ghost sm warn" id="viewerDel">Remove photo</button></div>
+    <div class="viewer-foot"><button class="btn ghost sm warn" id="viewerDel">Remove</button></div>
   </div>
 </div>
 
@@ -2441,12 +2441,15 @@
     try{ img.src=dataUrl; }catch(e){ bail(); }
   }
   /* ---- attachments: any file type, stored as the exact original (never compressed) ---- */
-  var ATT_ICONS={pdf:"\uD83D\uDCD5",docx:"\uD83D\uDCD8",doc:"\uD83D\uDCD8",txt:"\uD83D\uDCC4",csv:"\uD83D\uDCCA",
-    xlsx:"\uD83D\uDCD7",xls:"\uD83D\uDCD7",jpg:"\uD83D\uDDBC\uFE0F",jpeg:"\uD83D\uDDBC\uFE0F",png:"\uD83D\uDDBC\uFE0F",
-    gif:"\uD83D\uDDBC\uFE0F",svg:"\uD83D\uDDBC\uFE0F",webp:"\uD83D\uDDBC\uFE0F",bmp:"\uD83D\uDDBC\uFE0F",
-    mp3:"\uD83C\uDFB5",wav:"\uD83C\uDFB5",m4a:"\uD83C\uDFB5",mp4:"\uD83C\uDFAC",mov:"\uD83C\uDFAC",webm:"\uD83C\uDFAC",
-    zip:"\uD83D\uDDDC\uFE0F",exe:"\u2699\uFE0F",iso:"\uD83D\uDCBF",html:"\uD83C\uDF10",css:"\uD83C\uDFA8",
-    js:"\uD83D\uDCDC",json:"\uD83D\uDD24"};
+  /* distinct emoji per file format — pdf = 📝 paper-with-writing as requested */
+  var ATT_ICONS={
+    pdf:"📝", docx:"📄", doc:"📄", txt:"🔤", csv:"📊", xlsx:"📈", xls:"📈",
+    jpg:"🖼️", jpeg:"🖼️", png:"🏞️", gif:"🎞️", svg:"✏️", webp:"🌅", bmp:"🖼️", heic:"📷", heif:"📷",
+    mp3:"🎵", wav:"🎙️", m4a:"🎧", mpeg:"🎵", aac:"🎧", ogg:"🎵",
+    mp4:"🎬", mov:"📽️", webm:"📹", avi:"🎬", quicktime:"📽️",
+    zip:"🗜️", exe:"⚙️", iso:"💿",
+    html:"🌐", css:"🎨", js:"⚡", json:"📋"
+  };
   var ATT_IMG=["jpg","jpeg","png","gif","svg","webp","bmp","heic","heif","svg+xml"];
   var ATT_AUD=["mp3","wav","m4a","mpeg","aac","ogg","wave","x-wav","x-m4a"];
   var ATT_VID=["mp4","mov","webm","quicktime","avi"];
@@ -7232,7 +7235,7 @@ AI_TYPES.join(", "),
         }
 
         if(photoDims){
-          divider(); section("Photo");
+          divider(); section(photoDims?"Photo":"File");
           if(!measureOnly){ roundRectClip(x, pad, cy, photoDims.w, photoDims.h, 10, function(){
             x.drawImage(photoImg, pad, cy, photoDims.w, photoDims.h); }); }
           cy+=photoDims.h+10;
@@ -7344,7 +7347,7 @@ AI_TYPES.join(", "),
         +'<div class="td-sec">What it moved</div>'+txPotMoves(t,sym)
         +(bits?'<div class="td-sec">Details</div>'+bits:"")
         +(t.note?'<div class="td-sec">Note</div><div class="td-note">'+esc(t.note)+'</div>':"")
-        +(photosOf(t).length?'<div class="td-sec">'+(photosOf(t).length>1?photosOf(t).length+" attachments":"Attachment")
+        +(photosOf(t).length?'<div class="td-sec">'+(photosOf(t).length>1?photosOf(t).length+" files":"File")
             +'</div><div class="td-photo" id="tdPhoto">loading\u2026</div>':"")
       +'</div>'
       +'<div class="td-foot">'
@@ -7386,17 +7389,17 @@ AI_TYPES.join(", "),
           cell.className="td-pcell";
           box.appendChild(cell);
           loadPhoto(pid, function(url){
-            if(!url){ cell.textContent="missing"; return; }
+            if(!url){ cell.innerHTML='<div style="color:var(--mut);padding:8px;font-size:11px">file missing — re-attach</div>'; return; }
             var nm=attNames[pid]||"", kind=attKind(nm,url);
             if(kind==="image"){
               cell.innerHTML='<img src="'+url+'" alt="Attachment '+(i+1)+'">';
               cell.querySelector("img").addEventListener("click", function(){ close(); openViewer(t.id); });
             } else if(kind==="audio"){
               cell.classList.add("td-media");
-              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"audio")+'</div><audio src="'+url+'" controls></audio>';
+              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"audio file")+'</div><audio src="'+url+'" controls></audio>';
             } else if(kind==="video"){
               cell.classList.add("td-media");
-              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"video")+'</div><video src="'+url+'" controls playsinline></video>';
+              cell.innerHTML='<div class="td-fname">'+attIcon(nm,url)+' '+esc(nm||"video file")+'</div><video src="'+url+'" controls playsinline></video>';
             } else if(kind==="pdf"){
               cell.classList.add("td-media");
               cell.innerHTML='<embed type="application/pdf" src="'+url+'" class="td-pdf">'
@@ -7420,7 +7423,7 @@ AI_TYPES.join(", "),
     if(!tx) return;
     viewingId=txId;
     var body=document.getElementById("viewerBody");
-    document.getElementById("viewerTitle").textContent=(tx.note||tx.cat||"Photo").slice(0,55);
+    document.getElementById("viewerTitle").textContent=(tx.note||tx.cat||"Files").slice(0,55);
     body.innerHTML='<div class="viewer-note">Loading\u2026</div>';
     document.getElementById("viewer").style.display="flex";
     // The viewer shows every photo on the entry now, stacked, each numbered — rather than
@@ -7437,16 +7440,32 @@ AI_TYPES.join(", "),
         body.appendChild(wrap);
         var slot=wrap.querySelector(".viewer-slot");
         loadPhoto(pid, function(data){
-          if(!data){ slot.innerHTML='<div class="viewer-note">Photo not found. Re-attach it with the \ud83d\udcce button.</div>'; return; }
-          var img=new Image();
-          img.style.cssText="max-width:100%;border-radius:8px;display:block";
-          img.onload=function(){ slot.innerHTML=""; slot.appendChild(img); };
-          img.onerror=function(){ slot.innerHTML='<div class="viewer-note">Can\'t preview this format in browser.<br><a href="'+data+'" download="receipt">Download to view</a></div>'; };
-          img.src=data; img.alt="receipt "+(i+1);
+          if(!data){ slot.innerHTML='<div class="viewer-note">File not found. Re-attach it with the 📎 button.</div>'; return; }
+          var nm=attNames[pid]||"", kind=attKind(nm,data);
+          // update the remove button and viewer title first-slot only
+          if(i===0){
+            var delBtn=document.getElementById("viewerDel");
+            var kindLabel={image:"Remove image",audio:"Remove audio",video:"Remove video",pdf:"Remove PDF",file:"Remove file"};
+            if(delBtn) delBtn.textContent=kindLabel[kind]||"Remove";
+          }
+          if(kind==="image"){
+            var img=new Image(); img.style.cssText="max-width:100%;border-radius:8px;display:block";
+            img.onload=function(){ slot.innerHTML=""; slot.appendChild(img); };
+            img.onerror=function(){ slot.innerHTML='<div class="viewer-note">Can\'t preview this image format.<br><a href="'+data+'" download="'+esc(nm||"image")+'">Download to view</a></div>'; };
+            img.src=data; img.alt="attachment "+(i+1);
+          } else if(kind==="audio"){
+            slot.innerHTML='<div class="viewer-note" style="padding:18px 8px">'+ attIcon(nm,data)+' '+esc(nm||"audio file")+'</div><audio src="'+data+'" controls style="width:100%;margin-top:8px"></audio>';
+          } else if(kind==="video"){
+            slot.innerHTML='<video src="'+data+'" controls playsinline style="max-width:100%;border-radius:8px;margin-top:8px"></video>';
+          } else if(kind==="pdf"){
+            slot.innerHTML='<div class="viewer-note">📝 '+esc(nm||"PDF")+'<br><a href="'+data+'" download="'+esc(nm||"file.pdf")+'" style="color:var(--amber)">Download to view</a></div>';
+          } else {
+            slot.innerHTML='<div class="viewer-note" style="font-size:22px">'+ attIcon(nm,data)+'</div><div class="viewer-note">'+esc(nm||"file")+'<br><a href="'+data+'" download="'+esc(nm||"file")+'" style="color:var(--amber)">Download</a></div>';
+          }
         });
       });
     } else {
-      body.innerHTML='<div class="viewer-note">No photo attached.</div>';
+      body.innerHTML='<div class="viewer-note">No files attached.</div>';
     }
   }
 
