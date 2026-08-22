@@ -956,6 +956,7 @@
 <!-- Add entry -->
 <div class="panel">
   <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
+  <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt with your camera" style="display:none">📷 Scan receipt</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1215,6 +1216,9 @@
   <span id="undoToastMsg">Entry deleted</span>
   <button type="button" id="undoToastBtn">Undo</button>
 </div>
+
+<!-- receipt scanner hidden camera input -->
+<input type="file" id="scanCamInput" accept="image/*" capture="environment" style="display:none">
 
 <!-- AI auto-fill panel -->
 <div id="aiPanelOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:110"></div>
@@ -3764,6 +3768,8 @@ AI_TYPES.join(", "),
   function bindAiUI(){
     document.getElementById("aiBtn").addEventListener("click", openAiPanel);
     document.getElementById("aiPanelClose").addEventListener("click", closeAiPanel);
+    var scanBtn=document.getElementById("scanBtn"); if(scanBtn) scanBtn.addEventListener("click", tapScanReceipt);
+    initReceiptScanner();
     document.getElementById("aiPanelOverlay").addEventListener("click", closeAiPanel);
     document.getElementById("aiHelpBtn").addEventListener("click", aiHelpModal);
 
@@ -5134,6 +5140,151 @@ AI_TYPES.join(", "),
     persistNow(); render();
     if(cb) cb(list.length);
   }
+
+  /* ============================================================
+     BILL REMINDERS — Web Notifications for upcoming bills
+     Hooks into the existing recurring system. Fires when the app
+     is open; no server required.
+     ============================================================ */
+  var NOTIF_KEY = "mymoney_notif_sent";   // track what we already fired today
+  var _notifSent = null;   // {date: "YYYY-MM-DD", ids: [ruleId, ...]}
+  function loadNotifSent(){
+    try{ var r=localStorage.getItem(NOTIF_KEY); _notifSent=r?JSON.parse(r):{date:"",ids:[]}; }
+    catch(e){ _notifSent={date:"",ids:[]}; }
+  }
+  function saveNotifSent(){ try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(_notifSent)); }catch(e){} }
+  function billNotifGranted(){ return typeof Notification!=="undefined" && Notification.permission==="granted"; }
+
+  // Ask permission and fire alerts for bills due today or in the next N days
+  function checkBillNotifs(daysAhead){
+    daysAhead = daysAhead || 3;
+    if(typeof Notification==="undefined") return;   // browser doesn't support it
+    loadNotifSent();
+    var todayS = todayStr(), today = new Date(todayS);
+    // build the window of dates to check
+    var window_dates = [];
+    for(var d=0; d<=daysAhead; d++){
+      var dt = new Date(today); dt.setDate(dt.getDate()+d);
+      window_dates.push(dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"));
+    }
+    // which rules have something due in that window?
+    var upcoming = [];
+    recurList().forEach(function(r){
+      if(r.paused) return;
+      window_dates.forEach(function(ds){
+        var dts = dueDates(r, ds);
+        if(dts.indexOf(ds)>=0){
+          var daysUntil = window_dates.indexOf(ds);
+          upcoming.push({rule:r, date:ds, daysUntil:daysUntil});
+        }
+      });
+    });
+    if(!upcoming.length) return;
+    // reset sent-list daily
+    if((_notifSent.date||"") !== todayS){ _notifSent={date:todayS,ids:[]}; }
+    // fire one notification per rule not yet fired today
+    upcoming.forEach(function(item){
+      var key = item.rule.id+"_"+item.date;
+      if(_notifSent.ids.indexOf(key)>=0) return;   // already sent
+      var label = item.rule.note || item.rule.cat || "Bill";
+      var amt = item.rule.amount ? " — "+fmt(item.rule.amount, state.currency) : "";
+      var when = item.daysUntil===0 ? "due today" : "due in "+item.daysUntil+" day"+(item.daysUntil===1?"":"s");
+      try{
+        new Notification("💳 "+label+amt, {
+          body: when.charAt(0).toUpperCase()+when.slice(1),
+          icon: "",
+          tag: key,
+          renotify: false
+        });
+        _notifSent.ids.push(key);
+        saveNotifSent();
+      }catch(e){}
+    });
+  }
+
+  function requestBillNotifs(cb){
+    if(typeof Notification==="undefined"){ if(cb) cb(false); return; }
+    if(Notification.permission==="granted"){ checkBillNotifs(); if(cb) cb(true); return; }
+    if(Notification.permission==="denied"){ if(cb) cb(false); return; }
+    Notification.requestPermission(function(perm){
+      if(perm==="granted"){ checkBillNotifs(); }
+      if(cb) cb(perm==="granted");
+    });
+  }
+
+  // Call this on boot — quietly if permission already granted, else waits for a tap
+
+  /* ============================================================
+     RECEIPT SCANNER — one-tap: pick/snap → AI reads → form fills
+     Thin wrapper around the existing AI pipeline. The camera
+     input opens the device camera directly on mobile; desktop
+     falls back to the file picker.
+     ============================================================ */
+  function initReceiptScanner(){
+    var camInput = document.getElementById("scanCamInput");
+    if(!camInput) return;
+    camInput.addEventListener("change", function(e){
+      var files=Array.prototype.slice.call(e.target.files||[]);
+      if(!files.length) return;
+      // open the AI panel first, then inject the file
+      openAiPanel();
+      var left=files.length;
+      files.forEach(function(f){
+        var r=new FileReader();
+        r.onload=function(){
+          var url=r.result, comma=url.indexOf(",");
+          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
+          if(--left<=0){
+            renderAiThumbs();
+            // auto-run immediately — the user already picked the photo; don't make them tap again
+            var runBtn=document.getElementById("aiRunBtn");
+            if(runBtn && !runBtn.disabled) runBtn.click();
+          }
+        };
+        r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
+        r.readAsDataURL(f);
+      });
+      e.target.value="";
+    });
+  }
+  function tapScanReceipt(){
+    if(!aiConfigured()){
+      // AI not configured — open the panel to explain and let them set up a key
+      openAiPanel();
+      flashSaved("Set up an AI key first — tap the ⚙ in the AI panel");
+      return;
+    }
+    var cam=document.getElementById("scanCamInput"); if(cam) cam.click();
+  }
+
+  function initBillNotifs(){
+    if(typeof Notification==="undefined") return;
+    if(Notification.permission==="granted"){
+      // already granted: check now and again whenever the tab becomes visible
+      checkBillNotifs();
+      document.addEventListener("visibilitychange", function(){
+        if(document.visibilityState==="visible") checkBillNotifs();
+      });
+    }
+    // surface a "Enable bill reminders" button in the recurring section
+    var btn = document.getElementById("billNotifsBtn");
+    if(!btn) return;
+    if(Notification.permission==="granted"){
+      btn.textContent="🔔 Reminders on"; btn.disabled=true;
+    } else if(Notification.permission==="denied"){
+      btn.textContent="🔕 Notifications blocked"; btn.disabled=true;
+    } else {
+      btn.style.display=""; btn.disabled=false;
+      btn.addEventListener("click", function(){
+        requestBillNotifs(function(ok){
+          btn.textContent = ok ? "🔔 Reminders on" : "🔕 Blocked in browser";
+          btn.disabled=true;
+          if(ok) checkBillNotifs();
+        });
+      });
+    }
+  }
+
   function checkRecurPrompt(){
     var el=document.getElementById("recPrompt");
     if(!el) return;
@@ -8321,6 +8472,7 @@ AI_TYPES.join(", "),
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
+      initBillNotifs();
     });
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
@@ -8572,6 +8724,7 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Repeats</div>
     <div class="hint">Rent, salary, subscriptions. Nothing is ever added silently — when something's due you get asked on the dashboard first.</div>
+    <button class="btn ghost sm" id="billNotifsBtn" style="display:none;margin-top:10px">🔔 Enable bill reminders</button>
     <div id="recList"></div>
     <button class="btn ghost sm" id="recAddBtn" style="width:100%;margin-top:8px">+ Add a repeat</button>
     <div id="recForm" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--bd2);border-radius:10px;background:var(--card)">
