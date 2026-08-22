@@ -5290,9 +5290,25 @@ AI_TYPES.join(", "),
     if(!el) return;
     var pend=pendingRecur();
     if(!pend.length){ el.style.display="none"; return; }
-    var total=pend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
+
+    // split: auto rules go straight to the ledger silently; manual ones get the prompt
+    var autoPend=pend.filter(function(x){ return x.rule.auto; });
+    var manualPend=pend.filter(function(x){ return !x.rule.auto; });
+
+    if(autoPend.length){
+      applyRecur(autoPend, function(n){
+        // only show the toast if the tab is focused, so it's not jarring
+        if(!document.hidden) flashSaved(n+" subscription"+(n===1?"":"s")+" auto-logged");
+        // re-run for any remaining manual ones
+        checkRecurPrompt();
+      });
+      return;   // applyRecur calls checkRecurPrompt again when done
+    }
+
+    if(!manualPend.length){ el.style.display="none"; return; }
+    var total=manualPend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
     document.getElementById("recPromptMsg").innerHTML=
-      "<b>"+pend.length+"</b> recurring entr"+(pend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
+      "<b>"+manualPend.length+"</b> recurring entr"+(manualPend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
     el.style.display="block";
   }
   function ordSuffix(n){
@@ -5314,7 +5330,7 @@ AI_TYPES.join(", "),
       var meta=TYPE_META[r.type]||{label:r.type};
       var title=r.note ? esc(r.note) : esc(meta.label)+(r.cat?" · "+esc(r.cat):"");
       return '<div class="rec-item'+(r.paused?" paused":"")+'" data-id="'+esc(r.id)+'">'
-        +'<div class="rec-main"><div class="rec-t">'+title+'</div><div class="rec-sub">'+esc(recurDescribe(r))+'</div></div>'
+        +'<div class="rec-main"><div class="rec-t">'+title+(r.auto?' <span style="font-size:10px;background:var(--in);color:#04140b;border-radius:4px;padding:1px 5px;font-weight:800">AUTO</span>':'')+'</div><div class="rec-sub">'+esc(recurDescribe(r))+'</div></div>'
         +'<div class="rec-amt mono">'+fmt(Math.abs(num(r.amount)),sym)+'</div>'
         +'<button type="button" class="rec-btn" data-act="pause">'+(r.paused?"Resume":"Pause")+'</button>'
         +'<button type="button" class="rec-btn" data-act="del">Delete</button></div>';
@@ -5367,7 +5383,8 @@ AI_TYPES.join(", "),
         type:document.getElementById("recType").value, amount:amt,
         note:document.getElementById("recNote").value.trim(), freq:freq,
         day: freq==="weekly" ? +start.slice(8,10) : Math.max(1,Math.min(31,parseInt(document.getElementById("recDay").value,10)||1)),
-        startDate:start, lastRun:null, paused:false };
+        startDate:start, lastRun:null, paused:false,
+        auto:document.getElementById('recAuto').checked };
       if(r.type==="spend") r.cat=document.getElementById("recCat").value;
       if(!Array.isArray(state.recurring)) state.recurring=[];
       state.recurring.push(r);
@@ -5377,7 +5394,7 @@ AI_TYPES.join(", "),
     });
     var a2=document.getElementById("recPromptAdd"), n2=document.getElementById("recPromptLater");
     if(a2) a2.addEventListener("click", function(){
-      var pend=pendingRecur();
+      var pend=pendingRecur().filter(function(x){ return !x.rule.auto; });
       if(pend.length) applyRecur(pend, function(n){ flashSaved("added "+n); checkRecurPrompt(); });
     });
     if(n2) n2.addEventListener("click", function(){ document.getElementById("recPrompt").style.display="none"; });
@@ -8744,6 +8761,7 @@ AI_TYPES.join(", "),
       <div class="fld" id="recDayFld"><label for="recDay">Day of month</label><input type="number" id="recDay" min="1" max="31" step="1" value="1">
         <div class="subhint" id="recDayHint">31 becomes the last day in shorter months.</div></div>
       <div class="fld"><label for="recStart">Starting from</label><input type="date" id="recStart"></div>
+      <div class="fld" style="display:flex;align-items:center;gap:10px;padding:10px 0 2px"><label class="pf-switch-lbl" for="recAuto" style="flex:1;cursor:pointer"><span style="font-weight:700">Auto-add when due</span><span class="mut" style="display:block;font-size:11px;margin-top:2px">Logs automatically on the due date — no prompt</span></label><input type="checkbox" id="recAuto" class="pf-switch" style="width:auto;height:auto"></div>
       <div class="data-btns">
         <button class="btn primary sm" id="recSaveBtn">Save</button>
         <button class="btn ghost sm" id="recCancelBtn">Cancel</button>
