@@ -7085,113 +7085,101 @@ AI_TYPES.join(", "),
     };
 
     loadImg(function(photoImg){
-      // ---- measure height ----
-      var y=pad;
-      y+=34;                       // badge
-      y+=54;                       // big amount
-      y+=26;                       // date
-      y+=18;                       // divider gap
-      y+=22+moves.length*26+10;    // "what it moved"
-      if(details.length) y+=22+details.length*26+10;
+      var mono='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+
+      // wrap the note once, up front, so both passes agree
       var noteLines=[];
       if(note){
-        // wrap note at ~46 chars
         var words=note.split(/\s+/), line="";
         words.forEach(function(w){
           if((line+" "+w).trim().length>46){ noteLines.push(line.trim()); line=w; }
           else line+=" "+w;
         });
         if(line.trim()) noteLines.push(line.trim());
-        y+=22+noteLines.length*22+14;
       }
-      var photoH=0;
+      var photoDims=null;
       if(photoImg){
         var iw=W-pad*2, ih=Math.min(240, iw*photoImg.height/photoImg.width);
-        photoH=ih; y+=22+ih+10;
+        photoDims={w:iw,h:ih};
       }
-      var H=y+pad;
 
+      /* One draw routine, run twice. First pass measures the true bottom (no clipping is
+         possible because the height IS whatever the drawing reached). Second pass draws
+         for real at that exact size. Beats hand-tuned constants that drift out of sync. */
+      function paint(x, measureOnly){
+        var cy=pad;
+        if(!measureOnly){ x.fillStyle=C.bg; x.fillRect(0,0,W, x.canvas.height/DPR); }
+
+        // badge
+        var badge=meta.label;
+        x.font="700 12px "+mono;
+        var bw=(x.measureText(badge).width||badge.length*7)+24;
+        if(!measureOnly){ x.fillStyle=C.card2; roundRect(x,(W-bw)/2,cy,bw,26,13); x.fill();
+          x.fillStyle=C.mut; x.textAlign="center"; x.textBaseline="middle";
+          x.fillText(badge, W/2, cy+13); }
+        cy+=44;
+
+        // big amount
+        var bd=balDelta(t), amtColor = bd<0 ? C.down : (bd>0 ? C.up : C.tx);
+        if(Math.abs(bd)<0.005) amtColor=C.tx;
+        if(!measureOnly){ x.font="800 44px "+mono; x.fillStyle=amtColor; x.textAlign="center";
+          x.textBaseline="alphabetic";
+          x.fillText((bd<0?"\u2212":"")+sym+Math.abs(num(t.amount)).toFixed(2), W/2, cy+34); }
+        cy+=58;
+
+        // date
+        if(!measureOnly){ x.font="500 15px "+mono; x.fillStyle=C.mut; x.textAlign="center";
+          x.fillText(dateStr, W/2, cy); }
+        cy+=30;
+
+        function divider(){ if(!measureOnly){ x.strokeStyle=C.bd; x.lineWidth=1;
+          x.beginPath(); x.moveTo(pad,cy); x.lineTo(W-pad,cy); x.stroke(); } cy+=18; }
+        function section(title){ if(!measureOnly){ x.font="700 11px "+mono; x.fillStyle=C.mut;
+          x.textAlign="left"; x.fillText(title.toUpperCase(), pad, cy); } cy+=24; }
+        function rowLR(label,val,color){ if(!measureOnly){
+          x.font="500 15px "+mono; x.textAlign="left"; x.fillStyle=C.tx; x.fillText(label, pad, cy);
+          x.font="700 15px "+mono; x.textAlign="right"; x.fillStyle=color||C.tx; x.fillText(val, W-pad, cy); }
+          cy+=26; }
+
+        divider(); section("What it moved");
+        moves.forEach(function(m){
+          var col=m.key==="up"?C.up:m.key==="down"?C.down:m.key==="cool"?C.cool:m.key==="mut"?C.mut:C.tx;
+          rowLR(m.label, m.text, col);
+        });
+        cy+=10;
+
+        if(details.length){ divider(); section("Details");
+          details.forEach(function(dd){ rowLR(dd[0], dd[1], C.tx); }); cy+=10; }
+
+        if(noteLines.length){
+          divider(); section("Note");
+          var boxTop=cy-2, boxH=noteLines.length*22+18;
+          if(!measureOnly){ x.fillStyle=C.card2; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.fill();
+            x.strokeStyle=C.bd; x.lineWidth=1; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.stroke();
+            x.font="500 15px "+mono; x.fillStyle=C.tx; x.textAlign="left";
+            var ty=boxTop+22; noteLines.forEach(function(ln){ x.fillText(ln, pad+14, ty); ty+=22; }); }
+          cy=boxTop+boxH+14;
+        }
+
+        if(photoDims){
+          divider(); section("Photo");
+          if(!measureOnly){ roundRectClip(x, pad, cy, photoDims.w, photoDims.h, 10, function(){
+            x.drawImage(photoImg, pad, cy, photoDims.w, photoDims.h); }); }
+          cy+=photoDims.h+10;
+        }
+
+        return cy+pad;   // the true bottom
+      }
+
+      // pass 1: measure on a scratch context
+      var scratch=document.createElement("canvas").getContext("2d");
+      var H=Math.ceil(paint(scratch, true));
+
+      // pass 2: draw for real
       var cv=document.createElement("canvas");
       cv.width=W*DPR; cv.height=H*DPR;
-      var x=cv.getContext("2d"); x.scale(DPR,DPR);
-      var mono='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
-
-      // bg
-      x.fillStyle=C.bg; x.fillRect(0,0,W,H);
-      var cy=pad;
-
-      // badge (centered pill)
-      var badge=meta.label;
-      x.font="700 12px "+mono;
-      var bw=x.measureText(badge).width+24;
-      x.fillStyle=C.card2;
-      roundRect(x,(W-bw)/2,cy,bw,26,13); x.fill();
-      x.fillStyle=C.mut; x.textAlign="center"; x.textBaseline="middle";
-      x.fillText(badge, W/2, cy+13);
-      cy+=44;
-
-      // big amount
-      var bd=balDelta(t);
-      var amtColor = bd<0 ? C.down : (bd>0 ? C.up : C.tx);
-      if(Math.abs(bd)<0.005) amtColor=C.tx;
-      x.font="800 44px "+mono; x.fillStyle=amtColor; x.textAlign="center";
-      var amtStr=(bd<0?"\u2212":"")+sym+Math.abs(num(t.amount)).toFixed(2);
-      x.fillText(amtStr, W/2, cy+22);
-      cy+=58;
-
-      // date
-      x.font="500 15px "+mono; x.fillStyle=C.mut;
-      x.fillText(dateStr, W/2, cy);
-      cy+=28;
-
-      var divider=function(){ x.strokeStyle=C.bd; x.lineWidth=1;
-        x.beginPath(); x.moveTo(pad,cy); x.lineTo(W-pad,cy); x.stroke(); cy+=18; };
-      var section=function(title){
-        x.font="700 11px "+mono; x.fillStyle=C.mut; x.textAlign="left";
-        x.fillText(title.toUpperCase(), pad, cy); cy+=22;
-      };
-      var rowLR=function(label,val,color){
-        x.font="500 15px "+mono; x.textAlign="left"; x.fillStyle=C.tx;
-        x.fillText(label, pad, cy);
-        x.font="700 15px "+mono; x.textAlign="right"; x.fillStyle=color||C.tx;
-        x.fillText(val, W-pad, cy);
-        cy+=26;
-      };
-
-      divider();
-      section("What it moved");
-      moves.forEach(function(m){
-        var col = m.key==="up"?C.up : m.key==="down"?C.down : m.key==="cool"?C.cool : m.key==="mut"?C.mut : C.tx;
-        rowLR(m.label, m.text, col);
-      });
-      cy+=10;
-
-      if(details.length){
-        divider(); section("Details");
-        details.forEach(function(dd){ rowLR(dd[0], dd[1], C.tx); });
-        cy+=10;
-      }
-
-      if(noteLines.length){
-        divider(); section("Note");
-        // note in a rounded box
-        var boxTop=cy-4, boxH=noteLines.length*22+16;
-        x.fillStyle=C.card2; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.fill();
-        x.strokeStyle=C.bd; x.lineWidth=1; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.stroke();
-        x.font="500 15px "+mono; x.fillStyle=C.tx; x.textAlign="left";
-        cy=boxTop+20;
-        noteLines.forEach(function(ln){ x.fillText(ln, pad+14, cy); cy+=22; });
-        cy=boxTop+boxH+14;
-      }
-
-      if(photoImg){
-        divider(); section("Photo");
-        var iw2=W-pad*2, ih2=photoH;
-        roundRectClip(x, pad, cy-4, iw2, ih2, 10, function(){
-          x.drawImage(photoImg, pad, cy-4, iw2, ih2);
-        });
-        cy+=ih2+10;
-      }
+      var ctx2=cv.getContext("2d"); ctx2.scale(DPR,DPR);
+      paint(ctx2, false);
 
       cv.toBlob(function(blob){ cb(blob, cv.toDataURL("image/png")); }, "image/png");
     });
