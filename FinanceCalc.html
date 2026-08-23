@@ -6686,14 +6686,15 @@ AI_TYPES.join(", "),
   /* ── bind the security + accounting panels ─────────────────── */
   function bindSecurityPanel(){
     loadSecCfg();
-    // The panel now lives inside a settings <details> box, so it has no collapse
-    // header of its own — a second layer of clicking looked broken when the
-    // outer box was shut. Refresh when the box it sits in is opened instead.
-    var body=document.getElementById("secBody");
-    if(!body) return;
-    var outer=body.closest("details.sect");
-    if(outer) outer.addEventListener("toggle", function(){
-      if(outer.open){ refreshSecUI(); refreshAuditStatus(); }
+    var head=document.getElementById("secHead"), body=document.getElementById("secBody"),
+        caret=document.getElementById("secCaret");
+    if(!head||!body) return;
+    head.addEventListener("click", function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(open){ refreshSecUI(); refreshAuditStatus(); }
     });
 
     // biometric
@@ -6918,10 +6919,13 @@ AI_TYPES.join(", "),
   // open the auditor panel scrolled into view, on a chosen tab
   function openAuditorTo(tier){
     var wrap=document.getElementById("audWrap");
-    if(!wrap) return;
-    setTab("pageSettings");
-    var outer=wrap.closest("details.sect");
-    if(outer) outer.open=true;
+    var body=document.getElementById("audBody");
+    var caret=document.getElementById("audCaret");
+    if(!wrap||!body) return;
+    if(body.style.display==="none"){
+      body.style.display="";
+      if(caret) caret.style.transform="rotate(90deg)";
+    }
     var btn=document.getElementById("audBtn"+tier.charAt(0).toUpperCase()+tier.slice(1));
     if(btn) btn.click();
     try{ wrap.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){ wrap.scrollIntoView(); }
@@ -6959,8 +6963,10 @@ AI_TYPES.join(", "),
   }
 
   function bindAuditor(){
+    var head=document.getElementById("audHead");
     var body=document.getElementById("audBody");
-    if(!body) return;
+    var caret=document.getElementById("audCaret");
+    if(!head||!body) return;
     var _tier="rules";
     function showTier(t){
       _tier=t;
@@ -6974,9 +6980,12 @@ AI_TYPES.join(", "),
     document.querySelectorAll(".aud-tier-btn").forEach(function(b){
       b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
     });
-    var outerAud=body.closest("details.sect");
-    if(outerAud) outerAud.addEventListener("toggle", function(){
-      if(outerAud.open) initBuiltinAi().then(function(){});
+    head.addEventListener("click",function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded",open?"true":"false");
+      if(open) initBuiltinAi().then(function(){});
     });
     // rules
     var runBtn=document.getElementById("audRunRules");
@@ -10598,9 +10607,11 @@ AI_TYPES.join(", "),
   </div>
 
 <div class="sec-wrap" id="audWrap">
-  <div class="sec-body" id="audBody">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
-                color:var(--mut);margin:2px 0 9px">🔍 Financial auditor</div>
+  <div class="sec-head" id="audHead" role="button" aria-expanded="false">
+    <h3>🔍 Financial auditor</h3>
+    <span class="sec-caret" id="audCaret">▶</span>
+  </div>
+  <div class="sec-body" id="audBody" style="display:none">
     <div class="aud-tier" id="audTier">
       <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
       <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
@@ -10643,7 +10654,11 @@ AI_TYPES.join(", "),
 </div>
 <span id="audEngineLabel" style="display:none"></span>
 <div class="sec-wrap" id="secWrap">
-  <div class="sec-body" id="secBody">
+  <div class="sec-head" id="secHead" role="button" aria-expanded="false">
+    <h3>🛡️ Security &amp; Integrity</h3>
+    <span class="sec-caret" id="secCaret">▶</span>
+  </div>
+  <div class="sec-body" id="secBody" style="display:none">
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Biometric lock</div>
         <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
@@ -10667,11 +10682,6 @@ AI_TYPES.join(", "),
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn ghost sm" id="auditVerifyBtn" style="flex:1">Verify</button>
       <button class="btn solid sm" id="auditSealBtn" style="flex:1">Seal records</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Auto-detect problems</div>
-        <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
-      <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
