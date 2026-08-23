@@ -4809,9 +4809,10 @@ AI_TYPES.join(", "),
     {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
     {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
-     has:[], ids:["secWrap","audWrap","aiSection"]},
+     has:[], ids:["secWrap","audWrap"]},
     {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
+     ids:["aiSection"]}
   ];
 
 
@@ -4854,6 +4855,7 @@ AI_TYPES.join(", "),
     {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
     {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
     {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
+    {t:"AI mode",          i:"🤖", has:["AI MODE","AI Mode","AI mode"], ids:["aiSection"]},
     {t:"Erase",            i:"⚠", has:["Danger Zone"]}
   ];
   function subGroupExtra(){
@@ -4866,6 +4868,7 @@ AI_TYPES.join(", "),
     var boxes=[], made={};
     EXTRA_SUBS.forEach(function(g){
       var mine=kids.filter(function(el){
+        if(g.ids && g.ids.indexOf(el.id)>=0) return true;
         return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
       });
       if(!mine.length) return;
@@ -5626,8 +5629,26 @@ AI_TYPES.join(", "),
      fingerprint on Android/Windows Hello. The credential never
      leaves the device and there is no server to verify against;
      we use it purely as a local presence check before unlocking. */
-  function bioAvailable(){
-    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  /* WebAuthn needs three things, and failing any of them looks identical to the
+     user unless we say which: the API, a secure origin (https or localhost —
+     NOT a double-clicked file://), and a platform authenticator (Face ID,
+     Touch ID, Windows Hello). Returns a reason so the UI can explain itself. */
+  function bioSupport(){
+    if(!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create))
+      return {ok:false, why:"This browser has no WebAuthn support."};
+    if(!window.isSecureContext)
+      return {ok:false, why:"Face ID needs https. Opening the file directly (file://) can't use it \u2014 host it or use localhost."};
+    return {ok:true, why:""};
+  }
+  function bioAvailable(){ return bioSupport().ok; }
+  // is there an actual fingerprint/face sensor enrolled on this device?
+  function bioPlatformAvailable(){
+    try{
+      if(!window.PublicKeyCredential ||
+         !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
+        return Promise.resolve(false);
+      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    }catch(e){ return Promise.resolve(false); }
   }
   function b64ToBuf(b64){
     var bin=atob(b64.replace(/-/g,"+").replace(/_/g,"/"));
@@ -5878,11 +5899,53 @@ AI_TYPES.join(", "),
       if(!bioAvailable()){ flashSaved("This device/browser doesn't support biometrics"); return; }
       bioBtn.textContent="…"; bioBtn.disabled=true;
       bioEnrol().then(function(){ refreshSecUI(); flashSaved("biometric lock on"); })
-        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); })
+        .catch(function(e){
+          var msg=String(e&&e.message||e);
+          // NotAllowedError is what a cancel or a blocked prompt both look like
+          appModal({title:"Couldn't turn on biometric lock",
+            message: /NotAllowed/.test(msg)
+              ? "The device cancelled or refused the request. This usually means no Face ID / fingerprint is enrolled, or the prompt was dismissed."
+              : /SecurityError|secure/i.test(msg)
+              ? "This needs a secure origin (https or localhost). A file opened directly from disk can't use Face ID."
+              : msg.slice(0,160),
+            confirmText:"OK"});
+        })
         .then(function(){ bioBtn.disabled=false; refreshSecUI(); });
     });
 
     // encrypted export
+
+    /* Cloud sync, done honestly.
+       MEGA's API can't be driven from a static page: mega.nz sends no CORS
+       headers for arbitrary origins, and uploads are chunked and end-to-end
+       encrypted behind a proprietary handshake. A real "MEGA integration"
+       would need a server to proxy it, which this app deliberately doesn't have.
+       The same outcome without any of that: write into a folder MEGA's own
+       desktop client already syncs. The File System Access tier does exactly
+       that, so this points it at the right folder and lets MEGA do the upload. */
+    var cloudBtn=document.getElementById("cloudFolderBtn");
+    var cloudNote=document.getElementById("cloudNote");
+    if(cloudBtn){
+      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
+        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
+        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
+      } else {
+        cloudBtn.addEventListener("click", function(){
+          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
+          TierFSA.pickFolder()
+            .then(function(){ return StorageManager.init(); })
+            .then(function(){ return StorageManager.write(buildRoot()); })
+            .then(function(){
+              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
+              flashSaved("cloud folder linked");
+              return refreshStorageBadge();
+            })
+            .catch(function(e){
+              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
+            });
+        });
+      }
+    }
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
@@ -5907,10 +5970,28 @@ AI_TYPES.join(", "),
   }
   function refreshSecUI(){
     var bioBtn=document.getElementById("bioBtn");
-    if(bioBtn){
-      if(!bioAvailable()){ bioBtn.textContent="Unsupported"; bioBtn.disabled=true; }
-      else { bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable"; bioBtn.disabled=false; }
+    var bioNote=document.getElementById("bioNote");
+    if(!bioBtn) return;
+    var sup=bioSupport();
+    if(!sup.ok){
+      bioBtn.textContent="Unavailable"; bioBtn.disabled=true;
+      if(bioNote){ bioNote.textContent=sup.why; bioNote.style.color="var(--amber)"; }
+      return;
     }
+    bioPlatformAvailable().then(function(hasSensor){
+      if(!hasSensor && !secCfg.bioEnabled){
+        bioBtn.textContent="No sensor"; bioBtn.disabled=true;
+        if(bioNote){ bioNote.textContent="No Face ID / fingerprint is set up on this device.";
+          bioNote.style.color="var(--amber)"; }
+        return;
+      }
+      bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable";
+      bioBtn.disabled=false;
+      if(bioNote){ bioNote.textContent=secCfg.bioEnabled
+        ? "On \u2014 you'll be asked to verify each time the app opens."
+        : "Face ID or fingerprint before the app opens. Handled by your device.";
+        bioNote.style.color=""; }
+    });
   }
 
 
@@ -9768,13 +9849,18 @@ AI_TYPES.join(", "),
   <div class="sec-body" id="secBody">
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Biometric lock</div>
-        <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
+        <div class="si-d" id="bioNote">Face ID or fingerprint before the app opens. Handled by your device.</div></div>
       <button class="btn ghost sm" id="bioBtn">Enable</button>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Auto-detect problems</div>
         <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
       <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Cloud sync folder</div>
+        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
+      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
