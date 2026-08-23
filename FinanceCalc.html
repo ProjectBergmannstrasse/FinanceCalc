@@ -6132,7 +6132,6 @@ AI_TYPES.join(", "),
     var isIOS=/iPad|iPhone|iPod/.test(ua);
     var isSafari=/^((?!chrome|android).)*safari/i.test(ua);
     var installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
-    var framed=false; try{ framed=(window.self!==window.top); }catch(e){ framed=true; }
     var msg;
     if(installed) msg="It's already installed \u2014 you're running the installed copy now.";
     else if(isIOS) msg="On iPhone or iPad: tap Share, then \u201cAdd to Home Screen\u201d.";
@@ -6489,9 +6488,6 @@ AI_TYPES.join(", "),
       return Promise.resolve({ok:false, why:"This browser can't reach a camera."});
     if(!window.isSecureContext)
       return Promise.resolve({ok:false, why:"Camera access needs https. Opened straight from disk (file://) the browser blocks it."});
-    var framed=false; try{ framed=(window.self!==window.top); }catch(e){ framed=true; }
-    if(framed)
-      return Promise.resolve({ok:false, why:"The camera is blocked inside a frame. Open this in its own tab to use face unlock."});
     if(!navigator.mediaDevices.enumerateDevices)
       return Promise.resolve({ok:true, why:""});   // can't enumerate; try anyway
     return navigator.mediaDevices.enumerateDevices().then(function(list){
@@ -7209,6 +7205,37 @@ AI_TYPES.join(", "),
       enrolFace(function(){ refreshSecUI(); });
     });
 
+    /* Cloud sync, done honestly.
+       MEGA's API can't be driven from a static page: mega.nz sends no CORS
+       headers for arbitrary origins, and uploads are chunked and end-to-end
+       encrypted behind a proprietary handshake. A real "MEGA integration"
+       would need a server to proxy it, which this app deliberately doesn't have.
+       The same outcome without any of that: write into a folder MEGA's own
+       desktop client already syncs. The File System Access tier does exactly
+       that, so this points it at the right folder and lets MEGA do the upload. */
+    var cloudBtn=document.getElementById("cloudFolderBtn");
+    var cloudNote=document.getElementById("cloudNote");
+    if(cloudBtn){
+      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
+        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
+        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
+      } else {
+        cloudBtn.addEventListener("click", function(){
+          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
+          TierFSA.pickFolder()
+            .then(function(){ return StorageManager.init(); })
+            .then(function(){ return StorageManager.write(buildRoot()); })
+            .then(function(){
+              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
+              flashSaved("cloud folder linked");
+              return refreshStorageBadge();
+            })
+            .catch(function(e){
+              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
+            });
+        });
+      }
+    }
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
@@ -11054,6 +11081,11 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Auto-detect problems</div>
         <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
       <label class="sw"><input type="checkbox" id="autoDetectChk" checked><i></i></label>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Cloud sync folder</div>
+        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
+      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Split bills</div>
