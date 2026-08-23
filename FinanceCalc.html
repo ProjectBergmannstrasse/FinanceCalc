@@ -952,6 +952,24 @@
   .sw input:checked + i{background:var(--up);border-color:var(--up)}
   .sw input:checked + i::after{transform:translateX(18px);background:#04140b}
   .sw input:focus-visible + i{outline:2px solid var(--cool);outline-offset:2px}
+  /* AI chat */
+  .chat-wrap{display:flex;flex-direction:column;gap:8px}
+  .chat-log{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+    padding:4px 2px;scroll-behavior:smooth}
+  .chat-empty{color:var(--mut);font-size:12px;text-align:center;padding:22px 10px;line-height:1.6}
+  .chat-msg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.55;
+    white-space:pre-wrap;word-break:break-word;animation:rise .2s backwards}
+  .chat-msg.me{align-self:flex-end;background:var(--up);color:#04140b;border-bottom-right-radius:5px;font-weight:600}
+  .chat-msg.ai{align-self:flex-start;background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}
+  .chat-files{font-size:11px;opacity:.8;margin-bottom:4px}
+  .chat-row{display:flex;gap:7px;align-items:flex-end}
+  .chat-row textarea{flex:1;min-height:42px;max-height:110px;resize:none;padding:10px 12px;font-size:13px}
+  .chat-chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bd2);
+    border-radius:8px;padding:4px 8px;font-size:11px;margin:0 5px 5px 0}
+  .chat-chip button{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:11px;padding:0 0 0 2px}
+  .chat-chip button:hover{color:var(--down)}
+  #chatFileStrip:empty{display:none}
+
   /* PIN setup + face sheets */
   .pin-sheet{max-width:340px}
   .pin-sub{font-size:12px;color:var(--mut);line-height:1.55;margin-bottom:16px}
@@ -965,66 +983,6 @@
     border:3px solid var(--bd2);transition:border-color .25s ease,box-shadow .25s ease;pointer-events:none}
   .face-ring.on{border-color:var(--up);box-shadow:0 0 0 4px rgba(61,220,132,.18)}
   .face-status{font-size:12.5px;color:var(--mut);min-height:20px;line-height:1.5}
-
-  /* ── Ask AI chat ─────────────────────────────────────────────── */
-  .chat-sheet{max-width:540px;height:min(84vh,660px);display:flex;flex-direction:column}
-  .chat-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
-  .chat-hd h3{font-size:15px;margin:0;flex:none}
-  .chat-engine{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;
-    background:var(--card2);color:var(--mut);border:1px solid var(--bd2);white-space:nowrap}
-  .chat-engine.ready{background:rgba(61,220,132,.14);color:var(--up);border-color:rgba(61,220,132,.35)}
-  .chat-engine.busy{background:rgba(244,183,63,.14);color:var(--amber);border-color:rgba(244,183,63,.35)}
-  .chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;
-    scroll-behavior:smooth}
-  .chat-empty{margin:auto;text-align:center;color:var(--mut);max-width:280px}
-  .chat-empty .ce-ic{font-size:34px;margin-bottom:10px;opacity:.55}
-  .chat-empty .ce-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px}
-  .chat-empty .ce-d{font-size:12px;line-height:1.6}
-  .chat-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
-  .chat-sugg{font-size:11.5px;padding:7px 11px;border-radius:20px;background:var(--card2);
-    border:1px solid var(--bd2);color:var(--tx);cursor:pointer;font:inherit;font-size:11.5px;
-    transition:background .15s ease,transform .1s ease}
-  .chat-sugg:hover{background:var(--card)}
-  .chat-sugg:active{transform:scale(.96)}
-  .chat-turn{display:flex;flex-direction:column;gap:4px;max-width:86%;animation:chatIn .22s backwards}
-  @keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .chat-turn.me{align-self:flex-end;align-items:flex-end}
-  .chat-turn.ai{align-self:flex-start;align-items:flex-start}
-  .chat-who{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:0 4px}
-  .chat-bub{padding:11px 14px;border-radius:16px;font-size:13.5px;line-height:1.6;
-    white-space:pre-wrap;word-break:break-word}
-  .chat-turn.me .chat-bub{background:var(--up);color:#04140b;border-bottom-right-radius:5px;font-weight:500}
-  .chat-turn.ai .chat-bub{background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}
-  .chat-att{display:flex;flex-wrap:wrap;gap:5px;padding:0 4px}
-  .chat-att span{font-size:10.5px;background:var(--card2);border:1px solid var(--bd2);
-    border-radius:7px;padding:3px 7px;color:var(--mut)}
-  .chat-typing{display:flex;gap:4px;padding:13px 16px;background:var(--card2);
-    border:1px solid var(--bd);border-radius:16px;border-bottom-left-radius:5px;width:fit-content}
-  .chat-typing i{width:6px;height:6px;border-radius:50%;background:var(--mut);
-    animation:blink 1.3s infinite both}
-  .chat-typing i:nth-child(2){animation-delay:.18s}
-  .chat-typing i:nth-child(3){animation-delay:.36s}
-  @keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
-  .chat-foot{border-top:1px solid var(--bd);padding:10px 12px}
-  .chat-pending{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-  .chat-pending:empty{display:none}
-  .chat-file{display:inline-flex;align-items:center;gap:6px;background:var(--card2);
-    border:1px solid var(--bd2);border-radius:9px;padding:5px 9px;font-size:11.5px;max-width:190px}
-  .chat-file b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chat-file button{border:0;background:transparent;color:var(--mut);cursor:pointer;
-    font-size:12px;padding:0;line-height:1}
-  .chat-file button:hover{color:var(--down)}
-  .chat-input-row{display:flex;gap:8px;align-items:flex-end}
-  .chat-input-row textarea{flex:1;min-height:44px;max-height:130px;resize:none;padding:12px 14px;
-    font-size:13.5px;border-radius:14px;line-height:1.45}
-  .chat-icon-btn{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--bd2);
-    background:var(--card2);color:var(--tx);font-size:17px;cursor:pointer;padding:0;
-    display:flex;align-items:center;justify-content:center;transition:transform .1s ease,background .15s ease}
-  .chat-icon-btn:hover{background:var(--card)}
-  .chat-icon-btn:active{transform:scale(.92)}
-  .chat-send{background:var(--up);border-color:var(--up);color:#04140b;font-weight:800}
-  .chat-send:disabled{opacity:.4;cursor:default}
-  .chat-hint{font-size:10.5px;color:var(--mut);text-align:center;margin-top:7px}
 </style>
 </head>
 <body>
@@ -4921,7 +4879,7 @@ AI_TYPES.join(", "),
     {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
     {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
-     has:[], ids:["secWrap"]},
+     has:[], ids:["secWrap","audWrap"]},
     {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
      has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
      ids:["aiSection"]}
@@ -5599,31 +5557,47 @@ AI_TYPES.join(", "),
     return findings;
   }
 
-
+  function renderAuditFindings(findings){
+    var box=document.getElementById("audFindings"); if(!box) return;
+    box.innerHTML=findings.map(function(f){
+      return '<div class="aud-finding '+f.level+'">'
+        +'<span class="af-icon">'+f.icon+'</span>'
+        +'<div class="af-title">'+esc(f.title)+'</div>'
+        +'<div class="af-body">'+esc(f.body)+'</div></div>';
+    }).join("");
+    box.style.animation="none"; void box.offsetWidth; box.style.animation="";
+  }
 
   /* ── Tier 2: Chrome built-in AI (window.ai.languageModel) ──── */
   var _aiSession=null;
   async function initBuiltinAi(){
-    // the old status bar is gone; the chat badge is the single indicator now
-    var dot=null, lbl=null;
+    var bar=document.getElementById("audLlmBar");
+    var dot=document.getElementById("audLlmDot");
+    var lbl=document.getElementById("audLlmStatus");
+    var ebtn=document.getElementById("audEngineLabel");
+    if(!bar) return false;
     try{
       if(typeof window.ai==="undefined"||typeof window.ai.languageModel==="undefined"){
-      /* status shown on the chat badge */
+        dot.style.background="var(--mut)";
+        lbl.textContent="Chrome built-in AI not available on this browser.";
         return false;
       }
       var caps=await window.ai.languageModel.capabilities();
       if(caps.available==="no"){
-      /* status shown on the chat badge */ return false;
+        dot.style.background="var(--mut)"; lbl.textContent="Chrome AI available but no model downloaded yet."; return false;
       }
       if(caps.available==="after-download"){
-      /* status shown on the chat badge */
+        dot.style.background="var(--amber)"; lbl.textContent="Chrome AI: downloading model (one-time)…";
       }
       _aiSession=await window.ai.languageModel.create({
         systemPrompt:"You are a personal finance assistant. The user will share their financial summary and ask questions. Be concise, specific, and actionable. Do not give generic advice — refer to the actual numbers provided."
       });
-      /* status shown on the chat badge */
+      dot.style.background="var(--up)";
+      lbl.textContent="Chrome built-in AI ready (Gemini Nano, fully local)";
+      if(ebtn) ebtn.textContent="Chrome AI";
       return true;
-    }catch(e){ dot.style.background="var(--mut)"; return false; }
+    }catch(e){ dot.style.background="var(--mut)";
+      lbl.textContent="Chrome AI error: "+String(e).slice(0,80); return false; }
   }
   function financialContext(){
     var t=totals(), sym=state.currency, txs=sortedTx();
@@ -5651,112 +5625,47 @@ AI_TYPES.join(", "),
 
   /* ── Tier 3: WebLLM (Llama 3.2 1B, WebGPU) ─────────────────── */
   var _wllmEngine=null, _wllmLoaded=false;
-  /* The model weights live in the browser's Cache Storage after the first
-     download — but `window._wllmEngine` is a page variable and dies on reload,
-     so the app used to think nothing was there and asked you to "download"
-     again. It records the choice in localStorage and re-attaches to the
-     cached weights on boot, which is fast and needs no network. */
-  var WLLM_KEY="mymoney_wllm_v1";
-  var WLLM_MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
-  function wllmRemembered(){
-    try{ return localStorage.getItem(WLLM_KEY)===WLLM_MODEL; }catch(e){ return false; }
-  }
-  function rememberWllm(){ try{ localStorage.setItem(WLLM_KEY, WLLM_MODEL); }catch(e){} }
-  function forgetWllm(){ try{ localStorage.removeItem(WLLM_KEY); }catch(e){} }
-
-  function loadWebllm(opts){
-    opts=opts||{};
-    var silent=!!opts.silent;                 // true when re-attaching on boot
+  function loadWebllm(){
     var btn=document.getElementById("wllmLoadBtn");
     var prog=document.getElementById("wllmProgress");
     var bar=document.getElementById("wllmBar");
     var sta=document.getElementById("wllmLoadStatus");
-    if(window._wllmEngine){ if(opts.onReady) opts.onReady(); return; }
-    if(window._wllmLoading){ return; }
-    window._wllmLoading=true;
-
-    var cached=wllmRemembered();
-    if(btn && !silent){
-      btn.disabled=true;
-      btn.textContent = cached ? "Reconnecting…" : "Starting…";
-    }
-    if(prog && !silent) prog.style.display="";
-    if(sta && !silent){
-      sta.style.display="";
-      sta.textContent = cached
-        ? "Reconnecting to the model already on this device…"
-        : "Fetching the runtime (~2MB)…";
-    }
+    // WebLLM needs its own runtime (~2MB JS) — unavoidable for in-browser LLM
+    // The model weights (~660MB for Llama 3.2 1B Q4) are downloaded once and cached
     var SCRIPT_URL="https://esm.run/@mlc-ai/web-llm";
+    var MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+    if(!btn||!prog||!bar||!sta) return;
+    btn.disabled=true; btn.textContent="Loading runtime…";
+    prog.style.display=""; sta.style.display="";
+    sta.textContent="Loading WebLLM runtime (~2MB)…";
+    // dynamically load the WebLLM runtime — the only external load in the whole app
     var script=document.createElement("script");
     script.type="module";
     script.textContent=[
       'import * as webllm from "'+SCRIPT_URL+'";',
-      'try{',
-      '  const engine=await webllm.CreateMLCEngine("'+WLLM_MODEL+'",{',
-      '    initProgressCallback:function(p){',
-      '      var b=document.getElementById("wllmBar");',
-      '      var s=document.getElementById("wllmLoadStatus");',
-      '      if(b) b.style.width=((p.progress||0)*100).toFixed(0)+"%";',
-      '      if(s) s.textContent=p.text||"Loading…";',
-      '      var cs=document.getElementById("chatEngine");',
-      '      if(cs) cs.textContent=(p.text||"loading").slice(0,42);',
-      '    }',
-      '  });',
-      '  window._wllmEngine=engine;',
-      '  window._wllmLoading=false;',
-      '  window.dispatchEvent(new CustomEvent("wllm-ready"));',
-      '}catch(err){',
-      '  window._wllmLoading=false;',
-      '  window.dispatchEvent(new CustomEvent("wllm-failed",{detail:String(err&&err.message||err)}));',
-      '}'
+      'const engine=await webllm.CreateMLCEngine("'+MODEL+'",{',
+      '  initProgressCallback:function(p){',
+      '    var b=document.getElementById("wllmBar");',
+      '    var s=document.getElementById("wllmLoadStatus");',
+      '    if(b) b.style.width=(p.progress*100).toFixed(0)+"%";',
+      '    if(s) s.textContent=p.text||"Loading…";',
+      '  }',
+      '});',
+      'window._wllmEngine=engine;',
+      'window._wllmLoaded=true;',
+      'document.getElementById("wllmLoadBtn").style.display="none";',
+      'document.getElementById("wllmProgress").style.display="none";',
+      'document.getElementById("wllmLoadStatus").textContent="Llama 3.2 1B ready (WebGPU)";',
+      'document.getElementById("wllmLoadStatus").style.color="var(--up)";',
+      'document.getElementById("audWebllmChat").style.display="";',
+      'document.getElementById("audEngineLabel").textContent="WebLLM";',
     ].join("\n");
     script.onerror=function(){
-      window._wllmLoading=false;
-      if(btn){ btn.disabled=false; btn.textContent="Load model (660MB, once)"; }
-      if(prog) prog.style.display="none";
-      if(sta) sta.textContent="Couldn't reach the runtime — check your connection.";
+      btn.disabled=false; btn.textContent="Load model (660MB, once)";
+      prog.style.display="none"; sta.textContent="Failed to load runtime. Check your connection.";
     };
     document.head.appendChild(script);
   }
-
-  function wllmMarkReady(){
-    rememberWllm();
-    var btn=document.getElementById("wllmLoadBtn");
-    var prog=document.getElementById("wllmProgress");
-    var sta=document.getElementById("wllmLoadStatus");
-    if(btn) btn.style.display="none";
-    if(prog) prog.style.display="none";
-    if(sta){ sta.style.display=""; sta.textContent="Llama 3.2 1B ready — running on your device."; sta.style.color="var(--up)"; }
-    if(chat) chat.style.display="";
-    var cs=document.getElementById("chatEngine");
-    if(cs){ cs.textContent="WebLLM \u00b7 on device"; cs.className="chat-engine ready"; }
-    refreshWllmUI();
-  }
-  function refreshWllmUI(){
-    var btn=document.getElementById("wllmLoadBtn");
-    var sta=document.getElementById("wllmLoadStatus");
-    if(!btn) return;
-    if(window._wllmEngine){ btn.style.display="none"; return; }
-    if(wllmRemembered()){
-      // already downloaded before — this is a reconnect, not a fresh download
-      btn.style.display=""; btn.disabled=false;
-      btn.textContent="Reconnect model (already downloaded)";
-      if(sta){ sta.style.display=""; sta.style.color="var(--mut)";
-        sta.textContent="The weights are cached on this device — reconnecting needs no download."; }
-    } else {
-      btn.style.display=""; btn.disabled=false;
-      btn.textContent="Load model (660MB, once)";
-    }
-  }
-  /* On boot, if they've loaded it before, quietly re-attach to the cached
-     weights so the chat just works instead of demanding a setup step. */
-  function autoRestoreWllm(){
-    if(!wllmRemembered() || window._wllmEngine) return;
-    if(!navigator.onLine){ return; }        // runtime script still needs the network
-    loadWebllm({silent:true});
-  }
-
   async function askWebllm(query){
     var eng=window._wllmEngine; if(!eng) return null;
     var ctx=financialContext();
@@ -6082,7 +5991,54 @@ AI_TYPES.join(", "),
     appModal({title:"Install as an app", message:msg, confirmText:"OK"});
   }
 
-
+  /* ============================================================
+     SHARED PORTFOLIO ROLES
+     The enterprise version of this is RBAC with signed JWTs and a
+     central authority. For a personal app shared with family or a
+     client, that machinery is overkill — what's actually needed is
+     "let them look without letting them edit". A role is set on the
+     portfolio and locks the editing UI. It's a guard rail, not a
+     security boundary, and it says so plainly rather than implying
+     protection it can't provide.
+     ============================================================ */
+  var ROLES={
+    owner:  {label:"Owner",     canEdit:true,  canDelete:true,  canExport:true,  icon:"👑"},
+    editor: {label:"Editor",    canEdit:true,  canDelete:false, canExport:true,  icon:"✏️"},
+    viewer: {label:"View only", canEdit:false, canDelete:false, canExport:true,  icon:"👁️"}
+  };
+  function currentRole(){
+    var p=activePortfolio();
+    return ROLES[(p&&p.role)||"owner"] || ROLES.owner;
+  }
+  function applyRoleUI(){
+    var r=currentRole();
+    // editing controls
+    var form=document.getElementById("entryForm");
+    if(form) form.style.display = r.canEdit ? "" : "none";
+    var note=document.getElementById("roleNotice");
+    if(!note && !r.canEdit){
+      note=document.createElement("div");
+      note.id="roleNotice";
+      note.style.cssText="background:var(--card2);border:1px solid var(--bd2);border-radius:11px;"
+        +"padding:11px 13px;margin:10px 0;font-size:12px;color:var(--mut);text-align:center";
+      note.innerHTML=r.icon+" <b style='color:var(--tx)'>"+r.label+"</b> — entries are read-only in this portfolio.";
+      var host=document.getElementById("pageLedger");
+      if(host) host.insertBefore(note, host.firstChild);
+    } else if(note && r.canEdit){
+      note.remove();
+    }
+    // delete buttons
+    document.querySelectorAll("[data-act='del'],#tdDel,#wipeBtn").forEach(function(b){
+      b.style.display = r.canDelete ? "" : "none";
+    });
+    var badge=document.getElementById("roleBadge");
+    if(badge){ badge.textContent=r.icon+" "+r.label; }
+  }
+  function setPortfolioRole(role){
+    var p=activePortfolio(); if(!p) return;
+    p.role=role; persistNow(); applyRoleUI(); renderPortfolioUI&&renderPortfolioUI();
+    flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
+  }
 
   /* ============================================================
      AUDITOR CHAT — a real conversation, with attachments
@@ -6102,58 +6058,24 @@ AI_TYPES.join(", "),
   function renderChatFiles(){
     var strip=document.getElementById("chatFileStrip"); if(!strip) return;
     strip.innerHTML=chatFiles.map(function(f,i){
-      return '<span class="chat-file">'+chatFileIcon(f.ext)
-        +'<b>'+esc(f.name)+'</b>'
-        +'<button data-i="'+i+'" title="Remove">\u2715</button></span>';
+      return '<span class="chat-chip">'+chatFileIcon(f.ext)+' '+esc(f.name.slice(0,22))
+        +'<button data-i="'+i+'" title="Remove">✕</button></span>';
     }).join("");
     strip.querySelectorAll("button").forEach(function(b){
-      b.addEventListener("click", function(){
-        chatFiles.splice(+b.getAttribute("data-i"),1);
-        renderChatFiles();
-        if(window._chatSync) window._chatSync();
-      });
+      b.addEventListener("click", function(){ chatFiles.splice(+b.getAttribute("data-i"),1); renderChatFiles(); });
     });
   }
-  var CHAT_SUGGESTIONS=[
-    "Where am I overspending?",
-    "How's my savings rate?",
-    "Any unusual transactions?",
-    "What should I cut first?"
-  ];
   function renderChatLog(){
     var box=document.getElementById("chatLog"); if(!box) return;
     if(!chatLog.length){
-      box.innerHTML='<div class="chat-empty">'
-        +'<div class="ce-ic">\uD83D\uDCAC</div>'
-        +'<div class="ce-t">Ask about your money</div>'
-        +'<div class="ce-d">Everything stays on this device. Attach a statement or receipt if it helps.</div>'
-        +'<div class="chat-chips">'
-        + CHAT_SUGGESTIONS.map(function(q){
-            return '<button class="chat-sugg" data-q="'+esc(q)+'">'+esc(q)+'</button>';
-          }).join("")
-        +'</div></div>';
-      box.querySelectorAll(".chat-sugg").forEach(function(b){
-        b.addEventListener("click", function(){
-          var inp=document.getElementById("chatInput");
-          if(inp){ inp.value=b.getAttribute("data-q"); if(window._chatSync) window._chatSync(); }
-          chatSend();
-        });
-      });
+      box.innerHTML='<div class="chat-empty">Ask anything about your money. Attach a statement, receipt or CSV if it helps.</div>';
       return;
     }
     box.innerHTML=chatLog.map(function(m){
-      var atts=(m.files&&m.files.length)
-        ? '<div class="chat-att">'+m.files.map(function(f){
-            return '<span>'+chatFileIcon(f.ext)+" "+esc(f.name)+'</span>'; }).join("")+'</div>'
-        : "";
-      if(m.pending){
-        return '<div class="chat-turn ai"><div class="chat-who">AI</div>'
-          +'<div class="chat-typing"><i></i><i></i><i></i></div></div>';
-      }
-      return '<div class="chat-turn '+(m.role==="user"?"me":"ai")+'">'
-        +'<div class="chat-who">'+(m.role==="user"?"You":"AI")+'</div>'
-        + atts
-        +'<div class="chat-bub">'+esc(m.text)+'</div></div>';
+      var files=(m.files&&m.files.length)
+        ? '<div class="chat-files">'+m.files.map(function(f){ return chatFileIcon(f.ext)+" "+esc(f.name); }).join("  ")+'</div>' : "";
+      return '<div class="chat-msg '+(m.role==="user"?"me":"ai")+'">'
+        +files+'<div class="chat-txt">'+esc(m.text)+'</div></div>';
     }).join("");
     box.scrollTop=box.scrollHeight;
   }
@@ -6187,29 +6109,17 @@ AI_TYPES.join(", "),
     var files=chatFiles.slice();
     chatPush("user", q || "(see attached)", files.map(function(f){ return {name:f.name, ext:f.ext}; }));
     input.value=""; chatFiles=[]; renderChatFiles();
-    if(window._chatSync) window._chatSync();
 
-    chatLog.push({role:"ai", text:"", files:[], pending:true});
-    renderChatLog();
+    var thinking=document.createElement("div");
+    chatPush("ai", "…");
     var idx=chatLog.length-1;
-    var setAnswer=function(txt){
-      chatLog[idx].text=txt; chatLog[idx].pending=false; renderChatLog();
-    };
+    var setAnswer=function(txt){ chatLog[idx].text=txt; renderChatLog(); };
 
     var prompt=chatPrompt(q, files);
     // whichever local engine is ready — built-in first, then WebLLM
     initBuiltinAi().then(function(ready){
       if(ready) return askBuiltinAi(prompt);
       if(window._wllmEngine) return askWebllm(prompt);
-      if(wllmRemembered()){
-        // already downloaded — reconnect and answer once it's up
-        return new Promise(function(res){
-          var done=function(){ window.removeEventListener("wllm-ready",done); res(askWebllm(prompt)); };
-          window.addEventListener("wllm-ready",done);
-          loadWebllm({silent:true});
-          setTimeout(function(){ window.removeEventListener("wllm-ready",done); res(null); }, 60000);
-        });
-      }
       return null;
     }).then(function(ans){
       setAnswer(ans || "No on-device model is ready. Chrome 127+ has one built in, or load WebLLM from the ⚡ tab.");
@@ -6224,78 +6134,48 @@ AI_TYPES.join(", "),
      in Settings and this sheet share chatLog. */
   function openChatSheet(){
     var host=document.getElementById("chatSheetHost");
-    if(!host){ host=document.createElement("div"); host.id="chatSheetHost"; document.body.appendChild(host); }
+    if(!host){
+      host=document.createElement("div");
+      host.id="chatSheetHost";
+      document.body.appendChild(host);
+    }
     host.innerHTML=
        '<div class="ov in" id="chatOv">'
-      +'  <div class="sheet chat-sheet">'
-      +'    <div class="chat-hd">'
-      +'      <h3>Ask AI</h3>'
-      +'      <span class="chat-engine" id="chatEngine">checking…</span>'
-      +'      <span style="flex:1"></span>'
-      +'      <button class="x-btn" id="chatClear" title="Clear this conversation">\u21bb</button>'
-      +'      <button class="x-btn" id="chatSheetX" title="Close">\u2715</button>'
-      +'    </div>'
-      +'    <div class="chat-body" id="chatLog"></div>'
-      +'    <div class="chat-foot">'
-      +'      <div class="chat-pending" id="chatFileStrip"></div>'
-      +'      <div class="chat-input-row">'
-      +'        <button class="chat-icon-btn" id="chatAttachBtn" title="Attach a file">\uD83D\uDCCE</button>'
-      +'        <textarea id="chatInput" class="inp" rows="1" placeholder="Ask about your money\u2026"></textarea>'
-      +'        <button class="chat-icon-btn chat-send" id="chatSend" title="Send" disabled>\u2191</button>'
+      +'  <div class="sheet" style="max-width:520px;height:min(80vh,620px)">'
+      +'    <div class="sheet-hd"><h3>💬 Ask AI</h3>'
+      +'      <span id="chatSheetStatus" style="font-size:11px;color:var(--mut);flex:1;text-align:right;margin-right:8px"></span>'
+      +'      <button class="x-btn" id="chatSheetX">✕</button></div>'
+      +'    <div class="sheet-bd" style="display:flex;flex-direction:column;flex:1;overflow:hidden">'
+      +'      <div class="chat-log" id="chatLog" style="flex:1;max-height:none"></div>'
+      +'      <div id="chatFileStrip"></div>'
+      +'      <div class="chat-row" style="margin-top:8px">'
+      +'        <button class="btn ghost sm" id="chatAttachBtn" title="Attach a file">📎</button>'
+      +'        <textarea id="chatInput" class="inp" placeholder="Ask anything… (Enter to send)"></textarea>'
+      +'        <button class="btn solid sm" id="chatSend">Send</button>'
       +'      </div>'
-      +'      <div class="chat-hint">Runs on your device \u00b7 Enter to send, Shift+Enter for a new line</div>'
       +'    </div>'
-      +'    <input type="file" id="chatFileInput" multiple style="display:none"'
-      +'      accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">'
+      +'    <input type="file" id="chatFileInput" multiple style="display:none" accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">'
+      +'    <div class="sheet-ft"><button class="btn ghost sm" id="chatClear">Clear chat</button>'
+      +'      <button class="btn ghost sm" id="chatSheetClose">Close</button></div>'
       +'  </div></div>';
-    bindChat();
+    bindChat();                       // same handlers, same history
     renderChatLog(); renderChatFiles();
-
-    var close=function(){ host.innerHTML=""; document.removeEventListener("keydown", onEsc); };
-    var onEsc=function(e){ if(e.key==="Escape") close(); };
+    var close=function(){ host.innerHTML=""; };
     document.getElementById("chatSheetX").onclick=close;
+    document.getElementById("chatSheetClose").onclick=close;
     document.getElementById("chatOv").addEventListener("click", function(e){
       if(e.target.id==="chatOv") close();
     });
-    document.addEventListener("keydown", onEsc);
-
-    // grow the box as they type, up to a limit
-    var ta=document.getElementById("chatInput");
-    var send=document.getElementById("chatSend");
-    var sync=function(){
-      ta.style.height="auto";
-      ta.style.height=Math.min(130, ta.scrollHeight)+"px";
-      send.disabled = !ta.value.trim() && !chatFiles.length;
-    };
-    ta.addEventListener("input", sync);
-    setTimeout(function(){ try{ ta.focus(); }catch(e){} sync(); },120);
-    window._chatSync=sync;
-
-    refreshChatEngine();
-  }
-
-  /* One clear badge for which engine will answer — and if the model was
-     downloaded before, reconnect silently instead of asking again. */
-  function refreshChatEngine(){
-    var el=document.getElementById("chatEngine");
-    if(!el) return;
-    var set=function(txt,cls){ el.textContent=txt; el.className="chat-engine"+(cls?" "+cls:""); };
-    if(window._wllmEngine){ set("WebLLM \u00b7 on device","ready"); return; }
-    if(window._wllmLoading){ set("loading model\u2026","busy"); return; }
-    set("checking\u2026","busy");
+    var esc=function(e){ if(e.key==="Escape"){ close(); document.removeEventListener("keydown",esc); } };
+    document.addEventListener("keydown", esc);
+    // tell them up front which engine will answer
+    var st=document.getElementById("chatSheetStatus");
     initBuiltinAi().then(function(ready){
-      if(ready){ set("Chrome AI \u00b7 on device","ready"); return; }
-      if(wllmRemembered()){
-        set("reconnecting\u2026","busy");
-        loadWebllm({silent:true});
-        return;
-      }
-      set("no model \u2014 tap to set up","");
-      el.style.cursor="pointer";
-      el.onclick=function(){ openAuditorTo("webllm"); };
+      if(st) st.textContent = ready ? "on-device AI ready"
+        : (window._wllmEngine ? "WebLLM ready" : "no model — Settings › Extra › AI mode");
     });
+    setTimeout(function(){ var i=document.getElementById("chatInput"); if(i) i.focus(); },120);
   }
-
   /* The launchers live outside bindChat on purpose: bindChat returns early
      when the chat isn't on screen, so anything bound after it would silently
      never attach. */
@@ -6339,6 +6219,81 @@ AI_TYPES.join(", "),
       chatLog=[]; chatFiles=[]; renderChatLog(); renderChatFiles();
     });
     renderChatLog();
+  }
+
+  /* ============================================================
+     SHARE A PORTFOLIO — owner / editor / viewer, MT5-style
+
+     Live shared viewing needs a server; a static file can't host a
+     database. What this does instead is export ONE portfolio as a
+     file stamped with the role you grant. Open it and the app
+     honours that role: a viewer copy can't add, edit or delete.
+
+     Being straight about it: this is a working agreement, not a
+     security boundary. Someone determined can edit the file. It
+     stops accidents and sets expectations — it doesn't stop an
+     adversary, and the UI says so.
+     ============================================================ */
+  function exportPortfolioShare(role){
+    var p=activePortfolio();
+    if(!p){ flashSaved("no portfolio to share"); return; }
+    var payload={
+      _format:"mymoney-portfolio-share", _v:1,
+      role: role || "viewer",
+      sharedAt: new Date().toISOString(),
+      sharedBy: (state.owner||"").slice(0,40),
+      portfolio: { id:p.id, name:p.name, data:p.data }
+    };
+    var name=(p.name||"portfolio").replace(/[^\w\-]+/g,"_").toLowerCase();
+    var url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
+    var a=document.createElement("a");
+    a.href=url; a.download="mymoney-"+name+"-"+role+"-"+todayStr()+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    flashSaved(role==="viewer" ? "view-only copy saved" : role+" copy saved");
+  }
+  function importPortfolioShare(text){
+    var obj;
+    try{ obj=JSON.parse(text); }catch(e){ flashSaved("that file isn't readable"); return; }
+    if(obj._format!=="mymoney-portfolio-share"){ flashSaved("not a shared portfolio file"); return; }
+    var incoming=obj.portfolio;
+    if(!incoming||!incoming.data){ flashSaved("that file has no portfolio in it"); return; }
+    var roleLabel={owner:"full access",editor:"can edit, can't delete",viewer:"view only"}[obj.role]||obj.role;
+    appModal({
+      title:"Add “"+esc(incoming.name||"portfolio")+"”?",
+      message:"Shared"+(obj.sharedBy?" by "+esc(obj.sharedBy):"")+" as "+esc(roleLabel)+"."
+             +" It'll be added alongside your own portfolios — nothing you have is overwritten.",
+      confirmText:"Add it", cancelText:"Cancel",
+      onConfirm:function(){
+        var copy=JSON.parse(JSON.stringify(incoming));
+        copy.id="shared_"+Date.now().toString(36);
+        copy.name=(incoming.name||"Shared")+(obj.role==="viewer"?" (view only)":"");
+        copy.role=obj.role||"viewer";
+        state.portfolios.push(copy);
+        persistNow();
+        flashSaved("added as "+roleLabel);
+        renderPortfolioUI&&renderPortfolioUI();
+        applyRoleUI&&applyRoleUI();
+      }
+    });
+  }
+  function bindShare(){
+    var vBtn=document.getElementById("shareViewBtn");
+    var eBtn=document.getElementById("shareEditBtn");
+    var iBtn=document.getElementById("shareImportBtn");
+    var file=document.getElementById("shareFileInput");
+    if(vBtn) vBtn.addEventListener("click", function(){ exportPortfolioShare("viewer"); });
+    if(eBtn) eBtn.addEventListener("click", function(){ exportPortfolioShare("editor"); });
+    if(iBtn&&file){
+      iBtn.addEventListener("click", function(){ file.click(); });
+      file.addEventListener("change", function(e){
+        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
+        var r=new FileReader();
+        r.onload=function(){ importPortfolioShare(r.result); };
+        r.onerror=function(){ flashSaved("couldn't read that file"); };
+        r.readAsText(f);
+      });
+    }
   }
 
   /* ============================================================
@@ -6695,55 +6650,6 @@ AI_TYPES.join(", "),
     drawDots();
   }
 
-  window.addEventListener("wllm-ready", function(){ wllmMarkReady(); });
-  window.addEventListener("wllm-failed", function(e){
-    var sta=document.getElementById("wllmLoadStatus");
-    if(sta){ sta.style.display=""; sta.style.color="var(--amber)";
-      sta.textContent="Couldn't start the model: "+String(e.detail||"").slice(0,90); }
-    refreshWllmUI();
-  });
-
-  /* The facial-recognition sub-box: show whether a camera exists and let the
-     model be fetched ahead of time, so the first unlock isn't a surprise wait. */
-  function refreshFacePanel(){
-    var camNote=document.getElementById("camNote");
-    var camStat=document.getElementById("camStatus");
-    var mNote=document.getElementById("faceModelNote");
-    var mBtn=document.getElementById("faceModelBtn");
-    if(!camNote && !mBtn) return;
-    cameraCheck().then(function(c){
-      if(camStat){
-        camStat.textContent = c.ok ? "found" : "none";
-        camStat.className = "sec-status "+(c.ok?"on":"warn");
-      }
-      if(camNote) camNote.textContent = c.ok
-        ? "A camera is available on this device."
-        : c.why;
-      if(mBtn) mBtn.disabled = !c.ok;
-    });
-    if(!mBtn) return;
-    if(_faceApiReady || faceCfg.model){
-      mBtn.textContent="Ready"; mBtn.disabled=true;
-      if(mNote){ mNote.textContent="Downloaded and cached — face unlock works offline."; mNote.style.color="var(--up)"; }
-    } else {
-      mBtn.textContent="Download";
-      if(mNote){ mNote.textContent="Not downloaded yet (~6MB, once)."; mNote.style.color=""; }
-    }
-  }
-  function bindFacePanel(){
-    var mBtn=document.getElementById("faceModelBtn");
-    if(mBtn) mBtn.addEventListener("click", function(){
-      var mNote=document.getElementById("faceModelNote");
-      mBtn.disabled=true; mBtn.textContent="Downloading…";
-      loadFaceApi(function(msg){ if(mNote){ mNote.textContent=msg; mNote.style.color="var(--mut)"; } })
-        .then(function(){ flashSaved("face model ready"); refreshFacePanel(); })
-        .catch(function(e){
-          mBtn.disabled=false; mBtn.textContent="Retry";
-          if(mNote){ mNote.textContent=String(e&&e.message||e).slice(0,110); mNote.style.color="var(--amber)"; }
-        });
-    });
-    refreshFacePanel();
-  }
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -6826,6 +6732,12 @@ AI_TYPES.join(", "),
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
 
     // role
+    var roleSel=document.getElementById("roleSelect");
+    if(roleSel){
+      var p=activePortfolio();
+      roleSel.value=(p&&p.role)||"owner";
+      roleSel.addEventListener("change", function(){ setPortfolioRole(roleSel.value); });
+    }
     var adChk=document.getElementById("autoDetectChk");
     if(adChk){
       adChk.checked=!(state.settings&&state.settings.autoDetect===false);
@@ -6944,7 +6856,7 @@ AI_TYPES.join(", "),
       +'</div>'
       +'<div class="sheet-ft">'
         +'<button class="btn ghost sm" id="fpDismiss">Dismiss</button>'
-        +'<button class="btn ghost sm" id="fpAudit">See details</button>'
+        +'<button class="btn ghost sm" id="fpAudit">Open auditor</button>'
         +'<button class="btn primary sm" id="fpAsk">Ask AI</button>'
       +'</div></div>';
     document.body.appendChild(ov);
@@ -6968,17 +6880,19 @@ AI_TYPES.join(", "),
   }
 
   // open the auditor panel scrolled into view, on a chosen tab
-  /* The auditor panel is gone; anything that used to jump to it opens the
-     AI section in Settings, where those controls now live. */
   function openAuditorTo(tier){
+    var wrap=document.getElementById("audWrap");
+    if(!wrap) return;
     setTab("pageSettings");
-    var sec=document.getElementById("aiSection");
-    if(!sec) return;
-    var box=sec.closest("details.sect");
-    if(box) box.open=true;
-    var first=sec.querySelector("details.sect-nested");
-    if(first) first.open=true;
-    try{ sec.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){}
+    var outer=wrap.closest("details.sect");
+    if(outer) outer.open=true;
+    var btn=document.getElementById("audBtn"+tier.charAt(0).toUpperCase()+tier.slice(1));
+    if(btn) btn.click();
+    try{ wrap.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){ wrap.scrollIntoView(); }
+    if(tier==="rules"){
+      var run=document.getElementById("audRunRules");
+      if(run) run.click();
+    }
   }
 
   /* Pick whichever local engine exists: Chrome built-in AI first (no
@@ -6987,23 +6901,87 @@ AI_TYPES.join(", "),
      failing silently or pretending an answer. */
   function askBestLocalEngine(question){
     openAuditorTo("ai");
+    var q=document.getElementById("audQuery");
     if(q) q.value=question;
     initBuiltinAi().then(function(ready){
       if(ready){
+        var b=document.getElementById("audAskBtn"); if(b) b.click();
         return;
       }
       if(window._wllmEngine){
         openAuditorTo("webllm");
+        var wq=document.getElementById("wllmQuery");
         if(wq) wq.value=question;
+        var wb=document.getElementById("wllmAskBtn"); if(wb) wb.click();
         return;
       }
+      var resp=document.getElementById("audAiResp");
       if(resp) resp.innerHTML='<div class="aud-llm-resp" style="color:var(--amber)">'
         +'No on-device model is ready yet. Chrome 127+ has one built in, or load WebLLM '
         +'from the ⚡ tab for a one-time download.</div>';
     });
   }
 
-
+  function bindAuditor(){
+    var body=document.getElementById("audBody");
+    if(!body) return;
+    var _tier="rules";
+    function showTier(t){
+      _tier=t;
+      ["rules","ai","webllm"].forEach(function(id){
+        var btn=document.getElementById("audBtn"+id.charAt(0).toUpperCase()+id.slice(1));
+        var panel=document.getElementById("audPanel"+id.charAt(0).toUpperCase()+id.slice(1));
+        if(btn) btn.classList.toggle("on",id===t);
+        if(panel) panel.style.display=id===t?"":"none";
+      });
+    }
+    document.querySelectorAll(".aud-tier-btn").forEach(function(b){
+      b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
+    });
+    var outerAud=body.closest("details.sect");
+    if(outerAud) outerAud.addEventListener("toggle", function(){
+      if(outerAud.open) initBuiltinAi().then(function(){});
+    });
+    // rules
+    var runBtn=document.getElementById("audRunRules");
+    if(runBtn) runBtn.addEventListener("click",function(){
+      runBtn.textContent="Auditing…"; runBtn.disabled=true;
+      setTimeout(function(){
+        var f=runAuditRules();
+        renderAuditFindings(f);
+        runBtn.textContent="Run audit"; runBtn.disabled=false;
+      },20);
+    });
+    // Chrome AI
+    var askBtn=document.getElementById("audAskBtn");
+    if(askBtn) askBtn.addEventListener("click",async function(){
+      var q=document.getElementById("audQuery").value.trim();
+      var resp=document.getElementById("audAiResp"); if(!resp||!q) return;
+      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Thinking…</div>';
+      try{
+        var ans=await askBuiltinAi(q);
+        resp.innerHTML=ans
+          ?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
+          :'<div class="aud-llm-resp" style="color:var(--amber)">Chrome built-in AI not available. Try the Rules tab or load WebLLM.</div>';
+      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
+    });
+    document.getElementById("audQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") askBtn.click(); });
+    // WebLLM
+    var wLoad=document.getElementById("wllmLoadBtn");
+    if(wLoad) wLoad.addEventListener("click",loadWebllm);
+    var wAsk=document.getElementById("wllmAskBtn");
+    if(wAsk) wAsk.addEventListener("click",async function(){
+      var q=document.getElementById("wllmQuery").value.trim();
+      var resp=document.getElementById("wllmResp"); if(!resp||!q) return;
+      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Generating…</div>';
+      try{
+        var ans=await askWebllm(q);
+        resp.innerHTML=ans?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
+          :'<div class="aud-llm-resp" style="color:var(--amber)">No response. Is the model loaded?</div>';
+      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
+    });
+    document.getElementById("wllmQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") wAsk.click(); });
+  }
 
 
   /* ============================================================
@@ -10568,12 +10546,12 @@ AI_TYPES.join(", "),
     loadLock();
     fillAllCatSelects();
     bindSecurityPanel();
-    bindFacePanel();
+    bindShare();
     bindSplit();
-    refreshWllmUI();
     bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
     bindChat();
     initPWA();
+    bindAuditor();
     bindRecurring();
     bindGoals();
     bindTrash();
@@ -10598,8 +10576,8 @@ AI_TYPES.join(", "),
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
-      loadFlagsSeen();
-      autoRestoreWllm();   // re-attach to a model already on this device                     // remember which problems were already raised
+      applyRoleUI();                       // view-only portfolios lock the entry form
+      loadFlagsSeen();                     // remember which problems were already raised
       setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
       if(lockIsOn()) showLockScreen();
     });
@@ -10617,6 +10595,54 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
+<div class="sec-wrap" id="audWrap">
+  <div class="sec-body" id="audBody">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+                color:var(--mut);margin:2px 0 9px">🔍 Financial auditor</div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">WebLLM</button>
+    </div>
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-llm-bar" id="audLlmBar">
+        <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+        <span id="audLlmStatus">Checking for on-device AI…</span>
+      </div>
+      <div style="text-align:center;padding:14px 8px">
+        <button class="btn solid" id="chatOpenBtn2" style="width:100%">💬 Open chat</button>
+        <div class="mut" style="font-size:11px;margin-top:8px;line-height:1.5">
+          Ask about your money and attach files. Also on the dashboard.</div>
+      </div>
+      <div id="audAiResp" style="display:none"></div>
+      <input class="inp" id="audQuery" style="display:none">
+      <button id="audAskBtn" style="display:none"></button>
+    </div>
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:11px;color:var(--mut);margin-bottom:8px;line-height:1.55">
+          One-time ~660MB download (Llama 3.2 1B), then runs offline on your GPU.</div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div></div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">Runs on your device. Not financial advice.</div>
+  </div>
+</div>
+<span id="audEngineLabel" style="display:none"></span>
 <div class="sec-wrap" id="secWrap">
   <div class="sec-body" id="secBody">
     <div class="sec-item">
@@ -10640,6 +10666,20 @@ AI_TYPES.join(", "),
       <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
     </div>
     <div class="sec-item">
+      <div class="si-main"><div class="si-t">Share this portfolio</div>
+        <div class="si-d">Send someone a copy with the access you choose. A working agreement, not a security boundary — a determined person can edit the file.</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn ghost sm" id="shareViewBtn">View only</button>
+        <button class="btn ghost sm" id="shareEditBtn">Can edit</button>
+      </div>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Open a shared portfolio</div>
+        <div class="si-d">Add someone else's shared file alongside your own. Nothing of yours is overwritten.</div></div>
+      <button class="btn ghost sm" id="shareImportBtn">Open</button>
+    </div>
+    <input type="file" id="shareFileInput" accept="application/json" style="display:none">
+    <div class="sec-item">
       <div class="si-main"><div class="si-t">Split bills</div>
         <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
       <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
@@ -10654,6 +10694,15 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Install as an app</div>
         <div class="si-d">Add to your home screen; opens without a browser and works offline.</div></div>
       <button class="btn ghost sm" id="pwaInstallBtn">Install</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Portfolio access</div>
+        <div class="si-d">Set this portfolio to view-only when handing the file to someone else. A guard rail, not encryption.</div></div>
+      <select class="inp" id="roleSelect" style="width:auto;min-height:38px;font-size:12px;padding:6px 9px">
+        <option value="owner">👑 Owner</option>
+        <option value="editor">✏️ Editor</option>
+        <option value="viewer">👁️ View only</option>
+      </select>
     </div>
   </div>
 </div>
@@ -10805,94 +10854,40 @@ AI_TYPES.join(", "),
 
   <!-- AI Mode — hidden entirely while offline -->
   <div id="aiSection" style="padding:0 20px;display:none">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">🤖 AI Mode <span id="aiStatusPill" style="font-weight:500;text-transform:none;letter-spacing:0"></span></div>
+    <div class="subhint" style="margin-bottom:12px">Reads receipts and screenshots and fills in entries for you. Needs internet, so this section disappears when you're offline.</div>
 
-    <!-- 1. Ask AI -->
-    <details class="sect sect-nested">
-      <summary class="sect-h"><span class="sect-i">💬</span>
-        <span class="sect-tt"><span class="sect-t">Ask AI</span>
-          <span class="sect-d">Chat about your money, on your device</span></span>
-        <span class="sect-c">▸</span></summary>
-      <div class="sect-b">
-        <div class="subhint" style="margin-bottom:10px">Runs entirely on this device once a model is ready. Nothing is sent anywhere.</div>
-        <button class="btn solid" id="chatOpenBtn2" style="width:100%">💬 Open chat</button>
-        <div id="wllmBox" style="margin-top:12px">
-          <div class="aud-progress" id="wllmProgress" style="display:none">
-            <div class="aud-progress-bar" id="wllmBar"></div></div>
-          <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin:8px 0;display:none"></div>
-          <button class="btn ghost sm" id="wllmLoadBtn" style="width:100%">Load model (660MB, once)</button>
-          <div class="subhint" style="margin-top:8px">Chrome 127+ has a model built in and needs no download. Otherwise Llama 3.2 1B downloads once, then works offline.</div>
-        </div>
-      </div>
-    </details>
+    <div class="split-row">
+      <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
+      <select id="aiProvA" style="max-width:130px"></select>
+    </div>
+    <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+      <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
+    </div>
+    <div class="subhint" id="aiWarnA" style="display:none;color:var(--down);margin:-4px 0 10px"></div>
 
-    <!-- 2. Auto-analyse photos -->
-    <details class="sect sect-nested">
-      <summary class="sect-h"><span class="sect-i">📷</span>
-        <span class="sect-tt"><span class="sect-t">Auto-analyse photos</span>
-          <span class="sect-d">Read receipts and fill entries in</span></span>
-        <span class="sect-c">▸</span></summary>
-      <div class="sect-b">
-        <div class="subhint" style="margin-bottom:12px">Snap a receipt and it fills the amount, date and merchant. The <b>local scanner</b> needs no key and no internet. Adding a cloud key below reads messier photos more accurately.</div>
-        <div class="sec-item" style="border:0;padding:6px 0">
-          <div class="si-main"><div class="si-t">Local scanner</div>
-            <div class="si-d" id="ocrNote">Built into the browser. No key, no internet.</div></div>
-          <span class="sec-status on" id="ocrStatus">always on</span>
-        </div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin:14px 0 8px">Cloud engines <span id="aiStatusPill" style="font-weight:500;text-transform:none;letter-spacing:0"></span></div>
-        <div class="split-row">
-          <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
-          <select id="aiProvA" style="max-width:130px"></select>
-        </div>
-        <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
-          <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
-        </div>
-        <div class="subhint" id="aiWarnA" style="display:none;color:var(--down);margin:-4px 0 10px"></div>
-        <div class="split-row">
-          <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
-          <select id="aiProvB" style="max-width:130px"></select>
-        </div>
-        <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
-          <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
-        </div>
-        <div class="subhint" id="aiWarnB" style="display:none;color:var(--down);margin:-4px 0 8px"></div>
-        <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
-        <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
-        <div class="data-btns">
-          <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
-          <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
-          <button class="btn ghost sm" id="aiClearBtn">Forget keys</button>
-        </div>
-        <div class="subhint" id="aiTestOut" style="margin-top:8px"></div>
-        <div class="subhint" style="margin-top:10px;color:var(--mut)">🔒 Keys stay on this device and are deliberately <b>excluded from backups and exports</b>, so sharing a backup never leaks them. Anyone with access to this device can read them.</div>
-      </div>
-    </details>
+    <div class="split-row">
+      <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
+      <select id="aiProvB" style="max-width:130px"></select>
+    </div>
+    <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+      <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
+    </div>
+    <div class="subhint" id="aiWarnB" style="display:none;color:var(--down);margin:-4px 0 8px"></div>
 
-    <!-- 3. Facial recognition -->
-    <details class="sect sect-nested">
-      <summary class="sect-h"><span class="sect-i">👤</span>
-        <span class="sect-tt"><span class="sect-t">Facial recognition</span>
-          <span class="sect-d">The model behind face unlock</span></span>
-        <span class="sect-c">▸</span></summary>
-      <div class="sect-b">
-        <div class="subhint" style="margin-bottom:12px">Face unlock compares a 128-number descriptor of your face, computed on this device. The model downloads once (~6MB) and then works offline.</div>
-        <div class="sec-item" style="border:0;padding:6px 0">
-          <div class="si-main"><div class="si-t">Camera</div>
-            <div class="si-d" id="camNote">Checking…</div></div>
-          <span class="sec-status off" id="camStatus">—</span>
-        </div>
-        <div class="sec-item" style="border:0;padding:6px 0">
-          <div class="si-main"><div class="si-t">Face model</div>
-            <div class="si-d" id="faceModelNote">Not downloaded yet.</div></div>
-          <button class="btn ghost sm" id="faceModelBtn">Download</button>
-        </div>
-        <div class="subhint" style="margin-top:10px">Set face unlock on or off in <b>Security &amp; privacy</b>.</div>
-      </div>
-    </details>
-
+    <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
+    <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
+    <div class="data-btns">
+      <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
+      <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
+      <button class="btn ghost sm" id="aiClearBtn">Forget keys</button>
+    </div>
+    <div class="subhint" id="aiTestOut" style="margin-top:8px"></div>
+    <div class="subhint" style="margin-top:10px;color:var(--mut)">🔒 Keys are stored on this device only and are deliberately <b>excluded from backups and exports</b> — so sharing a backup never leaks them. Anyone with access to this device can read them.</div>
   </div>
 
   <hr class="sep" style="margin:20px" id="aiSectionSep">
