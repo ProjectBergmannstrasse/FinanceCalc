@@ -920,6 +920,11 @@
   .ct-fill.over{background:var(--down)}
   .ct-add{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
   .ct-add .inp{min-height:38px;font-size:12px;padding:7px 9px}
+
+  .sect-nested{margin-top:8px;border-radius:11px;background:var(--panel);border:1px solid var(--bd)}
+  .sect-nested > .sect-h{padding:10px 12px}
+  .sect-nested .sect-t{font-size:12.5px}
+  .sect-nested > .sect-b{padding:0 12px 12px}
 </style>
 </head>
 <body>
@@ -1053,62 +1058,6 @@
 
 
 <!-- Local LLM Financial Auditor -->
-<div class="aud-wrap" id="audWrap">
-  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
-    <h3>🔍 Financial Auditor
-      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
-    </h3>
-    <span class="aud-caret" id="audCaret">▶</span>
-  </div>
-  <div class="aud-body" id="audBody" style="display:none">
-    <div class="aud-llm-bar" id="audLlmBar">
-      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
-      <span id="audLlmStatus">Checking for on-device AI…</span>
-    </div>
-    <div class="aud-tier" id="audTier">
-      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
-    </div>
-    <!-- Rules panel -->
-    <div id="audPanelRules">
-      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
-      <div id="audFindings" class="aud-findings"></div>
-    </div>
-    <!-- On-device AI panel -->
-    <div id="audPanelAi" style="display:none">
-      <div class="aud-query">
-        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
-        <button class="btn solid sm" id="audAskBtn">Ask</button>
-      </div>
-      <div id="audAiResp"></div>
-    </div>
-    <!-- WebLLM panel -->
-    <div id="audPanelWebllm" style="display:none">
-      <div id="audWebllmSetup">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
-          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
-          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
-          with no internet, no API key, no data leaving your device.
-        </div>
-        <div class="aud-progress" id="wllmProgress" style="display:none">
-          <div class="aud-progress-bar" id="wllmBar"></div>
-        </div>
-        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
-        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
-      </div>
-      <div id="audWebllmChat" style="display:none">
-        <div class="aud-query">
-          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
-          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
-        </div>
-        <div id="wllmResp"></div>
-      </div>
-    </div>
-    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
-      Not financial advice — for personal tracking only.</div>
-  </div>
-</div>
 
 
 <!-- Security & Integrity -->
@@ -4841,20 +4790,23 @@ AI_TYPES.join(", "),
   /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
      Trading folds into Your money; Layout & wording folds into Appearance;
      AI folds into Security & privacy alongside the other on-device features. */
+  /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
+     Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, where cards live",
+    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, card placement",
      has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
-    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax, trading",
-     has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside","Trading","Import trades from a file"]},
-    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals, reminders",
+    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax",
+     has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
+    {k:"trade", t:"Trading",             i:"◎", sub:"Trader mode, bank split, import",
+     has:["Trading","Import trades from a file"]},
+    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, on-device AI",
-     has:[], ids:["secWrap","aiSection"]},
-    {k:"data",  t:"Data & backup",       i:"⛁", sub:"Backup, trash, print, storage",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support"]},
-    {k:"danger",t:"Reset",               i:"⚠", sub:"Erase everything",
-     has:["Danger Zone"]}
+    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
+     has:[], ids:["secWrap","audWrap","aiSection"]},
+    {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
   ];
+
 
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
@@ -4887,6 +4839,41 @@ AI_TYPES.join(", "),
       var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
       det.style.display = any ? "" : "none";
     });
+  }
+
+  /* The catch-all box would otherwise be nine loose blocks stacked in a row.
+     Sub-group it so it reads as a few small boxes rather than a wall. */
+  var EXTRA_SUBS=[
+    {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
+    {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
+    {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
+    {t:"Erase",            i:"⚠", has:["Danger Zone"]}
+  ];
+  function subGroupExtra(){
+    var det=document.querySelector('details.sect[data-k="extra"]');
+    if(!det || det._subbed) return;
+    var body=det.querySelector(".sect-b"); if(!body) return;
+    var kids=Array.prototype.slice.call(body.children);
+    if(kids.length<5) return;                       // already short enough
+    var textOf=function(el){ return (el.textContent||"").slice(0,120); };
+    var boxes=[], made={};
+    EXTRA_SUBS.forEach(function(g){
+      var mine=kids.filter(function(el){
+        return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
+      });
+      if(!mine.length) return;
+      var sub=document.createElement("details");
+      sub.className="sect sect-nested";
+      sub.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
+        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span></span>'
+        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
+      var sb=sub.querySelector(".sect-b");
+      mine.forEach(function(el){ sb.appendChild(el); made[kids.indexOf(el)]=1; });
+      boxes.push(sub);
+    });
+    // anything unmatched stays at the top of the box, above the sub-boxes
+    boxes.forEach(function(b){ body.appendChild(b); });
+    det._subbed=true;
   }
   function buildSettingsSections(){
     var page=document.getElementById("pageSettings");
@@ -6699,15 +6686,14 @@ AI_TYPES.join(", "),
   /* ── bind the security + accounting panels ─────────────────── */
   function bindSecurityPanel(){
     loadSecCfg();
-    var head=document.getElementById("secHead"), body=document.getElementById("secBody"),
-        caret=document.getElementById("secCaret");
-    if(!head||!body) return;
-    head.addEventListener("click", function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open){ refreshSecUI(); refreshAuditStatus(); }
+    // The panel now lives inside a settings <details> box, so it has no collapse
+    // header of its own — a second layer of clicking looked broken when the
+    // outer box was shut. Refresh when the box it sits in is opened instead.
+    var body=document.getElementById("secBody");
+    if(!body) return;
+    var outer=body.closest("details.sect");
+    if(outer) outer.addEventListener("toggle", function(){
+      if(outer.open){ refreshSecUI(); refreshAuditStatus(); }
     });
 
     // biometric
@@ -6932,13 +6918,10 @@ AI_TYPES.join(", "),
   // open the auditor panel scrolled into view, on a chosen tab
   function openAuditorTo(tier){
     var wrap=document.getElementById("audWrap");
-    var body=document.getElementById("audBody");
-    var caret=document.getElementById("audCaret");
-    if(!wrap||!body) return;
-    if(body.style.display==="none"){
-      body.style.display="";
-      if(caret) caret.style.transform="rotate(90deg)";
-    }
+    if(!wrap) return;
+    setTab("pageSettings");
+    var outer=wrap.closest("details.sect");
+    if(outer) outer.open=true;
     var btn=document.getElementById("audBtn"+tier.charAt(0).toUpperCase()+tier.slice(1));
     if(btn) btn.click();
     try{ wrap.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){ wrap.scrollIntoView(); }
@@ -6976,10 +6959,8 @@ AI_TYPES.join(", "),
   }
 
   function bindAuditor(){
-    var head=document.getElementById("audHead");
     var body=document.getElementById("audBody");
-    var caret=document.getElementById("audCaret");
-    if(!head||!body) return;
+    if(!body) return;
     var _tier="rules";
     function showTier(t){
       _tier=t;
@@ -6993,12 +6974,9 @@ AI_TYPES.join(", "),
     document.querySelectorAll(".aud-tier-btn").forEach(function(b){
       b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
     });
-    head.addEventListener("click",function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded",open?"true":"false");
-      if(open) initBuiltinAi().then(function(){});
+    var outerAud=body.closest("details.sect");
+    if(outerAud) outerAud.addEventListener("toggle", function(){
+      if(outerAud.open) initBuiltinAi().then(function(){});
     });
     // rules
     var runBtn=document.getElementById("audRunRules");
@@ -10594,7 +10572,8 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
-      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
+      buildSettingsSections();
+      subGroupExtra();  // 19 stacked blocks -> 7 collapsed rows
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
@@ -10618,12 +10597,53 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
-<div class="sec-wrap" id="secWrap">
-  <div class="sec-head" id="secHead" role="button" aria-expanded="false">
-    <h3>🛡️ Security &amp; Integrity</h3>
-    <span class="sec-caret" id="secCaret">▶</span>
+<div class="sec-wrap" id="audWrap">
+  <div class="sec-body" id="audBody">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+                color:var(--mut);margin:2px 0 9px">🔍 Financial auditor</div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">WebLLM</button>
+    </div>
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-llm-bar" id="audLlmBar">
+        <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+        <span id="audLlmStatus">Checking for on-device AI…</span>
+      </div>
+      <div class="aud-query">
+        <input class="inp" id="audQuery" placeholder="Where am I overspending?">
+        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      </div>
+      <div id="audAiResp"></div>
+    </div>
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:11px;color:var(--mut);margin-bottom:8px;line-height:1.55">
+          One-time ~660MB download (Llama 3.2 1B), then runs offline on your GPU.</div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div></div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">Runs on your device. Not financial advice.</div>
   </div>
-  <div class="sec-body" id="secBody" style="display:none">
+</div>
+<span id="audEngineLabel" style="display:none"></span>
+<div class="sec-wrap" id="secWrap">
+  <div class="sec-body" id="secBody">
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Biometric lock</div>
         <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
@@ -10647,6 +10667,11 @@ AI_TYPES.join(", "),
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn ghost sm" id="auditVerifyBtn" style="flex:1">Verify</button>
       <button class="btn solid sm" id="auditSealBtn" style="flex:1">Seal records</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Auto-detect problems</div>
+        <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
+      <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
