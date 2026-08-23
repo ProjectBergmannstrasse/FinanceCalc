@@ -5715,7 +5715,7 @@ AI_TYPES.join(", "),
       '      var s=document.getElementById("wllmLoadStatus");',
       '      if(b) b.style.width=((p.progress||0)*100).toFixed(0)+"%";',
       '      if(s) s.textContent=p.text||"Loading…";',
-      '      var cs=document.getElementById("chatEngine");',
+      '      var cs=document.getElementById("chatSheetStatus");',
       '      if(cs) cs.textContent=(p.text||"loading").slice(0,42);',
       '    }',
       '  });',
@@ -5747,8 +5747,7 @@ AI_TYPES.join(", "),
     if(sta){ sta.style.display=""; sta.textContent="Llama 3.2 1B ready — running on your device."; sta.style.color="var(--up)"; }
     if(chat) chat.style.display="";
     var lbl=document.getElementById("audEngineLabel"); if(lbl) lbl.textContent="WebLLM";
-    var cs=document.getElementById("chatEngine");
-    if(cs){ cs.textContent="WebLLM \u00b7 on device"; cs.className="chat-engine ready"; }
+    var cs=document.getElementById("chatSheetStatus"); if(cs) cs.textContent="WebLLM ready";
     refreshWllmUI();
   }
   function refreshWllmUI(){
@@ -6100,7 +6099,54 @@ AI_TYPES.join(", "),
     appModal({title:"Install as an app", message:msg, confirmText:"OK"});
   }
 
-
+  /* ============================================================
+     SHARED PORTFOLIO ROLES
+     The enterprise version of this is RBAC with signed JWTs and a
+     central authority. For a personal app shared with family or a
+     client, that machinery is overkill — what's actually needed is
+     "let them look without letting them edit". A role is set on the
+     portfolio and locks the editing UI. It's a guard rail, not a
+     security boundary, and it says so plainly rather than implying
+     protection it can't provide.
+     ============================================================ */
+  var ROLES={
+    owner:  {label:"Owner",     canEdit:true,  canDelete:true,  canExport:true,  icon:"👑"},
+    editor: {label:"Editor",    canEdit:true,  canDelete:false, canExport:true,  icon:"✏️"},
+    viewer: {label:"View only", canEdit:false, canDelete:false, canExport:true,  icon:"👁️"}
+  };
+  function currentRole(){
+    var p=activePortfolio();
+    return ROLES[(p&&p.role)||"owner"] || ROLES.owner;
+  }
+  function applyRoleUI(){
+    var r=currentRole();
+    // editing controls
+    var form=document.getElementById("entryForm");
+    if(form) form.style.display = r.canEdit ? "" : "none";
+    var note=document.getElementById("roleNotice");
+    if(!note && !r.canEdit){
+      note=document.createElement("div");
+      note.id="roleNotice";
+      note.style.cssText="background:var(--card2);border:1px solid var(--bd2);border-radius:11px;"
+        +"padding:11px 13px;margin:10px 0;font-size:12px;color:var(--mut);text-align:center";
+      note.innerHTML=r.icon+" <b style='color:var(--tx)'>"+r.label+"</b> — entries are read-only in this portfolio.";
+      var host=document.getElementById("pageLedger");
+      if(host) host.insertBefore(note, host.firstChild);
+    } else if(note && r.canEdit){
+      note.remove();
+    }
+    // delete buttons
+    document.querySelectorAll("[data-act='del'],#tdDel,#wipeBtn").forEach(function(b){
+      b.style.display = r.canDelete ? "" : "none";
+    });
+    var badge=document.getElementById("roleBadge");
+    if(badge){ badge.textContent=r.icon+" "+r.label; }
+  }
+  function setPortfolioRole(role){
+    var p=activePortfolio(); if(!p) return;
+    p.role=role; persistNow(); applyRoleUI(); renderPortfolioUI&&renderPortfolioUI();
+    flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
+  }
 
   /* ============================================================
      AUDITOR CHAT — a real conversation, with attachments
@@ -6357,6 +6403,81 @@ AI_TYPES.join(", "),
       chatLog=[]; chatFiles=[]; renderChatLog(); renderChatFiles();
     });
     renderChatLog();
+  }
+
+  /* ============================================================
+     SHARE A PORTFOLIO — owner / editor / viewer, MT5-style
+
+     Live shared viewing needs a server; a static file can't host a
+     database. What this does instead is export ONE portfolio as a
+     file stamped with the role you grant. Open it and the app
+     honours that role: a viewer copy can't add, edit or delete.
+
+     Being straight about it: this is a working agreement, not a
+     security boundary. Someone determined can edit the file. It
+     stops accidents and sets expectations — it doesn't stop an
+     adversary, and the UI says so.
+     ============================================================ */
+  function exportPortfolioShare(role){
+    var p=activePortfolio();
+    if(!p){ flashSaved("no portfolio to share"); return; }
+    var payload={
+      _format:"mymoney-portfolio-share", _v:1,
+      role: role || "viewer",
+      sharedAt: new Date().toISOString(),
+      sharedBy: (state.owner||"").slice(0,40),
+      portfolio: { id:p.id, name:p.name, data:p.data }
+    };
+    var name=(p.name||"portfolio").replace(/[^\w\-]+/g,"_").toLowerCase();
+    var url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
+    var a=document.createElement("a");
+    a.href=url; a.download="mymoney-"+name+"-"+role+"-"+todayStr()+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    flashSaved(role==="viewer" ? "view-only copy saved" : role+" copy saved");
+  }
+  function importPortfolioShare(text){
+    var obj;
+    try{ obj=JSON.parse(text); }catch(e){ flashSaved("that file isn't readable"); return; }
+    if(obj._format!=="mymoney-portfolio-share"){ flashSaved("not a shared portfolio file"); return; }
+    var incoming=obj.portfolio;
+    if(!incoming||!incoming.data){ flashSaved("that file has no portfolio in it"); return; }
+    var roleLabel={owner:"full access",editor:"can edit, can't delete",viewer:"view only"}[obj.role]||obj.role;
+    appModal({
+      title:"Add “"+esc(incoming.name||"portfolio")+"”?",
+      message:"Shared"+(obj.sharedBy?" by "+esc(obj.sharedBy):"")+" as "+esc(roleLabel)+"."
+             +" It'll be added alongside your own portfolios — nothing you have is overwritten.",
+      confirmText:"Add it", cancelText:"Cancel",
+      onConfirm:function(){
+        var copy=JSON.parse(JSON.stringify(incoming));
+        copy.id="shared_"+Date.now().toString(36);
+        copy.name=(incoming.name||"Shared")+(obj.role==="viewer"?" (view only)":"");
+        copy.role=obj.role||"viewer";
+        state.portfolios.push(copy);
+        persistNow();
+        flashSaved("added as "+roleLabel);
+        renderPortfolioUI&&renderPortfolioUI();
+        applyRoleUI&&applyRoleUI();
+      }
+    });
+  }
+  function bindShare(){
+    var vBtn=document.getElementById("shareViewBtn");
+    var eBtn=document.getElementById("shareEditBtn");
+    var iBtn=document.getElementById("shareImportBtn");
+    var file=document.getElementById("shareFileInput");
+    if(vBtn) vBtn.addEventListener("click", function(){ exportPortfolioShare("viewer"); });
+    if(eBtn) eBtn.addEventListener("click", function(){ exportPortfolioShare("editor"); });
+    if(iBtn&&file){
+      iBtn.addEventListener("click", function(){ file.click(); });
+      file.addEventListener("change", function(e){
+        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
+        var r=new FileReader();
+        r.onload=function(){ importPortfolioShare(r.result); };
+        r.onerror=function(){ flashSaved("couldn't read that file"); };
+        r.readAsText(f);
+      });
+    }
   }
 
   /* ============================================================
@@ -6802,6 +6923,12 @@ AI_TYPES.join(", "),
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
 
     // role
+    var roleSel=document.getElementById("roleSelect");
+    if(roleSel){
+      var p=activePortfolio();
+      roleSel.value=(p&&p.role)||"owner";
+      roleSel.addEventListener("change", function(){ setPortfolioRole(roleSel.value); });
+    }
     var adChk=document.getElementById("autoDetectChk");
     if(adChk){
       adChk.checked=!(state.settings&&state.settings.autoDetect===false);
@@ -10610,6 +10737,7 @@ AI_TYPES.join(", "),
     loadLock();
     fillAllCatSelects();
     bindSecurityPanel();
+    bindShare();
     bindSplit();
     refreshWllmUI();
     bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
@@ -10640,6 +10768,7 @@ AI_TYPES.join(", "),
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
+      applyRoleUI();                       // view-only portfolios lock the entry form
       loadFlagsSeen();
       autoRestoreWllm();   // re-attach to a model already on this device                     // remember which problems were already raised
       setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
@@ -10730,6 +10859,20 @@ AI_TYPES.join(", "),
       <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
     </div>
     <div class="sec-item">
+      <div class="si-main"><div class="si-t">Share this portfolio</div>
+        <div class="si-d">Send someone a copy with the access you choose. A working agreement, not a security boundary — a determined person can edit the file.</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn ghost sm" id="shareViewBtn">View only</button>
+        <button class="btn ghost sm" id="shareEditBtn">Can edit</button>
+      </div>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Open a shared portfolio</div>
+        <div class="si-d">Add someone else's shared file alongside your own. Nothing of yours is overwritten.</div></div>
+      <button class="btn ghost sm" id="shareImportBtn">Open</button>
+    </div>
+    <input type="file" id="shareFileInput" accept="application/json" style="display:none">
+    <div class="sec-item">
       <div class="si-main"><div class="si-t">Split bills</div>
         <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
       <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
@@ -10744,6 +10887,15 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Install as an app</div>
         <div class="si-d">Add to your home screen; opens without a browser and works offline.</div></div>
       <button class="btn ghost sm" id="pwaInstallBtn">Install</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Portfolio access</div>
+        <div class="si-d">Set this portfolio to view-only when handing the file to someone else. A guard rail, not encryption.</div></div>
+      <select class="inp" id="roleSelect" style="width:auto;min-height:38px;font-size:12px;padding:6px 9px">
+        <option value="owner">👑 Owner</option>
+        <option value="editor">✏️ Editor</option>
+        <option value="viewer">👁️ View only</option>
+      </select>
     </div>
   </div>
 </div>
