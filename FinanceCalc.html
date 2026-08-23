@@ -1157,6 +1157,19 @@
   .rc-min:active{transform:scale(.97)}
   .rc-min b{font-size:15px;font-weight:800}
   .rc-min span{font-size:11px;color:var(--mut)}
+
+  /* guided face enrolment */
+  .en-ring-wrap{position:relative;width:240px;height:240px;margin:0 auto 6px}
+  .en-ticks{position:absolute;inset:0;width:240px;height:240px}
+  .en-frame{position:absolute;top:22px;left:22px;width:196px;height:196px;margin:0;
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+  .en-frame.pop{animation:enPop .42s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes enPop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .en-badge{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+    background:var(--card2);border:1px solid var(--bd2);border-radius:20px;
+    padding:3px 12px;font-size:11px;font-weight:800;color:var(--mut)}
+  .en-step{text-align:center;font-size:16px;font-weight:800;margin-top:14px}
+  .en-hint{text-align:center;font-size:12.5px;color:var(--mut);min-height:20px;margin-top:5px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -6821,19 +6834,35 @@ AI_TYPES.join(", "),
     }
     return faceCfg.people;
   }
+  /* Compare against every angle captured for every person and take the
+     closest. Five templates each is what makes a turned head still match. */
+  function euclid(a,b){
+    var s=0; for(var i=0;i<a.length;i++){ var d=a[i]-b[i]; s+=d*d; }
+    return Math.sqrt(s);
+  }
   function matchFace(desc){
     var best=null, bestDist=Infinity;
     facePeople().forEach(function(p){
-      if(!p.descriptor) return;
-      var d=Math.sqrt(desc.reduce(function(s,v,i){ var x=v-p.descriptor[i]; return s+x*x; },0));
-      if(d<bestDist){ bestDist=d; best=p; }
+      var set = (p.angles && p.angles.length)
+        ? p.angles.map(function(a){ return a.descriptor; })
+        : (p.descriptor ? [p.descriptor] : []);
+      set.forEach(function(d0){
+        if(!d0 || d0.length!==desc.length) return;
+        var d=euclid(desc,d0);
+        if(d<bestDist){ bestDist=d; best=p; }
+      });
     });
     return (best && bestDist<=faceCfg.threshold) ? best : null;
   }
-  function addFacePerson(name, desc){
+  function addFacePerson(name, angles){
     var list=facePeople();
-    list.push({id:"p"+Date.now().toString(36), name:name||("Person "+(list.length+1)), descriptor:desc});
-    faceCfg.on=true; faceCfg.descriptor=list[0].descriptor;   // keep legacy field in step
+    var arr = Array.isArray(angles) && angles.length && angles[0].descriptor
+      ? angles                                   // guided capture: [{pose,descriptor}]
+      : [{pose:"center", descriptor:angles}];    // single descriptor (photo route)
+    list.push({ id:"p"+Date.now().toString(36),
+                name:name||("Person "+(list.length+1)),
+                angles:arr, descriptor:arr[0].descriptor });
+    faceCfg.on=true; faceCfg.descriptor=list[0].descriptor;
     saveFace();
   }
   function removeFacePerson(id){
@@ -6850,15 +6879,18 @@ AI_TYPES.join(", "),
         appModal({title:"Face unlock unavailable", message:c.why, confirmText:"OK"});
         cb&&cb(false); return;
       }
-      openCameraSheet({
-        title:"Set up face unlock", action:"enrol",
-        onResult:function(desc){
+      openGuidedEnrol({
+        onResult:function(angles, fromPhoto){
           appModal({title:"Whose face is this?",
-            message:"Give it a name so you can tell people apart later.",
+            message:(fromPhoto
+              ? "Captured from one photo. A single angle matches less reliably than the guided scan \u2014 you can redo it later from the camera."
+              : "Captured from "+angles.length+" angles.")
+              +" Give it a name so you can tell people apart later.",
             input:{placeholder:"e.g. Me, or a family member"}, confirmText:"Save",
             onConfirm:function(name){
-              addFacePerson((name||"").trim()||"Me", desc);
-              flashSaved("face saved"); refreshSecUI(); refreshFacePanel(); cb&&cb(true);
+              addFacePerson((name||"").trim()||"Me", angles);
+              flashSaved("face saved \u2014 "+angles.length+" angle"+(angles.length===1?"":"s"));
+              refreshSecUI(); refreshFacePanel(); renderFacePeople&&renderFacePeople(); cb&&cb(true);
             }});
         },
         onCancel:function(){ cb&&cb(false); }
@@ -7026,7 +7058,9 @@ AI_TYPES.join(", "),
       return;
     }
     box.innerHTML=list.map(function(p){
-      return '<div class="fp-row"><span>\uD83D\uDC64</span><span class="fp-n">'+esc(p.name)+'</span>'
+      var n=(p.angles&&p.angles.length)||1;
+      return '<div class="fp-row"><span>\uD83D\uDC64</span><span class="fp-n">'+esc(p.name)
+        +' <span class="mut" style="font-weight:400;font-size:11px">\u00b7 '+n+' angle'+(n===1?'':'s')+'</span></span>'
         +'<button data-id="'+p.id+'" title="Remove">\u2715</button></div>';
     }).join("");
     box.querySelectorAll("button").forEach(function(b){
@@ -7856,6 +7890,258 @@ AI_TYPES.join(", "),
       flashSaved("attempt log cleared");
     };
   }
+  /* ============================================================
+     GUIDED FACE ENROLMENT — Apple-style, five angles
+
+     One flat photo is a weak template: turn your head slightly and
+     it stops matching. This walks through five poses and stores a
+     descriptor for each, then matches against the closest at unlock.
+
+     Pose comes from the 68 landmarks face-api already returns —
+     nose position relative to the eye midpoint gives yaw, relative
+     to the eye/mouth line gives pitch. No extra model needed.
+     ============================================================ */
+  var ENROL_STEPS=[
+    {k:"center", label:"Look straight ahead",  hint:"Face the camera",        yaw:[-0.12,0.12],  pitch:[-0.12,0.12], deg:0},
+    {k:"right",  label:"Turn your head right", hint:"Slowly to your right",   yaw:[0.16,0.60],   pitch:[-0.20,0.20], deg:72},
+    {k:"down",   label:"Tilt your chin down",  hint:"Look slightly down",     yaw:[-0.18,0.18],  pitch:[0.13,0.55],  deg:144},
+    {k:"left",   label:"Turn your head left",  hint:"Slowly to your left",    yaw:[-0.60,-0.16], pitch:[-0.20,0.20], deg:216},
+    {k:"up",     label:"Lift your chin up",    hint:"Look slightly up",       yaw:[-0.18,0.18],  pitch:[-0.55,-0.13],deg:288}
+  ];
+
+  /* Normalised pose from landmarks: both values are roughly -1..1 and
+     independent of how far away the face is. */
+  function poseFromLandmarks(lm){
+    try{
+      var pts=lm.positions || lm._positions;
+      if(!pts || pts.length<68) return null;
+      var le=pts[36], re=pts[45];                 // outer eye corners
+      var nose=pts[30];                            // nose tip
+      var chin=pts[8];
+      var eyeMidX=(le.x+re.x)/2, eyeMidY=(le.y+re.y)/2;
+      var eyeDist=Math.hypot(re.x-le.x, re.y-le.y) || 1;
+      var yaw=(nose.x-eyeMidX)/eyeDist;            // +right, -left
+      var faceH=Math.hypot(chin.x-eyeMidX, chin.y-eyeMidY) || 1;
+      var pitch=((nose.y-eyeMidY)/faceH)-0.42;     // +down, -up (0.42 ≈ neutral)
+      return {yaw:yaw, pitch:pitch};
+    }catch(e){ return null; }
+  }
+  function poseMatches(step, pose){
+    if(!pose) return false;
+    return pose.yaw>=step.yaw[0] && pose.yaw<=step.yaw[1]
+        && pose.pitch>=step.pitch[0] && pose.pitch<=step.pitch[1];
+  }
+  function poseNudge(step, pose){
+    if(!pose) return "Keep your face in the circle";
+    if(pose.yaw<step.yaw[0])  return "Turn a little more to your right";
+    if(pose.yaw>step.yaw[1])  return "Turn a little more to your left";
+    if(pose.pitch<step.pitch[0]) return "Tilt your chin down a little";
+    if(pose.pitch>step.pitch[1]) return "Lift your chin a little";
+    return "Hold still\u2026";
+  }
+
+  function openGuidedEnrol(opts){
+    opts=opts||{};
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="enrolOv";
+    host.innerHTML=
+       '<div class="sheet face-sheet">'
+      +'  <div class="sheet-hd"><h3>Set up face unlock</h3>'
+      +'    <button class="x-btn" id="enX" title="Cancel">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="en-ring-wrap">'
+      +'      <svg class="en-ticks" viewBox="0 0 240 240" id="enTicks"></svg>'
+      +'      <div class="face-frame en-frame">'
+      +'        <video id="enVideo" autoplay playsinline muted></video>'
+      +'        <div class="face-blocked" id="enBlocked" style="display:none">\uD83D\uDCF7</div>'
+      +'      </div>'
+      +'      <div class="en-badge" id="enBadge">1/5</div>'
+      +'    </div>'
+      +'    <div class="en-step" id="enStep">Look straight ahead</div>'
+      +'    <div class="en-hint" id="enHint">Starting the camera\u2026</div>'
+      +'    <div class="face-fix" id="enFix" style="display:none">'
+      +'      <button class="btn ghost sm" id="enRetry">Ask again</button>'
+      +'      <button class="btn ghost sm" id="enSkip">Use a photo instead</button>'
+      +'    </div>'
+      +'    <div class="face-help" id="enHelp" style="display:none"></div>'
+      +'  </div>'
+      +'  <div class="sheet-ft"><button class="btn ghost sm" id="enCancel">Cancel</button></div>'
+      +'  <input type="file" id="enPhoto" accept="image/*" style="display:none">'
+      +'</div>';
+    document.body.appendChild(host);
+
+    var video=host.querySelector("#enVideo");
+    var stepEl=host.querySelector("#enStep");
+    var hintEl=host.querySelector("#enHint");
+    var badge=host.querySelector("#enBadge");
+    var ticks=host.querySelector("#enTicks");
+    var fix=host.querySelector("#enFix");
+    var help=host.querySelector("#enHelp");
+    var blocked=host.querySelector("#enBlocked");
+    var stream=null, stopped=false, idx=0, holding=0, busy=false;
+    var captured=[];
+
+    // the ring of ticks that fill in as each angle is captured
+    function drawTicks(){
+      var n=54, out="";
+      for(var i=0;i<n;i++){
+        var ang=(i/n)*360-90;
+        var stepIdx=Math.floor(i/(n/ENROL_STEPS.length));
+        var done=stepIdx<idx;
+        var active=stepIdx===idx;
+        var r1=done||active?96:99, r2=done?112:108;
+        var x1=120+r1*Math.cos(ang*Math.PI/180), y1=120+r1*Math.sin(ang*Math.PI/180);
+        var x2=120+r2*Math.cos(ang*Math.PI/180), y2=120+r2*Math.sin(ang*Math.PI/180);
+        var col=done?"var(--up)":active?"var(--tx)":"var(--bd2)";
+        var w=done||active?3:2;
+        out+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)
+           +'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"'
+           +(active?' opacity="0.9"':done?'':' opacity="0.4"')+'/>';
+      }
+      ticks.innerHTML=out;
+    }
+    function setStep(i){
+      idx=i; holding=0;
+      if(i>=ENROL_STEPS.length){ finish(); return; }
+      badge.textContent=(i+1)+"/"+ENROL_STEPS.length;
+      stepEl.textContent=ENROL_STEPS[i].label;
+      hintEl.textContent=ENROL_STEPS[i].hint;
+      drawTicks();
+    }
+    function cleanup(){
+      stopped=true;
+      if(stream) stream.getTracks().forEach(function(t){ t.stop(); });
+      if(host.parentNode) host.parentNode.removeChild(host);
+    }
+    host.querySelector("#enX").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
+    host.querySelector("#enCancel").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
+
+    function finish(){
+      stepEl.textContent="All done";
+      hintEl.textContent="Saving your face\u2026";
+      drawTicks();
+      cleanupStream();
+      opts.onResult&&opts.onResult(captured);
+      setTimeout(function(){ if(host.parentNode) host.parentNode.removeChild(host); }, 500);
+    }
+    function cleanupStream(){
+      stopped=true;
+      if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+    }
+
+    /* The loop: detect, check the pose matches this step, require it held
+       for a few frames so a passing glance doesn't count, then capture. */
+    function loop(){
+      if(stopped || busy || idx>=ENROL_STEPS.length) return;
+      faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks(true).withFaceDescriptor()
+        .then(function(det){
+          if(stopped || idx>=ENROL_STEPS.length) return;
+          if(!det){ hintEl.textContent="No face in frame"; holding=0; setTimeout(loop,220); return; }
+          var pose=poseFromLandmarks(det.landmarks);
+          var step=ENROL_STEPS[idx];
+          if(poseMatches(step,pose)){
+            holding++;
+            hintEl.textContent="Hold it\u2026 "+Math.min(3,holding)+"/3";
+            if(holding>=3){
+              captured.push({pose:step.k, descriptor:Array.from(det.descriptor)});
+              flashTick();
+              setStep(idx+1);
+            }
+          } else {
+            holding=0;
+            hintEl.textContent=poseNudge(step,pose);
+          }
+          setTimeout(loop,220);
+        })
+        .catch(function(){ setTimeout(loop,400); });
+    }
+    function flashTick(){
+      var f=host.querySelector(".en-frame");
+      f.classList.remove("pop"); void f.offsetWidth; f.classList.add("pop");
+    }
+
+    function permissionRefused(){
+      blocked.style.display=""; video.style.display="none";
+      fix.style.display=""; hintEl.textContent="";
+      stepEl.textContent="Camera permission was refused.";
+      stepEl.style.color="var(--down)";
+      var ua=navigator.userAgent||"";
+      help.style.display="";
+      help.innerHTML = /iPhone|iPad|iPod/.test(ua)
+        ? "On iOS: <b>Settings \u203a Safari \u203a Camera</b>, set it to Ask or Allow, then reload."
+        : /Safari/.test(ua) && !/Chrome/.test(ua)
+        ? "In Safari: <b>Safari \u203a Settings for This Website</b>, set Camera to Allow, then reload."
+        : "In Chrome or Edge: click the <b>\uD83D\uDD12 icon</b> by the address bar, allow Camera, then reload.";
+    }
+    function start(){
+      if(cameraBlocked()){
+        blocked.style.display=""; video.style.display="none";
+        stepEl.textContent="Camera access is switched off";
+        stepEl.style.color="var(--amber)";
+        hintEl.textContent="Turn it back on in Settings, or use a photo.";
+        fix.style.display="";
+        host.querySelector("#enRetry").style.display="none";
+        return;
+      }
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        blocked.style.display=""; video.style.display="none";
+        stepEl.textContent="No camera available";
+        hintEl.textContent="You can still enrol from a photo.";
+        fix.style.display="";
+        host.querySelector("#enRetry").style.display="none";
+        return;
+      }
+      stepEl.style.color=""; blocked.style.display="none"; video.style.display="";
+      fix.style.display="none"; help.style.display="none";
+      navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:480,height:480}})
+        .then(function(s){
+          stream=s; video.srcObject=s; stopped=false;
+          hintEl.textContent="Loading the face model\u2026";
+          return loadFaceApi(function(m){ hintEl.textContent=m; });
+        })
+        .then(function(){ setStep(0); loop(); })
+        .catch(function(err){
+          var m=String(err&&err.name||err);
+          if(/NotAllowed|Permission/i.test(m)){ permissionRefused(); return; }
+          stepEl.textContent="Couldn't start the camera";
+          stepEl.style.color="var(--down)";
+          hintEl.textContent=m.slice(0,90);
+          fix.style.display="";
+        });
+    }
+    host.querySelector("#enRetry").onclick=start;
+
+    // photo fallback captures a single angle — weaker, and it says so
+    var pIn=host.querySelector("#enPhoto");
+    host.querySelector("#enSkip").onclick=function(){ pIn.click(); };
+    pIn.onchange=function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
+      var r=new FileReader();
+      r.onload=function(){
+        var img=new Image();
+        img.onload=function(){
+          hintEl.textContent="Reading the photo\u2026";
+          loadFaceApi(function(m){ hintEl.textContent=m; }).then(function(){
+            return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+              .withFaceLandmarks(true).withFaceDescriptor();
+          }).then(function(det){
+            if(!det){ hintEl.textContent="Couldn't find a face in that photo."; return; }
+            captured=[{pose:"center", descriptor:Array.from(det.descriptor)}];
+            cleanupStream();
+            opts.onResult&&opts.onResult(captured, true);
+            if(host.parentNode) host.parentNode.removeChild(host);
+          }).catch(function(err){ hintEl.textContent=String(err&&err.message||err).slice(0,90); });
+        };
+        img.src=r.result;
+      };
+      r.readAsDataURL(f);
+    };
+
+    drawTicks();
+    start();
+  }
+
   function bindSecurityPanel(){
     loadLock();
     loadFace();
