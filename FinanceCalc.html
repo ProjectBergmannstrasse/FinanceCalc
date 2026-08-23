@@ -920,11 +920,6 @@
   .ct-fill.over{background:var(--down)}
   .ct-add{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
   .ct-add .inp{min-height:38px;font-size:12px;padding:7px 9px}
-
-  .sect-nested{margin-top:8px;border-radius:11px;background:var(--panel);border:1px solid var(--bd)}
-  .sect-nested > .sect-h{padding:10px 12px}
-  .sect-nested .sect-t{font-size:12.5px}
-  .sect-nested > .sect-b{padding:0 12px 12px}
 </style>
 </head>
 <body>
@@ -1058,6 +1053,62 @@
 
 
 <!-- Local LLM Financial Auditor -->
+<div class="aud-wrap" id="audWrap">
+  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
+    <h3>🔍 Financial Auditor
+      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
+    </h3>
+    <span class="aud-caret" id="audCaret">▶</span>
+  </div>
+  <div class="aud-body" id="audBody" style="display:none">
+    <div class="aud-llm-bar" id="audLlmBar">
+      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+      <span id="audLlmStatus">Checking for on-device AI…</span>
+    </div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
+    </div>
+    <!-- Rules panel -->
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <!-- On-device AI panel -->
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-query">
+        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
+        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      </div>
+      <div id="audAiResp"></div>
+    </div>
+    <!-- WebLLM panel -->
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
+          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
+          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
+          with no internet, no API key, no data leaving your device.
+        </div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div>
+        </div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
+      Not financial advice — for personal tracking only.</div>
+  </div>
+</div>
 
 
 <!-- Security & Integrity -->
@@ -4787,27 +4838,22 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
-  /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
-     Trading folds into Your money; Layout & wording folds into Appearance;
-     AI folds into Security & privacy alongside the other on-device features. */
-  /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
-     Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, card placement",
-     has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
-    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax",
+    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
+     has:["Appearance"]},
+    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
-    {k:"trade", t:"Trading",             i:"◎", sub:"Trader mode, bank split, import",
+    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
      has:["Trading","Import trades from a file"]},
-    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
+    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
+     has:["Wording","Layout"], ids:["settingsSlot"]},
+    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
-     has:[], ids:["secWrap","audWrap","aiSection"]},
-    {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
+    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
+     ids:["aiSection"]},
+    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
      has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
   ];
-
-
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
     return h ? h.textContent.replace(/\s+/g," ").trim() : null;
@@ -4839,41 +4885,6 @@ AI_TYPES.join(", "),
       var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
       det.style.display = any ? "" : "none";
     });
-  }
-
-  /* The catch-all box would otherwise be nine loose blocks stacked in a row.
-     Sub-group it so it reads as a few small boxes rather than a wall. */
-  var EXTRA_SUBS=[
-    {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
-    {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
-    {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
-    {t:"Erase",            i:"⚠", has:["Danger Zone"]}
-  ];
-  function subGroupExtra(){
-    var det=document.querySelector('details.sect[data-k="extra"]');
-    if(!det || det._subbed) return;
-    var body=det.querySelector(".sect-b"); if(!body) return;
-    var kids=Array.prototype.slice.call(body.children);
-    if(kids.length<5) return;                       // already short enough
-    var textOf=function(el){ return (el.textContent||"").slice(0,120); };
-    var boxes=[], made={};
-    EXTRA_SUBS.forEach(function(g){
-      var mine=kids.filter(function(el){
-        return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
-      });
-      if(!mine.length) return;
-      var sub=document.createElement("details");
-      sub.className="sect sect-nested";
-      sub.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
-        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span></span>'
-        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
-      var sb=sub.querySelector(".sect-b");
-      mine.forEach(function(el){ sb.appendChild(el); made[kids.indexOf(el)]=1; });
-      boxes.push(sub);
-    });
-    // anything unmatched stays at the top of the box, above the sub-boxes
-    boxes.forEach(function(b){ body.appendChild(b); });
-    det._subbed=true;
   }
   function buildSettingsSections(){
     var page=document.getElementById("pageSettings");
@@ -6561,6 +6572,224 @@ AI_TYPES.join(", "),
   }
 
   /* ============================================================
+     DOUBLE-ENTRY VIEW + NESTED BUDGETS
+
+     Double-entry here is a LENS over the existing single-entry
+     data, not a rewrite of it. Every transaction already implies
+     two sides (spending moves value from Cash to an Expense
+     account); this derives those sides on the fly. Nothing about
+     the stored format changes, so no existing save breaks — but
+     you get a real Balance Sheet and Income Statement out of it.
+     ============================================================ */
+
+  // Which two accounts each transaction type touches: [debit, credit]
+  var LEDGER_MAP={
+    income:        ["Cash","Income"],
+    salary:        ["Cash","Income"],
+    expense:       ["Expenses","Cash"],
+    spend:         ["Expenses","Cash"],
+    pay_someone:   ["Expenses","Cash"],
+    pay_debt:      ["Liabilities","Cash"],
+    pay_debt_balance:["Liabilities","Cash"],
+    borrow:        ["Expenses","Liabilities"],
+    borrow_cash:   ["Cash","Liabilities"],
+    move_to_debt:  ["Cash","Liabilities"],
+    save:          ["Savings","Cash"],
+    withdraw:      ["Cash","Savings"],
+    trade_win:     ["Cash","Income"],
+    trade_loss:    ["Expenses","Cash"],
+    tax_set:       ["TaxReserve","Cash"],
+    tax_pay:       ["Liabilities","TaxReserve"],
+    to_trading:    ["Trading","Cash"],
+    from_trading:  ["Cash","Trading"],
+    adjust:        ["Cash","Equity"]
+  };
+  var ACCOUNT_KIND={
+    Cash:"asset", Savings:"asset", Trading:"asset", TaxReserve:"asset",
+    Liabilities:"liability", Equity:"equity", Income:"income", Expenses:"expense"
+  };
+
+  function buildDoubleEntry(){
+    var accounts={};
+    function touch(name, amt){
+      if(!accounts[name]) accounts[name]={name:name, kind:ACCOUNT_KIND[name]||"asset", debit:0, credit:0};
+      return accounts[name];
+    }
+    // opening balances seed the books
+    var op=state.opening||{};
+    if(num(op.balance)) { touch("Cash").debit  += num(op.balance); touch("Equity").credit += num(op.balance); }
+    if(num(op.savings)) { touch("Savings").debit += num(op.savings); touch("Equity").credit += num(op.savings); }
+    if(num(op.trading)) { touch("Trading").debit += num(op.trading); touch("Equity").credit += num(op.trading); }
+    if(num(op.debt))    { touch("Equity").debit += num(op.debt);    touch("Liabilities").credit += num(op.debt); }
+
+    var journal=[];
+    sortedTx().forEach(function(t){
+      var map=LEDGER_MAP[t.type];
+      if(!map) return;
+      var amt=Math.abs(num(t.amount));
+      if(!amt) return;
+      touch(map[0]).debit  += amt;
+      touch(map[1]).credit += amt;
+      journal.push({date:t.date, note:t.note||t.cat||(TYPE_META[t.type]||{}).label||t.type,
+        debit:map[0], credit:map[1], amount:amt});
+    });
+
+    var list=Object.keys(accounts).map(function(k){
+      var a=accounts[k];
+      // assets & expenses carry debit balances; liabilities, equity & income carry credit
+      var debitNature=(a.kind==="asset"||a.kind==="expense");
+      a.balance = debitNature ? (a.debit-a.credit) : (a.credit-a.debit);
+      return a;
+    });
+    var totalDebit=list.reduce(function(s,a){ return s+a.debit; },0);
+    var totalCredit=list.reduce(function(s,a){ return s+a.credit; },0);
+    return {accounts:list, journal:journal, totalDebit:totalDebit, totalCredit:totalCredit,
+      balanced: Math.abs(totalDebit-totalCredit) < 0.01};
+  }
+
+  function renderDoubleEntry(){
+    var box=document.getElementById("deBody"); if(!box) return;
+    var de=buildDoubleEntry(), sym=state.currency;
+    function money(v){ return sym+Math.abs(v).toFixed(2); }
+    var byKind=function(k){ return de.accounts.filter(function(a){ return a.kind===k; }); };
+
+    var assets=byKind("asset"), liabs=byKind("liability"), eq=byKind("equity");
+    var income=byKind("income"), expenses=byKind("expense");
+    var sumOf=function(arr){ return arr.reduce(function(s,a){ return s+a.balance; },0); };
+
+    var totalAssets=sumOf(assets), totalLiabs=sumOf(liabs);
+    var netWorth=totalAssets-totalLiabs;
+    var totalIncome=sumOf(income), totalExp=sumOf(expenses);
+
+    function rows(arr){
+      if(!arr.length) return '<div class="de-row de-empty"><span>none</span><span>—</span></div>';
+      return arr.map(function(a){
+        return '<div class="de-row"><span>'+esc(a.name)+'</span><span class="mono">'+money(a.balance)+'</span></div>';
+      }).join("");
+    }
+
+    box.innerHTML=
+       '<div class="de-statement"><div class="de-h">Balance Sheet</div>'
+        +'<div class="de-sec">Assets</div>'+rows(assets)
+        +'<div class="de-row de-total"><span>Total assets</span><span class="mono">'+money(totalAssets)+'</span></div>'
+        +'<div class="de-sec">Liabilities</div>'+rows(liabs)
+        +'<div class="de-row de-total"><span>Total liabilities</span><span class="mono">'+money(totalLiabs)+'</span></div>'
+        +'<div class="de-row de-net"><span>Net worth</span><span class="mono" style="color:'
+          +(netWorth>=0?"var(--up)":"var(--down)")+'">'+(netWorth<0?"−":"")+money(netWorth)+'</span></div>'
+      +'</div>'
+      +'<div class="de-statement"><div class="de-h">Income Statement</div>'
+        +'<div class="de-sec">Income</div>'+rows(income)
+        +'<div class="de-sec">Expenses</div>'+rows(expenses)
+        +'<div class="de-row de-net"><span>Net result</span><span class="mono" style="color:'
+          +((totalIncome-totalExp)>=0?"var(--up)":"var(--down)")+'">'
+          +((totalIncome-totalExp)<0?"−":"+")+money(totalIncome-totalExp)+'</span></div>'
+      +'</div>'
+      +'<div class="de-check '+(de.balanced?"ok":"bad")+'">'
+        +(de.balanced
+          ? "✅ Books balance — debits "+money(de.totalDebit)+" = credits "+money(de.totalCredit)
+          : "⚠️ Out of balance by "+money(de.totalDebit-de.totalCredit)
+            +" — debits "+money(de.totalDebit)+" vs credits "+money(de.totalCredit))
+      +'</div>';
+  }
+
+  /* ── NESTED SUB-BUDGETS ──────────────────────────────────────
+     A tree over the flat category list: Food ▸ Groceries ▸ Dairy.
+     Spending on a leaf rolls up into every parent, so a cap on
+     "Food" covers everything beneath it. Stored as a simple
+     parent map so existing flat categories keep working. */
+  /* Fill a category select from the tree, grouped so six top-level
+     options stay readable no matter how many subs exist beneath them. */
+  function fillCatSelect(el, selected){
+    if(!el) return;
+    var tree=subTree(), groups={};
+    CAT_LIST.forEach(function(t){ groups[t]=[]; });
+    Object.keys(tree).forEach(function(c){
+      var par=tree[c]; if(!groups[par]) groups[par]=[]; groups[par].push(c);
+    });
+    var html="";
+    CAT_LIST.forEach(function(top){
+      html+='<optgroup label="'+esc(top)+'">'
+         +'<option value="'+esc(top)+'">'+esc(top)+'</option>';
+      (groups[top]||[]).slice().sort().forEach(function(k){
+        html+='<option value="'+esc(k)+'">&nbsp;&nbsp;'+esc(k)+'</option>';
+      });
+      html+='</optgroup>';
+    });
+    el.innerHTML=html;
+    if(selected) el.value=selected;
+  }
+  function fillAllCatSelects(){
+    fillCatSelect(document.getElementById("fCat"));
+    fillCatSelect(document.getElementById("recCat"));
+  }
+  function subTree(){
+    if(!state.catTree) state.catTree=Object.assign({}, CAT_TREE_DEFAULT);
+    return state.catTree;
+  }   // {child: parent}
+  function catChildren(parent){
+    var t=subTree();
+    return Object.keys(t).filter(function(c){ return t[c]===parent; });
+  }
+  function catRoots(){
+    var t=subTree(), all={};
+    CAT_LIST.forEach(function(c){ all[c]=1; });
+    Object.keys(t).forEach(function(c){ all[c]=1; });
+    return Object.keys(all).filter(function(c){ return !t[c]; });
+  }
+  // spend on a category INCLUDING everything nested under it
+  function catSpendDeep(cat, monthFilter){
+    var direct=0;
+    sortedTx().forEach(function(t){
+      if(t.cat!==cat) return;
+      if(monthFilter && (t.date||"").slice(0,7)!==monthFilter) return;
+      var d=balDelta(t); if(d<0) direct+=Math.abs(d);
+    });
+    catChildren(cat).forEach(function(ch){ direct+=catSpendDeep(ch, monthFilter); });
+    return direct;
+  }
+  function renderCatTree(){
+    var box=document.getElementById("catTreeBody"); if(!box) return;
+    var sym=state.currency, thisM=todayStr().slice(0,7);
+    function node(cat, depth){
+      var spend=catSpendDeep(cat, thisM);
+      var cap=budgetFor(cat);
+      var kids=catChildren(cat);
+      var pct=cap>0 ? Math.min(100, spend/cap*100) : 0;
+      var over=cap>0 && spend>cap;
+      return '<div class="ct-node" style="padding-left:'+(depth*16)+'px">'
+        +'<div class="ct-row">'
+          +'<span class="ct-name">'+(depth?"↳ ":"")+esc(cat)+'</span>'
+          +'<span class="ct-val mono'+(over?" over":"")+'">'+sym+spend.toFixed(0)
+            +(cap>0?' <span class="mut">/ '+sym+cap.toFixed(0)+'</span>':'')+'</span>'
+        +'</div>'
+        +(cap>0?'<div class="ct-bar"><div class="ct-fill'+(over?" over":"")+'" style="width:'+pct+'%"></div></div>':'')
+        +kids.map(function(k){ return node(k, depth+1); }).join("")
+        +'</div>';
+    }
+    var roots=catRoots();
+    box.innerHTML=roots.map(function(r){ return node(r,0); }).join("")
+      +'<div class="ct-add">'
+        +'<input class="inp" id="ctChild" placeholder="new sub-category" style="flex:2">'
+        +'<select class="inp" id="ctParent" style="flex:2">'
+          +roots.concat(Object.keys(subTree())).filter(function(v,i,a){ return a.indexOf(v)===i; })
+            .map(function(c){ return '<option>'+esc(c)+'</option>'; }).join("")
+        +'</select>'
+        +'<button class="btn sm solid" id="ctAdd" style="flex:1">Nest</button>'
+      +'</div>';
+    var addBtn=document.getElementById("ctAdd");
+    if(addBtn) addBtn.addEventListener("click", function(){
+      var child=(document.getElementById("ctChild").value||"").trim();
+      var parent=document.getElementById("ctParent").value;
+      if(!child){ shake(document.getElementById("ctChild")); return; }
+      if(child===parent){ shake(document.getElementById("ctChild")); return; }
+      if(!state.catTree) state.catTree={};
+      state.catTree[child]=parent;
+      if(CAT_LIST.indexOf(child)<0) CAT_LIST.push(child);
+      persistNow(); renderCatTree(); fillAllCatSelects(); flashSaved("nested under "+parent);
+    });
+  }
+
+  /* ============================================================
      PWA INSTALL — single-file friendly
      A normal PWA needs manifest.json + sw.js as separate files,
      which would break the "one file you double-click" promise.
@@ -6818,7 +7047,30 @@ AI_TYPES.join(", "),
       } else { el.className="sec-status off"; el.textContent="not sealed"; }
     });
   }
-
+  function bindAccountingPanel(){
+    var head=document.getElementById("deHead"), body=document.getElementById("deBodyWrap"),
+        caret=document.getElementById("deCaret");
+    if(!head||!body) return;
+    head.addEventListener("click", function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(open) renderDoubleEntry();
+    });
+    var bBooks=document.getElementById("deBtnBooks"), bTree=document.getElementById("deBtnTree");
+    var deB=document.getElementById("deBody"), ctB=document.getElementById("catTreeBody");
+    function seg(which){
+      var books=which==="books";
+      if(bBooks){ bBooks.style.background=books?"var(--tx)":"transparent"; bBooks.style.color=books?"var(--bg)":"var(--mut)"; }
+      if(bTree){  bTree.style.background =books?"transparent":"var(--tx)"; bTree.style.color =books?"var(--mut)":"var(--bg)"; }
+      if(deB) deB.style.display=books?"":"none";
+      if(ctB) ctB.style.display=books?"none":"";
+      if(books) renderDoubleEntry(); else renderCatTree();
+    }
+    if(bBooks) bBooks.addEventListener("click", function(){ seg("books"); });
+    if(bTree)  bTree.addEventListener("click",  function(){ seg("tree"); });
+  }
 
 
   /* ============================================================
@@ -7455,11 +7707,9 @@ AI_TYPES.join(", "),
      A cap is per calendar month, always measured against the CURRENT month — not against
      whatever months happen to be ticked in the filter. A budget you're "under" only
      because you deselected a month would be actively misleading. */
-  function budgets(){ return (state.budgets && typeof state.budgets==="object") ? state.budgets : {}; }
-  /* Six top-level categories with four sub-categories each — balanced and
-     universal, replacing the old ad-hoc list. The tree seeds on first run
-     only; anything added afterwards is left alone. Declared here, above
-     every use, so it can't hoist as undefined. */
+  /* Six top-level categories, four sub-categories each — balanced and
+     universal, replacing the old ad-hoc list. Seeded on first run only;
+     anything the user adds afterwards is left alone. */
   var CAT_LIST=["Food","Home","Transport","Shopping","Health","Money"];
   var CAT_TREE_DEFAULT={
     "Groceries":"Food",   "Restaurants":"Food",    "Coffee":"Food",       "Takeaway":"Food",
@@ -7469,35 +7719,7 @@ AI_TYPES.join(", "),
     "Pharmacy":"Health",  "Doctor":"Health",       "Fitness":"Health",    "Insurance":"Health",
     "Fees":"Money",       "Subscriptions":"Money", "Education":"Money",   "Other":"Money"
   };
-  function subTree(){
-    if(!state.catTree) state.catTree=Object.assign({}, CAT_TREE_DEFAULT);
-    return state.catTree;
-  }
-  /* Fill a category select from the tree, grouped so the six top-level
-     options stay readable however many subs sit beneath them. */
-  function fillCatSelect(el, selected){
-    if(!el) return;
-    var tree=subTree(), groups={};
-    CAT_LIST.forEach(function(t){ groups[t]=[]; });
-    Object.keys(tree).forEach(function(c){
-      var par=tree[c]; if(!groups[par]) groups[par]=[]; groups[par].push(c);
-    });
-    var html="";
-    CAT_LIST.forEach(function(top){
-      html+='<optgroup label="'+esc(top)+'">'
-          +'<option value="'+esc(top)+'">'+esc(top)+'</option>';
-      (groups[top]||[]).slice().sort().forEach(function(k){
-        html+='<option value="'+esc(k)+'">\u00a0\u00a0'+esc(k)+'</option>';
-      });
-      html+='</optgroup>';
-    });
-    el.innerHTML=html;
-    if(selected) el.value=selected;
-  }
-  function fillAllCatSelects(){
-    fillCatSelect(document.getElementById("fCat"));
-    fillCatSelect(document.getElementById("recCat"));
-  }
+  function budgets(){ return (state.budgets && typeof state.budgets==="object") ? state.budgets : {}; }
   function budgetFor(cat){
     var v=budgets()[cat];
     return (typeof v==="number" && isFinite(v) && v>0) ? v : 0;
@@ -10561,6 +10783,7 @@ AI_TYPES.join(", "),
     bindLayout();
     fillAllCatSelects();
     bindSecurityPanel();
+    bindAccountingPanel();
     initPWA();
     bindAuditor();
     bindRecurring();
@@ -10581,8 +10804,7 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
-      buildSettingsSections();
-      subGroupExtra();  // 19 stacked blocks -> 7 collapsed rows
+      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
@@ -10606,53 +10828,7 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
-<div class="sec-wrap" id="audWrap">
-  <div class="sec-head" id="audHead" role="button" aria-expanded="false">
-    <h3>🔍 Financial auditor</h3>
-    <span class="sec-caret" id="audCaret">▶</span>
-  </div>
-  <div class="sec-body" id="audBody" style="display:none">
-    <div class="aud-tier" id="audTier">
-      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">WebLLM</button>
-    </div>
-    <div id="audPanelRules">
-      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
-      <div id="audFindings" class="aud-findings"></div>
-    </div>
-    <div id="audPanelAi" style="display:none">
-      <div class="aud-llm-bar" id="audLlmBar">
-        <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
-        <span id="audLlmStatus">Checking for on-device AI…</span>
-      </div>
-      <div class="aud-query">
-        <input class="inp" id="audQuery" placeholder="Where am I overspending?">
-        <button class="btn solid sm" id="audAskBtn">Ask</button>
-      </div>
-      <div id="audAiResp"></div>
-    </div>
-    <div id="audPanelWebllm" style="display:none">
-      <div id="audWebllmSetup">
-        <div style="font-size:11px;color:var(--mut);margin-bottom:8px;line-height:1.55">
-          One-time ~660MB download (Llama 3.2 1B), then runs offline on your GPU.</div>
-        <div class="aud-progress" id="wllmProgress" style="display:none">
-          <div class="aud-progress-bar" id="wllmBar"></div></div>
-        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
-        <button class="btn solid aud-run" id="wllmLoadBtn">Load model</button>
-      </div>
-      <div id="audWebllmChat" style="display:none">
-        <div class="aud-query">
-          <input class="inp" id="wllmQuery" placeholder="Ask about your finances…">
-          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
-        </div>
-        <div id="wllmResp"></div>
-      </div>
-    </div>
-    <div class="aud-discl">Runs on your device. Not financial advice.</div>
-  </div>
-</div>
-<span id="audEngineLabel" style="display:none"></span>
+<div style="padding:0 20px">
 <div class="sec-wrap" id="secWrap">
   <div class="sec-head" id="secHead" role="button" aria-expanded="false">
     <h3>🛡️ Security &amp; Integrity</h3>
@@ -10699,6 +10875,21 @@ AI_TYPES.join(", "),
     </div>
     <input type="file" id="encFileInput" accept="application/json" style="display:none">
   </div>
+</div>
+<div class="sec-wrap" id="deWrap">
+  <div class="sec-head" id="deHead" role="button" aria-expanded="false">
+    <h3>📒 Accounts &amp; Budgets</h3>
+    <span class="sec-caret" id="deCaret">▶</span>
+  </div>
+  <div class="sec-body" id="deBodyWrap" style="display:none">
+    <div class="seg" id="deSeg" style="display:flex;background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:4px;gap:2px;margin-bottom:12px">
+      <button class="btn ghost sm" data-v="books" id="deBtnBooks" style="flex:1;border:0;background:var(--tx);color:var(--bg)">Statements</button>
+      <button class="btn ghost sm" data-v="tree" id="deBtnTree" style="flex:1;border:0;background:transparent">Nested budgets</button>
+    </div>
+    <div id="deBody"></div>
+    <div id="catTreeBody" style="display:none"></div>
+  </div>
+</div>
 </div>
 
 
