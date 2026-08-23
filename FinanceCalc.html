@@ -881,7 +881,6 @@
   /* Sub-budget rows */
   .sub-bud-row{display:flex;justify-content:space-between;padding:2px 0 2px 14px;font-size:11px}
   /* Shared link badge */
-  #rbacBadge{pointer-events:none}
 
   /* ── Security & Accounting panels ─────────────────────────── */
   .sec-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
@@ -5609,13 +5608,10 @@ AI_TYPES.join(", "),
   /* ── bind all three tiers ────────────────────────────────────── */
 
   /* ============================================================
-     SECURITY & INTEGRITY MODULE
-     Three related systems, all built on the Web Crypto API:
-       1. Biometric lock (WebAuthn)  — Face ID / fingerprint on open
-       2. Encrypted backups          — PBKDF2 + AES-GCM password protection
-       3. Immutable audit chain      — SHA-256 linked entries, tamper-evident
-     Everything runs locally. No server, no key escrow, no recovery —
-     if you forget the backup password, the file is genuinely unreadable.
+     SECURITY MODULE
+     Biometric lock via WebAuthn — Face ID or fingerprint before the
+     app opens. The credential is held by the device; nothing about it
+     is stored here and there is no server to check against.
      ============================================================ */
 
   var SEC_KEY="mymoney_sec_v1";
@@ -9675,6 +9671,7 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    loadSecCfg();
     fillAllCatSelects();
     bindSecurityPanel();
     initPWA();
@@ -9703,6 +9700,10 @@ AI_TYPES.join(", "),
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
+      applyRoleUI();                       // view-only portfolios lock the entry form
+      loadFlagsSeen();                     // remember which problems were already raised
+      setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
+      if(secCfg && secCfg.bioEnabled) showLockScreen();
     });
     initSync();
     initPWA();
