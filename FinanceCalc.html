@@ -825,40 +825,6 @@
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
 
-  /* Monte Carlo Simulator */
-  .mc-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;
-    margin:10px 0;overflow:hidden}
-  .mc-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
-    cursor:pointer;gap:8px;user-select:none}
-  .mc-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;
-    display:flex;align-items:center;gap:7px}
-  .mc-head .mc-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
-  .mc-body{padding:14px 16px 16px}
-  .mc-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-  .mc-inputs .fld{margin:0}
-  .mc-inputs .fld label{font-size:10px}
-  .mc-inputs .fld input,.mc-inputs .fld select{font-size:13px;padding:8px 10px;min-height:40px}
-  .mc-run{width:100%;margin-top:4px}
-  .mc-result{margin-top:14px}
-  .mc-canvas-wrap{position:relative;width:100%;height:200px;border-radius:10px;
-    background:var(--panel);overflow:hidden;margin-bottom:12px}
-  .mc-canvas-wrap canvas{display:block;width:100%;height:100%}
-  .mc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
-  .mc-stat{background:var(--panel);border-radius:10px;padding:9px 10px;text-align:center}
-  .mc-stat .mk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--mut);font-weight:700;margin-bottom:3px}
-  .mc-stat .mv{font-size:16px;font-weight:800}
-  .mc-prob{text-align:center;font-size:12px;color:var(--mut);margin-top:6px;line-height:1.6}
-  .mc-prob b{color:var(--tx)}
-  .mc-bands{display:flex;gap:4px;height:14px;border-radius:7px;overflow:hidden;margin-bottom:6px}
-  .mc-band{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
-  .mc-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--mut);margin-top:4px}
-  .mc-legend span{display:flex;align-items:center;gap:4px}
-  .mc-legend i{width:10px;height:10px;border-radius:2px;flex:none}
-  .mc-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6;
-    border-top:1px solid var(--bd);padding-top:8px}
-  .mc-spinner{text-align:center;color:var(--mut);font-size:12px;padding:30px 0}
-
   /* ── Financial Auditor ───────────────────────────────────────── */
   .aud-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
   .aud-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
@@ -888,6 +854,77 @@
   .aud-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;border-top:1px solid var(--bd);padding-top:8px;line-height:1.6}
   .aud-progress{height:4px;background:var(--bd);border-radius:2px;margin:8px 0}
   .aud-progress-bar{height:100%;background:var(--up);border-radius:2px;transition:width .3s ease;width:0}
+
+  /* Biometric lock screen */
+  #lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:opacity .2s ease}
+  #lockScreen.in{opacity:1}
+  .lock-inner{text-align:center;width:min(340px,90vw)}
+  .lock-icon{font-size:52px;margin-bottom:8px}
+  .lock-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+  .lock-sub{font-size:13px;color:var(--mut);margin-bottom:22px}
+  .lock-dots{font-size:22px;letter-spacing:8px;margin-bottom:18px;font-family:var(--mono)}
+  .lock-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:250px;margin:0 auto}
+  .lock-key{min-height:56px;font-size:22px;font-weight:700;border-radius:16px;border:1px solid var(--bd2);
+    background:var(--card);color:var(--tx);cursor:pointer;transition:transform .1s,background .15s}
+  .lock-key:active{transform:scale(.92);background:var(--card2)}
+  .lock-key-blank{background:transparent;border-color:transparent;cursor:default}
+  .lock-err{font-size:12px;color:var(--down);margin-top:10px;min-height:18px}
+  /* Role badge + CSS enforcement */
+  [data-role="viewer"] .btn:not(.aud-tier-btn):not(.mc-run):not(.aud-run),
+  [data-role="viewer"] #entryForm,
+  [data-role="viewer"] .sel-bar,
+  [data-role="viewer"] [data-act="del"],
+  [data-role="viewer"] #pageSettings{display:none!important}
+  [data-role="editor"] [data-act="del"],
+  [data-role="editor"] #pageSettings{display:none!important}
+  /* Sub-budget rows */
+  .sub-bud-row{display:flex;justify-content:space-between;padding:2px 0 2px 14px;font-size:11px}
+  /* Shared link badge */
+  #rbacBadge{pointer-events:none}
+
+  /* ── Security & Accounting panels ─────────────────────────── */
+  .sec-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
+  .sec-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
+  .sec-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;flex:1}
+  .sec-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
+  .sec-body{padding:0 16px 16px}
+  .sec-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--bd)}
+  .sec-item:last-child{border-bottom:0}
+  .sec-item .si-main{flex:1;min-width:0}
+  .sec-item .si-t{font-size:13px;font-weight:700}
+  .sec-item .si-d{font-size:11px;color:var(--mut);margin-top:2px;line-height:1.5}
+  .sec-status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .sec-status.on{background:rgba(61,220,132,.15);color:var(--up)}
+  .sec-status.off{background:var(--card2);color:var(--mut)}
+  .sec-status.warn{background:rgba(244,183,63,.15);color:var(--amber)}
+  .sec-status.bad{background:rgba(255,107,107,.15);color:var(--down)}
+  /* double entry */
+  .de-statement{background:var(--panel);border:1px solid var(--bd);border-radius:11px;padding:13px;margin-bottom:10px}
+  .de-h{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:9px}
+  .de-sec{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:10px 0 4px}
+  .de-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0}
+  .de-row.de-empty{color:var(--mut);font-style:italic}
+  .de-row.de-total{border-top:1px solid var(--bd);margin-top:5px;padding-top:6px;font-weight:700}
+  .de-row.de-net{border-top:2px solid var(--bd2);margin-top:7px;padding-top:8px;font-weight:800;font-size:14px}
+  .de-check{font-size:11.5px;text-align:center;padding:9px;border-radius:9px;line-height:1.5}
+  .de-check.ok{background:rgba(61,220,132,.1);color:var(--up)}
+  .de-check.bad{background:rgba(255,107,107,.1);color:var(--down)}
+  /* category tree */
+  .ct-node{margin-bottom:2px}
+  .ct-row{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:5px 0;font-size:12.5px}
+  .ct-name{font-weight:600}
+  .ct-val.over{color:var(--down);font-weight:700}
+  .ct-bar{height:4px;background:var(--card2);border-radius:2px;overflow:hidden;margin-bottom:4px}
+  .ct-fill{height:100%;background:var(--up);border-radius:2px;transition:width .4s ease}
+  .ct-fill.over{background:var(--down)}
+  .ct-add{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
+  .ct-add .inp{min-height:38px;font-size:12px;padding:7px 9px}
+
+  .sect-nested{margin-top:8px;border-radius:11px;background:var(--panel);border:1px solid var(--bd)}
+  .sect-nested > .sect-h{padding:10px 12px}
+  .sect-nested .sect-t{font-size:12.5px}
+  .sect-nested > .sect-b{padding:0 12px 12px}
 </style>
 </head>
 <body>
@@ -1018,101 +1055,14 @@
 
 
 <!-- Monte Carlo Wealth Simulator -->
-<div class="mc-wrap" id="mcWrap">
-  <div class="mc-head" id="mcHead" role="button" aria-expanded="false">
-    <h3>🎲 Wealth Simulator<span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px">Monte Carlo · 10,000 scenarios</span></h3>
-    <span class="mc-caret" id="mcCaret">▶</span>
-  </div>
-  <div class="mc-body" id="mcBody" style="display:none">
-    <div class="mc-inputs">
-      <div class="fld"><label>Current net worth</label>
-        <input class="inp" id="mcNW" inputmode="decimal" placeholder="e.g. 50000"></div>
-      <div class="fld"><label>Monthly savings add</label>
-        <input class="inp" id="mcSave" inputmode="decimal" placeholder="e.g. 2000"></div>
-      <div class="fld"><label>Target (retire/goal)</label>
-        <input class="inp" id="mcTarget" inputmode="decimal" placeholder="e.g. 1000000"></div>
-      <div class="fld"><label>Return profile</label>
-        <select class="inp" id="mcProfile">
-          <option value="conservative">Conservative (6% / 10% vol)</option>
-          <option value="moderate" selected>Moderate (8% / 13% vol)</option>
-          <option value="growth">Growth (10% / 16% vol)</option>
-          <option value="aggressive">Aggressive (12% / 20% vol)</option>
-        </select></div>
-    </div>
-    <div class="fld" style="margin-bottom:10px">
-      <label>Time horizon (years)</label>
-      <input type="range" id="mcYears" min="5" max="50" step="1" value="30"
-        style="width:100%;accent-color:var(--up)">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:2px">
-        <span>5 yr</span><span id="mcYrsLbl" style="font-weight:700;color:var(--tx)">30 yr</span><span>50 yr</span>
-      </div>
-    </div>
-    <button class="btn solid wide mc-run" id="mcRun">Run 10,000 scenarios</button>
-    <div id="mcResult" class="mc-result" style="display:none"></div>
-    <div class="mc-discl">Simulation uses log-normal annual returns with historical volatility.
-      Past market behaviour does not guarantee future results.<br>
-      For personal tracking only — not financial advice.</div>
-  </div>
-</div>
 
 
 <!-- Local LLM Financial Auditor -->
-<div class="aud-wrap" id="audWrap">
-  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
-    <h3>🔍 Financial Auditor
-      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
-    </h3>
-    <span class="aud-caret" id="audCaret">▶</span>
-  </div>
-  <div class="aud-body" id="audBody" style="display:none">
-    <div class="aud-llm-bar" id="audLlmBar">
-      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
-      <span id="audLlmStatus">Checking for on-device AI…</span>
-    </div>
-    <div class="aud-tier" id="audTier">
-      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
-    </div>
-    <!-- Rules panel -->
-    <div id="audPanelRules">
-      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
-      <div id="audFindings" class="aud-findings"></div>
-    </div>
-    <!-- On-device AI panel -->
-    <div id="audPanelAi" style="display:none">
-      <div class="aud-query">
-        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
-        <button class="btn solid sm" id="audAskBtn">Ask</button>
-      </div>
-      <div id="audAiResp"></div>
-    </div>
-    <!-- WebLLM panel -->
-    <div id="audPanelWebllm" style="display:none">
-      <div id="audWebllmSetup">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
-          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
-          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
-          with no internet, no API key, no data leaving your device.
-        </div>
-        <div class="aud-progress" id="wllmProgress" style="display:none">
-          <div class="aud-progress-bar" id="wllmBar"></div>
-        </div>
-        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
-        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
-      </div>
-      <div id="audWebllmChat" style="display:none">
-        <div class="aud-query">
-          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
-          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
-        </div>
-        <div id="wllmResp"></div>
-      </div>
-    </div>
-    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
-      Not financial advice — for personal tracking only.</div>
-  </div>
-</div>
+
+
+<!-- Security & Integrity -->
+
+<!-- Accounting -->
 
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
@@ -1150,10 +1100,7 @@
       </div>
       <div class="fld" id="catFld" style="display:none">
         <label for="fCat">Category</label>
-        <select id="fCat">
-          <option>Snacks</option><option>Food</option><option>Toys</option>
-          <option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option>
-        </select>
+        <select id="fCat"></select>
       </div>
       <div class="fld" id="instFld" style="display:none">
         <label for="fInst">Instrument</label>
@@ -2307,7 +2254,15 @@
       else if(scope!=="all" && monthKey(t.date)!==scope){ return; }
       var a=num(t.amount);
       r.net+=balDelta(t);
-      if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
+      // Any outflow counts as spending, not just the legacy "spend" type — and a
+      // sub-category is reported under its top-level parent so the breakdown
+      // stays six slices instead of fragmenting into twenty.
+      if(balDelta(t)<0 && t.type!=="save" && t.type!=="tax_set"){
+        var out=Math.abs(balDelta(t));
+        r.spent+=out;
+        var c=t.cat||"Other", top=topCatOf(c);
+        r.cats[top]=(r.cats[top]||0)+out;
+      }
       else if(t.type==="trade_win"){ r.tradePL+=a; }
       else if(t.type==="trade_loss"){ r.tradePL-=a; }
       else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
@@ -2671,6 +2626,7 @@
   function persist(){
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(function(){ doPersist(); }, 250);
+    if(typeof scheduleAutoDetect==="function") scheduleAutoDetect();
   }
   function buildRoot(){
     var p=activePortfolio();
@@ -4839,22 +4795,27 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
+  /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
+     Trading folds into Your money; Layout & wording folds into Appearance;
+     AI folds into Security & privacy alongside the other on-device features. */
+  /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
+     Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
-     has:["Appearance"]},
-    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
+    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, card placement",
+     has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
+    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax",
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
-    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
+    {k:"trade", t:"Trading",             i:"◎", sub:"Trader mode, bank split, import",
      has:["Trading","Import trades from a file"]},
-    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
-     has:["Wording","Layout"], ids:["settingsSlot"]},
-    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
+    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
-     ids:["aiSection"]},
-    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
+    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
+     has:[], ids:["secWrap","audWrap","aiSection"]},
+    {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
      has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
   ];
+
+
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
     return h ? h.textContent.replace(/\s+/g," ").trim() : null;
@@ -4886,6 +4847,41 @@ AI_TYPES.join(", "),
       var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
       det.style.display = any ? "" : "none";
     });
+  }
+
+  /* The catch-all box would otherwise be nine loose blocks stacked in a row.
+     Sub-group it so it reads as a few small boxes rather than a wall. */
+  var EXTRA_SUBS=[
+    {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
+    {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
+    {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
+    {t:"Erase",            i:"⚠", has:["Danger Zone"]}
+  ];
+  function subGroupExtra(){
+    var det=document.querySelector('details.sect[data-k="extra"]');
+    if(!det || det._subbed) return;
+    var body=det.querySelector(".sect-b"); if(!body) return;
+    var kids=Array.prototype.slice.call(body.children);
+    if(kids.length<5) return;                       // already short enough
+    var textOf=function(el){ return (el.textContent||"").slice(0,120); };
+    var boxes=[], made={};
+    EXTRA_SUBS.forEach(function(g){
+      var mine=kids.filter(function(el){
+        return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
+      });
+      if(!mine.length) return;
+      var sub=document.createElement("details");
+      sub.className="sect sect-nested";
+      sub.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
+        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span></span>'
+        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
+      var sb=sub.querySelector(".sect-b");
+      mine.forEach(function(el){ sb.appendChild(el); made[kids.indexOf(el)]=1; });
+      boxes.push(sub);
+    });
+    // anything unmatched stays at the top of the box, above the sub-boxes
+    boxes.forEach(function(b){ body.appendChild(b); });
+    det._subbed=true;
   }
   function buildSettingsSections(){
     var page=document.getElementById("pageSettings");
@@ -5358,226 +5354,6 @@ AI_TYPES.join(", "),
 
 
   /* ============================================================
-     MONTE CARLO WEALTH SIMULATOR
-     Runs 10,000 independent simulations of portfolio growth using
-     log-normal annual returns (matching real market behaviour —
-     returns are not normally distributed; their LOG is). Each sim
-     compounds monthly, adds the user's savings each month, and
-     records the year the target was first reached (if ever).
-
-     Outputs:
-       · probability of hitting the target in the horizon
-       · 10th / 25th / 50th / 75th / 90th percentile year
-       · stacked percentile bands over time (wealth fan chart)
-       · year-by-year median wealth line
-     ============================================================ */
-
-  var MC_PROFILES = {
-    conservative: {mean:0.06, std:0.10, label:"Conservative"},
-    moderate:     {mean:0.08, std:0.13, label:"Moderate"},
-    growth:       {mean:0.10, std:0.155,label:"Growth"},
-    aggressive:   {mean:0.12, std:0.20, label:"Aggressive"}
-  };
-
-  // Box-Muller transform: uniform → standard normal
-  function mcRandn(){
-    var u=0, v=0;
-    while(!u) u=Math.random();
-    while(!v) v=Math.random();
-    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-  }
-
-  function runMonteCarlo(netWorth, monthlySavings, target, profileKey, years){
-    var prof = MC_PROFILES[profileKey] || MC_PROFILES.moderate;
-    var SIMS = 10000;
-    // Log-normal parameters — convert arithmetic mean/std to log-space
-    var logMu  = Math.log(1+prof.mean) - 0.5*Math.pow(Math.log(1+prof.std),2);
-    var logSig = Math.log(1+prof.std);
-
-    var reachedYear = new Array(SIMS);     // year target hit, or Infinity
-    // Track wealth at each year across all sims for the fan chart (store percentiles)
-    var yearWealth  = [];   // [year] -> sorted array of ending wealth across all sims
-    for(var y=0;y<=years;y++) yearWealth.push([]);
-
-    yearWealth[0] = new Array(SIMS).fill(netWorth);
-
-    for(var sim=0;sim<SIMS;sim++){
-      var w = netWorth;
-      var hit = -1;
-      for(var yr=1;yr<=years;yr++){
-        // one year of monthly compounding with random annual return
-        var annReturn = Math.exp(logMu + logSig*mcRandn()) - 1;
-        var mRate = Math.pow(1+annReturn, 1/12) - 1;
-        for(var mo=0;mo<12;mo++){
-          w = w*(1+mRate) + monthlySavings;
-        }
-        // clamp to zero — can't go below zero in this model (no leverage/margin)
-        if(w<0) w=0;
-        yearWealth[yr].push(w);
-        if(hit<0 && w>=target) hit=yr;
-      }
-      reachedYear[sim] = hit<0 ? Infinity : hit;
-    }
-
-    // sort each year's wealth array for percentile extraction
-    for(var y2=1;y2<=years;y2++) yearWealth[y2].sort(function(a,b){return a-b;});
-
-    var pct = function(arr, p){
-      var i = Math.max(0, Math.min(arr.length-1, Math.floor(p*(arr.length-1))));
-      return arr[i];
-    };
-
-    var finite = reachedYear.filter(function(x){ return isFinite(x); }).sort(function(a,b){return a-b;});
-    var probPct = (100*finite.length/SIMS);
-
-    return {
-      prob: probPct,
-      finite: finite,
-      p10:  finite.length ? pct(finite, 0.10) : null,
-      p25:  finite.length ? pct(finite, 0.25) : null,
-      p50:  finite.length ? pct(finite, 0.50) : null,
-      p75:  finite.length ? pct(finite, 0.75) : null,
-      p90:  finite.length ? pct(finite, 0.90) : null,
-      yearWealth: yearWealth,
-      years: years,
-      target: target,
-      profile: prof
-    };
-  }
-
-  function mcFmt(v){
-    if(v>=1e9) return "$"+(v/1e9).toFixed(1)+"B";
-    if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
-    if(v>=1e3) return "$"+(v/1e3).toFixed(0)+"K";
-    return "$"+v.toFixed(0);
-  }
-
-  function drawMcChart(canvas, res){
-    var W=canvas.width, H=canvas.height;
-    var ctx=canvas.getContext("2d");
-    ctx.clearRect(0,0,W,H);
-
-    var padL=42, padR=12, padT=14, padB=28;
-    var pw=W-padL-padR, ph=H-padT-padB;
-    var years=res.years;
-
-    // find chart max Y — 95th pct at the end or 1.2× target, whichever is larger
-    var yw=res.yearWealth;
-    var maxY=Math.max(res.target*1.2,
-      yw[years].length ? yw[years][Math.floor(.95*yw[years].length)] : res.target*2);
-
-    var xf=function(yr){ return padL+pw*(yr/years); };
-    var yf=function(v){ return padT+ph*(1-Math.min(v,maxY)/maxY); };
-
-    // percentile band colours (theme-aware)
-    var cs=getComputedStyle(document.documentElement);
-    var up=cs.getPropertyValue("--up").trim()||"#3ddc84";
-    var amber=cs.getPropertyValue("--amber").trim()||"#f4b73f";
-    var mut=cs.getPropertyValue("--mut").trim()||"#8a97a6";
-    var tx=cs.getPropertyValue("--tx").trim()||"#eef3f8";
-    var bd=cs.getPropertyValue("--bd").trim()||"#26313d";
-
-    // draw percentile bands p10-p90, p25-p75 (fan)
-    function band(pLo, pHi, color, alpha){
-      ctx.beginPath();
-      ctx.moveTo(xf(0), yf(yw[0][0]||0));
-      for(var y=0;y<=years;y++){
-        var arr=yw[y];
-        if(!arr.length) continue;
-        var v=arr[Math.max(0,Math.floor(pLo*(arr.length-1)))];
-        ctx.lineTo(xf(y), yf(v));
-      }
-      for(var y2=years;y2>=0;y2--){
-        var arr2=yw[y2];
-        if(!arr2.length) continue;
-        var v2=arr2[Math.min(arr2.length-1,Math.floor(pHi*(arr2.length-1)))];
-        ctx.lineTo(xf(y2), yf(v2));
-      }
-      ctx.closePath();
-      ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
-    }
-    band(0.10, 0.90, up, 0.12);   // wide band
-    band(0.25, 0.75, up, 0.22);   // middle band
-    band(0.40, 0.60, up, 0.30);   // tight band
-
-    // median line
-    ctx.beginPath(); ctx.lineWidth=2.5; ctx.strokeStyle=up; ctx.globalAlpha=0.9;
-    var first=true;
-    for(var y3=0;y3<=years;y3++){
-      var arr3=yw[y3]; if(!arr3.length) continue;
-      var v3=arr3[Math.floor(.5*(arr3.length-1))];
-      first ? ctx.moveTo(xf(y3),yf(v3)) : ctx.lineTo(xf(y3),yf(v3));
-      first=false;
-    }
-    ctx.stroke(); ctx.globalAlpha=1;
-
-    // target line
-    if(res.target<=maxY){
-      var ty=yf(res.target);
-      ctx.beginPath(); ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
-      ctx.strokeStyle=amber; ctx.globalAlpha=0.8;
-      ctx.moveTo(padL,ty); ctx.lineTo(padL+pw,ty); ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha=1;
-      ctx.fillStyle=amber; ctx.font="bold 9px "+getComputedStyle(document.body).fontFamily;
-      ctx.textAlign="left"; ctx.fillText("TARGET",padL+3,ty-3);
-    }
-
-    // x-axis labels
-    ctx.fillStyle=mut; ctx.font="10px monospace"; ctx.textAlign="center";
-    var step=years<=20?5:years<=35?10:10;
-    for(var y4=0;y4<=years;y4+=step){
-      ctx.fillText("yr "+y4, xf(y4), H-6);
-    }
-    // y-axis labels
-    ctx.textAlign="right";
-    for(var i=0;i<=4;i++){
-      var val=maxY*(i/4), yl=yf(val);
-      ctx.fillText(mcFmt(val), padL-4, yl+3);
-      ctx.beginPath(); ctx.strokeStyle=bd; ctx.lineWidth=0.5; ctx.globalAlpha=0.5;
-      ctx.moveTo(padL,yl); ctx.lineTo(padL+pw,yl); ctx.stroke(); ctx.globalAlpha=1;
-    }
-  }
-
-  function renderMcResult(res, sym){
-    sym = sym||"$";
-    var probColor = res.prob>=80 ? "var(--up)" : res.prob>=50 ? "var(--amber)" : "var(--down)";
-    var yearOf = function(p){ return p!=null ? p+"yr" : "—"; };
-
-    var html = '<div class="mc-summary">'
-      +'<div class="mc-stat"><div class="mk">Probability</div>'
-        +'<div class="mv" style="color:'+probColor+'">'+res.prob.toFixed(0)+'%</div></div>'
-      +'<div class="mc-stat"><div class="mk">Median year</div>'
-        +'<div class="mv">'+(res.p50!=null?'yr '+res.p50:'&gt;'+res.years+'yr')+'</div></div>'
-      +'<div class="mc-stat"><div class="mk">Best 1-in-10</div>'
-        +'<div class="mv" style="color:var(--up)">'+(res.p10!=null?'yr '+res.p10:'—')+'</div></div>'
-      +'</div>'
-      +'<div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>'
-      +'<div class="mc-prob">'
-        +'<b>'+res.prob.toFixed(1)+'%</b> of 10,000 scenarios hit your target'
-          +(res.p50!=null?' — most reach it by <b>year '+res.p50+'</b>':'.')
-        +'<br>Worst 10%: '+(res.p90!=null?'year '+res.p90:'never in '+res.years+' yr')
-        +' &nbsp;·&nbsp; Best 10%: '+(res.p10!=null?'year '+res.p10:'—')
-      +'</div>';
-
-    var box = document.getElementById("mcResult");
-    box.innerHTML = html; box.style.display="block";
-
-    // draw after DOM is ready
-    requestAnimationFrame(function(){
-      var canvas = document.getElementById("mcCanvas");
-      if(!canvas) return;
-      var wrap = canvas.parentElement;
-      var DPR = window.devicePixelRatio||1;
-      canvas.width  = wrap.offsetWidth  * DPR;
-      canvas.height = wrap.offsetHeight * DPR;
-      canvas.style.width  = wrap.offsetWidth+"px";
-      canvas.style.height = wrap.offsetHeight+"px";
-      var ctx=canvas.getContext("2d"); ctx.scale(DPR,DPR);
-      drawMcChart(canvas, res);
-    });
-  }
-
-  /* ============================================================
      FINANCIAL AUDITOR — three tiers, all local
 
      TIER 1 — Rules engine (offline, zero download, always works)
@@ -5831,11 +5607,459 @@ AI_TYPES.join(", "),
   }
 
   /* ── bind all three tiers ────────────────────────────────────── */
+
+  /* ============================================================
+     SECURITY & INTEGRITY MODULE
+     Three related systems, all built on the Web Crypto API:
+       1. Biometric lock (WebAuthn)  — Face ID / fingerprint on open
+       2. Encrypted backups          — PBKDF2 + AES-GCM password protection
+       3. Immutable audit chain      — SHA-256 linked entries, tamper-evident
+     Everything runs locally. No server, no key escrow, no recovery —
+     if you forget the backup password, the file is genuinely unreadable.
+     ============================================================ */
+
+  var SEC_KEY="mymoney_sec_v1";
+  var secCfg={ bioEnabled:false, credId:null, auditEnabled:true, lastChainHash:null };
+  function loadSecCfg(){
+    try{ var r=localStorage.getItem(SEC_KEY); if(r) secCfg=Object.assign(secCfg, JSON.parse(r)); }catch(e){}
+  }
+  function saveSecCfg(){ try{ localStorage.setItem(SEC_KEY, JSON.stringify(secCfg)); }catch(e){} }
+
+  /* ── 1. BIOMETRIC LOCK (WebAuthn) ─────────────────────────────
+     Uses the platform authenticator — Face ID on iPhone/Mac,
+     fingerprint on Android/Windows Hello. The credential never
+     leaves the device and there is no server to verify against;
+     we use it purely as a local presence check before unlocking. */
+  function bioAvailable(){
+    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  }
+  function b64ToBuf(b64){
+    var bin=atob(b64.replace(/-/g,"+").replace(/_/g,"/"));
+    var arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    return arr.buffer;
+  }
+  function bufToB64(buf){
+    var bytes=new Uint8Array(buf), s="";
+    for(var i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  async function bioEnrol(){
+    if(!bioAvailable()) throw new Error("Biometrics not supported on this device/browser");
+    var challenge=crypto.getRandomValues(new Uint8Array(32));
+    var userId=crypto.getRandomValues(new Uint8Array(16));
+    var cred=await navigator.credentials.create({
+      publicKey:{
+        challenge:challenge,
+        rp:{name:"My Money Tracker"},
+        user:{id:userId, name:"local-user", displayName:"My Money"},
+        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+        authenticatorSelection:{
+          authenticatorAttachment:"platform",   // on-device only: Face ID / fingerprint
+          userVerification:"required",
+          residentKey:"preferred"
+        },
+        timeout:60000, attestation:"none"
+      }
+    });
+    if(!cred) throw new Error("Enrolment cancelled");
+    secCfg.bioEnabled=true;
+    secCfg.credId=bufToB64(cred.rawId);
+    saveSecCfg();
+    return true;
+  }
+  async function bioVerify(){
+    if(!secCfg.bioEnabled || !secCfg.credId) return true;   // not enabled = nothing to check
+    if(!bioAvailable()) return true;                        // can't check here; don't lock them out
+    var challenge=crypto.getRandomValues(new Uint8Array(32));
+    var assertion=await navigator.credentials.get({
+      publicKey:{
+        challenge:challenge,
+        allowCredentials:[{type:"public-key", id:b64ToBuf(secCfg.credId)}],
+        userVerification:"required",
+        timeout:60000
+      }
+    });
+    return !!assertion;
+  }
+  function bioDisable(){ secCfg.bioEnabled=false; secCfg.credId=null; saveSecCfg(); }
+
+  // the lock screen shown before the app is usable
+  function showLockScreen(){
+    var ov=document.createElement("div");
+    ov.id="lockScreen";
+    ov.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;"
+      +"align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;text-align:center";
+    ov.innerHTML='<div style="font-size:44px">🔒</div>'
+      +'<div style="font-size:16px;font-weight:800">My Money Tracker</div>'
+      +'<div style="font-size:13px;color:var(--mut);max-width:280px;line-height:1.6" id="lockMsg">'
+        +'Unlock with Face ID or your fingerprint to see your finances.</div>'
+      +'<button class="btn primary" id="lockBtn" style="min-width:180px">Unlock</button>'
+      +'<button class="btn ghost sm" id="lockBypass" style="display:none;font-size:11px">'
+        +'Biometrics unavailable — continue anyway</button>';
+    document.body.appendChild(ov);
+    var attempts=0;
+    var tryUnlock=function(){
+      var msg=document.getElementById("lockMsg");
+      msg.textContent="Waiting for verification…";
+      bioVerify().then(function(ok){
+        if(ok){ ov.style.opacity="0"; ov.style.transition="opacity .25s";
+          setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },260); }
+        else { msg.textContent="Verification failed. Try again."; }
+      }).catch(function(e){
+        attempts++;
+        msg.textContent="Couldn't verify: "+String(e.message||e).slice(0,70);
+        // after two failures, offer the escape hatch — a locked-out user with no
+        // recovery path would simply lose access to their own records
+        if(attempts>=2) document.getElementById("lockBypass").style.display="";
+      });
+    };
+    document.getElementById("lockBtn").addEventListener("click", tryUnlock);
+    document.getElementById("lockBypass").addEventListener("click", function(){
+      if(ov.parentNode) ov.parentNode.removeChild(ov);
+    });
+    tryUnlock();   // prompt immediately
+  }
+
+  /* ── 2. ENCRYPTED BACKUPS (PBKDF2 + AES-GCM) ──────────────────
+     The plain export is fine for your own machine. This is for
+     when the backup leaves it — cloud drive, email, a USB stick.
+     250k PBKDF2 iterations; salt and IV stored alongside the
+     ciphertext. No password recovery by design. */
+
+  /* ── 3. IMMUTABLE AUDIT CHAIN (SHA-256 linked) ────────────────
+     Each entry's hash includes the hash before it. Change any past
+     transaction and every hash after it stops matching — so silent
+     edits become visible. Relevant here for trading P&L records and
+     anything split with someone else, where "these are the numbers
+     we agreed" needs to be provable later. */
+  // canonical form — key order must never vary or hashes won't reproduce
+
+  /* ============================================================
+     PWA INSTALL — single-file friendly
+     A normal PWA needs manifest.json + sw.js as separate files,
+     which would break the "one file you double-click" promise.
+     Both are generated at runtime as blob URLs instead, so the
+     app can be installed to the home screen and still ships as
+     exactly one file.
+     ============================================================ */
+  var _deferredPrompt=null;
+  function initPWA(){
+    // manifest, built in memory
+    try{
+      var manifest={
+        name:"My Money Tracker", short_name:"My Money",
+        start_url:location.href, display:"standalone",
+        background_color:"#0b0e14", theme_color:"#0b0e14",
+        icons:[{src:pwaIcon(), sizes:"512x512", type:"image/png", purpose:"any maskable"}]
+      };
+      var mUrl=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:"application/json"}));
+      var link=document.createElement("link");
+      link.rel="manifest"; link.href=mUrl;
+      document.head.appendChild(link);
+    }catch(e){}
+
+    // service worker — only registrable over http(s), not file://
+    if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){
+      try{
+        var swSrc=[
+          "const C='mymoney-v1';",
+          "self.addEventListener('install',e=>{self.skipWaiting();});",
+          "self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});",
+          // cache-first for the app shell so it opens with no connection at all
+          "self.addEventListener('fetch',e=>{",
+          "  if(e.request.method!=='GET') return;",
+          "  e.respondWith(caches.open(C).then(c=>c.match(e.request).then(hit=>{",
+          "    const net=fetch(e.request).then(r=>{ if(r&&r.status===200) c.put(e.request,r.clone()); return r; })",
+          "      .catch(()=>hit);",
+          "    return hit||net;",
+          "  })));",
+          "});"
+        ].join("\n");
+        var swUrl=URL.createObjectURL(new Blob([swSrc],{type:"application/javascript"}));
+        navigator.serviceWorker.register(swUrl).catch(function(){});
+      }catch(e){}
+    }
+
+    window.addEventListener("beforeinstallprompt", function(e){
+      e.preventDefault(); _deferredPrompt=e;
+      var b=document.getElementById("pwaInstallBtn");
+      if(b){ b.style.display=""; b.disabled=false; }
+    });
+    window.addEventListener("appinstalled", function(){
+      var b=document.getElementById("pwaInstallBtn");
+      if(b){ b.textContent="✅ Installed"; b.disabled=true; }
+    });
+  }
+  function pwaIcon(){
+    // a plain generated icon so we don't ship a binary asset
+    var c=document.createElement("canvas"); c.width=c.height=512;
+    var x=c.getContext("2d");
+    x.fillStyle="#0b0e14"; x.fillRect(0,0,512,512);
+    x.fillStyle="#3ddc84"; x.font="bold 300px ui-monospace,monospace";
+    x.textAlign="center"; x.textBaseline="middle"; x.fillText("$",256,270);
+    return c.toDataURL("image/png");
+  }
+  function triggerInstall(){
+    if(!_deferredPrompt){
+      flashSaved("Use your browser menu → Add to Home Screen");
+      return;
+    }
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
+  }
+
+  /* ============================================================
+     SHARED PORTFOLIO ROLES
+     The enterprise version of this is RBAC with signed JWTs and a
+     central authority. For a personal app shared with family or a
+     client, that machinery is overkill — what's actually needed is
+     "let them look without letting them edit". A role is set on the
+     portfolio and locks the editing UI. It's a guard rail, not a
+     security boundary, and it says so plainly rather than implying
+     protection it can't provide.
+     ============================================================ */
+  var ROLES={
+    owner:  {label:"Owner",     canEdit:true,  canDelete:true,  canExport:true,  icon:"👑"},
+    editor: {label:"Editor",    canEdit:true,  canDelete:false, canExport:true,  icon:"✏️"},
+    viewer: {label:"View only", canEdit:false, canDelete:false, canExport:true,  icon:"👁️"}
+  };
+  function currentRole(){
+    var p=activePortfolio();
+    return ROLES[(p&&p.role)||"owner"] || ROLES.owner;
+  }
+  function applyRoleUI(){
+    var r=currentRole();
+    // editing controls
+    var form=document.getElementById("entryForm");
+    if(form) form.style.display = r.canEdit ? "" : "none";
+    var note=document.getElementById("roleNotice");
+    if(!note && !r.canEdit){
+      note=document.createElement("div");
+      note.id="roleNotice";
+      note.style.cssText="background:var(--card2);border:1px solid var(--bd2);border-radius:11px;"
+        +"padding:11px 13px;margin:10px 0;font-size:12px;color:var(--mut);text-align:center";
+      note.innerHTML=r.icon+" <b style='color:var(--tx)'>"+r.label+"</b> — entries are read-only in this portfolio.";
+      var host=document.getElementById("pageLedger");
+      if(host) host.insertBefore(note, host.firstChild);
+    } else if(note && r.canEdit){
+      note.remove();
+    }
+    // delete buttons
+    document.querySelectorAll("[data-act='del'],#tdDel,#wipeBtn").forEach(function(b){
+      b.style.display = r.canDelete ? "" : "none";
+    });
+  }
+  function setPortfolioRole(role){
+    var p=activePortfolio(); if(!p) return;
+    p.role=role; persistNow(); applyRoleUI(); renderPortfolioUI&&renderPortfolioUI();
+    flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
+  }
+
+  /* ── bind the security + accounting panels ─────────────────── */
+  function bindSecurityPanel(){
+    loadSecCfg();
+    // The panel now lives inside a settings <details> box, so it has no collapse
+    // header of its own — a second layer of clicking looked broken when the
+    // outer box was shut. Refresh when the box it sits in is opened instead.
+    var body=document.getElementById("secBody");
+    if(!body) return;
+    var outer=body.closest("details.sect");
+    if(outer) outer.addEventListener("toggle", function(){
+      if(outer.open){ refreshSecUI(); }
+    });
+
+    // biometric
+    var bioBtn=document.getElementById("bioBtn");
+    if(bioBtn) bioBtn.addEventListener("click", function(){
+      if(secCfg.bioEnabled){
+        appModal({title:"Turn off biometric lock?",
+          message:"The app will open without asking for Face ID or a fingerprint.",
+          confirmText:"Turn off", cancelText:"Keep on", onConfirm:function(){
+            bioDisable(); refreshSecUI(); flashSaved("biometric lock off"); }});
+        return;
+      }
+      if(!bioAvailable()){ flashSaved("This device/browser doesn't support biometrics"); return; }
+      bioBtn.textContent="…"; bioBtn.disabled=true;
+      bioEnrol().then(function(){ refreshSecUI(); flashSaved("biometric lock on"); })
+        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); })
+        .then(function(){ bioBtn.disabled=false; refreshSecUI(); });
+    });
+
+    // encrypted export
+    // PWA install
+    var pwaBtn=document.getElementById("pwaInstallBtn");
+    if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
+
+    // role
+    var roleSel=document.getElementById("roleSelect");
+    if(roleSel){
+      var p=activePortfolio();
+      roleSel.value=(p&&p.role)||"owner";
+      roleSel.addEventListener("change", function(){ setPortfolioRole(roleSel.value); });
+    }
+    var adChk=document.getElementById("autoDetectChk");
+    if(adChk){
+      adChk.checked=!(state.settings&&state.settings.autoDetect===false);
+      adChk.addEventListener("change",function(){
+        if(!state.settings) state.settings={};
+        state.settings.autoDetect=adChk.checked; persistNow();
+        flashSaved(adChk.checked?"auto-detect on":"auto-detect off");
+      });
+    }
+    refreshSecUI();
+  }
+  function refreshSecUI(){
+    var bioBtn=document.getElementById("bioBtn");
+    if(bioBtn){
+      if(!bioAvailable()){ bioBtn.textContent="Unsupported"; bioBtn.disabled=true; }
+      else { bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable"; bioBtn.disabled=false; }
+    }
+  }
+
+
+
+  /* ============================================================
+     AUTO-DETECT — runs the audit quietly in the background and
+     only interrupts when something genuinely warrants it.
+
+     Rules:
+       · Only "flag" level findings raise a popup. Warnings stay
+         in the panel; nobody wants a dialog because their coffee
+         spending rose 12%.
+       · Each distinct finding alerts once, then stays quiet until
+         it clears and recurs — a popup you see every launch gets
+         dismissed on reflex and stops meaning anything.
+       · Debounced after edits so a burst of entries triggers one
+         check, not twenty.
+     ============================================================ */
+  var _autoDetectSeen={};
+  var _autoDetectTimer=null;
+  var AUTODETECT_KEY="mymoney_flags_seen";
+
+  function loadFlagsSeen(){
+    try{ var r=localStorage.getItem(AUTODETECT_KEY); if(r) _autoDetectSeen=JSON.parse(r)||{}; }catch(e){}
+  }
+  function saveFlagsSeen(){
+    try{ localStorage.setItem(AUTODETECT_KEY, JSON.stringify(_autoDetectSeen)); }catch(e){}
+  }
+
+  function scheduleAutoDetect(){
+    if(state.settings && state.settings.autoDetect===false) return;
+    if(_autoDetectTimer) clearTimeout(_autoDetectTimer);
+    _autoDetectTimer=setTimeout(runAutoDetect, 1200);
+  }
+
+  function runAutoDetect(){
+    if(state.settings && state.settings.autoDetect===false) return;
+    if(typeof runAuditRules!=="function") return;
+    if(!state.transactions || state.transactions.length<3) return;   // nothing to judge yet
+    var findings;
+    try{ findings=runAuditRules(); }catch(e){ return; }
+    var flags=findings.filter(function(f){ return f.level==="flag"; });
+    if(!flags.length){
+      // conditions cleared — allow them to alert again if they return
+      _autoDetectSeen={}; saveFlagsSeen();
+      return;
+    }
+    var fresh=flags.filter(function(f){ return !_autoDetectSeen[f.title]; });
+    if(!fresh.length) return;
+    fresh.forEach(function(f){ _autoDetectSeen[f.title]=Date.now(); });
+    saveFlagsSeen();
+    showFlagPopup(fresh);
+  }
+
+  function showFlagPopup(flags){
+    var listHtml=flags.map(function(f){
+      return '<div class="aud-finding flag" style="margin-bottom:8px">'
+        +'<span class="af-icon">'+f.icon+'</span>'
+        +'<div class="af-title">'+esc(f.title)+'</div>'
+        +'<div class="af-body">'+esc(f.body)+'</div></div>';
+    }).join("");
+
+    var ov=document.createElement("div");
+    ov.className="ov in";
+    ov.style.cssText="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);"
+      +"display:flex;align-items:center;justify-content:center;padding:16px";
+    ov.innerHTML='<div class="sheet" style="max-width:460px">'
+      +'<div class="sheet-hd"><h3>⚠️ Something needs your attention</h3>'
+        +'<button class="x-btn" id="fpX">✕</button></div>'
+      +'<div class="sheet-bd">'+listHtml
+        +'<div style="font-size:11px;color:var(--mut);margin-top:6px;line-height:1.6">'
+          +'Detected automatically from your own figures. Ask an on-device model to explain it, '
+          +'or open the auditor for the full picture.</div>'
+      +'</div>'
+      +'<div class="sheet-ft">'
+        +'<button class="btn ghost sm" id="fpDismiss">Dismiss</button>'
+        +'<button class="btn ghost sm" id="fpAudit">Open auditor</button>'
+        +'<button class="btn primary sm" id="fpAsk">Ask AI</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+
+    var close=function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.querySelector("#fpX").onclick=close;
+    ov.querySelector("#fpDismiss").onclick=close;
+    ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
+
+    ov.querySelector("#fpAudit").onclick=function(){
+      close(); openAuditorTo("rules");
+    };
+    ov.querySelector("#fpAsk").onclick=function(){
+      close();
+      // route to whichever local engine is actually available
+      var q="I have these issues with my finances: "
+        + flags.map(function(f){ return f.title+" — "+f.body; }).join(" | ")
+        + ". What should I do about it?";
+      askBestLocalEngine(q);
+    };
+  }
+
+  // open the auditor panel scrolled into view, on a chosen tab
+  function openAuditorTo(tier){
+    var wrap=document.getElementById("audWrap");
+    if(!wrap) return;
+    setTab("pageSettings");
+    var outer=wrap.closest("details.sect");
+    if(outer) outer.open=true;
+    var btn=document.getElementById("audBtn"+tier.charAt(0).toUpperCase()+tier.slice(1));
+    if(btn) btn.click();
+    try{ wrap.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){ wrap.scrollIntoView(); }
+    if(tier==="rules"){
+      var run=document.getElementById("audRunRules");
+      if(run) run.click();
+    }
+  }
+
+  /* Pick whichever local engine exists: Chrome built-in AI first (no
+     download), then WebLLM if the model is loaded. If neither is
+     ready, say so and open the tab that can fix it — rather than
+     failing silently or pretending an answer. */
+  function askBestLocalEngine(question){
+    openAuditorTo("ai");
+    var q=document.getElementById("audQuery");
+    if(q) q.value=question;
+    initBuiltinAi().then(function(ready){
+      if(ready){
+        var b=document.getElementById("audAskBtn"); if(b) b.click();
+        return;
+      }
+      if(window._wllmEngine){
+        openAuditorTo("webllm");
+        var wq=document.getElementById("wllmQuery");
+        if(wq) wq.value=question;
+        var wb=document.getElementById("wllmAskBtn"); if(wb) wb.click();
+        return;
+      }
+      var resp=document.getElementById("audAiResp");
+      if(resp) resp.innerHTML='<div class="aud-llm-resp" style="color:var(--amber)">'
+        +'No on-device model is ready yet. Chrome 127+ has one built in, or load WebLLM '
+        +'from the ⚡ tab for a one-time download.</div>';
+    });
+  }
+
   function bindAuditor(){
-    var head=document.getElementById("audHead");
     var body=document.getElementById("audBody");
-    var caret=document.getElementById("audCaret");
-    if(!head||!body) return;
+    if(!body) return;
     var _tier="rules";
     function showTier(t){
       _tier=t;
@@ -5849,12 +6073,9 @@ AI_TYPES.join(", "),
     document.querySelectorAll(".aud-tier-btn").forEach(function(b){
       b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
     });
-    head.addEventListener("click",function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded",open?"true":"false");
-      if(open) initBuiltinAi().then(function(){});
+    var outerAud=body.closest("details.sect");
+    if(outerAud) outerAud.addEventListener("toggle", function(){
+      if(outerAud.open) initBuiltinAi().then(function(){});
     });
     // rules
     var runBtn=document.getElementById("audRunRules");
@@ -5897,52 +6118,6 @@ AI_TYPES.join(", "),
     document.getElementById("wllmQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") wAsk.click(); });
   }
 
-  function bindMonteCarlo(){
-    var head = document.getElementById("mcHead");
-    var body = document.getElementById("mcBody");
-    var caret= document.getElementById("mcCaret");
-    if(!head||!body) return;
-
-    // pre-fill from the app's current net worth
-    var nwEl=document.getElementById("mcNW");
-    if(nwEl){ var t=totals(); if(t.net>0) nwEl.value=Math.round(t.net); }
-
-    // toggle open/close
-    head.addEventListener("click", function(){
-      var open = body.style.display==="none";
-      body.style.display = open?"":"none";
-      if(caret) caret.style.transform = open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open && !nwEl.value){ var t2=totals(); if(t2.net>0) nwEl.value=Math.round(t2.net); }
-    });
-
-    var yrs=document.getElementById("mcYears"), lbl=document.getElementById("mcYrsLbl");
-    if(yrs&&lbl) yrs.addEventListener("input", function(){ lbl.textContent=yrs.value+" yr"; });
-
-    document.getElementById("mcRun").addEventListener("click", function(){
-      var nw   = parseFloat(document.getElementById("mcNW").value);
-      var save = parseFloat(document.getElementById("mcSave").value);
-      var tgt  = parseFloat(document.getElementById("mcTarget").value);
-      var prof = document.getElementById("mcProfile").value;
-      var yrsV = parseInt(document.getElementById("mcYears").value, 10);
-
-      if(!isFinite(nw))  { shake(document.getElementById("mcNW")); return; }
-      if(!isFinite(save)){ shake(document.getElementById("mcSave")); return; }
-      if(!isFinite(tgt)||tgt<=0){ shake(document.getElementById("mcTarget")); return; }
-
-      var btn=document.getElementById("mcRun");
-      btn.textContent="Running…"; btn.disabled=true;
-      document.getElementById("mcResult").innerHTML='<div class="mc-spinner">Simulating 10,000 scenarios…</div>';
-      document.getElementById("mcResult").style.display="block";
-
-      // run async so the spinner actually paints
-      setTimeout(function(){
-        var res = runMonteCarlo(nw, save, tgt, prof, yrsV);
-        renderMcResult(res, state.currency);
-        btn.textContent="Run 10,000 scenarios"; btn.disabled=false;
-      }, 20);
-    });
-  }
 
   /* ============================================================
      BILL REMINDERS — Web Notifications for upcoming bills
@@ -6333,6 +6508,9 @@ AI_TYPES.join(", "),
       document.getElementById("recDay").value=String(+todayStr().slice(8,10));
       document.getElementById("recAmt").value="";
       document.getElementById("recNote").value="";
+      // reset the auto flag too — otherwise the last rule's setting silently
+      // carries over to the next one you create
+      var ra=document.getElementById("recAuto"); if(ra) ra.checked=false;
       recurFormUI();
     });
     document.getElementById("recType").addEventListener("change", recurFormUI);
@@ -6370,20 +6548,84 @@ AI_TYPES.join(", "),
      A cap is per calendar month, always measured against the CURRENT month — not against
      whatever months happen to be ticked in the filter. A budget you're "under" only
      because you deselected a month would be actively misleading. */
-  var CAT_LIST=["Snacks","Food","Toys","Stationery","Shopping","Games","Other"];
   function budgets(){ return (state.budgets && typeof state.budgets==="object") ? state.budgets : {}; }
+  /* Six top-level categories with four sub-categories each — balanced and
+     universal, replacing the old ad-hoc list. The tree seeds on first run
+     only; anything added afterwards is left alone. Declared here, above
+     every use, so it can't hoist as undefined. */
+  var CAT_LIST=["Food","Home","Transport","Shopping","Health","Money"];
+  var CAT_TREE_DEFAULT={
+    "Groceries":"Food",   "Restaurants":"Food",    "Coffee":"Food",       "Takeaway":"Food",
+    "Rent":"Home",        "Utilities":"Home",      "Internet":"Home",     "Repairs":"Home",
+    "Fuel":"Transport",   "Taxi":"Transport",      "Parking":"Transport", "Transit":"Transport",
+    "Clothes":"Shopping", "Electronics":"Shopping","Gifts":"Shopping",    "Household":"Shopping",
+    "Pharmacy":"Health",  "Doctor":"Health",       "Fitness":"Health",    "Insurance":"Health",
+    "Fees":"Money",       "Subscriptions":"Money", "Education":"Money",   "Other":"Money"
+  };
+  /* Walk a category up to its top-level parent, so reporting rolls a
+     sub-category into the six headline groups rather than listing it
+     separately. Guards against a cycle in a hand-edited tree. */
+  function topCatOf(cat){
+    var tree=(state.catTree||{}), cur=cat, hops=0;
+    while(tree[cur] && hops++<10) cur=tree[cur];
+    return cur||cat;
+  }
+  function subTree(){
+    if(!state.catTree) state.catTree=Object.assign({}, CAT_TREE_DEFAULT);
+    return state.catTree;
+  }
+  /* Fill a category select from the tree, grouped so the six top-level
+     options stay readable however many subs sit beneath them. */
+  function fillCatSelect(el, selected){
+    if(!el) return;
+    var tree=subTree(), groups={};
+    CAT_LIST.forEach(function(t){ groups[t]=[]; });
+    Object.keys(tree).forEach(function(c){
+      var par=tree[c]; if(!groups[par]) groups[par]=[]; groups[par].push(c);
+    });
+    var html="";
+    CAT_LIST.forEach(function(top){
+      html+='<optgroup label="'+esc(top)+'">'
+          +'<option value="'+esc(top)+'">'+esc(top)+'</option>';
+      (groups[top]||[]).slice().sort().forEach(function(k){
+        html+='<option value="'+esc(k)+'">\u00a0\u00a0'+esc(k)+'</option>';
+      });
+      html+='</optgroup>';
+    });
+    el.innerHTML=html;
+    if(selected) el.value=selected;
+  }
+  function fillAllCatSelects(){
+    fillCatSelect(document.getElementById("fCat"));
+    fillCatSelect(document.getElementById("recCat"));
+  }
   function budgetFor(cat){
     var v=budgets()[cat];
     return (typeof v==="number" && isFinite(v) && v>0) ? v : 0;
   }
+  /* Every category that rolls up into `cat`, including cat itself and any
+     depth of nesting beneath it. Without this a cap on "Food" would ignore
+     everything actually tagged "Groceries" and read as zero spent. */
+  function catAndDescendants(cat){
+    var tree=subTree(), out=[cat], queue=[cat];
+    while(queue.length){
+      var parent=queue.shift();
+      Object.keys(tree).forEach(function(child){
+        if(tree[child]===parent && out.indexOf(child)<0){ out.push(child); queue.push(child); }
+      });
+    }
+    return out;
+  }
   function spentThisMonth(cat){
     var mk=monthKey(todayStr());
+    var wanted=catAndDescendants(cat);
     var total=0;
     state.transactions.forEach(function(t){
-      if(t.type!=="spend") return;
+      // outflow of any kind, not just the legacy "spend" type
+      if(balDelta(t)>=0) return;
       if(monthKey(t.date)!==mk) return;
-      if((t.cat||"Other")!==cat) return;
-      total+=Math.abs(num(t.amount));
+      if(wanted.indexOf(t.cat||"Other")<0) return;
+      total+=Math.abs(balDelta(t));
     });
     return total;
   }
@@ -9433,8 +9675,10 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    fillAllCatSelects();
+    bindSecurityPanel();
+    initPWA();
     bindAuditor();
-    bindMonteCarlo();
     bindRecurring();
     bindGoals();
     bindTrash();
@@ -9453,13 +9697,15 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
-      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
+      buildSettingsSections();
+      subGroupExtra();  // 19 stacked blocks -> 7 collapsed rows
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
     });
     initSync();
+    initPWA();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -9471,6 +9717,83 @@ AI_TYPES.join(", "),
   <div class="page-head">
     <h1>⚙️ Settings</h1>
   </div>
+
+<div class="sec-wrap" id="audWrap">
+  <div class="sec-body" id="audBody">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+                color:var(--mut);margin:2px 0 9px">🔍 Financial auditor</div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">WebLLM</button>
+    </div>
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-llm-bar" id="audLlmBar">
+        <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+        <span id="audLlmStatus">Checking for on-device AI…</span>
+      </div>
+      <div class="aud-query">
+        <input class="inp" id="audQuery" placeholder="Where am I overspending?">
+        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      </div>
+      <div id="audAiResp"></div>
+    </div>
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:11px;color:var(--mut);margin-bottom:8px;line-height:1.55">
+          One-time ~660MB download (Llama 3.2 1B), then runs offline on your GPU.</div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div></div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">Runs on your device. Not financial advice.</div>
+  </div>
+</div>
+<span id="audEngineLabel" style="display:none"></span>
+<div class="sec-wrap" id="secWrap">
+  <div class="sec-body" id="secBody">
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Biometric lock</div>
+        <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
+      <button class="btn ghost sm" id="bioBtn">Enable</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Auto-detect problems</div>
+        <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
+      <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
+    </div>
+    <div class="sec-item" style="margin-top:6px">
+      <div class="si-main"><div class="si-t">Install as an app</div>
+        <div class="si-d">Add to your home screen; opens without a browser and works offline.</div></div>
+      <button class="btn ghost sm" id="pwaInstallBtn">Install</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Portfolio access</div>
+        <div class="si-d">Set this portfolio to view-only when handing the file to someone else. A guard rail, not encryption.</div></div>
+      <select class="inp" id="roleSelect" style="width:auto;min-height:38px;font-size:12px;padding:6px 9px">
+        <option value="owner">👑 Owner</option>
+        <option value="editor">✏️ Editor</option>
+        <option value="viewer">👁️ View only</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+
+
 
   <!-- Theme picker -->
   <div style="padding:18px 20px 0">
@@ -9722,7 +10045,7 @@ AI_TYPES.join(", "),
           <option value="pay_debt_balance">Pay down debt</option>
         </select></div>
       <div class="fld" id="recCatFld"><label for="recCat">Category</label>
-        <select id="recCat"><option>Snacks</option><option>Food</option><option>Toys</option><option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option></select></div>
+        <select id="recCat"></select></div>
       <div class="fld"><label for="recAmt">Amount</label><input type="number" id="recAmt" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div>
       <div class="fld"><label for="recNote">Note <span class="mut">(optional)</span></label><input type="text" id="recNote" maxlength="60" placeholder="e.g. rent"></div>
       <div class="fld"><label for="recFreq">How often</label>
