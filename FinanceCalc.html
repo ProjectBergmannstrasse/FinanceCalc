@@ -856,6 +856,8 @@
   .aud-progress-bar{height:100%;background:var(--up);border-radius:2px;transition:width .3s ease;width:0}
 
   /* Biometric lock screen */
+  #lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:opacity .2s ease}
   #lockScreen.in{opacity:1}
   .lock-inner{text-align:center;width:min(340px,90vw)}
   .lock-icon{font-size:52px;margin-bottom:8px}
@@ -879,6 +881,7 @@
   /* Sub-budget rows */
   .sub-bud-row{display:flex;justify-content:space-between;padding:2px 0 2px 14px;font-size:11px}
   /* Shared link badge */
+  #rbacBadge{pointer-events:none}
 
   /* ── Security & Accounting panels ─────────────────────────── */
   .sec-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
@@ -917,58 +920,6 @@
   .ct-fill.over{background:var(--down)}
   .ct-add{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
   .ct-add .inp{min-height:38px;font-size:12px;padding:7px 9px}
-
-  .sect-nested{margin-top:8px;border-radius:11px;background:var(--panel);border:1px solid var(--bd)}
-  .sect-nested > .sect-h{padding:10px 12px}
-  .sect-nested .sect-t{font-size:12.5px}
-  .sect-nested > .sect-b{padding:0 12px 12px}
-  /* App lock */
-  #lockScreen{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;
-    align-items:center;justify-content:center;padding:20px;transition:opacity .22s ease;outline:none}
-  .lk-box{width:100%;max-width:300px;text-align:center}
-  .lk-icon{font-size:38px;margin-bottom:6px}
-  .lk-title{font-size:17px;font-weight:800;margin-bottom:4px}
-  .lk-sub{font-size:12.5px;color:var(--mut);min-height:18px;margin-bottom:18px}
-  .lk-dots{display:flex;gap:10px;justify-content:center;margin-bottom:22px}
-  .lk-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--bd2);
-    transition:background .15s ease,border-color .15s ease,transform .15s ease}
-  .lk-dot.on{background:var(--tx);border-color:var(--tx);transform:scale(1.15)}
-  .lk-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
-  .lk-key{height:58px;border-radius:50%;border:1px solid var(--bd2);background:var(--card);
-    color:var(--tx);font:inherit;font-size:20px;font-weight:600;cursor:pointer;
-    transition:transform .1s ease,background .15s ease}
-  .lk-key:hover{background:var(--card2)}
-  .lk-key:active{transform:scale(.92);background:var(--card2)}
-  .lk-key.lk-blank{border:0;background:transparent;cursor:default}
-  .lk-box.shake{animation:shake .38s}
-
-  /* proper toggle switch — a bare checkbox looked unfinished */
-  .sw{position:relative;width:44px;height:26px;flex:none;cursor:pointer;display:inline-block}
-  .sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
-  .sw i{position:absolute;inset:0;border-radius:99px;background:var(--card2);
-    border:1px solid var(--bd2);transition:background .22s ease,border-color .22s ease}
-  .sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
-    background:var(--mut);transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .22s ease}
-  .sw input:checked + i{background:var(--up);border-color:var(--up)}
-  .sw input:checked + i::after{transform:translateX(18px);background:#04140b}
-  .sw input:focus-visible + i{outline:2px solid var(--cool);outline-offset:2px}
-  /* AI chat */
-  .chat-wrap{display:flex;flex-direction:column;gap:8px}
-  .chat-log{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
-    padding:4px 2px;scroll-behavior:smooth}
-  .chat-empty{color:var(--mut);font-size:12px;text-align:center;padding:22px 10px;line-height:1.6}
-  .chat-msg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.55;
-    white-space:pre-wrap;word-break:break-word;animation:rise .2s backwards}
-  .chat-msg.me{align-self:flex-end;background:var(--up);color:#04140b;border-bottom-right-radius:5px;font-weight:600}
-  .chat-msg.ai{align-self:flex-start;background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}
-  .chat-files{font-size:11px;opacity:.8;margin-bottom:4px}
-  .chat-row{display:flex;gap:7px;align-items:flex-end}
-  .chat-row textarea{flex:1;min-height:42px;max-height:110px;resize:none;padding:10px 12px;font-size:13px}
-  .chat-chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bd2);
-    border-radius:8px;padding:4px 8px;font-size:11px;margin:0 5px 5px 0}
-  .chat-chip button{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:11px;padding:0 0 0 2px}
-  .chat-chip button:hover{color:var(--down)}
-  #chatFileStrip:empty{display:none}
 </style>
 </head>
 <body>
@@ -1102,6 +1053,62 @@
 
 
 <!-- Local LLM Financial Auditor -->
+<div class="aud-wrap" id="audWrap">
+  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
+    <h3>🔍 Financial Auditor
+      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
+    </h3>
+    <span class="aud-caret" id="audCaret">▶</span>
+  </div>
+  <div class="aud-body" id="audBody" style="display:none">
+    <div class="aud-llm-bar" id="audLlmBar">
+      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
+      <span id="audLlmStatus">Checking for on-device AI…</span>
+    </div>
+    <div class="aud-tier" id="audTier">
+      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
+      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
+    </div>
+    <!-- Rules panel -->
+    <div id="audPanelRules">
+      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
+      <div id="audFindings" class="aud-findings"></div>
+    </div>
+    <!-- On-device AI panel -->
+    <div id="audPanelAi" style="display:none">
+      <div class="aud-query">
+        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
+        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      </div>
+      <div id="audAiResp"></div>
+    </div>
+    <!-- WebLLM panel -->
+    <div id="audPanelWebllm" style="display:none">
+      <div id="audWebllmSetup">
+        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
+          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
+          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
+          with no internet, no API key, no data leaving your device.
+        </div>
+        <div class="aud-progress" id="wllmProgress" style="display:none">
+          <div class="aud-progress-bar" id="wllmBar"></div>
+        </div>
+        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
+        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
+      </div>
+      <div id="audWebllmChat" style="display:none">
+        <div class="aud-query">
+          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
+          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
+        </div>
+        <div id="wllmResp"></div>
+      </div>
+    </div>
+    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
+      Not financial advice — for personal tracking only.</div>
+  </div>
+</div>
 
 
 <!-- Security & Integrity -->
@@ -1113,7 +1120,6 @@
 <div class="panel">
   <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
   <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan receipt</button>
-  <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1383,7 +1389,7 @@
   </div>
   <div class="pf-hint">Add photos of receipts, statements or trade screenshots. Each image is read in full — one image can hold several transactions, or none.</div>
   <div style="padding:10px 20px">
-    <input type="file" id="aiFiles" accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls,.json,.html,.css,.js,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.heic,.heif,.mp3,.wav,.m4a,.mp4,.mov,.webm,.zip,image/*,text/*,application/pdf" multiple style="display:none">
+    <input type="file" id="aiFiles" accept="image/*" multiple style="display:none">
     <div class="data-btns">
       <button class="btn ghost sm" id="aiAddImgs">+ Add images</button>
       <button class="btn ghost sm" id="aiClearImgs">Clear</button>
@@ -2299,15 +2305,7 @@
       else if(scope!=="all" && monthKey(t.date)!==scope){ return; }
       var a=num(t.amount);
       r.net+=balDelta(t);
-      // Any outflow counts as spending, not just the legacy "spend" type — and a
-      // sub-category is reported under its top-level parent so the breakdown
-      // stays six slices instead of fragmenting into twenty.
-      if(balDelta(t)<0 && t.type!=="save" && t.type!=="tax_set"){
-        var out=Math.abs(balDelta(t));
-        r.spent+=out;
-        var c=t.cat||"Other", top=topCatOf(c);
-        r.cats[top]=(r.cats[top]||0)+out;
-      }
+      if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
       else if(t.type==="trade_win"){ r.tradePL+=a; }
       else if(t.type==="trade_loss"){ r.tradePL-=a; }
       else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
@@ -4057,17 +4055,7 @@ AI_TYPES.join(", "),
         r.onload=function(){
           var url=r.result;
           var comma=url.indexOf(",");
-          var ext=(f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"";
-          var isImg=/^image\//.test(f.type||"") || ["jpg","jpeg","png","gif","webp","bmp","heic","heif"].indexOf(ext.toLowerCase())>=0;
-          if(isImg){
-            aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url, name:f.name});
-          } else {
-            // Anything not an image is attached as text the model can actually read.
-            // Binary formats (zip, mp4) can't be interpreted, so we say so rather
-            // than sending megabytes of base64 the model will choke on.
-            aiImages.push({mime:f.type||"application/octet-stream", b64:url.slice(comma+1),
-                           url:url, name:f.name, isFile:true, ext:ext.toLowerCase(), size:f.size});
-          }
+          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
           if(--left<=0) renderAiThumbs();
         };
         r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
@@ -4850,28 +4838,22 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
-  /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
-     Trading folds into Your money; Layout & wording folds into Appearance;
-     AI folds into Security & privacy alongside the other on-device features. */
-  /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
-     Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, card placement",
-     has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
-    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax",
+    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
+     has:["Appearance"]},
+    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
-    {k:"trade", t:"Trading",             i:"◎", sub:"Trader mode, bank split, import",
+    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
      has:["Trading","Import trades from a file"]},
-    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
+    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
+     has:["Wording","Layout"], ids:["settingsSlot"]},
+    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
-     has:[], ids:["secWrap","audWrap"]},
-    {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
-     ids:["aiSection"]}
+    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
+     ids:["aiSection"]},
+    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
   ];
-
-
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
     return h ? h.textContent.replace(/\s+/g," ").trim() : null;
@@ -4903,43 +4885,6 @@ AI_TYPES.join(", "),
       var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
       det.style.display = any ? "" : "none";
     });
-  }
-
-  /* The catch-all box would otherwise be nine loose blocks stacked in a row.
-     Sub-group it so it reads as a few small boxes rather than a wall. */
-  var EXTRA_SUBS=[
-    {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
-    {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
-    {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
-    {t:"AI mode",          i:"🤖", has:["AI MODE","AI Mode","AI mode"], ids:["aiSection"]},
-    {t:"Erase",            i:"⚠", has:["Danger Zone"]}
-  ];
-  function subGroupExtra(){
-    var det=document.querySelector('details.sect[data-k="extra"]');
-    if(!det || det._subbed) return;
-    var body=det.querySelector(".sect-b"); if(!body) return;
-    var kids=Array.prototype.slice.call(body.children);
-    if(kids.length<5) return;                       // already short enough
-    var textOf=function(el){ return (el.textContent||"").slice(0,120); };
-    var boxes=[], made={};
-    EXTRA_SUBS.forEach(function(g){
-      var mine=kids.filter(function(el){
-        if(g.ids && g.ids.indexOf(el.id)>=0) return true;
-        return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
-      });
-      if(!mine.length) return;
-      var sub=document.createElement("details");
-      sub.className="sect sect-nested";
-      sub.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
-        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span></span>'
-        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
-      var sb=sub.querySelector(".sect-b");
-      mine.forEach(function(el){ sb.appendChild(el); made[kids.indexOf(el)]=1; });
-      boxes.push(sub);
-    });
-    // anything unmatched stays at the top of the box, above the sub-boxes
-    boxes.forEach(function(b){ body.appendChild(b); });
-    det._subbed=true;
   }
   function buildSettingsSections(){
     var page=document.getElementById("pageSettings");
@@ -5667,266 +5612,963 @@ AI_TYPES.join(", "),
   /* ── bind all three tiers ────────────────────────────────────── */
 
   /* ============================================================
-     APP LOCK — works everywhere, including a double-clicked file
+     FEATURE 1: BIOMETRIC LOCK (WebAuthn + PIN fallback)
+     Purpose: financial data on a shared device stays private.
 
-     The old lock used WebAuthn only, which needs https. Opened from
-     disk it looked enabled and did nothing. This replaces it:
+     Flow:
+       First launch → set up PIN (biometric if supported)
+       Every open → lock screen until authenticated
+       Auto-lock after N minutes of inactivity
+       Correct credential → decrypt session key → render app
+  ============================================================ */
+  var LOCK_KEY="mymoney_lock_v1";
+  var _lockSession=false;   // true once authenticated this session
+  var _lockTimer=null;
+  var _lockInactiveMs=10*60*1000;  // 10 minutes default
 
-       PIN (always)      — 4+ digits, key-stretched, verifies a stored
-                           hash. Works on file://, no server, no API.
-       Face ID (bonus)   — when the page IS on https/localhost and a
-                           platform sensor exists, offer it as a faster
-                           unlock on top of the PIN. Never the only way in.
+  function lockState(){ try{ return JSON.parse(localStorage.getItem(LOCK_KEY)||"{}"); }catch(e){ return {}; } }
+  function saveLockState(o){ try{ localStorage.setItem(LOCK_KEY, JSON.stringify(o)); }catch(e){} }
 
-     Honest about strength: the PIN gate stops someone picking up your
-     phone or laptop. It is not full-disk encryption — a determined
-     person with the file and DevTools can still read the underlying
-     store. The UI says exactly that rather than implying more.
-     ============================================================ */
-
-  var LOCKV="mymoney_lock_v2";
-  var lockCfg={ on:false, salt:"", hash:"", rounds:60000, bio:false, credId:"", failCount:0, lockedUntil:0 };
-  function loadLock(){
-    try{ var r=localStorage.getItem(LOCKV); if(r) lockCfg=Object.assign(lockCfg, JSON.parse(r)); }catch(e){}
+  function isLockEnabled(){
+    var ls=lockState(); return !!(ls.pin||ls.credId);
   }
-  function saveLock(){ try{ localStorage.setItem(LOCKV, JSON.stringify(lockCfg)); }catch(e){} }
 
-  /* ---- pure-JS SHA-256: crypto.subtle is unavailable on file:// ---- */
-  function jsSha256(msg){
-    function rotr(x,n){ return (x>>>n)|(x<<(32-n)); }
-    var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
-    var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
-    var bytes=[];
-    for(var i=0;i<msg.length;i++){
-      var c=msg.charCodeAt(i);
-      if(c<128) bytes.push(c);
-      else if(c<2048){ bytes.push(192|(c>>6),128|(c&63)); }
-      else { bytes.push(224|(c>>12),128|((c>>6)&63),128|(c&63)); }
-    }
-    var bitLen=bytes.length*8;
-    bytes.push(0x80);
-    while(bytes.length%64!==56) bytes.push(0);
-    for(var j=7;j>=0;j--) bytes.push((bitLen/Math.pow(2,j*8))&255);
-    var w=new Array(64);
-    for(var b=0;b<bytes.length;b+=64){
-      for(var t=0;t<16;t++)
-        w[t]=(bytes[b+t*4]<<24)|(bytes[b+t*4+1]<<16)|(bytes[b+t*4+2]<<8)|bytes[b+t*4+3];
-      for(t=16;t<64;t++){
-        var s0=rotr(w[t-15],7)^rotr(w[t-15],18)^(w[t-15]>>>3);
-        var s1=rotr(w[t-2],17)^rotr(w[t-2],19)^(w[t-2]>>>10);
-        w[t]=(w[t-16]+s0+w[t-7]+s1)|0;
-      }
-      var a=H[0],bb=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
-      for(t=0;t<64;t++){
-        var S1=rotr(e,6)^rotr(e,11)^rotr(e,25);
-        var ch=(e&f)^(~e&g);
-        var t1=(h+S1+ch+K[t]+w[t])|0;
-        var S0=rotr(a,2)^rotr(a,13)^rotr(a,22);
-        var maj=(a&bb)^(a&c2)^(bb&c2);
-        var t2=(S0+maj)|0;
-        h=g;g=f;f=e;e=(d+t1)|0;d=c2;c2=bb;bb=a;a=(t1+t2)|0;
-      }
-      H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+c2)|0;H[3]=(H[3]+d)|0;
-      H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
-    }
-    return H.map(function(x){ return ("00000000"+(x>>>0).toString(16)).slice(-8); }).join("");
+  // ── PIN helpers ──────────────────────────────────────────────
+  async function hashPin(pin, salt){
+    var enc=new TextEncoder();
+    var keyMat=await crypto.subtle.importKey("raw",enc.encode(pin),{name:"PBKDF2"},false,["deriveBits"]);
+    var bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:enc.encode(salt||"mymoney"),iterations:200000,hash:"SHA-256"},keyMat,256);
+    return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
   }
-  function randHex(n){
-    var out="";
+
+  // ── WebAuthn helpers ─────────────────────────────────────────
+  function webAuthnSupported(){ return !!(window.PublicKeyCredential && navigator.credentials); }
+
+  async function registerBiometric(){
+    if(!webAuthnSupported()) return null;
     try{
-      var a=new Uint8Array(n); crypto.getRandomValues(a);
-      for(var i=0;i<n;i++) out+=("0"+a[i].toString(16)).slice(-2);
-    }catch(e){
-      for(var j=0;j<n*2;j++) out+=Math.floor(Math.random()*16).toString(16);
-    }
-    return out;
-  }
-  /* Iterated hashing so a stolen hash can't be brute-forced instantly.
-     Chunked through setTimeout so the UI doesn't freeze on slower phones. */
-  function stretchPin(pin, salt, rounds, onDone, onProgress){
-    var h=salt+"|"+pin, i=0;
-    var CHUNK=4000;
-    (function step(){
-      var end=Math.min(i+CHUNK, rounds);
-      for(; i<end; i++) h=jsSha256(h);
-      if(onProgress) onProgress(i/rounds);
-      if(i<rounds) setTimeout(step,0);
-      else onDone(h);
-    })();
+      var chal=new Uint8Array(32); crypto.getRandomValues(chal);
+      var uid=new Uint8Array(16); crypto.getRandomValues(uid);
+      var cred=await navigator.credentials.create({publicKey:{
+        challenge:chal, rp:{name:"My Money Tracker",id:location.hostname||"localhost"},
+        user:{id:uid,name:"user",displayName:"My Money"},
+        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+        authenticatorSelection:{userVerification:"required"},
+        timeout:60000
+      }});
+      return Array.from(new Uint8Array(cred.rawId)).map(b=>b.toString(16).padStart(2,"0")).join("");
+    }catch(e){ return null; }
   }
 
-  function lockIsOn(){ return !!(lockCfg.on && lockCfg.hash); }
-  function lockCooldownLeft(){
-    var left=(lockCfg.lockedUntil||0)-Date.now();
-    return left>0 ? Math.ceil(left/1000) : 0;
-  }
-
-  function setLockPin(pin, cb){
-    var salt=randHex(16);
-    stretchPin(pin, salt, lockCfg.rounds, function(h){
-      lockCfg.on=true; lockCfg.salt=salt; lockCfg.hash=h;
-      lockCfg.failCount=0; lockCfg.lockedUntil=0;
-      saveLock(); cb(true);
-    });
-  }
-  function verifyPin(pin, cb, onProgress){
-    stretchPin(pin, lockCfg.salt, lockCfg.rounds, function(h){
-      var ok = h===lockCfg.hash;
-      if(ok){ lockCfg.failCount=0; lockCfg.lockedUntil=0; }
-      else {
-        lockCfg.failCount=(lockCfg.failCount||0)+1;
-        // slow down guessing without ever locking the owner out permanently
-        if(lockCfg.failCount>=5){
-          var wait=Math.min(300, Math.pow(2, lockCfg.failCount-5)*5);
-          lockCfg.lockedUntil=Date.now()+wait*1000;
-        }
-      }
-      saveLock(); cb(ok);
-    }, onProgress);
-  }
-  function clearLock(){
-    lockCfg={on:false,salt:"",hash:"",rounds:60000,bio:false,credId:"",failCount:0,lockedUntil:0};
-    saveLock();
-  }
-
-  /* ---- optional Face ID, only where it can actually work ---- */
-  function bioPossible(){
-    return !!(window.PublicKeyCredential && navigator.credentials &&
-              navigator.credentials.create && window.isSecureContext);
-  }
-  function bioSensorPresent(){
+  async function verifyBiometric(credIdHex){
+    if(!webAuthnSupported()||!credIdHex) return false;
     try{
-      if(!bioPossible() || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
-        return Promise.resolve(false);
-      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    }catch(e){ return Promise.resolve(false); }
-  }
-  function hexToBuf(h){
-    var a=new Uint8Array(h.length/2);
-    for(var i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16);
-    return a.buffer;
-  }
-  function bufToHex(b){
-    return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
-  }
-  function enrolBio(){
-    if(!bioPossible()) return Promise.reject(new Error("Face ID needs https — a file opened from disk can't use it."));
-    var challenge=new Uint8Array(32); crypto.getRandomValues(challenge);
-    var uid=new Uint8Array(16); crypto.getRandomValues(uid);
-    return navigator.credentials.create({publicKey:{
-      challenge:challenge, rp:{name:"My Money"},
-      user:{id:uid, name:"local", displayName:"My Money"},
-      pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-      authenticatorSelection:{authenticatorAttachment:"platform", userVerification:"required"},
-      timeout:60000, attestation:"none"
-    }}).then(function(cred){
-      if(!cred) throw new Error("Cancelled");
-      lockCfg.bio=true; lockCfg.credId=bufToHex(cred.rawId); saveLock(); return true;
-    });
-  }
-  function verifyBio(){
-    if(!lockCfg.bio || !lockCfg.credId || !bioPossible()) return Promise.resolve(false);
-    var challenge=new Uint8Array(32); crypto.getRandomValues(challenge);
-    return navigator.credentials.get({publicKey:{
-      challenge:challenge,
-      allowCredentials:[{type:"public-key", id:hexToBuf(lockCfg.credId)}],
-      userVerification:"required", timeout:60000
-    }}).then(function(a){ return !!a; }).catch(function(){ return false; });
+      var chal=new Uint8Array(32); crypto.getRandomValues(chal);
+      var credIdBytes=new Uint8Array(credIdHex.match(/.{2}/g).map(b=>parseInt(b,16)));
+      var assertion=await navigator.credentials.get({publicKey:{
+        challenge:chal, timeout:60000, userVerification:"required",
+        allowCredentials:[{type:"public-key",id:credIdBytes}]
+      }});
+      return !!assertion;
+    }catch(e){ return false; }
   }
 
-  /* ---- the lock screen ---- */
-  function showLockScreen(){
-    if(!lockIsOn()) return;
-    var ov=document.createElement("div");
-    ov.id="lockScreen";
-    ov.innerHTML=
-       '<div class="lk-box">'
-      +'  <div class="lk-icon">🔒</div>'
-      +'  <div class="lk-title">My Money</div>'
-      +'  <div class="lk-sub" id="lkSub">Enter your PIN</div>'
-      +'  <div class="lk-dots" id="lkDots"></div>'
-      +'  <div class="lk-pad" id="lkPad"></div>'
-      +'  <button class="btn ghost sm" id="lkBio" style="display:none;margin-top:12px">👤 Use Face ID</button>'
-      +'</div>';
-    document.body.appendChild(ov);
-    document.body.style.overflow="hidden";
+  // ── Lock screen UI ───────────────────────────────────────────
+  function showLockScreen(onUnlock){
+    var ls=lockState();
+    var hasBio=ls.credId&&webAuthnSupported();
+    var el=document.getElementById("lockScreen");
+    if(el) el.remove();
+    var div=document.createElement("div");
+    div.id="lockScreen";
+    div.innerHTML='<div class="lock-inner">'
+      +'<div class="lock-icon">🔐</div>'
+      +'<div class="lock-title">My Money</div>'
+      +'<div class="lock-sub">Enter your PIN to continue</div>'
+      +'<div class="lock-dots" id="lockDots">○ ○ ○ ○</div>'
+      +'<input type="password" id="lockPinInput" inputmode="numeric" maxlength="6" autocomplete="off" '
+        +'style="position:absolute;opacity:0;pointer-events:none" aria-label="PIN">'
+      +'<div class="lock-pad" id="lockPad"></div>'
+      +(hasBio?'<button class="btn ghost sm" id="lockBioBtn" style="margin-top:14px;width:200px">Use Face ID / Fingerprint</button>':'')
+      +'<div class="lock-err" id="lockErr"></div></div>';
+    document.body.appendChild(div);
+    requestAnimationFrame(function(){ div.classList.add("in"); });
 
     var entered="";
-    var dots=ov.querySelector("#lkDots"), sub=ov.querySelector("#lkSub");
-    function drawDots(){
-      dots.innerHTML="";
-      for(var i=0;i<Math.max(4,entered.length);i++){
-        var s=document.createElement("span");
-        s.className="lk-dot"+(i<entered.length?" on":"");
-        dots.appendChild(s);
-      }
+    function updateDots(){
+      var d=document.getElementById("lockDots"); if(!d) return;
+      d.textContent=Array(4).fill(0).map((_,i)=>entered.length>i?"●":"○").join(" ");
     }
-    drawDots();
-    var pad=ov.querySelector("#lkPad");
-    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
+    function showErr(msg){ var e=document.getElementById("lockErr"); if(e){e.textContent=msg;e.style.color="var(--down)";} }
+    async function tryPin(){
+      var stored=ls.pin, salt=ls.salt||"mymoney";
+      var h=await hashPin(entered, salt);
+      if(h===stored){ unlock(); }
+      else{ showErr("Wrong PIN — try again"); entered=""; updateDots(); }
+    }
+    function unlock(){
+      _lockSession=true;
+      div.classList.remove("in");
+      setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); },250);
+      resetLockTimer();
+      if(onUnlock) onUnlock();
+    }
+    // number pad
+    var pad=document.getElementById("lockPad");
+    [1,2,3,4,5,6,7,8,9,"",0,"⌫"].forEach(function(k){
       var b=document.createElement("button");
-      b.className="lk-key"+(k===""?" lk-blank":"");
-      b.textContent=k;
-      if(k==="") b.disabled=true;
-      b.addEventListener("click", function(){
-        if(lockCooldownLeft()>0){ sub.textContent="Too many tries — wait "+lockCooldownLeft()+"s"; return; }
-        if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
-        if(entered.length>=12) return;
-        entered+=k; drawDots();
-        if(entered.length>=4) trySubmit();
+      b.className="lock-key"+(k===""?" lock-key-blank":"");
+      b.textContent=k===""?"":String(k);
+      if(k!=="") b.addEventListener("click",function(){
+        if(k==="⌫"){ entered=entered.slice(0,-1); updateDots(); return; }
+        if(entered.length>=6) return;
+        entered+=String(k); updateDots();
+        if(entered.length===4||entered.length===6) tryPin();
       });
       pad.appendChild(b);
     });
-    function unlock(){
-      ov.style.opacity="0";
-      document.body.style.overflow="";
-      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
-    }
-    var busy=false;
-    function trySubmit(){
-      if(busy) return;
-      var cd=lockCooldownLeft();
-      if(cd>0){ sub.textContent="Too many tries — wait "+cd+"s"; return; }
-      busy=true; sub.textContent="Checking…";
-      verifyPin(entered, function(ok){
-        busy=false;
-        if(ok){ unlock(); return; }
-        entered=""; drawDots();
-        var left=lockCooldownLeft();
-        sub.textContent= left>0 ? "Wrong PIN — wait "+left+"s" : "Wrong PIN, try again";
-        var box=ov.querySelector(".lk-box");
-        box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
-      }, function(p){ if(p<1) sub.textContent="Checking… "+Math.round(p*100)+"%"; });
-    }
-    // physical keyboard
-    ov.addEventListener("keydown", function(e){
-      if(/^[0-9]$/.test(e.key)){ if(entered.length<12){ entered+=e.key; drawDots(); if(entered.length>=4) trySubmit(); } }
-      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); drawDots(); }
-      else if(e.key==="Enter" && entered.length>=4) trySubmit();
+    // biometric
+    var bioBtn=document.getElementById("lockBioBtn");
+    if(bioBtn) bioBtn.addEventListener("click",async function(){
+      bioBtn.disabled=true; bioBtn.textContent="Waiting…";
+      var ok=await verifyBiometric(ls.credId);
+      if(ok) unlock(); else{ showErr("Biometric failed — use PIN"); bioBtn.disabled=false; bioBtn.textContent="Use Face ID / Fingerprint"; }
     });
-    ov.tabIndex=-1; setTimeout(function(){ try{ ov.focus(); }catch(e){} },50);
+    // keyboard
+    document.getElementById("lockPinInput").focus();
+    div.addEventListener("keydown",function(e){
+      if(e.key>="0"&&e.key<="9"){ if(entered.length<6){entered+=e.key;updateDots();} if(entered.length===4||entered.length===6) tryPin(); }
+      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); updateDots(); }
+    });
+    // auto-attempt biometric on first show
+    if(hasBio) setTimeout(function(){ if(bioBtn&&!bioBtn.disabled) bioBtn.click(); },400);
+  }
 
-    // Face ID as the quick path, when it's genuinely available
-    if(lockCfg.bio && bioPossible()){
-      var bb=ov.querySelector("#lkBio");
-      bb.style.display="";
-      var runBio=function(){
-        sub.textContent="Waiting for Face ID…";
-        verifyBio().then(function(ok){
-          if(ok) unlock();
-          else sub.textContent="Face ID didn't match — use your PIN";
-        });
-      };
-      bb.addEventListener("click", runBio);
-      setTimeout(runBio, 350);   // offer it immediately
+  function resetLockTimer(){
+    clearTimeout(_lockTimer);
+    if(!isLockEnabled()) return;
+    _lockTimer=setTimeout(function(){
+      _lockSession=false;
+      showLockScreen(function(){ render(); });
+    }, _lockInactiveMs);
+  }
+
+  function initLock(){
+    // touch events reset the inactivity timer
+    ["click","keydown","touchstart","mousemove"].forEach(function(ev){
+      document.addEventListener(ev,function(){ if(_lockSession) resetLockTimer(); },true);
+    });
+    if(!isLockEnabled()){ _lockSession=true; return; }
+    showLockScreen(function(){});
+  }
+
+  // ── Setup / change PIN from settings ────────────────────────
+  function openLockSetup(){
+    var ls=lockState();
+    var hasBio=webAuthnSupported();
+    openOverlay(
+      '<div class="sheet"><div class="sheet-hd"><h3>🔐 App Lock</h3><button class="x-btn" id="lsX">✕</button></div>'
+      +'<div class="sheet-bd">'
+        +'<div class="fld"><label>New PIN (4–6 digits)</label>'
+          +'<input class="inp" id="lsPin1" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digits"></div>'
+        +'<div class="fld"><label>Confirm PIN</label>'
+          +'<input class="inp" id="lsPin2" type="password" inputmode="numeric" maxlength="6" placeholder="repeat PIN"></div>'
+        +(hasBio?'<div class="fld" style="display:flex;align-items:center;gap:10px;padding:10px 0">'
+          +'<label style="flex:1;cursor:pointer"><b>Also use Face ID / Fingerprint</b>'
+            +'<span class="mut" style="display:block;font-size:11px">Registers your biometric after saving</span></label>'
+          +'<input type="checkbox" id="lsBio" class="pf-switch" style="width:auto;height:auto"></div>':"")
+        +(ls.pin?'<button class="btn danger wide" id="lsRemove" style="margin-top:8px">Remove lock</button>':"")
+      +'</div>'
+      +'<div class="sheet-ft"><button class="btn sm" id="lsCancel">Cancel</button>'
+        +'<button class="btn sm solid" id="lsSave">Save lock</button></div></div>',
+      {ready:async function(ov,close){
+        ov.querySelector("#lsX").onclick=close;
+        ov.querySelector("#lsCancel").onclick=close;
+        var rmBtn=ov.querySelector("#lsRemove");
+        if(rmBtn) rmBtn.onclick=function(){
+          saveLockState({}); _lockSession=true; close(); flashSaved("lock removed");
+        };
+        ov.querySelector("#lsSave").onclick=async function(){
+          var p1=ov.querySelector("#lsPin1").value;
+          var p2=ov.querySelector("#lsPin2").value;
+          if(!/^\d{4,6}$/.test(p1)){ shake(ov.querySelector("#lsPin1")); return; }
+          if(p1!==p2){ shake(ov.querySelector("#lsPin2")); return; }
+          var salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
+          var hashed=await hashPin(p1,salt);
+          var newState={pin:hashed,salt:salt};
+          var bioCb=ov.querySelector("#lsBio");
+          if(bioCb&&bioCb.checked){
+            var credId=await registerBiometric();
+            if(credId) newState.credId=credId;
+          }
+          saveLockState(newState);
+          close(); flashSaved("lock set");
+        };
+      }}
+    );
+  }
+
+  /* ============================================================
+     FEATURE 2: ENCRYPTED BACKUP (PBKDF2 + AES-GCM)
+     Purpose: exported backup files are encrypted at rest.
+     Even if someone finds the .enc file they can't read it
+     without your password. Full round-trip: encrypt → file → import → decrypt.
+  ============================================================ */
+  async function deriveAesKey(password, salt){
+    var enc=new TextEncoder();
+    var keyMat=await crypto.subtle.importKey("raw",enc.encode(password),{name:"PBKDF2"},false,["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      {name:"PBKDF2",salt:salt,iterations:250000,hash:"SHA-256"},
+      keyMat,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  }
+  async function encryptJson(json, password){
+    var salt=crypto.getRandomValues(new Uint8Array(16));
+    var iv  =crypto.getRandomValues(new Uint8Array(12));
+    var key=await deriveAesKey(password,salt);
+    var enc=new TextEncoder();
+    var ct=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,enc.encode(json));
+    // pack: magic(4) + salt(16) + iv(12) + ciphertext
+    var magic=new TextEncoder().encode("MME1");
+    var out=new Uint8Array(4+16+12+ct.byteLength);
+    out.set(magic,0); out.set(salt,4); out.set(iv,20);
+    out.set(new Uint8Array(ct),32);
+    return out;
+  }
+  async function decryptBytes(bytes, password){
+    var magic=new TextDecoder().decode(bytes.slice(0,4));
+    if(magic!=="MME1") throw new Error("not an encrypted backup");
+    var salt=bytes.slice(4,20), iv=bytes.slice(20,32), ct=bytes.slice(32);
+    var key=await deriveAesKey(password,salt);
+    var plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv},key,ct);
+    return new TextDecoder().decode(plain);
+  }
+
+  // ── Export encrypted ─────────────────────────────────────────
+  function exportEncrypted(){
+    openOverlay(
+      '<div class="sheet"><div class="sheet-hd"><h3>🔒 Encrypted export</h3><button class="x-btn" id="eeX">✕</button></div>'
+      +'<div class="sheet-bd">'
+        +'<div class="mut" style="font-size:12px;margin-bottom:12px;line-height:1.65">'
+          +'Your backup is encrypted with AES-256-GCM. Without the password it is unreadable — '
+          +'even if someone finds the file.</div>'
+        +'<div class="fld"><label>Encryption password</label>'
+          +'<input class="inp" id="eePw1" type="password" placeholder="choose a strong password"></div>'
+        +'<div class="fld"><label>Confirm password</label>'
+          +'<input class="inp" id="eePw2" type="password" placeholder="repeat password"></div>'
+      +'</div>'
+      +'<div class="sheet-ft"><button class="btn sm" id="eeCancel">Cancel</button>'
+        +'<button class="btn sm solid" id="eeGo">Export encrypted</button></div></div>',
+      {ready:async function(ov,close){
+        ov.querySelector("#eeX").onclick=close;
+        ov.querySelector("#eeCancel").onclick=close;
+        ov.querySelector("#eeGo").onclick=async function(){
+          var p1=ov.querySelector("#eePw1").value, p2=ov.querySelector("#eePw2").value;
+          if(!p1||p1.length<4){ shake(ov.querySelector("#eePw1")); return; }
+          if(p1!==p2){ shake(ov.querySelector("#eePw2")); return; }
+          var btn=ov.querySelector("#eeGo"); btn.textContent="Encrypting…"; btn.disabled=true;
+          try{
+            var json=JSON.stringify(buildRoot());
+            var enc=await encryptJson(json,p1);
+            var blob=new Blob([enc],{type:"application/octet-stream"});
+            var url=URL.createObjectURL(blob);
+            var a=document.createElement("a"); a.href=url;
+            var d=new Date(); var ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+            a.download="mymoney-backup-"+ds+".mme";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+            close(); flashSaved("encrypted backup saved");
+          }catch(e){ btn.textContent="Export encrypted"; btn.disabled=false; flashSaved("encryption failed: "+String(e).slice(0,50)); }
+        };
+      }}
+    );
+  }
+  // ── Import encrypted ────────────────────────────────────────
+  function importEncrypted(file){
+    openOverlay(
+      '<div class="sheet"><div class="sheet-hd"><h3>🔓 Decrypt backup</h3><button class="x-btn" id="deX">✕</button></div>'
+      +'<div class="sheet-bd">'
+        +'<div class="fld"><label>Password</label>'
+          +'<input class="inp" id="dePw" type="password" placeholder="the password you used to encrypt"></div>'
+        +'<div class="lock-err" id="deErr"></div>'
+      +'</div>'
+      +'<div class="sheet-ft"><button class="btn sm" id="deCancel">Cancel</button>'
+        +'<button class="btn sm solid" id="deGo">Decrypt &amp; import</button></div></div>',
+      {ready:function(ov,close){
+        ov.querySelector("#deX").onclick=close;
+        ov.querySelector("#deCancel").onclick=close;
+        ov.querySelector("#deGo").onclick=async function(){
+          var pw=ov.querySelector("#dePw").value; if(!pw) return;
+          var btn=ov.querySelector("#deGo"); btn.textContent="Decrypting…"; btn.disabled=true;
+          var err=ov.querySelector("#deErr");
+          try{
+            var buf=await file.arrayBuffer();
+            var json=await decryptBytes(new Uint8Array(buf),pw);
+            applyLoaded(json); persist(); render();
+            close(); flashSaved("backup decrypted and loaded");
+          }catch(e){
+            err.textContent="Wrong password or corrupted file"; err.style.color="var(--down)";
+            btn.textContent="Decrypt & import"; btn.disabled=false;
+          }
+        };
+      }}
+    );
+  }
+
+  /* ============================================================
+     FEATURE 3: IMMUTABLE AUDIT CHAIN (SHA-256 hash chaining)
+     Purpose: tamper-evident records for tax disputes or sharing
+     with an accountant. Each transaction hashes the previous,
+     forming a Merkle-style chain. Any tampering breaks it.
+  ============================================================ */
+  async function sha256hex(str){
+    var buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  function txCanonical(tx){
+    // deterministic string for hashing — order matters, no undefined fields
+    return [tx.id,tx.date||"",tx.type||"",String(num(tx.amount)),tx.note||"",tx.cat||""].join("|");
+  }
+  async function buildChain(txs){
+    var prev="0000000000000000000000000000000000000000000000000000000000000000";
+    var chain=[]; var sorted=txs.slice().sort(function(a,b){return (a.id||0)-(b.id||0);});
+    for(var i=0;i<sorted.length;i++){
+      var h=await sha256hex(prev+"|"+txCanonical(sorted[i]));
+      chain.push({id:sorted[i].id,hash:h}); prev=h;
     }
+    return {chain:chain,tip:prev,count:sorted.length,at:Date.now()};
+  }
+  async function verifyChain(txs,stored){
+    if(!stored||!stored.chain) return {ok:false,reason:"No chain saved — run Seal first."};
+    var sorted=txs.slice().sort(function(a,b){return (a.id||0)-(b.id||0);});
+    if(sorted.length!==stored.count) return {ok:false,reason:"Entry count changed: was "+stored.count+", now "+sorted.length+"."};
+    var prev="0000000000000000000000000000000000000000000000000000000000000000";
+    for(var i=0;i<sorted.length;i++){
+      var h=await sha256hex(prev+"|"+txCanonical(sorted[i]));
+      if(h!==stored.chain[i].hash) return {ok:false,reason:"Chain broken at entry #"+(i+1)+" (id="+sorted[i].id+"). Data was modified after sealing."};
+      prev=h;
+    }
+    if(prev!==stored.tip) return {ok:false,reason:"Tip hash mismatch — chain tampered."};
+    return {ok:true,count:sorted.length};
+  }
+
+  var CHAIN_KEY="mymoney_auditchain";
+  function loadChain(){ try{ return JSON.parse(localStorage.getItem(CHAIN_KEY)||"null"); }catch(e){return null;} }
+  function saveChain(c){ try{ localStorage.setItem(CHAIN_KEY,JSON.stringify(c)); }catch(e){} }
+
+  async function sealLedger(){
+    var txs=state.transactions||[];
+    var chain=await buildChain(txs);
+    saveChain(chain);
+    return chain;
+  }
+  async function verifyLedger(){
+    var txs=state.transactions||[];
+    var stored=loadChain();
+    return verifyChain(txs,stored);
+  }
+
+  function openAuditChainPanel(){
+    var stored=loadChain();
+    var sealedAt=stored?new Date(stored.at).toLocaleString():"Never";
+    openOverlay(
+      '<div class="sheet"><div class="sheet-hd"><h3>⛓️ Audit Chain</h3><button class="x-btn" id="acX">✕</button></div>'
+      +'<div class="sheet-bd">'
+        +'<div style="font-size:12px;color:var(--mut);margin-bottom:12px;line-height:1.65">'
+          +'SHA-256 hash chain across all your transactions. Seal it now, then verify later '
+          +'to prove no entries were modified — useful for tax records or sharing with an accountant.</div>'
+        +'<div class="mc-stat" style="margin-bottom:10px">'
+          +'<div class="mk">Chain status</div>'
+          +'<div id="acStatus" class="mv" style="font-size:14px">'+(stored?"Sealed "+stored.count+" entries":"Not sealed")+'</div>'
+          +'<div style="font-size:11px;color:var(--mut);margin-top:3px">Last sealed: '+sealedAt+'</div></div>'
+        +'<div id="acResult" style="font-size:13px;margin-top:8px"></div>'
+      +'</div>'
+      +'<div class="sheet-ft">'
+        +'<button class="btn sm" id="acVerify">Verify chain</button>'
+        +'<button class="btn sm solid" id="acSeal">Seal now</button>'
+        +'<button class="btn sm" id="acX2">Close</button></div></div>',
+      {ready:function(ov,close){
+        ov.querySelector("#acX").onclick=close;
+        ov.querySelector("#acX2").onclick=close;
+        ov.querySelector("#acSeal").onclick=async function(){
+          var btn=ov.querySelector("#acSeal"); btn.disabled=true; btn.textContent="Sealing…";
+          var c=await sealLedger();
+          ov.querySelector("#acStatus").textContent="Sealed "+c.count+" entries";
+          ov.querySelector("#acResult").innerHTML='<span style="color:var(--up)">✅ Chain sealed. Tip: '+c.tip.slice(0,16)+"…</span>";
+          btn.disabled=false; btn.textContent="Seal now";
+        };
+        ov.querySelector("#acVerify").onclick=async function(){
+          var btn=ov.querySelector("#acVerify"); btn.disabled=true; btn.textContent="Verifying…";
+          var r=await verifyLedger();
+          ov.querySelector("#acResult").innerHTML=r.ok
+            ?'<span style="color:var(--up)">✅ Chain intact — '+r.count+' entries verified. No tampering detected.</span>'
+            :'<span style="color:var(--down)">🚨 '+esc(r.reason)+'</span>';
+          btn.disabled=false; btn.textContent="Verify chain";
+        };
+      }}
+    );
+  }
+
+  /* ============================================================
+     FEATURE 4: SUB-BUDGET NESTING (category + subcategory)
+     Purpose: Food → Groceries vs Dining Out, not just "Food".
+     Backward compatible: old entries without subcategory still work.
+     The subcategory field is optional — only the entry form + budget
+     display changes. Roll-up: parent budget = sum of children.
+  ============================================================ */
+  var SUB_CATS={
+    "Food":["Groceries","Dining out","Coffee & drinks","Takeaway","Other food"],
+    "Shopping":["Clothing","Electronics","Home goods","Beauty","Other shopping"],
+    "Transport":["Fuel","Public transit","Parking","Taxi / rideshare","Maintenance"],
+    "Utilities":["Electricity","Water","Internet","Phone","Other utilities"],
+    "Entertainment":["Streaming","Going out","Books & games","Sports","Other entertainment"],
+    "Health":["Pharmacy","Doctor","Gym","Insurance","Other health"],
+    "Other":[]
+  };
+  // any cat not in SUB_CATS gets no subcategory options
+  function subCatsFor(cat){ return SUB_CATS[cat]||[]; }
+
+  function bindSubcategoryField(){
+    var catSel=document.getElementById("fCat");
+    var subWrap=document.getElementById("fSubcatWrap");
+    var subSel=document.getElementById("fSubcat");
+    if(!catSel||!subWrap||!subSel) return;
+    function update(){
+      var subs=subCatsFor(catSel.value);
+      subWrap.style.display=subs.length?"":"none";
+      subSel.innerHTML='<option value="">— none —</option>'
+        +subs.map(function(s){ return '<option value="'+esc(s)+'">'+esc(s)+'</option>'; }).join("");
+    }
+    catSel.addEventListener("change",update); update();
+  }
+
+  // rollup: total spent in a parent category (includes all subcategories)
+  function spentInCat(cat, txs, period){
+    return (txs||state.transactions).filter(function(tx){
+      return tx.cat===cat&&balDelta(tx)<0&&(!period||monthKey(tx.date||"")===period);
+    }).reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0)
+    +(state.transactions||[]).filter(function(tx){
+      return (subCatsFor(cat)).indexOf(tx.subcat||"")>=0&&balDelta(tx)<0&&(!period||monthKey(tx.date||"")===period);
+    }).reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);
+  }
+
+  // render the budget section with subcategory breakdown
+  function renderSubBudgetRow(cat, sym, thisM){
+    var cap=budgetFor(cat), spent=spentInCat(cat,null,thisM);
+    var subs=subCatsFor(cat);
+    var pct=cap>0?Math.min(100,spent/cap*100):0;
+    var over=cap>0&&spent>cap;
+    var subRows=subs.map(function(sub){
+      var ss=state.transactions.filter(function(tx){ return tx.subcat===sub&&balDelta(tx)<0&&monthKey(tx.date||"")===thisM; })
+        .reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);
+      if(!ss) return "";
+      return '<div class="sub-bud-row"><span class="sub-bud-name mut">↳ '+esc(sub)+'</span><span class="sub-bud-amt mut">'+sym+ss.toFixed(2)+'</span></div>';
+    }).join("");
+    return '<div class="bud-row'+(over?" bud-over":"")+'">'+
+      '<div class="bud-row-hd"><span>'+esc(cat)+(cap?'<span class="bud-cap"> / '+sym+cap.toFixed(0)+'</span>':"")+'</span>'+
+      '<span class="bud-amt'+(over?" bud-over-t":"")+'">'+sym+spent.toFixed(2)+'</span></div>'+
+      (cap?'<div class="bud-bar"><div class="bud-fill'+(over?" bud-fill-over":"")
+        +'" style="width:'+pct+'%"></div></div>':"")
+      +subRows+'</div>';
+  }
+
+  // patch into existing entry form: add subcat field after the cat selector
+  function injectSubcatField(){
+    var catFld=document.getElementById("fCat");
+    if(!catFld||document.getElementById("fSubcatWrap")) return;
+    var wrap=document.createElement("div");
+    wrap.className="fld"; wrap.id="fSubcatWrap"; wrap.style.display="none";
+    wrap.innerHTML='<label>Sub-category <span class="mut">(optional)</span></label>'
+      +'<select id="fSubcat" class="inp"><option value="">— none —</option></select>';
+    catFld.parentElement.parentElement.insertBefore(wrap, catFld.parentElement.nextSibling);
+    bindSubcategoryField();
+  }
+  // call after bindLabels / after the form is in the DOM
+  function initSubBudgets(){
+    injectSubcatField();
+    // patch save: read subcat alongside cat
+    var origSubmit=document.getElementById("entryForm");
+    if(!origSubmit||origSubmit._subPatched) return;
+    origSubmit._subPatched=true;
+    origSubmit.addEventListener("submit",function(){
+      var sub=document.getElementById("fSubcat");
+      if(sub&&sub.value&&window._currentTxDraft) window._currentTxDraft.subcat=sub.value;
+    },true);
+  }
+
+  /* ============================================================
+     FEATURE 5: PWA INSTALL (blob service worker + manifest)
+     Purpose: install the app to your phone or desktop home screen
+     so it opens like a native app — no browser UI, works offline.
+
+     Strategy for a single-file app:
+     · The manifest is injected as a <link> with a JSON blob URL
+     · The service worker is created from an inline blob and
+       registered — this works in Chrome; Safari/Firefox may block
+       blob-URL service worker registration from file://
+     · An "Install" button appears when the browser fires the
+       beforeinstallprompt event (Chrome on Android/desktop)
+  ============================================================ */
+  var _pwaPrompt=null;
+  var _swReg=null;
+
+  function registerBlobSW(){
+    if(!("serviceWorker" in navigator)) return;
+    var swCode=[
+      '"use strict";',
+      'var CACHE="mymoney-v1";',
+      'var FILES=["/"];',   // for file:// there are no URLs to cache — just handle fetches
+      'self.addEventListener("install",function(e){',
+      '  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll([]); }));',
+      '  self.skipWaiting();',
+      '});',
+      'self.addEventListener("activate",function(e){',
+      '  e.waitUntil(clients.claim());',
+      '});',
+      'self.addEventListener("fetch",function(e){',
+      '  e.respondWith(caches.match(e.request).then(function(r){ return r||fetch(e.request); }));',
+      '});',
+    ].join("\n");
+    try{
+      var blob=new Blob([swCode],{type:"text/javascript"});
+      var swUrl=URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl,{scope:"./"}).then(function(r){
+        _swReg=r;
+      }).catch(function(){});  // blob SW blocked on some configs — silent fallback
+    }catch(e){}
+  }
+
+  function injectManifest(){
+    if(document.querySelector('link[rel="manifest"]')) return;
+    var manifest={
+      name:"My Money Tracker",short_name:"Money",
+      start_url:"./",display:"standalone",
+      theme_color:"#0b0e14",background_color:"#0b0e14",
+      icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💰%3C/text%3E%3C/svg%3E",
+        sizes:"any",type:"image/svg+xml"}]
+    };
+    var blob=new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement("link");
+    link.rel="manifest"; link.href=url;
+    document.head.appendChild(link);
+  }
+
+  function initPWA(){
+    injectManifest();
+    registerBlobSW();
+    // capture the install prompt
+    window.addEventListener("beforeinstallprompt",function(e){
+      e.preventDefault(); _pwaPrompt=e;
+      // show the install button in settings
+      var btn=document.getElementById("pwaInstallBtn");
+      if(btn){ btn.style.display=""; btn.disabled=false; }
+    });
+    window.addEventListener("appinstalled",function(){
+      var btn=document.getElementById("pwaInstallBtn");
+      if(btn){ btn.textContent="✅ Installed!"; btn.disabled=true; }
+      flashSaved("app installed to your device");
+    });
+  }
+  function triggerPwaInstall(){
+    if(_pwaPrompt){ _pwaPrompt.prompt(); _pwaPrompt.userChoice.then(function(){ _pwaPrompt=null; }); }
+    else{ appModal({title:"Install as app",message:"To install:\n• Chrome/Edge: tap the ⋮ menu → Install app\n• Safari (iOS): tap the Share button → Add to Home Screen\n• Firefox: tap ⋮ → Add to Home Screen",confirmText:"Got it",cancelText:"Close"}); }
+  }
+
+  /* ============================================================
+     FEATURE 6: RBAC — FAMILY SHARING (Web Crypto signed tokens)
+     Purpose: give your spouse editor access, your accountant
+     viewer-only, cryptographically enforced. No server needed.
+
+     Architecture:
+     · Owner generates an asymmetric key pair (ECDSA P-256)
+       stored in IndexedDB (never exported)
+     · To share: owner signs a token {role,exp,label} → produces
+       a compact base64url string
+     · Recipient loads the app with the token in the URL hash,
+       or pastes it in → UI adapts to the role in real time
+     · Roles:
+         owner  → full access (default when no token)
+         editor → add/edit entries; no settings, no delete
+         viewer → read-only; no forms visible
+  ============================================================ */
+  var _rbacRole="owner";   // current session role
+  var RBAC_KEY_IDB="mymoney_rbac_keys";
+
+  // ── key management ───────────────────────────────────────────
+  async function getRbacKeys(){
+    var db=await openMoneyDB();
+    var store=db.transaction("meta","readonly").objectStore("meta");
+    return new Promise(function(res,rej){
+      var rq=store.get(RBAC_KEY_IDB);
+      rq.onsuccess=function(){ res(rq.result||null); };
+      rq.onerror=rej;
+    });
+  }
+  async function saveRbacKeys(keys){
+    var db=await openMoneyDB();
+    var store=db.transaction("meta","readwrite").objectStore("meta");
+    return new Promise(function(res,rej){
+      var rq=store.put(keys,RBAC_KEY_IDB);
+      rq.onsuccess=res; rq.onerror=rej;
+    });
+  }
+  async function getOrCreateKeyPair(){
+    var stored=await getRbacKeys();
+    if(stored) return stored;
+    var pair=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign","verify"]);
+    var pub=await crypto.subtle.exportKey("jwk",pair.publicKey);
+    var priv=await crypto.subtle.exportKey("jwk",pair.privateKey);
+    var k={pub:pub,priv:priv};
+    await saveRbacKeys(k);
+    return k;
+  }
+  async function loadSigningKeys(){
+    var k=await getOrCreateKeyPair();
+    var privKey=await crypto.subtle.importKey("jwk",k.priv,{name:"ECDSA",namedCurve:"P-256"},false,["sign"]);
+    var pubKey=await crypto.subtle.importKey("jwk",k.pub,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+    return {priv:privKey,pub:pubKey,pubJwk:k.pub};
+  }
+  function b64url(bytes){ return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,""); }
+  function fromb64url(s){ var b=atob(s.replace(/-/g,"+").replace(/_/g,"/")); return new Uint8Array(b.length).map((_,i)=>b.charCodeAt(i)); }
+
+  // ── token creation ───────────────────────────────────────────
+  async function createShareToken(role, label, expDays){
+    var keys=await loadSigningKeys();
+    var payload={role:role,label:label||"",exp:Date.now()+(expDays||30)*864e5,pub:keys.pubJwk};
+    var payloadStr=JSON.stringify(payload);
+    var sig=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},keys.priv,new TextEncoder().encode(payloadStr));
+    return b64url(new TextEncoder().encode(payloadStr))+"."+b64url(sig);
+  }
+
+  // ── token verification ───────────────────────────────────────
+  async function verifyToken(token){
+    try{
+      var parts=token.split(".");
+      if(parts.length<2) return null;
+      var payloadBytes=fromb64url(parts[0]);
+      var sig=fromb64url(parts[1]);
+      var payload=JSON.parse(new TextDecoder().decode(payloadBytes));
+      if(!payload.exp||Date.now()>payload.exp) return null;
+      var pubKey=await crypto.subtle.importKey("jwk",payload.pub,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
+      var ok=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},pubKey,sig,payloadBytes);
+      return ok?payload:null;
+    }catch(e){ return null; }
+  }
+
+  // ── role enforcement ─────────────────────────────────────────
+  function applyRole(role){
+    _rbacRole=role||"owner";
+    var body=document.body;
+    body.setAttribute("data-role",_rbacRole);
+    // CSS in the stylesheet hides/disables elements per role
+    var badge=document.getElementById("rbacBadge");
+    if(!badge){badge=document.createElement("div");badge.id="rbacBadge";document.body.appendChild(badge);}
+    if(_rbacRole==="owner"){ badge.style.display="none"; }
+    else{
+      badge.style.cssText="position:fixed;bottom:calc(var(--bar)+env(safe-area-inset-bottom,0px)+8px);right:12px;"
+        +"z-index:99;background:var(--amber);color:#000;font-size:10px;font-weight:800;"
+        +"padding:4px 8px;border-radius:6px;letter-spacing:.04em";
+      badge.textContent=_rbacRole==="viewer"?"👁 VIEW ONLY":"✏️ EDITOR";
+    }
+  }
+  // check URL hash for a token on load
+  async function checkRbacToken(){
+    var hash=location.hash.slice(1);
+    if(!hash.startsWith("rbac=")) return;
+    var token=hash.slice(5);
+    var payload=await verifyToken(token);
+    if(payload){ applyRole(payload.role); location.hash=""; flashSaved("Loaded as "+payload.role+(payload.label?" ("+payload.label+")":"")); }
+    else{ flashSaved("Invalid or expired access token"); }
+  }
+
+  function openSharePanel(){
+    openOverlay(
+      '<div class="sheet"><div class="sheet-hd"><h3>👨‍👩‍👦 Family sharing</h3><button class="x-btn" id="spX">✕</button></div>'
+      +'<div class="sheet-bd">'
+        +'<div class="mut" style="font-size:12px;margin-bottom:12px;line-height:1.65">'
+          +'Generate a cryptographically signed access token. The recipient '
+          +'pastes it below or opens the shared link — their role is enforced locally.</div>'
+        +'<div class="fld"><label>Role</label><select class="inp" id="spRole">'
+          +'<option value="editor">Editor — can add entries, not delete or change settings</option>'
+          +'<option value="viewer">Viewer — read only, no changes</option></select></div>'
+        +'<div class="fld"><label>Label (who is this for?)</label>'
+          +'<input class="inp" id="spLabel" placeholder="e.g. Spouse, Accountant"></div>'
+        +'<div class="fld"><label>Expires (days)</label>'
+          +'<input class="inp" id="spExp" type="number" value="30" min="1" max="365"></div>'
+        +'<div id="spOut" style="display:none;margin-top:10px">'
+          +'<label style="font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px">Access token (copy and send)</label>'
+          +'<textarea class="inp" id="spToken" rows="3" readonly style="font-size:11px;font-family:monospace;word-break:break-all"></textarea>'
+          +'<button class="btn sm" id="spCopy" style="margin-top:8px;width:100%">📋 Copy token</button></div>'
+        +'<div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">'
+          +'<label style="font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px">Or paste a received token</label>'
+          +'<div style="display:flex;gap:8px"><input class="inp" id="spPaste" placeholder="paste token here">'
+          +'<button class="btn sm" id="spActivate">Activate</button></div></div>'
+      +'</div>'
+      +'<div class="sheet-ft"><button class="btn sm" id="spCancel">Close</button>'
+        +'<button class="btn sm solid" id="spGen">Generate token</button></div></div>',
+      {ready:function(ov,close){
+        ov.querySelector("#spX").onclick=close;
+        ov.querySelector("#spCancel").onclick=close;
+        ov.querySelector("#spGen").onclick=async function(){
+          var btn=ov.querySelector("#spGen"); btn.disabled=true; btn.textContent="Signing…";
+          var role=ov.querySelector("#spRole").value;
+          var label=ov.querySelector("#spLabel").value.trim();
+          var exp=parseInt(ov.querySelector("#spExp").value,10)||30;
+          var token=await createShareToken(role,label,exp);
+          ov.querySelector("#spToken").value=token;
+          ov.querySelector("#spOut").style.display="";
+          btn.disabled=false; btn.textContent="Generate token";
+        };
+        ov.querySelector("#spCopy").onclick=function(){
+          var t=ov.querySelector("#spToken").value; if(!t) return;
+          if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ flashSaved("token copied"); });
+          else{ ov.querySelector("#spToken").select(); document.execCommand("copy"); flashSaved("copied"); }
+        };
+        ov.querySelector("#spActivate").onclick=async function(){
+          var token=ov.querySelector("#spPaste").value.trim();
+          if(!token) return;
+          var payload=await verifyToken(token);
+          if(payload){ applyRole(payload.role); close(); flashSaved("Activated as "+payload.role); }
+          else flashSaved("Invalid or expired token");
+        };
+      }}
+    );
+  }
+
+  async function initRbac(){
+    await checkRbacToken();
+    // pre-generate keys so the first token creation is instant
+    try{ await getOrCreateKeyPair(); }catch(e){}
+  }
+
+
+  function bindEnterpriseFeatures(){
+    var lb=document.getElementById("lockSetupBtn");
+    if(lb) lb.addEventListener("click",openLockSetup);
+    var ee=document.getElementById("encExportBtn");
+    if(ee) ee.addEventListener("click",exportEncrypted);
+    var ac=document.getElementById("auditChainBtn");
+    if(ac) ac.addEventListener("click",openAuditChainPanel);
+    var sp=document.getElementById("shareAccessBtn");
+    if(sp) sp.addEventListener("click",openSharePanel);
+    var pi=document.getElementById("pwaInstallBtn");
+    if(pi) pi.addEventListener("click",triggerPwaInstall);
+    // encrypted import: detect .mme files in the existing import button
+    var impFile=document.getElementById("impFile");
+    if(impFile) impFile.addEventListener("change",function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f) return;
+      if(f.name.endsWith(".mme")){ importEncrypted(f); e.target.value=""; }
+      // .json files fall through to the existing import handler
+    },true);
+    // sub-budget: patch the entry form after it's in the DOM
+    var fCat=document.getElementById("fCat");
+    if(fCat&&!document.getElementById("fSubcatWrap")) injectSubcatField();
+  }
+
+  /* ============================================================
+     SECURITY & INTEGRITY MODULE
+     Three related systems, all built on the Web Crypto API:
+       1. Biometric lock (WebAuthn)  — Face ID / fingerprint on open
+       2. Encrypted backups          — PBKDF2 + AES-GCM password protection
+       3. Immutable audit chain      — SHA-256 linked entries, tamper-evident
+     Everything runs locally. No server, no key escrow, no recovery —
+     if you forget the backup password, the file is genuinely unreadable.
+     ============================================================ */
+
+  var SEC_KEY="mymoney_sec_v1";
+  var secCfg={ bioEnabled:false, credId:null, auditEnabled:true, lastChainHash:null };
+  function loadSecCfg(){
+    try{ var r=localStorage.getItem(SEC_KEY); if(r) secCfg=Object.assign(secCfg, JSON.parse(r)); }catch(e){}
+  }
+  function saveSecCfg(){ try{ localStorage.setItem(SEC_KEY, JSON.stringify(secCfg)); }catch(e){} }
+
+  /* ── 1. BIOMETRIC LOCK (WebAuthn) ─────────────────────────────
+     Uses the platform authenticator — Face ID on iPhone/Mac,
+     fingerprint on Android/Windows Hello. The credential never
+     leaves the device and there is no server to verify against;
+     we use it purely as a local presence check before unlocking. */
+  function bioAvailable(){
+    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
+  }
+  function b64ToBuf(b64){
+    var bin=atob(b64.replace(/-/g,"+").replace(/_/g,"/"));
+    var arr=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    return arr.buffer;
+  }
+  function bufToB64(buf){
+    var bytes=new Uint8Array(buf), s="";
+    for(var i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  async function bioEnrol(){
+    if(!bioAvailable()) throw new Error("Biometrics not supported on this device/browser");
+    var challenge=crypto.getRandomValues(new Uint8Array(32));
+    var userId=crypto.getRandomValues(new Uint8Array(16));
+    var cred=await navigator.credentials.create({
+      publicKey:{
+        challenge:challenge,
+        rp:{name:"My Money Tracker"},
+        user:{id:userId, name:"local-user", displayName:"My Money"},
+        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+        authenticatorSelection:{
+          authenticatorAttachment:"platform",   // on-device only: Face ID / fingerprint
+          userVerification:"required",
+          residentKey:"preferred"
+        },
+        timeout:60000, attestation:"none"
+      }
+    });
+    if(!cred) throw new Error("Enrolment cancelled");
+    secCfg.bioEnabled=true;
+    secCfg.credId=bufToB64(cred.rawId);
+    saveSecCfg();
+    return true;
+  }
+  async function bioVerify(){
+    if(!secCfg.bioEnabled || !secCfg.credId) return true;   // not enabled = nothing to check
+    if(!bioAvailable()) return true;                        // can't check here; don't lock them out
+    var challenge=crypto.getRandomValues(new Uint8Array(32));
+    var assertion=await navigator.credentials.get({
+      publicKey:{
+        challenge:challenge,
+        allowCredentials:[{type:"public-key", id:b64ToBuf(secCfg.credId)}],
+        userVerification:"required",
+        timeout:60000
+      }
+    });
+    return !!assertion;
+  }
+  function bioDisable(){ secCfg.bioEnabled=false; secCfg.credId=null; saveSecCfg(); }
+
+  // the lock screen shown before the app is usable
+  function showLockScreen(){
+    var ov=document.createElement("div");
+    ov.id="lockScreen";
+    ov.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;"
+      +"align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;text-align:center";
+    ov.innerHTML='<div style="font-size:44px">🔒</div>'
+      +'<div style="font-size:16px;font-weight:800">My Money Tracker</div>'
+      +'<div style="font-size:13px;color:var(--mut);max-width:280px;line-height:1.6" id="lockMsg">'
+        +'Unlock with Face ID or your fingerprint to see your finances.</div>'
+      +'<button class="btn primary" id="lockBtn" style="min-width:180px">Unlock</button>'
+      +'<button class="btn ghost sm" id="lockBypass" style="display:none;font-size:11px">'
+        +'Biometrics unavailable — continue anyway</button>';
+    document.body.appendChild(ov);
+    var attempts=0;
+    var tryUnlock=function(){
+      var msg=document.getElementById("lockMsg");
+      msg.textContent="Waiting for verification…";
+      bioVerify().then(function(ok){
+        if(ok){ ov.style.opacity="0"; ov.style.transition="opacity .25s";
+          setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },260); }
+        else { msg.textContent="Verification failed. Try again."; }
+      }).catch(function(e){
+        attempts++;
+        msg.textContent="Couldn't verify: "+String(e.message||e).slice(0,70);
+        // after two failures, offer the escape hatch — a locked-out user with no
+        // recovery path would simply lose access to their own records
+        if(attempts>=2) document.getElementById("lockBypass").style.display="";
+      });
+    };
+    document.getElementById("lockBtn").addEventListener("click", tryUnlock);
+    document.getElementById("lockBypass").addEventListener("click", function(){
+      if(ov.parentNode) ov.parentNode.removeChild(ov);
+    });
+    tryUnlock();   // prompt immediately
+  }
+
+  /* ── 2. ENCRYPTED BACKUPS (PBKDF2 + AES-GCM) ──────────────────
+     The plain export is fine for your own machine. This is for
+     when the backup leaves it — cloud drive, email, a USB stick.
+     250k PBKDF2 iterations; salt and IV stored alongside the
+     ciphertext. No password recovery by design. */
+  async function encryptBackup(plaintext, password){
+    var enc=new TextEncoder();
+    var salt=crypto.getRandomValues(new Uint8Array(16));
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+    var key=await crypto.subtle.deriveKey(
+      {name:"PBKDF2", salt:salt, iterations:250000, hash:"SHA-256"},
+      km, {name:"AES-GCM", length:256}, false, ["encrypt"]);
+    var ct=await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, enc.encode(plaintext));
+    return JSON.stringify({
+      _format:"mymoney-encrypted-backup", _v:1,
+      kdf:"PBKDF2-SHA256", iterations:250000,
+      salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)
+    }, null, 2);
+  }
+  async function decryptBackup(fileText, password){
+    var obj=JSON.parse(fileText);
+    if(obj._format!=="mymoney-encrypted-backup") throw new Error("Not an encrypted backup file");
+    var enc=new TextEncoder();
+    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+    var key=await crypto.subtle.deriveKey(
+      {name:"PBKDF2", salt:new Uint8Array(b64ToBuf(obj.salt)), iterations:obj.iterations||250000, hash:"SHA-256"},
+      km, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+    var pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:new Uint8Array(b64ToBuf(obj.iv))}, key, b64ToBuf(obj.data));
+    return new TextDecoder().decode(pt);
+  }
+
+  /* ── 3. IMMUTABLE AUDIT CHAIN (SHA-256 linked) ────────────────
+     Each entry's hash includes the hash before it. Change any past
+     transaction and every hash after it stops matching — so silent
+     edits become visible. Relevant here for trading P&L records and
+     anything split with someone else, where "these are the numbers
+     we agreed" needs to be provable later. */
+  async function sha256Hex(str){
+    var buf=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+  }
+  // canonical form — key order must never vary or hashes won't reproduce
+  function canonicalTx(t){
+    return JSON.stringify({
+      id:t.id, date:t.date||"", type:t.type||"", amount:num(t.amount),
+      cat:t.cat||"", note:t.note||"", inst:t.inst||""
+    });
+  }
+  async function buildAuditChain(){
+    var txs=sortedTx();
+    var prev="0".repeat(64), chain=[];
+    for(var i=0;i<txs.length;i++){
+      var h=await sha256Hex(prev+canonicalTx(txs[i]));
+      chain.push({id:txs[i].id, date:txs[i].date, prev:prev, hash:h});
+      prev=h;
+    }
+    return chain;
+  }
+  async function verifyAuditChain(){
+    var stored=state.auditChain;
+    if(!Array.isArray(stored)||!stored.length){
+      return {status:"none", message:"No audit chain recorded yet. Seal your records to start one."};
+    }
+    var txs=sortedTx();
+    var prev="0".repeat(64);
+    var firstBreak=null, checked=0;
+    for(var i=0;i<stored.length;i++){
+      var tx=txs.filter(function(x){ return String(x.id)===String(stored[i].id); })[0];
+      if(!tx){ firstBreak={idx:i, reason:"entry deleted", id:stored[i].id, date:stored[i].date}; break; }
+      var h=await sha256Hex(prev+canonicalTx(tx));
+      checked++;
+      if(h!==stored[i].hash){ firstBreak={idx:i, reason:"entry modified", id:stored[i].id, date:stored[i].date}; break; }
+      prev=h;
+    }
+    var added=txs.length-stored.length;
+    if(firstBreak){
+      return {status:"broken", message:"Chain breaks at entry "+(firstBreak.idx+1)+" of "+stored.length
+        +" ("+firstBreak.reason+", dated "+(firstBreak.date||"?")+"). Everything before it is still verified.",
+        verified:firstBreak.idx, total:stored.length};
+    }
+    return {status:"ok", verified:checked, total:stored.length, added:added>0?added:0,
+      message:checked+" sealed entr"+(checked===1?"y":"ies")+" verified intact"
+        +(added>0?" · "+added+" new entr"+(added===1?"y":"ies")+" not yet sealed":"")+"."};
+  }
+  async function sealAuditChain(){
+    var chain=await buildAuditChain();
+    state.auditChain=chain;
+    state.auditSealedAt=new Date().toISOString();
+    persistNow();
+    return chain.length;
   }
 
   /* ============================================================
@@ -5995,26 +6637,12 @@ AI_TYPES.join(", "),
     return c.toDataURL("image/png");
   }
   function triggerInstall(){
-    if(_deferredPrompt){
-      _deferredPrompt.prompt();
-      _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
+    if(!_deferredPrompt){
+      flashSaved("Use your browser menu → Add to Home Screen");
       return;
     }
-    /* Chrome only fires beforeinstallprompt over https with a service worker,
-       and Safari never fires it. Rather than a toast that vanishes, say exactly
-       what to tap on the browser they're actually using. */
-    var ua=navigator.userAgent||"";
-    var isIOS=/iPad|iPhone|iPod/.test(ua);
-    var isSafari=/^((?!chrome|android).)*safari/i.test(ua);
-    var installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
-    var msg;
-    if(installed) msg="It's already installed \u2014 you're running the installed copy now.";
-    else if(isIOS) msg="On iPhone or iPad: tap Share, then \u201cAdd to Home Screen\u201d.";
-    else if(isSafari) msg="In Safari: File \u2192 Add to Dock, or Share \u2192 Add to Home Screen.";
-    else if(location.protocol==="file:")
-      msg="Installing needs the app served over https \u2014 a file opened straight from disk can't be installed. Put it on GitHub Pages or any host and this will work.";
-    else msg="Open your browser menu and choose \u201cInstall app\u201d. If it's missing, the page needs https.";
-    appModal({title:"Install as an app", message:msg, confirmText:"OK"});
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
   }
 
   /* ============================================================
@@ -6066,400 +6694,98 @@ AI_TYPES.join(", "),
     flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
   }
 
-  /* ============================================================
-     AUDITOR CHAT — a real conversation, with attachments
-     Was one-shot: type, get an answer, gone. Now keeps history so
-     follow-ups work ("what about last month?"), and takes files —
-     text ones are read and included, binaries are named honestly
-     rather than pretending the model can read them.
-     ============================================================ */
-  var chatLog=[];          // [{role:"user"|"ai", text, files:[{name,ext}]}]
-  var chatFiles=[];        // pending attachments for the next message
-  var CHAT_TEXT_EXT=["txt","csv","json","md","html","css","js","log","xml","yml","yaml","tsv"];
-
-  function chatFileIcon(ext){
-    return (typeof FILE_ICONS!=="undefined" && FILE_ICONS[ext]) ||
-           (typeof ATT_ICONS!=="undefined" && ATT_ICONS[ext]) || "📎";
-  }
-  function renderChatFiles(){
-    var strip=document.getElementById("chatFileStrip"); if(!strip) return;
-    strip.innerHTML=chatFiles.map(function(f,i){
-      return '<span class="chat-chip">'+chatFileIcon(f.ext)+' '+esc(f.name.slice(0,22))
-        +'<button data-i="'+i+'" title="Remove">✕</button></span>';
-    }).join("");
-    strip.querySelectorAll("button").forEach(function(b){
-      b.addEventListener("click", function(){ chatFiles.splice(+b.getAttribute("data-i"),1); renderChatFiles(); });
-    });
-  }
-  function renderChatLog(){
-    var box=document.getElementById("chatLog"); if(!box) return;
-    if(!chatLog.length){
-      box.innerHTML='<div class="chat-empty">Ask anything about your money. Attach a statement, receipt or CSV if it helps.</div>';
-      return;
-    }
-    box.innerHTML=chatLog.map(function(m){
-      var files=(m.files&&m.files.length)
-        ? '<div class="chat-files">'+m.files.map(function(f){ return chatFileIcon(f.ext)+" "+esc(f.name); }).join("  ")+'</div>' : "";
-      return '<div class="chat-msg '+(m.role==="user"?"me":"ai")+'">'
-        +files+'<div class="chat-txt">'+esc(m.text)+'</div></div>';
-    }).join("");
-    box.scrollTop=box.scrollHeight;
-  }
-  function chatPush(role, text, files){
-    chatLog.push({role:role, text:text, files:files||[]});
-    if(chatLog.length>40) chatLog=chatLog.slice(-40);   // keep the context sane
-    renderChatLog();
-  }
-  // build the prompt: finances + attached text + the last few turns
-  function chatPrompt(question, files){
-    var parts=[financialContext()];
-    (files||[]).forEach(function(f){
-      if(f.text!=null){
-        parts.push("\n--- file: "+f.name+" ---\n"+String(f.text).slice(0,4000));
-      } else {
-        parts.push("\n(attached "+f.name+" — a "+(f.ext||"binary").toUpperCase()
-          +" file I can't read the contents of)");
-      }
-    });
-    var hist=chatLog.slice(-6).map(function(m){
-      return (m.role==="user"?"Me: ":"You: ")+m.text;
-    }).join("\n");
-    if(hist) parts.push("\nEarlier in this conversation:\n"+hist);
-    parts.push("\nQuestion: "+question);
-    return parts.join("");
-  }
-  function chatSend(){
-    var input=document.getElementById("chatInput");
-    var q=(input.value||"").trim();
-    if(!q && !chatFiles.length) return;
-    var files=chatFiles.slice();
-    chatPush("user", q || "(see attached)", files.map(function(f){ return {name:f.name, ext:f.ext}; }));
-    input.value=""; chatFiles=[]; renderChatFiles();
-
-    var thinking=document.createElement("div");
-    chatPush("ai", "…");
-    var idx=chatLog.length-1;
-    var setAnswer=function(txt){ chatLog[idx].text=txt; renderChatLog(); };
-
-    var prompt=chatPrompt(q, files);
-    // whichever local engine is ready — built-in first, then WebLLM
-    initBuiltinAi().then(function(ready){
-      if(ready) return askBuiltinAi(prompt);
-      if(window._wllmEngine) return askWebllm(prompt);
-      return null;
-    }).then(function(ans){
-      setAnswer(ans || "No on-device model is ready. Chrome 127+ has one built in, or load WebLLM from the ⚡ tab.");
-    }).catch(function(e){
-      setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
-    });
-  }
-
-  /* The chat lived four taps deep (Settings > Security > Auditor > Ask AI).
-     Something you'd use daily shouldn't be buried, so this opens the same
-     chat in a sheet from the dashboard. One chat, one history — the panel
-     in Settings and this sheet share chatLog. */
-  function openChatSheet(){
-    var host=document.getElementById("chatSheetHost");
-    if(!host){
-      host=document.createElement("div");
-      host.id="chatSheetHost";
-      document.body.appendChild(host);
-    }
-    host.innerHTML=
-       '<div class="ov in" id="chatOv">'
-      +'  <div class="sheet" style="max-width:520px;height:min(80vh,620px)">'
-      +'    <div class="sheet-hd"><h3>💬 Ask AI</h3>'
-      +'      <span id="chatSheetStatus" style="font-size:11px;color:var(--mut);flex:1;text-align:right;margin-right:8px"></span>'
-      +'      <button class="x-btn" id="chatSheetX">✕</button></div>'
-      +'    <div class="sheet-bd" style="display:flex;flex-direction:column;flex:1;overflow:hidden">'
-      +'      <div class="chat-log" id="chatLog" style="flex:1;max-height:none"></div>'
-      +'      <div id="chatFileStrip"></div>'
-      +'      <div class="chat-row" style="margin-top:8px">'
-      +'        <button class="btn ghost sm" id="chatAttachBtn" title="Attach a file">📎</button>'
-      +'        <textarea id="chatInput" class="inp" placeholder="Ask anything… (Enter to send)"></textarea>'
-      +'        <button class="btn solid sm" id="chatSend">Send</button>'
-      +'      </div>'
-      +'    </div>'
-      +'    <input type="file" id="chatFileInput" multiple style="display:none" accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">'
-      +'    <div class="sheet-ft"><button class="btn ghost sm" id="chatClear">Clear chat</button>'
-      +'      <button class="btn ghost sm" id="chatSheetClose">Close</button></div>'
-      +'  </div></div>';
-    bindChat();                       // same handlers, same history
-    renderChatLog(); renderChatFiles();
-    var close=function(){ host.innerHTML=""; };
-    document.getElementById("chatSheetX").onclick=close;
-    document.getElementById("chatSheetClose").onclick=close;
-    document.getElementById("chatOv").addEventListener("click", function(e){
-      if(e.target.id==="chatOv") close();
-    });
-    var esc=function(e){ if(e.key==="Escape"){ close(); document.removeEventListener("keydown",esc); } };
-    document.addEventListener("keydown", esc);
-    // tell them up front which engine will answer
-    var st=document.getElementById("chatSheetStatus");
-    initBuiltinAi().then(function(ready){
-      if(st) st.textContent = ready ? "on-device AI ready"
-        : (window._wllmEngine ? "WebLLM ready" : "no model — Settings › Extra › AI mode");
-    });
-    setTimeout(function(){ var i=document.getElementById("chatInput"); if(i) i.focus(); },120);
-  }
-  /* The launchers live outside bindChat on purpose: bindChat returns early
-     when the chat isn't on screen, so anything bound after it would silently
-     never attach. */
-  function bindChatLaunchers(){
-    ["chatOpenBtn","chatOpenBtn2"].forEach(function(id){
-      var b=document.getElementById(id);
-      if(b && !b._chatBound){ b._chatBound=true; b.addEventListener("click", openChatSheet); }
-    });
-  }
-  function bindChat(){
-    var input=document.getElementById("chatInput");
-    var send=document.getElementById("chatSend");
-    var attach=document.getElementById("chatAttachBtn");
-    var file=document.getElementById("chatFileInput");
-    if(!input||!send) return;
-    send.addEventListener("click", chatSend);
-    input.addEventListener("keydown", function(e){
-      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); chatSend(); }
-    });
-    if(attach&&file){
-      attach.addEventListener("click", function(){ file.click(); });
-      file.addEventListener("change", function(e){
-        var list=Array.prototype.slice.call(e.target.files||[]);
-        e.target.value="";
-        list.forEach(function(f){
-          var ext=((f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"").toLowerCase();
-          var rec={name:f.name, ext:ext, size:f.size};
-          if(CHAT_TEXT_EXT.indexOf(ext)>=0 && f.size<400000){
-            var r=new FileReader();
-            r.onload=function(){ rec.text=r.result; chatFiles.push(rec); renderChatFiles(); };
-            r.onerror=function(){ chatFiles.push(rec); renderChatFiles(); };
-            r.readAsText(f);
-          } else {
-            chatFiles.push(rec); renderChatFiles();   // named, contents not sent
-          }
-        });
-      });
-    }
-    var clear=document.getElementById("chatClear");
-    if(clear) clear.addEventListener("click", function(){
-      chatLog=[]; chatFiles=[]; renderChatLog(); renderChatFiles();
-    });
-    renderChatLog();
-  }
-
-  /* ============================================================
-     SHARE A PORTFOLIO — owner / editor / viewer, MT5-style
-
-     Live shared viewing needs a server; a static file can't host a
-     database. What this does instead is export ONE portfolio as a
-     file stamped with the role you grant. Open it and the app
-     honours that role: a viewer copy can't add, edit or delete.
-
-     Being straight about it: this is a working agreement, not a
-     security boundary. Someone determined can edit the file. It
-     stops accidents and sets expectations — it doesn't stop an
-     adversary, and the UI says so.
-     ============================================================ */
-  function exportPortfolioShare(role){
-    var p=activePortfolio();
-    if(!p){ flashSaved("no portfolio to share"); return; }
-    var payload={
-      _format:"mymoney-portfolio-share", _v:1,
-      role: role || "viewer",
-      sharedAt: new Date().toISOString(),
-      sharedBy: (state.owner||"").slice(0,40),
-      portfolio: { id:p.id, name:p.name, data:p.data }
-    };
-    var name=(p.name||"portfolio").replace(/[^\w\-]+/g,"_").toLowerCase();
-    var url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
-    var a=document.createElement("a");
-    a.href=url; a.download="mymoney-"+name+"-"+role+"-"+todayStr()+".json";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-    flashSaved(role==="viewer" ? "view-only copy saved" : role+" copy saved");
-  }
-  function importPortfolioShare(text){
-    var obj;
-    try{ obj=JSON.parse(text); }catch(e){ flashSaved("that file isn't readable"); return; }
-    if(obj._format!=="mymoney-portfolio-share"){ flashSaved("not a shared portfolio file"); return; }
-    var incoming=obj.portfolio;
-    if(!incoming||!incoming.data){ flashSaved("that file has no portfolio in it"); return; }
-    var roleLabel={owner:"full access",editor:"can edit, can't delete",viewer:"view only"}[obj.role]||obj.role;
-    appModal({
-      title:"Add “"+esc(incoming.name||"portfolio")+"”?",
-      message:"Shared"+(obj.sharedBy?" by "+esc(obj.sharedBy):"")+" as "+esc(roleLabel)+"."
-             +" It'll be added alongside your own portfolios — nothing you have is overwritten.",
-      confirmText:"Add it", cancelText:"Cancel",
-      onConfirm:function(){
-        var copy=JSON.parse(JSON.stringify(incoming));
-        copy.id="shared_"+Date.now().toString(36);
-        copy.name=(incoming.name||"Shared")+(obj.role==="viewer"?" (view only)":"");
-        copy.role=obj.role||"viewer";
-        state.portfolios.push(copy);
-        persistNow();
-        flashSaved("added as "+roleLabel);
-        renderPortfolioUI&&renderPortfolioUI();
-        applyRoleUI&&applyRoleUI();
-      }
-    });
-  }
-  function bindShare(){
-    var vBtn=document.getElementById("shareViewBtn");
-    var eBtn=document.getElementById("shareEditBtn");
-    var iBtn=document.getElementById("shareImportBtn");
-    var file=document.getElementById("shareFileInput");
-    if(vBtn) vBtn.addEventListener("click", function(){ exportPortfolioShare("viewer"); });
-    if(eBtn) eBtn.addEventListener("click", function(){ exportPortfolioShare("editor"); });
-    if(iBtn&&file){
-      iBtn.addEventListener("click", function(){ file.click(); });
-      file.addEventListener("change", function(e){
-        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
-        var r=new FileReader();
-        r.onload=function(){ importPortfolioShare(r.result); };
-        r.onerror=function(){ flashSaved("couldn't read that file"); };
-        r.readAsText(f);
-      });
-    }
-  }
-
-  /* ============================================================
-     BILL SPLITTING
-     Splitting is a per-entry fact, so turning it off later must not
-     rewrite history: an entry saved as split stays split, and shows
-     the share you actually paid. The setting only decides whether
-     NEW entries default to being split.
-     ============================================================ */
-  function splitCfg(){
-    if(!state.settings) state.settings={};
-    if(state.settings.splitOn===undefined) state.settings.splitOn=false;
-    if(!state.settings.splitWays) state.settings.splitWays=2;
-    return state.settings;
-  }
-  function splitIsOn(){ return !!splitCfg().splitOn; }
-  function splitWays(){ return Math.max(2, num(splitCfg().splitWays)||2); }
-  // what a stored entry means, regardless of the current setting
-  function txSplitWays(t){ return t && t.splitWays ? Math.max(2,num(t.splitWays)) : 1; }
-  function txIsSplit(t){ return txSplitWays(t)>1; }
-  function txSplitNote(t){
-    if(!txIsSplit(t)) return "";
-    var n=txSplitWays(t), full=Math.abs(num(t.amount))*n;
-    return "Split "+n+" ways — "+fmt(full,state.currency)+" total, your share "+fmt(Math.abs(num(t.amount)),state.currency);
-  }
-  function bindSplit(){
-    var chk=document.getElementById("splitOnChk");
-    var ways=document.getElementById("splitWaysInp");
-    var note=document.getElementById("splitNote");
-    function paint(){
-      if(!note) return;
-      note.textContent = splitIsOn()
-        ? "New bills default to splitting "+splitWays()+" ways. Entries already saved keep whatever they were."
-        : "New bills are logged in full. Past split entries keep their split and still show it.";
-    }
-    if(chk){
-      chk.checked=splitIsOn();
-      chk.addEventListener("change", function(){
-        splitCfg().splitOn=chk.checked; persistNow(); paint();
-        var row=document.getElementById("splitWaysRow");
-        if(row) row.style.display=chk.checked?"":"none";
-        flashSaved(chk.checked?"splitting on":"splitting off");
-      });
-    }
-    if(ways){
-      ways.value=splitWays();
-      ways.addEventListener("change", function(){
-        var v=Math.max(2, Math.min(20, num(ways.value)||2));
-        ways.value=v; splitCfg().splitWays=v; persistNow(); paint();
-      });
-    }
-    var row=document.getElementById("splitWaysRow");
-    if(row) row.style.display=splitIsOn()?"":"none";
-    paint();
-  }
-
+  /* ── bind the security + accounting panels ─────────────────── */
   function bindSecurityPanel(){
-    loadLock();
-    // The panel now lives inside a settings <details> box, so it has no collapse
-    // header of its own — a second layer of clicking looked broken when the
-    // outer box was shut. Refresh when the box it sits in is opened instead.
-    var body=document.getElementById("secBody");
-    if(!body) return;
-    var outer=body.closest("details.sect");
-    if(outer) outer.addEventListener("toggle", function(){
-      if(outer.open){ refreshSecUI(); }
+    loadSecCfg();
+    var head=document.getElementById("secHead"), body=document.getElementById("secBody"),
+        caret=document.getElementById("secCaret");
+    if(!head||!body) return;
+    head.addEventListener("click", function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded", open?"true":"false");
+      if(open){ refreshSecUI(); refreshAuditStatus(); }
     });
 
     // biometric
-    /* App lock: PIN first (works anywhere), Face ID as an optional extra
-       where the page is on https and a sensor exists. */
     var bioBtn=document.getElementById("bioBtn");
     if(bioBtn) bioBtn.addEventListener("click", function(){
-      if(lockIsOn()){
-        appModal({title:"Turn off the app lock?",
-          message:"The app will open without asking for your PIN.",
-          confirmText:"Turn off", cancelText:"Keep it on",
-          onConfirm:function(){ clearLock(); refreshSecUI(); flashSaved("app lock off"); }});
+      if(secCfg.bioEnabled){
+        appModal({title:"Turn off biometric lock?",
+          message:"The app will open without asking for Face ID or a fingerprint.",
+          confirmText:"Turn off", cancelText:"Keep on", onConfirm:function(){
+            bioDisable(); refreshSecUI(); flashSaved("biometric lock off"); }});
         return;
       }
-      appModal({title:"Set a PIN",
-        message:"Pick 4 or more digits. There's no recovery — if you forget it you'd have to clear the app's data and restore a backup.",
-        input:{placeholder:"4+ digits"}, confirmText:"Set PIN",
-        onConfirm:function(pin){
-          pin=(pin||"").trim();
-          if(!/^\d{4,12}$/.test(pin)){ flashSaved("PIN must be 4–12 digits"); return; }
-          appModal({title:"Confirm the PIN", message:"Type it once more.",
-            input:{placeholder:"repeat the PIN"}, confirmText:"Confirm",
-            onConfirm:function(again){
-              if(again!==pin){ flashSaved("those didn't match"); return; }
-              bioBtn.textContent="…"; bioBtn.disabled=true;
-              setLockPin(pin, function(){
-                refreshSecUI(); flashSaved("app lock on");
-                // offer Face ID on top, but only where it can genuinely work
-                bioSensorPresent().then(function(has){
-                  if(!has) return;
-                  appModal({title:"Add Face ID?",
-                    message:"Unlock with Face ID or your fingerprint instead of typing the PIN each time. The PIN still works as a backup.",
-                    confirmText:"Add it", cancelText:"PIN only",
-                    onConfirm:function(){
-                      enrolBio().then(function(){ refreshSecUI(); flashSaved("Face ID added"); })
-                        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); });
-                    }});
-                });
-              });
-            }});
+      if(!bioAvailable()){ flashSaved("This device/browser doesn't support biometrics"); return; }
+      bioBtn.textContent="…"; bioBtn.disabled=true;
+      bioEnrol().then(function(){ refreshSecUI(); flashSaved("biometric lock on"); })
+        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); })
+        .then(function(){ bioBtn.disabled=false; refreshSecUI(); });
+    });
+
+    // encrypted export
+    var encBtn=document.getElementById("encBtn");
+    if(encBtn) encBtn.addEventListener("click", function(){
+      appModal({title:"Encrypted backup", message:"Choose a password. There is no way to recover it — if you lose it the file is unreadable.",
+        input:{placeholder:"password (min 8 characters)"}, confirmText:"Encrypt & download",
+        onConfirm:function(pw){
+          if(!pw||pw.length<8){ flashSaved("password must be 8+ characters"); return; }
+          var payload=JSON.stringify(buildRoot());
+          encryptBackup(payload, pw).then(function(enc){
+            var url=URL.createObjectURL(new Blob([enc],{type:"application/json"}));
+            var a=document.createElement("a");
+            a.href=url; a.download="mymoney-encrypted-"+todayStr()+".json";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+            flashSaved("encrypted backup saved");
+          }).catch(function(e){ flashSaved("encryption failed: "+String(e).slice(0,40)); });
         }});
     });
 
-    /* Cloud sync, done honestly.
-       MEGA's API can't be driven from a static page: mega.nz sends no CORS
-       headers for arbitrary origins, and uploads are chunked and end-to-end
-       encrypted behind a proprietary handshake. A real "MEGA integration"
-       would need a server to proxy it, which this app deliberately doesn't have.
-       The same outcome without any of that: write into a folder MEGA's own
-       desktop client already syncs. The File System Access tier does exactly
-       that, so this points it at the right folder and lets MEGA do the upload. */
-    var cloudBtn=document.getElementById("cloudFolderBtn");
-    var cloudNote=document.getElementById("cloudNote");
-    if(cloudBtn){
-      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
-        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
-        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
-      } else {
-        cloudBtn.addEventListener("click", function(){
-          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
-          TierFSA.pickFolder()
-            .then(function(){ return StorageManager.init(); })
-            .then(function(){ return StorageManager.write(buildRoot()); })
-            .then(function(){
-              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
-              flashSaved("cloud folder linked");
-              return refreshStorageBadge();
-            })
-            .catch(function(e){
-              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
-            });
-        });
-      }
+    // encrypted restore
+    var decBtn=document.getElementById("decBtn"), encFile=document.getElementById("encFileInput");
+    if(decBtn&&encFile){
+      decBtn.addEventListener("click", function(){ encFile.click(); });
+      encFile.addEventListener("change", function(e){
+        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
+        var r=new FileReader();
+        r.onload=function(){
+          var text=r.result;
+          appModal({title:"Restore encrypted backup", message:"Enter the password for this file.",
+            input:{placeholder:"password"}, confirmText:"Decrypt & restore",
+            onConfirm:function(pw){
+              decryptBackup(text, pw).then(function(plain){
+                applyLoaded(plain); persistNow(); render();
+                flashSaved("backup restored");
+              }).catch(function(){ flashSaved("wrong password, or the file is damaged"); });
+            }});
+        };
+        r.readAsText(f);
+      });
     }
+
+    // audit chain
+    var sealBtn=document.getElementById("auditSealBtn");
+    if(sealBtn) sealBtn.addEventListener("click", function(){
+      sealBtn.disabled=true; sealBtn.textContent="Sealing…";
+      sealAuditChain().then(function(n){
+        flashSaved("sealed "+n+" entries"); refreshAuditStatus();
+      }).catch(function(e){ flashSaved("seal failed"); })
+        .then(function(){ sealBtn.disabled=false; sealBtn.textContent="Seal records"; });
+    });
+    var verBtn=document.getElementById("auditVerifyBtn");
+    if(verBtn) verBtn.addEventListener("click", function(){
+      verBtn.disabled=true; verBtn.textContent="Checking…";
+      verifyAuditChain().then(function(res){
+        appModal({title: res.status==="ok" ? "✅ Records verified"
+                       : res.status==="broken" ? "⚠️ Chain broken" : "No chain yet",
+          message: res.message, confirmText:"OK"});
+        refreshAuditStatus();
+      }).then(function(){ verBtn.disabled=false; verBtn.textContent="Verify"; });
+    });
+
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
@@ -6483,24 +6809,25 @@ AI_TYPES.join(", "),
     refreshSecUI();
   }
   function refreshSecUI(){
-    var btn=document.getElementById("bioBtn");
-    var note=document.getElementById("bioNote");
-    if(!btn) return;
-    if(lockIsOn()){
-      btn.textContent="Turn off"; btn.disabled=false;
-      if(note){
-        note.textContent="On — PIN required to open"+(lockCfg.bio?", Face ID enabled":"")+".";
-        note.style.color="var(--up)";
-      }
-      return;
+    var bioBtn=document.getElementById("bioBtn");
+    if(bioBtn){
+      if(!bioAvailable()){ bioBtn.textContent="Unsupported"; bioBtn.disabled=true; }
+      else { bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable"; bioBtn.disabled=false; }
     }
-    btn.textContent="Set PIN"; btn.disabled=false;
-    if(note){
-      note.textContent = bioPossible()
-        ? "A PIN before the app opens. Face ID can be added on top."
-        : "A PIN before the app opens. (Face ID also needs https — a file opened from disk can only use the PIN.)";
-      note.style.color="";
+  }
+  function refreshAuditStatus(){
+    var el=document.getElementById("auditStatus"); if(!el) return;
+    if(!Array.isArray(state.auditChain)||!state.auditChain.length){
+      el.className="sec-status off"; el.textContent="not sealed"; return;
     }
+    verifyAuditChain().then(function(res){
+      if(res.status==="ok"){
+        el.className="sec-status "+(res.added>0?"warn":"on");
+        el.textContent=res.added>0 ? res.added+" unsealed" : "verified";
+      } else if(res.status==="broken"){
+        el.className="sec-status bad"; el.textContent="tampered";
+      } else { el.className="sec-status off"; el.textContent="not sealed"; }
+    });
   }
 
 
@@ -6603,10 +6930,13 @@ AI_TYPES.join(", "),
   // open the auditor panel scrolled into view, on a chosen tab
   function openAuditorTo(tier){
     var wrap=document.getElementById("audWrap");
-    if(!wrap) return;
-    setTab("pageSettings");
-    var outer=wrap.closest("details.sect");
-    if(outer) outer.open=true;
+    var body=document.getElementById("audBody");
+    var caret=document.getElementById("audCaret");
+    if(!wrap||!body) return;
+    if(body.style.display==="none"){
+      body.style.display="";
+      if(caret) caret.style.transform="rotate(90deg)";
+    }
     var btn=document.getElementById("audBtn"+tier.charAt(0).toUpperCase()+tier.slice(1));
     if(btn) btn.click();
     try{ wrap.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){ wrap.scrollIntoView(); }
@@ -6644,8 +6974,10 @@ AI_TYPES.join(", "),
   }
 
   function bindAuditor(){
+    var head=document.getElementById("audHead");
     var body=document.getElementById("audBody");
-    if(!body) return;
+    var caret=document.getElementById("audCaret");
+    if(!head||!body) return;
     var _tier="rules";
     function showTier(t){
       _tier=t;
@@ -6659,9 +6991,12 @@ AI_TYPES.join(", "),
     document.querySelectorAll(".aud-tier-btn").forEach(function(b){
       b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
     });
-    var outerAud=body.closest("details.sect");
-    if(outerAud) outerAud.addEventListener("toggle", function(){
-      if(outerAud.open) initBuiltinAi().then(function(){});
+    head.addEventListener("click",function(){
+      var open=body.style.display==="none";
+      body.style.display=open?"":"none";
+      if(caret) caret.style.transform=open?"rotate(90deg)":"";
+      head.setAttribute("aria-expanded",open?"true":"false");
+      if(open) initBuiltinAi().then(function(){});
     });
     // rules
     var runBtn=document.getElementById("audRunRules");
@@ -7094,9 +7429,6 @@ AI_TYPES.join(", "),
       document.getElementById("recDay").value=String(+todayStr().slice(8,10));
       document.getElementById("recAmt").value="";
       document.getElementById("recNote").value="";
-      // reset the auto flag too — otherwise the last rule's setting silently
-      // carries over to the next one you create
-      var ra=document.getElementById("recAuto"); if(ra) ra.checked=false;
       recurFormUI();
     });
     document.getElementById("recType").addEventListener("change", recurFormUI);
@@ -7148,14 +7480,6 @@ AI_TYPES.join(", "),
     "Pharmacy":"Health",  "Doctor":"Health",       "Fitness":"Health",    "Insurance":"Health",
     "Fees":"Money",       "Subscriptions":"Money", "Education":"Money",   "Other":"Money"
   };
-  /* Walk a category up to its top-level parent, so reporting rolls a
-     sub-category into the six headline groups rather than listing it
-     separately. Guards against a cycle in a hand-edited tree. */
-  function topCatOf(cat){
-    var tree=(state.catTree||{}), cur=cat, hops=0;
-    while(tree[cur] && hops++<10) cur=tree[cur];
-    return cur||cat;
-  }
   function subTree(){
     if(!state.catTree) state.catTree=Object.assign({}, CAT_TREE_DEFAULT);
     return state.catTree;
@@ -7189,29 +7513,14 @@ AI_TYPES.join(", "),
     var v=budgets()[cat];
     return (typeof v==="number" && isFinite(v) && v>0) ? v : 0;
   }
-  /* Every category that rolls up into `cat`, including cat itself and any
-     depth of nesting beneath it. Without this a cap on "Food" would ignore
-     everything actually tagged "Groceries" and read as zero spent. */
-  function catAndDescendants(cat){
-    var tree=subTree(), out=[cat], queue=[cat];
-    while(queue.length){
-      var parent=queue.shift();
-      Object.keys(tree).forEach(function(child){
-        if(tree[child]===parent && out.indexOf(child)<0){ out.push(child); queue.push(child); }
-      });
-    }
-    return out;
-  }
   function spentThisMonth(cat){
     var mk=monthKey(todayStr());
-    var wanted=catAndDescendants(cat);
     var total=0;
     state.transactions.forEach(function(t){
-      // outflow of any kind, not just the legacy "spend" type
-      if(balDelta(t)>=0) return;
+      if(t.type!=="spend") return;
       if(monthKey(t.date)!==mk) return;
-      if(wanted.indexOf(t.cat||"Other")<0) return;
-      total+=Math.abs(balDelta(t));
+      if((t.cat||"Other")!==cat) return;
+      total+=Math.abs(num(t.amount));
     });
     return total;
   }
@@ -8752,9 +9061,7 @@ AI_TYPES.join(", "),
     refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
-    // default the split field from the setting — off means 1 (no split)
-    document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
-      ? String(splitWays()) : "1";
+    document.getElementById("fSplit").value="1";
     var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
     // Picking a new photo used to REPLACE the old one. Now they add, and each existing
@@ -9694,8 +10001,7 @@ AI_TYPES.join(", "),
         maybeWarnBudget(tx2);
         maybeWarnPlan(tx2);
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
-        document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
-          ? String(splitWays()) : "1";
+        document.getElementById("fSplit").value="1";
         document.getElementById("fInst").value="";
         hideSplitHint();
         clearPhotoPick();
@@ -10264,13 +10570,8 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
-    loadLock();
     fillAllCatSelects();
     bindSecurityPanel();
-    bindShare();
-    bindSplit();
-    bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
-    bindChat();
     initPWA();
     bindAuditor();
     bindRecurring();
@@ -10291,19 +10592,18 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
-      buildSettingsSections();
-      subGroupExtra();  // 19 stacked blocks -> 7 collapsed rows
+      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
-      applyRoleUI();                       // view-only portfolios lock the entry form
-      loadFlagsSeen();                     // remember which problems were already raised
-      setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
-      if(lockIsOn()) showLockScreen();
+      initSubBudgets();
     });
     initSync();
     initPWA();
+    initRbac();
+    initLock();
+    bindEnterpriseFeatures();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -10316,95 +10616,36 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
-<div class="sec-wrap" id="audWrap">
-  <div class="sec-body" id="audBody">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
-                color:var(--mut);margin:2px 0 9px">🔍 Financial auditor</div>
-    <div class="aud-tier" id="audTier">
-      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">Rules</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">Ask AI</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">WebLLM</button>
-    </div>
-    <div id="audPanelRules">
-      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
-      <div id="audFindings" class="aud-findings"></div>
-    </div>
-    <div id="audPanelAi" style="display:none">
-      <div class="aud-llm-bar" id="audLlmBar">
-        <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
-        <span id="audLlmStatus">Checking for on-device AI…</span>
-      </div>
-      <div style="text-align:center;padding:14px 8px">
-        <button class="btn solid" id="chatOpenBtn2" style="width:100%">💬 Open chat</button>
-        <div class="mut" style="font-size:11px;margin-top:8px;line-height:1.5">
-          Ask about your money and attach files. Also on the dashboard.</div>
-      </div>
-      <div id="audAiResp" style="display:none"></div>
-      <input class="inp" id="audQuery" style="display:none">
-      <button id="audAskBtn" style="display:none"></button>
-    </div>
-    <div id="audPanelWebllm" style="display:none">
-      <div id="audWebllmSetup">
-        <div style="font-size:11px;color:var(--mut);margin-bottom:8px;line-height:1.55">
-          One-time ~660MB download (Llama 3.2 1B), then runs offline on your GPU.</div>
-        <div class="aud-progress" id="wllmProgress" style="display:none">
-          <div class="aud-progress-bar" id="wllmBar"></div></div>
-        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
-        <button class="btn solid aud-run" id="wllmLoadBtn">Load model</button>
-      </div>
-      <div id="audWebllmChat" style="display:none">
-        <div class="aud-query">
-          <input class="inp" id="wllmQuery" placeholder="Ask about your finances…">
-          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
-        </div>
-        <div id="wllmResp"></div>
-      </div>
-    </div>
-    <div class="aud-discl">Runs on your device. Not financial advice.</div>
-  </div>
-</div>
-<span id="audEngineLabel" style="display:none"></span>
+<div style="padding:0 20px">
 <div class="sec-wrap" id="secWrap">
-  <div class="sec-body" id="secBody">
+  <div class="sec-head" id="secHead" role="button" aria-expanded="false">
+    <h3>🛡️ Security &amp; Integrity</h3>
+    <span class="sec-caret" id="secCaret">▶</span>
+  </div>
+  <div class="sec-body" id="secBody" style="display:none">
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">App lock</div>
-        <div class="si-d" id="bioNote">Face ID or fingerprint before the app opens. Handled by your device.</div></div>
+      <div class="si-main"><div class="si-t">Biometric lock</div>
+        <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
       <button class="btn ghost sm" id="bioBtn">Enable</button>
     </div>
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">Auto-detect problems</div>
-        <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
-      <label class="sw"><input type="checkbox" id="autoDetectChk" checked><i></i></label>
+      <div class="si-main"><div class="si-t">Encrypted backup</div>
+        <div class="si-d">Password-protect an export before it leaves this device. No password recovery.</div></div>
+      <button class="btn ghost sm" id="encBtn">Export</button>
     </div>
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">Cloud sync folder</div>
-        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
-      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
+      <div class="si-main"><div class="si-t">Restore encrypted file</div>
+        <div class="si-d">Import a password-protected backup.</div></div>
+      <button class="btn ghost sm" id="decBtn">Restore</button>
     </div>
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">Share this portfolio</div>
-        <div class="si-d">Send someone a copy with the access you choose. A working agreement, not a security boundary — a determined person can edit the file.</div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <button class="btn ghost sm" id="shareViewBtn">View only</button>
-        <button class="btn ghost sm" id="shareEditBtn">Can edit</button>
-      </div>
+      <div class="si-main"><div class="si-t">Tamper-evident records</div>
+        <div class="si-d" id="auditDesc">Seals your entries into a hash chain — later edits to sealed history become detectable.</div></div>
+      <span class="sec-status off" id="auditStatus">not sealed</span>
     </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Open a shared portfolio</div>
-        <div class="si-d">Add someone else's shared file alongside your own. Nothing of yours is overwritten.</div></div>
-      <button class="btn ghost sm" id="shareImportBtn">Open</button>
-    </div>
-    <input type="file" id="shareFileInput" accept="application/json" style="display:none">
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Split bills</div>
-        <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
-      <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
-    </div>
-    <div class="sec-item" id="splitWaysRow" style="display:none">
-      <div class="si-main"><div class="si-t">Ways to split</div>
-        <div class="si-d">How many people share a bill by default.</div></div>
-      <input class="inp" id="splitWaysInp" type="number" min="2" max="20" value="2"
-             style="width:74px;min-height:38px;text-align:center">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn ghost sm" id="auditVerifyBtn" style="flex:1">Verify</button>
+      <button class="btn solid sm" id="auditSealBtn" style="flex:1">Seal records</button>
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
@@ -10420,11 +10661,25 @@ AI_TYPES.join(", "),
         <option value="viewer">👁️ View only</option>
       </select>
     </div>
+    <input type="file" id="encFileInput" accept="application/json" style="display:none">
   </div>
+</div>
 </div>
 
 
 
+  <!-- Security section in settings -->
+  <div style="padding:18px 20px 0">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Security &amp; Privacy</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn ghost sm wide" id="lockSetupBtn">🔐 App lock (Face ID / PIN)</button>
+      <button class="btn ghost sm wide" id="encExportBtn">🔒 Export encrypted backup</button>
+      <button class="btn ghost sm wide" id="auditChainBtn">⛓️ Audit chain (tamper-proof records)</button>
+      <button class="btn ghost sm wide" id="shareAccessBtn">👨‍👩‍👦 Family sharing &amp; access tokens</button>
+      <button class="btn ghost sm wide" id="pwaInstallBtn" style="display:none">📲 Install as app</button>
+    </div>
+  </div>
+  <hr style="border:none;border-top:1px solid var(--bd);margin:18px 0">
 
   <!-- Theme picker -->
   <div style="padding:18px 20px 0">
