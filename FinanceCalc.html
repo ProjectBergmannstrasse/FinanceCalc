@@ -4838,22 +4838,24 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
+  /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
+     Trading folds into Your money; Layout & wording folds into Appearance;
+     AI folds into Security & privacy alongside the other on-device features. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
-     has:["Appearance"]},
-    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
-     has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
-    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
-     has:["Trading","Import trades from a file"]},
-    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
-     has:["Wording","Layout"], ids:["settingsSlot"]},
-    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
+    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, where cards live",
+     has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
+    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax, trading",
+     has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside","Trading","Import trades from a file"]},
+    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals, reminders",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
-     ids:["aiSection"]},
-    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, on-device AI",
+     has:[], ids:["secWrap","aiSection"]},
+    {k:"data",  t:"Data & backup",       i:"⛁", sub:"Backup, trash, print, storage",
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support"]},
+    {k:"danger",t:"Reset",               i:"⚠", sub:"Erase everything",
+     has:["Danger Zone"]}
   ];
+
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
     return h ? h.textContent.replace(/\s+/g," ").trim() : null;
@@ -10616,7 +10618,6 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
-<div style="padding:0 20px">
 <div class="sec-wrap" id="secWrap">
   <div class="sec-head" id="secHead" role="button" aria-expanded="false">
     <h3>🛡️ Security &amp; Integrity</h3>
@@ -10663,7 +10664,6 @@ AI_TYPES.join(", "),
     </div>
     <input type="file" id="encFileInput" accept="application/json" style="display:none">
   </div>
-</div>
 </div>
 
 
