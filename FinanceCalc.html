@@ -856,8 +856,6 @@
   .aud-progress-bar{height:100%;background:var(--up);border-radius:2px;transition:width .3s ease;width:0}
 
   /* Biometric lock screen */
-  #lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;
-    opacity:0;transition:opacity .2s ease}
   #lockScreen.in{opacity:1}
   .lock-inner{text-align:center;width:min(340px,90vw)}
   .lock-icon{font-size:52px;margin-bottom:8px}
@@ -881,7 +879,6 @@
   /* Sub-budget rows */
   .sub-bud-row{display:flex;justify-content:space-between;padding:2px 0 2px 14px;font-size:11px}
   /* Shared link badge */
-  #rbacBadge{pointer-events:none}
 
   /* ── Security & Accounting panels ─────────────────────────── */
   .sec-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
@@ -925,6 +922,25 @@
   .sect-nested > .sect-h{padding:10px 12px}
   .sect-nested .sect-t{font-size:12.5px}
   .sect-nested > .sect-b{padding:0 12px 12px}
+  /* App lock */
+  #lockScreen{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;
+    align-items:center;justify-content:center;padding:20px;transition:opacity .22s ease;outline:none}
+  .lk-box{width:100%;max-width:300px;text-align:center}
+  .lk-icon{font-size:38px;margin-bottom:6px}
+  .lk-title{font-size:17px;font-weight:800;margin-bottom:4px}
+  .lk-sub{font-size:12.5px;color:var(--mut);min-height:18px;margin-bottom:18px}
+  .lk-dots{display:flex;gap:10px;justify-content:center;margin-bottom:22px}
+  .lk-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--bd2);
+    transition:background .15s ease,border-color .15s ease,transform .15s ease}
+  .lk-dot.on{background:var(--tx);border-color:var(--tx);transform:scale(1.15)}
+  .lk-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+  .lk-key{height:58px;border-radius:50%;border:1px solid var(--bd2);background:var(--card);
+    color:var(--tx);font:inherit;font-size:20px;font-weight:600;cursor:pointer;
+    transition:transform .1s ease,background .15s ease}
+  .lk-key:hover{background:var(--card2)}
+  .lk-key:active{transform:scale(.92);background:var(--card2)}
+  .lk-key.lk-blank{border:0;background:transparent;cursor:default}
+  .lk-box.shake{animation:shake .38s}
 </style>
 </head>
 <body>
@@ -4810,9 +4826,10 @@ AI_TYPES.join(", "),
     {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
     {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
-     has:[], ids:["secWrap","audWrap","aiSection"]},
+     has:[], ids:["secWrap","audWrap"]},
     {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
+     ids:["aiSection"]}
   ];
 
 
@@ -4855,6 +4872,7 @@ AI_TYPES.join(", "),
     {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
     {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
     {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
+    {t:"AI mode",          i:"🤖", has:["AI MODE","AI Mode","AI mode"], ids:["aiSection"]},
     {t:"Erase",            i:"⚠", has:["Danger Zone"]}
   ];
   function subGroupExtra(){
@@ -4867,6 +4885,7 @@ AI_TYPES.join(", "),
     var boxes=[], made={};
     EXTRA_SUBS.forEach(function(g){
       var mine=kids.filter(function(el){
+        if(g.ids && g.ids.indexOf(el.id)>=0) return true;
         return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
       });
       if(!mine.length) return;
@@ -5609,209 +5628,266 @@ AI_TYPES.join(", "),
   /* ── bind all three tiers ────────────────────────────────────── */
 
   /* ============================================================
-     SECURITY & INTEGRITY MODULE
-     Three related systems, all built on the Web Crypto API:
-       1. Biometric lock (WebAuthn)  — Face ID / fingerprint on open
-       2. Encrypted backups          — PBKDF2 + AES-GCM password protection
-       3. Immutable audit chain      — SHA-256 linked entries, tamper-evident
-     Everything runs locally. No server, no key escrow, no recovery —
-     if you forget the backup password, the file is genuinely unreadable.
+     APP LOCK — works everywhere, including a double-clicked file
+
+     The old lock used WebAuthn only, which needs https. Opened from
+     disk it looked enabled and did nothing. This replaces it:
+
+       PIN (always)      — 4+ digits, key-stretched, verifies a stored
+                           hash. Works on file://, no server, no API.
+       Face ID (bonus)   — when the page IS on https/localhost and a
+                           platform sensor exists, offer it as a faster
+                           unlock on top of the PIN. Never the only way in.
+
+     Honest about strength: the PIN gate stops someone picking up your
+     phone or laptop. It is not full-disk encryption — a determined
+     person with the file and DevTools can still read the underlying
+     store. The UI says exactly that rather than implying more.
      ============================================================ */
 
-  var SEC_KEY="mymoney_sec_v1";
-  var secCfg={ bioEnabled:false, credId:null, auditEnabled:true, lastChainHash:null };
-  function loadSecCfg(){
-    try{ var r=localStorage.getItem(SEC_KEY); if(r) secCfg=Object.assign(secCfg, JSON.parse(r)); }catch(e){}
+  var LOCKV="mymoney_lock_v2";
+  var lockCfg={ on:false, salt:"", hash:"", rounds:60000, bio:false, credId:"", failCount:0, lockedUntil:0 };
+  function loadLock(){
+    try{ var r=localStorage.getItem(LOCKV); if(r) lockCfg=Object.assign(lockCfg, JSON.parse(r)); }catch(e){}
   }
-  function saveSecCfg(){ try{ localStorage.setItem(SEC_KEY, JSON.stringify(secCfg)); }catch(e){} }
+  function saveLock(){ try{ localStorage.setItem(LOCKV, JSON.stringify(lockCfg)); }catch(e){} }
 
-  /* ── 1. BIOMETRIC LOCK (WebAuthn) ─────────────────────────────
-     Uses the platform authenticator — Face ID on iPhone/Mac,
-     fingerprint on Android/Windows Hello. The credential never
-     leaves the device and there is no server to verify against;
-     we use it purely as a local presence check before unlocking. */
-  function bioAvailable(){
-    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
-  }
-  function b64ToBuf(b64){
-    var bin=atob(b64.replace(/-/g,"+").replace(/_/g,"/"));
-    var arr=new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    return arr.buffer;
-  }
-  function bufToB64(buf){
-    var bytes=new Uint8Array(buf), s="";
-    for(var i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
-    return btoa(s);
-  }
-  async function bioEnrol(){
-    if(!bioAvailable()) throw new Error("Biometrics not supported on this device/browser");
-    var challenge=crypto.getRandomValues(new Uint8Array(32));
-    var userId=crypto.getRandomValues(new Uint8Array(16));
-    var cred=await navigator.credentials.create({
-      publicKey:{
-        challenge:challenge,
-        rp:{name:"My Money Tracker"},
-        user:{id:userId, name:"local-user", displayName:"My Money"},
-        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-        authenticatorSelection:{
-          authenticatorAttachment:"platform",   // on-device only: Face ID / fingerprint
-          userVerification:"required",
-          residentKey:"preferred"
-        },
-        timeout:60000, attestation:"none"
+  /* ---- pure-JS SHA-256: crypto.subtle is unavailable on file:// ---- */
+  function jsSha256(msg){
+    function rotr(x,n){ return (x>>>n)|(x<<(32-n)); }
+    var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    var bytes=[];
+    for(var i=0;i<msg.length;i++){
+      var c=msg.charCodeAt(i);
+      if(c<128) bytes.push(c);
+      else if(c<2048){ bytes.push(192|(c>>6),128|(c&63)); }
+      else { bytes.push(224|(c>>12),128|((c>>6)&63),128|(c&63)); }
+    }
+    var bitLen=bytes.length*8;
+    bytes.push(0x80);
+    while(bytes.length%64!==56) bytes.push(0);
+    for(var j=7;j>=0;j--) bytes.push((bitLen/Math.pow(2,j*8))&255);
+    var w=new Array(64);
+    for(var b=0;b<bytes.length;b+=64){
+      for(var t=0;t<16;t++)
+        w[t]=(bytes[b+t*4]<<24)|(bytes[b+t*4+1]<<16)|(bytes[b+t*4+2]<<8)|bytes[b+t*4+3];
+      for(t=16;t<64;t++){
+        var s0=rotr(w[t-15],7)^rotr(w[t-15],18)^(w[t-15]>>>3);
+        var s1=rotr(w[t-2],17)^rotr(w[t-2],19)^(w[t-2]>>>10);
+        w[t]=(w[t-16]+s0+w[t-7]+s1)|0;
       }
-    });
-    if(!cred) throw new Error("Enrolment cancelled");
-    secCfg.bioEnabled=true;
-    secCfg.credId=bufToB64(cred.rawId);
-    saveSecCfg();
-    return true;
-  }
-  async function bioVerify(){
-    if(!secCfg.bioEnabled || !secCfg.credId) return true;   // not enabled = nothing to check
-    if(!bioAvailable()) return true;                        // can't check here; don't lock them out
-    var challenge=crypto.getRandomValues(new Uint8Array(32));
-    var assertion=await navigator.credentials.get({
-      publicKey:{
-        challenge:challenge,
-        allowCredentials:[{type:"public-key", id:b64ToBuf(secCfg.credId)}],
-        userVerification:"required",
-        timeout:60000
+      var a=H[0],bb=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for(t=0;t<64;t++){
+        var S1=rotr(e,6)^rotr(e,11)^rotr(e,25);
+        var ch=(e&f)^(~e&g);
+        var t1=(h+S1+ch+K[t]+w[t])|0;
+        var S0=rotr(a,2)^rotr(a,13)^rotr(a,22);
+        var maj=(a&bb)^(a&c2)^(bb&c2);
+        var t2=(S0+maj)|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c2;c2=bb;bb=a;a=(t1+t2)|0;
       }
-    });
-    return !!assertion;
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+c2)|0;H[3]=(H[3]+d)|0;
+      H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    return H.map(function(x){ return ("00000000"+(x>>>0).toString(16)).slice(-8); }).join("");
   }
-  function bioDisable(){ secCfg.bioEnabled=false; secCfg.credId=null; saveSecCfg(); }
+  function randHex(n){
+    var out="";
+    try{
+      var a=new Uint8Array(n); crypto.getRandomValues(a);
+      for(var i=0;i<n;i++) out+=("0"+a[i].toString(16)).slice(-2);
+    }catch(e){
+      for(var j=0;j<n*2;j++) out+=Math.floor(Math.random()*16).toString(16);
+    }
+    return out;
+  }
+  /* Iterated hashing so a stolen hash can't be brute-forced instantly.
+     Chunked through setTimeout so the UI doesn't freeze on slower phones. */
+  function stretchPin(pin, salt, rounds, onDone, onProgress){
+    var h=salt+"|"+pin, i=0;
+    var CHUNK=4000;
+    (function step(){
+      var end=Math.min(i+CHUNK, rounds);
+      for(; i<end; i++) h=jsSha256(h);
+      if(onProgress) onProgress(i/rounds);
+      if(i<rounds) setTimeout(step,0);
+      else onDone(h);
+    })();
+  }
 
-  // the lock screen shown before the app is usable
+  function lockIsOn(){ return !!(lockCfg.on && lockCfg.hash); }
+  function lockCooldownLeft(){
+    var left=(lockCfg.lockedUntil||0)-Date.now();
+    return left>0 ? Math.ceil(left/1000) : 0;
+  }
+
+  function setLockPin(pin, cb){
+    var salt=randHex(16);
+    stretchPin(pin, salt, lockCfg.rounds, function(h){
+      lockCfg.on=true; lockCfg.salt=salt; lockCfg.hash=h;
+      lockCfg.failCount=0; lockCfg.lockedUntil=0;
+      saveLock(); cb(true);
+    });
+  }
+  function verifyPin(pin, cb, onProgress){
+    stretchPin(pin, lockCfg.salt, lockCfg.rounds, function(h){
+      var ok = h===lockCfg.hash;
+      if(ok){ lockCfg.failCount=0; lockCfg.lockedUntil=0; }
+      else {
+        lockCfg.failCount=(lockCfg.failCount||0)+1;
+        // slow down guessing without ever locking the owner out permanently
+        if(lockCfg.failCount>=5){
+          var wait=Math.min(300, Math.pow(2, lockCfg.failCount-5)*5);
+          lockCfg.lockedUntil=Date.now()+wait*1000;
+        }
+      }
+      saveLock(); cb(ok);
+    }, onProgress);
+  }
+  function clearLock(){
+    lockCfg={on:false,salt:"",hash:"",rounds:60000,bio:false,credId:"",failCount:0,lockedUntil:0};
+    saveLock();
+  }
+
+  /* ---- optional Face ID, only where it can actually work ---- */
+  function bioPossible(){
+    return !!(window.PublicKeyCredential && navigator.credentials &&
+              navigator.credentials.create && window.isSecureContext);
+  }
+  function bioSensorPresent(){
+    try{
+      if(!bioPossible() || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
+        return Promise.resolve(false);
+      return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    }catch(e){ return Promise.resolve(false); }
+  }
+  function hexToBuf(h){
+    var a=new Uint8Array(h.length/2);
+    for(var i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16);
+    return a.buffer;
+  }
+  function bufToHex(b){
+    return Array.from(new Uint8Array(b)).map(function(x){ return ("0"+x.toString(16)).slice(-2); }).join("");
+  }
+  function enrolBio(){
+    if(!bioPossible()) return Promise.reject(new Error("Face ID needs https — a file opened from disk can't use it."));
+    var challenge=new Uint8Array(32); crypto.getRandomValues(challenge);
+    var uid=new Uint8Array(16); crypto.getRandomValues(uid);
+    return navigator.credentials.create({publicKey:{
+      challenge:challenge, rp:{name:"My Money"},
+      user:{id:uid, name:"local", displayName:"My Money"},
+      pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform", userVerification:"required"},
+      timeout:60000, attestation:"none"
+    }}).then(function(cred){
+      if(!cred) throw new Error("Cancelled");
+      lockCfg.bio=true; lockCfg.credId=bufToHex(cred.rawId); saveLock(); return true;
+    });
+  }
+  function verifyBio(){
+    if(!lockCfg.bio || !lockCfg.credId || !bioPossible()) return Promise.resolve(false);
+    var challenge=new Uint8Array(32); crypto.getRandomValues(challenge);
+    return navigator.credentials.get({publicKey:{
+      challenge:challenge,
+      allowCredentials:[{type:"public-key", id:hexToBuf(lockCfg.credId)}],
+      userVerification:"required", timeout:60000
+    }}).then(function(a){ return !!a; }).catch(function(){ return false; });
+  }
+
+  /* ---- the lock screen ---- */
   function showLockScreen(){
+    if(!lockIsOn()) return;
     var ov=document.createElement("div");
     ov.id="lockScreen";
-    ov.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;"
-      +"align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;text-align:center";
-    ov.innerHTML='<div style="font-size:44px">🔒</div>'
-      +'<div style="font-size:16px;font-weight:800">My Money Tracker</div>'
-      +'<div style="font-size:13px;color:var(--mut);max-width:280px;line-height:1.6" id="lockMsg">'
-        +'Unlock with Face ID or your fingerprint to see your finances.</div>'
-      +'<button class="btn primary" id="lockBtn" style="min-width:180px">Unlock</button>'
-      +'<button class="btn ghost sm" id="lockBypass" style="display:none;font-size:11px">'
-        +'Biometrics unavailable — continue anyway</button>';
+    ov.innerHTML=
+       '<div class="lk-box">'
+      +'  <div class="lk-icon">🔒</div>'
+      +'  <div class="lk-title">My Money</div>'
+      +'  <div class="lk-sub" id="lkSub">Enter your PIN</div>'
+      +'  <div class="lk-dots" id="lkDots"></div>'
+      +'  <div class="lk-pad" id="lkPad"></div>'
+      +'  <button class="btn ghost sm" id="lkBio" style="display:none;margin-top:12px">👤 Use Face ID</button>'
+      +'</div>';
     document.body.appendChild(ov);
-    var attempts=0;
-    var tryUnlock=function(){
-      var msg=document.getElementById("lockMsg");
-      msg.textContent="Waiting for verification…";
-      bioVerify().then(function(ok){
-        if(ok){ ov.style.opacity="0"; ov.style.transition="opacity .25s";
-          setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },260); }
-        else { msg.textContent="Verification failed. Try again."; }
-      }).catch(function(e){
-        attempts++;
-        msg.textContent="Couldn't verify: "+String(e.message||e).slice(0,70);
-        // after two failures, offer the escape hatch — a locked-out user with no
-        // recovery path would simply lose access to their own records
-        if(attempts>=2) document.getElementById("lockBypass").style.display="";
+    document.body.style.overflow="hidden";
+
+    var entered="";
+    var dots=ov.querySelector("#lkDots"), sub=ov.querySelector("#lkSub");
+    function drawDots(){
+      dots.innerHTML="";
+      for(var i=0;i<Math.max(4,entered.length);i++){
+        var s=document.createElement("span");
+        s.className="lk-dot"+(i<entered.length?" on":"");
+        dots.appendChild(s);
+      }
+    }
+    drawDots();
+    var pad=ov.querySelector("#lkPad");
+    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
+      var b=document.createElement("button");
+      b.className="lk-key"+(k===""?" lk-blank":"");
+      b.textContent=k;
+      if(k==="") b.disabled=true;
+      b.addEventListener("click", function(){
+        if(lockCooldownLeft()>0){ sub.textContent="Too many tries — wait "+lockCooldownLeft()+"s"; return; }
+        if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
+        if(entered.length>=12) return;
+        entered+=k; drawDots();
+        if(entered.length>=4) trySubmit();
       });
-    };
-    document.getElementById("lockBtn").addEventListener("click", tryUnlock);
-    document.getElementById("lockBypass").addEventListener("click", function(){
-      if(ov.parentNode) ov.parentNode.removeChild(ov);
+      pad.appendChild(b);
     });
-    tryUnlock();   // prompt immediately
-  }
-
-  /* ── 2. ENCRYPTED BACKUPS (PBKDF2 + AES-GCM) ──────────────────
-     The plain export is fine for your own machine. This is for
-     when the backup leaves it — cloud drive, email, a USB stick.
-     250k PBKDF2 iterations; salt and IV stored alongside the
-     ciphertext. No password recovery by design. */
-  async function encryptBackup(plaintext, password){
-    var enc=new TextEncoder();
-    var salt=crypto.getRandomValues(new Uint8Array(16));
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    var key=await crypto.subtle.deriveKey(
-      {name:"PBKDF2", salt:salt, iterations:250000, hash:"SHA-256"},
-      km, {name:"AES-GCM", length:256}, false, ["encrypt"]);
-    var ct=await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, enc.encode(plaintext));
-    return JSON.stringify({
-      _format:"mymoney-encrypted-backup", _v:1,
-      kdf:"PBKDF2-SHA256", iterations:250000,
-      salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)
-    }, null, 2);
-  }
-  async function decryptBackup(fileText, password){
-    var obj=JSON.parse(fileText);
-    if(obj._format!=="mymoney-encrypted-backup") throw new Error("Not an encrypted backup file");
-    var enc=new TextEncoder();
-    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    var key=await crypto.subtle.deriveKey(
-      {name:"PBKDF2", salt:new Uint8Array(b64ToBuf(obj.salt)), iterations:obj.iterations||250000, hash:"SHA-256"},
-      km, {name:"AES-GCM", length:256}, false, ["decrypt"]);
-    var pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:new Uint8Array(b64ToBuf(obj.iv))}, key, b64ToBuf(obj.data));
-    return new TextDecoder().decode(pt);
-  }
-
-  /* ── 3. IMMUTABLE AUDIT CHAIN (SHA-256 linked) ────────────────
-     Each entry's hash includes the hash before it. Change any past
-     transaction and every hash after it stops matching — so silent
-     edits become visible. Relevant here for trading P&L records and
-     anything split with someone else, where "these are the numbers
-     we agreed" needs to be provable later. */
-  async function sha256Hex(str){
-    var buf=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
-  }
-  // canonical form — key order must never vary or hashes won't reproduce
-  function canonicalTx(t){
-    return JSON.stringify({
-      id:t.id, date:t.date||"", type:t.type||"", amount:num(t.amount),
-      cat:t.cat||"", note:t.note||"", inst:t.inst||""
+    function unlock(){
+      ov.style.opacity="0";
+      document.body.style.overflow="";
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
+    }
+    var busy=false;
+    function trySubmit(){
+      if(busy) return;
+      var cd=lockCooldownLeft();
+      if(cd>0){ sub.textContent="Too many tries — wait "+cd+"s"; return; }
+      busy=true; sub.textContent="Checking…";
+      verifyPin(entered, function(ok){
+        busy=false;
+        if(ok){ unlock(); return; }
+        entered=""; drawDots();
+        var left=lockCooldownLeft();
+        sub.textContent= left>0 ? "Wrong PIN — wait "+left+"s" : "Wrong PIN, try again";
+        var box=ov.querySelector(".lk-box");
+        box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
+      }, function(p){ if(p<1) sub.textContent="Checking… "+Math.round(p*100)+"%"; });
+    }
+    // physical keyboard
+    ov.addEventListener("keydown", function(e){
+      if(/^[0-9]$/.test(e.key)){ if(entered.length<12){ entered+=e.key; drawDots(); if(entered.length>=4) trySubmit(); } }
+      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); drawDots(); }
+      else if(e.key==="Enter" && entered.length>=4) trySubmit();
     });
-  }
-  async function buildAuditChain(){
-    var txs=sortedTx();
-    var prev="0".repeat(64), chain=[];
-    for(var i=0;i<txs.length;i++){
-      var h=await sha256Hex(prev+canonicalTx(txs[i]));
-      chain.push({id:txs[i].id, date:txs[i].date, prev:prev, hash:h});
-      prev=h;
+    ov.tabIndex=-1; setTimeout(function(){ try{ ov.focus(); }catch(e){} },50);
+
+    // Face ID as the quick path, when it's genuinely available
+    if(lockCfg.bio && bioPossible()){
+      var bb=ov.querySelector("#lkBio");
+      bb.style.display="";
+      var runBio=function(){
+        sub.textContent="Waiting for Face ID…";
+        verifyBio().then(function(ok){
+          if(ok) unlock();
+          else sub.textContent="Face ID didn't match — use your PIN";
+        });
+      };
+      bb.addEventListener("click", runBio);
+      setTimeout(runBio, 350);   // offer it immediately
     }
-    return chain;
-  }
-  async function verifyAuditChain(){
-    var stored=state.auditChain;
-    if(!Array.isArray(stored)||!stored.length){
-      return {status:"none", message:"No audit chain recorded yet. Seal your records to start one."};
-    }
-    var txs=sortedTx();
-    var prev="0".repeat(64);
-    var firstBreak=null, checked=0;
-    for(var i=0;i<stored.length;i++){
-      var tx=txs.filter(function(x){ return String(x.id)===String(stored[i].id); })[0];
-      if(!tx){ firstBreak={idx:i, reason:"entry deleted", id:stored[i].id, date:stored[i].date}; break; }
-      var h=await sha256Hex(prev+canonicalTx(tx));
-      checked++;
-      if(h!==stored[i].hash){ firstBreak={idx:i, reason:"entry modified", id:stored[i].id, date:stored[i].date}; break; }
-      prev=h;
-    }
-    var added=txs.length-stored.length;
-    if(firstBreak){
-      return {status:"broken", message:"Chain breaks at entry "+(firstBreak.idx+1)+" of "+stored.length
-        +" ("+firstBreak.reason+", dated "+(firstBreak.date||"?")+"). Everything before it is still verified.",
-        verified:firstBreak.idx, total:stored.length};
-    }
-    return {status:"ok", verified:checked, total:stored.length, added:added>0?added:0,
-      message:checked+" sealed entr"+(checked===1?"y":"ies")+" verified intact"
-        +(added>0?" · "+added+" new entr"+(added===1?"y":"ies")+" not yet sealed":"")+"."};
-  }
-  async function sealAuditChain(){
-    var chain=await buildAuditChain();
-    state.auditChain=chain;
-    state.auditSealedAt=new Date().toISOString();
-    persistNow();
-    return chain.length;
   }
 
   /* ============================================================
@@ -5880,12 +5956,26 @@ AI_TYPES.join(", "),
     return c.toDataURL("image/png");
   }
   function triggerInstall(){
-    if(!_deferredPrompt){
-      flashSaved("Use your browser menu → Add to Home Screen");
+    if(_deferredPrompt){
+      _deferredPrompt.prompt();
+      _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
       return;
     }
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
+    /* Chrome only fires beforeinstallprompt over https with a service worker,
+       and Safari never fires it. Rather than a toast that vanishes, say exactly
+       what to tap on the browser they're actually using. */
+    var ua=navigator.userAgent||"";
+    var isIOS=/iPad|iPhone|iPod/.test(ua);
+    var isSafari=/^((?!chrome|android).)*safari/i.test(ua);
+    var installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
+    var msg;
+    if(installed) msg="It's already installed \u2014 you're running the installed copy now.";
+    else if(isIOS) msg="On iPhone or iPad: tap Share, then \u201cAdd to Home Screen\u201d.";
+    else if(isSafari) msg="In Safari: File \u2192 Add to Dock, or Share \u2192 Add to Home Screen.";
+    else if(location.protocol==="file:")
+      msg="Installing needs the app served over https \u2014 a file opened straight from disk can't be installed. Put it on GitHub Pages or any host and this will work.";
+    else msg="Open your browser menu and choose \u201cInstall app\u201d. If it's missing, the page needs https.";
+    appModal({title:"Install as an app", message:msg, confirmText:"OK"});
   }
 
   /* ============================================================
@@ -5937,9 +6027,8 @@ AI_TYPES.join(", "),
     flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
   }
 
-  /* ── bind the security + accounting panels ─────────────────── */
   function bindSecurityPanel(){
-    loadSecCfg();
+    loadLock();
     // The panel now lives inside a settings <details> box, so it has no collapse
     // header of its own — a second layer of clicking looked broken when the
     // outer box was shut. Refresh when the box it sits in is opened instead.
@@ -5947,87 +6036,81 @@ AI_TYPES.join(", "),
     if(!body) return;
     var outer=body.closest("details.sect");
     if(outer) outer.addEventListener("toggle", function(){
-      if(outer.open){ refreshSecUI(); refreshAuditStatus(); }
+      if(outer.open){ refreshSecUI(); }
     });
 
     // biometric
+    /* App lock: PIN first (works anywhere), Face ID as an optional extra
+       where the page is on https and a sensor exists. */
     var bioBtn=document.getElementById("bioBtn");
     if(bioBtn) bioBtn.addEventListener("click", function(){
-      if(secCfg.bioEnabled){
-        appModal({title:"Turn off biometric lock?",
-          message:"The app will open without asking for Face ID or a fingerprint.",
-          confirmText:"Turn off", cancelText:"Keep on", onConfirm:function(){
-            bioDisable(); refreshSecUI(); flashSaved("biometric lock off"); }});
+      if(lockIsOn()){
+        appModal({title:"Turn off the app lock?",
+          message:"The app will open without asking for your PIN.",
+          confirmText:"Turn off", cancelText:"Keep it on",
+          onConfirm:function(){ clearLock(); refreshSecUI(); flashSaved("app lock off"); }});
         return;
       }
-      if(!bioAvailable()){ flashSaved("This device/browser doesn't support biometrics"); return; }
-      bioBtn.textContent="…"; bioBtn.disabled=true;
-      bioEnrol().then(function(){ refreshSecUI(); flashSaved("biometric lock on"); })
-        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); })
-        .then(function(){ bioBtn.disabled=false; refreshSecUI(); });
-    });
-
-    // encrypted export
-    var encBtn=document.getElementById("encBtn");
-    if(encBtn) encBtn.addEventListener("click", function(){
-      appModal({title:"Encrypted backup", message:"Choose a password. There is no way to recover it — if you lose it the file is unreadable.",
-        input:{placeholder:"password (min 8 characters)"}, confirmText:"Encrypt & download",
-        onConfirm:function(pw){
-          if(!pw||pw.length<8){ flashSaved("password must be 8+ characters"); return; }
-          var payload=JSON.stringify(buildRoot());
-          encryptBackup(payload, pw).then(function(enc){
-            var url=URL.createObjectURL(new Blob([enc],{type:"application/json"}));
-            var a=document.createElement("a");
-            a.href=url; a.download="mymoney-encrypted-"+todayStr()+".json";
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-            flashSaved("encrypted backup saved");
-          }).catch(function(e){ flashSaved("encryption failed: "+String(e).slice(0,40)); });
+      appModal({title:"Set a PIN",
+        message:"Pick 4 or more digits. There's no recovery — if you forget it you'd have to clear the app's data and restore a backup.",
+        input:{placeholder:"4+ digits"}, confirmText:"Set PIN",
+        onConfirm:function(pin){
+          pin=(pin||"").trim();
+          if(!/^\d{4,12}$/.test(pin)){ flashSaved("PIN must be 4–12 digits"); return; }
+          appModal({title:"Confirm the PIN", message:"Type it once more.",
+            input:{placeholder:"repeat the PIN"}, confirmText:"Confirm",
+            onConfirm:function(again){
+              if(again!==pin){ flashSaved("those didn't match"); return; }
+              bioBtn.textContent="…"; bioBtn.disabled=true;
+              setLockPin(pin, function(){
+                refreshSecUI(); flashSaved("app lock on");
+                // offer Face ID on top, but only where it can genuinely work
+                bioSensorPresent().then(function(has){
+                  if(!has) return;
+                  appModal({title:"Add Face ID?",
+                    message:"Unlock with Face ID or your fingerprint instead of typing the PIN each time. The PIN still works as a backup.",
+                    confirmText:"Add it", cancelText:"PIN only",
+                    onConfirm:function(){
+                      enrolBio().then(function(){ refreshSecUI(); flashSaved("Face ID added"); })
+                        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); });
+                    }});
+                });
+              });
+            }});
         }});
     });
 
-    // encrypted restore
-    var decBtn=document.getElementById("decBtn"), encFile=document.getElementById("encFileInput");
-    if(decBtn&&encFile){
-      decBtn.addEventListener("click", function(){ encFile.click(); });
-      encFile.addEventListener("change", function(e){
-        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
-        var r=new FileReader();
-        r.onload=function(){
-          var text=r.result;
-          appModal({title:"Restore encrypted backup", message:"Enter the password for this file.",
-            input:{placeholder:"password"}, confirmText:"Decrypt & restore",
-            onConfirm:function(pw){
-              decryptBackup(text, pw).then(function(plain){
-                applyLoaded(plain); persistNow(); render();
-                flashSaved("backup restored");
-              }).catch(function(){ flashSaved("wrong password, or the file is damaged"); });
-            }});
-        };
-        r.readAsText(f);
-      });
+    /* Cloud sync, done honestly.
+       MEGA's API can't be driven from a static page: mega.nz sends no CORS
+       headers for arbitrary origins, and uploads are chunked and end-to-end
+       encrypted behind a proprietary handshake. A real "MEGA integration"
+       would need a server to proxy it, which this app deliberately doesn't have.
+       The same outcome without any of that: write into a folder MEGA's own
+       desktop client already syncs. The File System Access tier does exactly
+       that, so this points it at the right folder and lets MEGA do the upload. */
+    var cloudBtn=document.getElementById("cloudFolderBtn");
+    var cloudNote=document.getElementById("cloudNote");
+    if(cloudBtn){
+      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
+        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
+        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
+      } else {
+        cloudBtn.addEventListener("click", function(){
+          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
+          TierFSA.pickFolder()
+            .then(function(){ return StorageManager.init(); })
+            .then(function(){ return StorageManager.write(buildRoot()); })
+            .then(function(){
+              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
+              flashSaved("cloud folder linked");
+              return refreshStorageBadge();
+            })
+            .catch(function(e){
+              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
+            });
+        });
+      }
     }
-
-    // audit chain
-    var sealBtn=document.getElementById("auditSealBtn");
-    if(sealBtn) sealBtn.addEventListener("click", function(){
-      sealBtn.disabled=true; sealBtn.textContent="Sealing…";
-      sealAuditChain().then(function(n){
-        flashSaved("sealed "+n+" entries"); refreshAuditStatus();
-      }).catch(function(e){ flashSaved("seal failed"); })
-        .then(function(){ sealBtn.disabled=false; sealBtn.textContent="Seal records"; });
-    });
-    var verBtn=document.getElementById("auditVerifyBtn");
-    if(verBtn) verBtn.addEventListener("click", function(){
-      verBtn.disabled=true; verBtn.textContent="Checking…";
-      verifyAuditChain().then(function(res){
-        appModal({title: res.status==="ok" ? "✅ Records verified"
-                       : res.status==="broken" ? "⚠️ Chain broken" : "No chain yet",
-          message: res.message, confirmText:"OK"});
-        refreshAuditStatus();
-      }).then(function(){ verBtn.disabled=false; verBtn.textContent="Verify"; });
-    });
-
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
@@ -6051,25 +6134,24 @@ AI_TYPES.join(", "),
     refreshSecUI();
   }
   function refreshSecUI(){
-    var bioBtn=document.getElementById("bioBtn");
-    if(bioBtn){
-      if(!bioAvailable()){ bioBtn.textContent="Unsupported"; bioBtn.disabled=true; }
-      else { bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable"; bioBtn.disabled=false; }
+    var btn=document.getElementById("bioBtn");
+    var note=document.getElementById("bioNote");
+    if(!btn) return;
+    if(lockIsOn()){
+      btn.textContent="Turn off"; btn.disabled=false;
+      if(note){
+        note.textContent="On — PIN required to open"+(lockCfg.bio?", Face ID enabled":"")+".";
+        note.style.color="var(--up)";
+      }
+      return;
     }
-  }
-  function refreshAuditStatus(){
-    var el=document.getElementById("auditStatus"); if(!el) return;
-    if(!Array.isArray(state.auditChain)||!state.auditChain.length){
-      el.className="sec-status off"; el.textContent="not sealed"; return;
+    btn.textContent="Set PIN"; btn.disabled=false;
+    if(note){
+      note.textContent = bioPossible()
+        ? "A PIN before the app opens. Face ID can be added on top."
+        : "A PIN before the app opens. (Face ID also needs https — a file opened from disk can only use the PIN.)";
+      note.style.color="";
     }
-    verifyAuditChain().then(function(res){
-      if(res.status==="ok"){
-        el.className="sec-status "+(res.added>0?"warn":"on");
-        el.textContent=res.added>0 ? res.added+" unsealed" : "verified";
-      } else if(res.status==="broken"){
-        el.className="sec-status bad"; el.textContent="tampered";
-      } else { el.className="sec-status off"; el.textContent="not sealed"; }
-    });
   }
 
 
@@ -6663,6 +6745,9 @@ AI_TYPES.join(", "),
       document.getElementById("recDay").value=String(+todayStr().slice(8,10));
       document.getElementById("recAmt").value="";
       document.getElementById("recNote").value="";
+      // reset the auto flag too — otherwise the last rule's setting silently
+      // carries over to the next one you create
+      var ra=document.getElementById("recAuto"); if(ra) ra.checked=false;
       recurFormUI();
     });
     document.getElementById("recType").addEventListener("change", recurFormUI);
@@ -9827,6 +9912,7 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    loadLock();
     fillAllCatSelects();
     bindSecurityPanel();
     initPWA();
@@ -9855,6 +9941,10 @@ AI_TYPES.join(", "),
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
+      applyRoleUI();                       // view-only portfolios lock the entry form
+      loadFlagsSeen();                     // remember which problems were already raised
+      setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
+      if(lockIsOn()) showLockScreen();
     });
     initSync();
     initPWA();
@@ -9918,33 +10008,19 @@ AI_TYPES.join(", "),
 <div class="sec-wrap" id="secWrap">
   <div class="sec-body" id="secBody">
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">Biometric lock</div>
-        <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
+      <div class="si-main"><div class="si-t">App lock</div>
+        <div class="si-d" id="bioNote">Face ID or fingerprint before the app opens. Handled by your device.</div></div>
       <button class="btn ghost sm" id="bioBtn">Enable</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Encrypted backup</div>
-        <div class="si-d">Password-protect an export before it leaves this device. No password recovery.</div></div>
-      <button class="btn ghost sm" id="encBtn">Export</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Restore encrypted file</div>
-        <div class="si-d">Import a password-protected backup.</div></div>
-      <button class="btn ghost sm" id="decBtn">Restore</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Tamper-evident records</div>
-        <div class="si-d" id="auditDesc">Seals your entries into a hash chain — later edits to sealed history become detectable.</div></div>
-      <span class="sec-status off" id="auditStatus">not sealed</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn ghost sm" id="auditVerifyBtn" style="flex:1">Verify</button>
-      <button class="btn solid sm" id="auditSealBtn" style="flex:1">Seal records</button>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Auto-detect problems</div>
         <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
       <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Cloud sync folder</div>
+        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
+      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
@@ -9960,7 +10036,6 @@ AI_TYPES.join(", "),
         <option value="viewer">👁️ View only</option>
       </select>
     </div>
-    <input type="file" id="encFileInput" accept="application/json" style="display:none">
   </div>
 </div>
 
