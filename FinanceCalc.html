@@ -1125,6 +1125,38 @@
   .fp-row .fp-n{flex:1;font-weight:600}
   .fp-row button{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:13px;padding:2px 4px}
   .fp-row button:hover{color:var(--down)}
+
+  /* ── recovery ────────────────────────────────────────────────── */
+  .rc-tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--bd);flex:none}
+  .rc-tab{flex:1;border:0;background:transparent;color:var(--mut);font:inherit;font-size:12.5px;
+    font-weight:700;padding:10px 6px;cursor:pointer;border-bottom:2px solid transparent;
+    transition:color .15s ease,border-color .15s ease}
+  .rc-tab.on{color:var(--tx);border-bottom-color:var(--tx)}
+  .rc-card{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--bd);
+    border-radius:11px;margin-bottom:7px;background:var(--card);
+    animation:rise .18s backwards}
+  .rc-card.done{opacity:.5}
+  .rc-ic{font-size:17px;flex:none}
+  .rc-main{flex:1;min-width:0}
+  .rc-t{font-size:13px;font-weight:600;line-height:1.4}
+  .rc-s{font-size:11px;color:var(--mut);margin-top:2px}
+  .rc-done{font-size:11px;color:var(--mut);font-weight:600;white-space:nowrap}
+  .rc-flag{font-size:9.5px;font-weight:800;background:rgba(244,183,63,.16);color:var(--amber);
+    padding:2px 6px;border-radius:5px;margin-left:4px}
+  .rc-sec{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--mut);margin:14px 2px 3px}
+  .rc-sec:first-child{margin-top:0}
+  .rc-secd{font-size:11.5px;color:var(--mut);margin:0 2px 9px;line-height:1.5}
+  .rc-empty{text-align:center;color:var(--mut);font-size:12.5px;padding:28px 12px;line-height:1.6}
+  .rc-empty.sm{padding:12px;font-size:11.5px}
+  .rc-mins{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .rc-min{display:flex;flex-direction:column;gap:3px;padding:15px 10px;border-radius:13px;
+    border:1px solid var(--bd2);background:var(--card);color:var(--tx);font:inherit;cursor:pointer;
+    transition:background .15s ease,transform .1s ease}
+  .rc-min:hover{background:var(--card2)}
+  .rc-min:active{transform:scale(.97)}
+  .rc-min b{font-size:15px;font-weight:800}
+  .rc-min span{font-size:11px;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -4502,11 +4534,24 @@ AI_TYPES.join(", "),
   function toTrash(tx){
     if(!Array.isArray(state.trash)) state.trash=[];
     state.trash.unshift({tx:clone(tx), at:Date.now()});
+    // also drop a copy into the deep vault, so emptying the bin isn't final
+    try{ vaultStore([tx], false); }catch(e){}
     // hard cap: the oldest fall out early rather than letting this grow without bound
     while(state.trash.length>TRASH_MAX){
       var gone=state.trash.pop();
       if(gone && gone.tx) photosOf(gone.tx).forEach(delPhoto);
     }
+  }
+  /* A deletion of several entries at once is the dangerous case — either a
+     mistake or someone wiping data. Those go straight to the hidden tier. */
+  function recordDeletion(items, label){
+    if(!items || !items.length) return;
+    var mass=items.length>=MASS_DELETE_THRESHOLD;
+    try{ vaultStore(items, mass); }catch(e){}
+    logAction(mass?"mass":"delete",
+      label || (items.length+" entr"+(items.length===1?"y":"ies")+" deleted"),
+      {type:"delete", items:items.map(function(t){ return clone(t); })});
+    if(mass) flashSaved(items.length+" deleted — kept in the hidden vault");
   }
   function purgeTrash(){
     if(!Array.isArray(state.trash) || !state.trash.length) return 0;
@@ -6049,6 +6094,7 @@ AI_TYPES.join(", "),
       pad.appendChild(b);
     });
     function unlock(){
+      setTimeout(showAttemptBanner, 700);   // tell them what happened while they were away
       ov.style.opacity="0";
       document.body.style.overflow="";
       setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
@@ -6063,6 +6109,7 @@ AI_TYPES.join(", "),
         busy=false;
         if(ok){ unlock(); return; }
         entered=""; drawDots();
+        recordFailedAttempt("pin");
         var left=lockCooldownLeft();
         sub.textContent= left>0 ? "Wrong PIN — wait "+left+"s" : "Wrong PIN, try again";
         var box=ov.querySelector(".lk-box");
@@ -6094,7 +6141,7 @@ AI_TYPES.join(", "),
         sub.textContent="Opening the camera\u2026";
         verifyFace(function(ok){
           if(ok) unlock();
-          else sub.textContent="Face didn't match \u2014 use your PIN";
+          else { recordFailedAttempt("face"); sub.textContent="Face didn't match \u2014 use your PIN"; }
         });
       });
     }
@@ -7319,6 +7366,427 @@ AI_TYPES.join(", "),
     setTimeout(function(){ try{ host.querySelector("#ruA").focus(); }catch(e){} },80);
   }
 
+  /* ============================================================
+     DEEP RECOVERY — tiered vault + action log
+
+     Tier 1  Recently deleted   the normal 30-day bin
+     Tier 2  Deep vault         survives emptying tier 1
+     Tier 3  Hidden vault       reached by double-tapping the dashboard
+                                footer line; holds mass deletions
+     Tier 4+ Custom vaults      user-defined, each with its own phrase
+
+     Nothing is destroyed by a delete: an item moves down the tiers.
+     Only "Erase all data" and the age purge remove anything for good,
+     and both say so plainly first.
+     ============================================================ */
+  var VAULT_KEY="mymoney_vault_v1";
+  var ACTIONLOG_KEY="mymoney_actions_v1";
+  var MASS_DELETE_THRESHOLD=5;      // this many at once counts as a mass delete
+  var ACTION_LOG_MAX=400;
+
+  var vault={ deep:[], hidden:[], custom:{} };   // custom: {name:{phrase, items:[]}}
+  var actionLog=[];
+
+  function loadVault(){
+    try{ var r=localStorage.getItem(VAULT_KEY); if(r) vault=Object.assign(vault, JSON.parse(r)); }catch(e){}
+    try{ var a=localStorage.getItem(ACTIONLOG_KEY); if(a) actionLog=JSON.parse(a)||[]; }catch(e){}
+  }
+  function saveVault(){
+    try{ localStorage.setItem(VAULT_KEY, JSON.stringify(vault)); }catch(e){}
+  }
+  function saveActionLog(){
+    try{ localStorage.setItem(ACTIONLOG_KEY, JSON.stringify(actionLog.slice(0,ACTION_LOG_MAX))); }catch(e){}
+  }
+
+  /* Every reversible action is recorded with enough state to undo it. */
+  function logAction(kind, label, undoData, meta){
+    actionLog.unshift({
+      id:"a"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36),
+      kind:kind, label:label, at:Date.now(),
+      undo:undoData||null, meta:meta||null, reverted:false
+    });
+    if(actionLog.length>ACTION_LOG_MAX) actionLog.length=ACTION_LOG_MAX;
+    saveActionLog();
+  }
+
+  /* A delete drops into the deep vault, and a big one into the hidden
+     tier — so a malicious or fat-fingered mass wipe is still recoverable
+     after someone empties the visible bin. */
+  function vaultStore(items, wasMass){
+    var batch={ id:"v"+Date.now().toString(36), at:Date.now(),
+                items:items.map(function(t){ return clone(t); }), mass:!!wasMass };
+    if(wasMass){ vault.hidden.unshift(batch); }
+    else { vault.deep.unshift(batch); }
+    // generous caps — this is the safety net, not a cache
+    if(vault.deep.length>200) vault.deep.length=200;
+    if(vault.hidden.length>100) vault.hidden.length=100;
+    saveVault();
+    return batch;
+  }
+  function vaultTier(tier){
+    if(tier==="deep") return vault.deep;
+    if(tier==="hidden") return vault.hidden;
+    var c=vault.custom[tier];
+    return c ? c.items : [];
+  }
+  function vaultRestore(tier, batchId){
+    var list=vaultTier(tier);
+    var idx=list.findIndex(function(b){ return b.id===batchId; });
+    if(idx<0) return 0;
+    var batch=list[idx];
+    var added=0;
+    batch.items.forEach(function(t){
+      if(!state.transactions.some(function(x){ return x.id===t.id; })){
+        state.transactions.push(clone(t)); added++;
+      }
+    });
+    list.splice(idx,1); saveVault(); persistNow(); render();
+    return added;
+  }
+
+  /* ---- time-based rollback ----------------------------------------
+     Reverts every logged action inside a window. Takes a snapshot first
+     so the rollback itself can be undone — a rollback that can't be
+     undone is just a second way to lose data. */
+  function rollbackMinutes(mins, cb){
+    var cutoff=Date.now()-mins*60000;
+    var affected=actionLog.filter(function(a){ return a.at>=cutoff && !a.reverted && a.undo; });
+    if(!affected.length){ cb&&cb(0); return; }
+    var before=clone(state.transactions);
+    var n=0;
+    affected.forEach(function(a){
+      if(revertAction(a, true)) n++;
+    });
+    logAction("rollback", "Rolled back the last "+mins+" minutes ("+n+" actions)",
+              {type:"snapshot", transactions:before});
+    persistNow(); render(); saveActionLog();
+    cb&&cb(n);
+  }
+  function revertAction(a, quiet){
+    if(!a || !a.undo || a.reverted) return false;
+    var u=a.undo;
+    if(u.type==="delete"){
+      // it was deleted -> put it back
+      (u.items||[]).forEach(function(t){
+        if(!state.transactions.some(function(x){ return x.id===t.id; })) state.transactions.push(clone(t));
+      });
+    } else if(u.type==="add"){
+      // it was added -> take it away again
+      var ids=(u.items||[]).map(function(t){ return t.id; });
+      state.transactions=state.transactions.filter(function(t){ return ids.indexOf(t.id)<0; });
+    } else if(u.type==="edit"){
+      var i=state.transactions.findIndex(function(t){ return t.id===u.before.id; });
+      if(i>=0) state.transactions[i]=clone(u.before);
+    } else if(u.type==="snapshot"){
+      state.transactions=clone(u.transactions);
+    } else return false;
+    a.reverted=true;
+    if(!quiet){ saveActionLog(); persistNow(); render(); }
+    return true;
+  }
+
+  /* ---- hidden tiers unlocked by a phrase --------------------------
+     Double-tapping the dashboard footer opens tier 3. Owners can add
+     their own phrases for further tiers. */
+  var HIDDEN_TAPS=0, HIDDEN_TIMER=null;
+  function bindHiddenUnlock(){
+    var foot=document.querySelector("#pageDash .foot, .foot");
+    if(!foot || foot._vaultBound) return;
+    foot._vaultBound=true;
+    foot.style.cursor="default";
+    foot.addEventListener("click", function(){
+      HIDDEN_TAPS++;
+      clearTimeout(HIDDEN_TIMER);
+      HIDDEN_TIMER=setTimeout(function(){ HIDDEN_TAPS=0; }, 700);
+      if(HIDDEN_TAPS>=2){ HIDDEN_TAPS=0; openVaultSheet("hidden"); }
+    });
+  }
+  function addCustomVault(name, phrase){
+    vault.custom[name]={ phrase:String(phrase||"").toLowerCase().trim(), items:[] };
+    saveVault();
+  }
+  function findVaultByPhrase(text){
+    var t=String(text||"").toLowerCase().trim();
+    var hit=null;
+    Object.keys(vault.custom).forEach(function(k){
+      if(vault.custom[k].phrase && vault.custom[k].phrase===t) hit=k;
+    });
+    return hit;
+  }
+
+  /* ---- recovery sheet: every action as a card you can revert ---- */
+  var RECOVERY_WINDOWS=[5,10,30,60];
+  function recoveryCfg(){
+    if(!state.settings) state.settings={};
+    if(!state.settings.recovery) state.settings.recovery={windows:RECOVERY_WINDOWS.slice(), tz:""};
+    return state.settings.recovery;
+  }
+  function fmtLogTime(ms){
+    var d=new Date(ms), cfg=recoveryCfg();
+    try{
+      return d.toLocaleString(undefined, cfg.tz?{timeZone:cfg.tz, dateStyle:"medium", timeStyle:"short"}
+                                              :{dateStyle:"medium", timeStyle:"short"});
+    }catch(e){ return d.toISOString().slice(0,16).replace("T"," "); }
+  }
+  function agoText(ms){
+    var s=Math.floor((Date.now()-ms)/1000);
+    if(s<60) return s+"s ago";
+    if(s<3600) return Math.floor(s/60)+"m ago";
+    if(s<86400) return Math.floor(s/3600)+"h ago";
+    return Math.floor(s/86400)+"d ago";
+  }
+  var ACTION_ICON={delete:"🗑️", add:"➕", edit:"✏️", rollback:"⏪", mass:"⚠️"};
+
+  function openRecoverySheet(){
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="recovOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:520px;height:min(86vh,680px)">'
+      +'  <div class="sheet-hd"><h3>Recovery</h3>'
+      +'    <button class="x-btn" id="rcGear" title="Recovery settings">\u2699</button>'
+      +'    <button class="x-btn" id="rcX" title="Close">\u2715</button></div>'
+      +'  <div class="rc-tabs" id="rcTabs">'
+      +'    <button class="rc-tab on" data-v="log">Actions</button>'
+      +'    <button class="rc-tab" data-v="deep">Deep vault</button>'
+      +'    <button class="rc-tab" data-v="time">Rollback</button>'
+      +'  </div>'
+      +'  <div class="sheet-bd" id="rcBody"></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var view="log";
+    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector("#rcX").onclick=close;
+    host.addEventListener("click", function(e){ if(e.target===host) close(); });
+    host.querySelector("#rcGear").onclick=function(){ close(); openRecoverySettings(); };
+    host.querySelectorAll(".rc-tab").forEach(function(b){
+      b.addEventListener("click", function(){
+        view=b.getAttribute("data-v");
+        host.querySelectorAll(".rc-tab").forEach(function(x){ x.classList.toggle("on", x===b); });
+        draw();
+      });
+    });
+    function draw(){
+      var box=host.querySelector("#rcBody");
+      if(view==="log")  box.innerHTML=drawActionLog();
+      if(view==="deep") box.innerHTML=drawVault();
+      if(view==="time") box.innerHTML=drawRollback();
+      wire(box);
+    }
+    function wire(box){
+      box.querySelectorAll("[data-revert]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var a=actionLog.filter(function(x){ return x.id===b.getAttribute("data-revert"); })[0];
+          if(!a) return;
+          if(revertAction(a)){ flashSaved("reverted"); draw(); }
+          else flashSaved("couldn't revert that one");
+        });
+      });
+      box.querySelectorAll("[data-restore]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var n=vaultRestore(b.getAttribute("data-tier"), b.getAttribute("data-restore"));
+          flashSaved(n?("restored "+n):"nothing to restore"); draw();
+        });
+      });
+      box.querySelectorAll("[data-mins]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var m=+b.getAttribute("data-mins");
+          appModal({title:"Roll back "+m+" minutes?",
+            message:"Everything logged in that window is undone. The rollback itself is logged, so you can undo it too.",
+            confirmText:"Roll back", cancelText:"Cancel",
+            onConfirm:function(){ rollbackMinutes(m, function(n){
+              flashSaved(n?("undid "+n+" action"+(n===1?"":"s")):"nothing in that window"); draw(); }); }});
+        });
+      });
+    }
+    draw();
+  }
+  function drawActionLog(){
+    if(!actionLog.length)
+      return '<div class="rc-empty">Nothing logged yet. Adds, edits and deletes appear here.</div>';
+    return actionLog.slice(0,80).map(function(a){
+      return '<div class="rc-card'+(a.reverted?" done":"")+'">'
+        +'<div class="rc-ic">'+(ACTION_ICON[a.kind]||"•")+'</div>'
+        +'<div class="rc-main"><div class="rc-t">'+esc(a.label)+'</div>'
+        +'<div class="rc-s">'+esc(fmtLogTime(a.at))+' · '+agoText(a.at)+'</div></div>'
+        +(a.reverted
+          ? '<span class="rc-done">reverted</span>'
+          : (a.undo?'<button class="btn ghost sm" data-revert="'+a.id+'">Undo</button>':''))
+        +'</div>';
+    }).join("");
+  }
+  function drawVault(){
+    var out="";
+    [["deep","Deep vault","Deleted entries kept after the normal bin is emptied."],
+     ["hidden","Hidden vault","Mass deletions land here automatically."]].forEach(function(t){
+      var list=vaultTier(t[0]);
+      out+='<div class="rc-sec">'+esc(t[1])+' <span class="mut">· '+list.length+'</span></div>'
+         + '<div class="rc-secd">'+esc(t[2])+'</div>';
+      out+= list.length ? list.map(function(b){
+        return '<div class="rc-card">'
+          +'<div class="rc-ic">'+(b.mass?"⚠️":"🗑️")+'</div>'
+          +'<div class="rc-main"><div class="rc-t">'+b.items.length+' entr'+(b.items.length===1?"y":"ies")
+          + (b.mass?' <span class="rc-flag">mass delete</span>':'')+'</div>'
+          +'<div class="rc-s">'+esc(fmtLogTime(b.at))+' · '+agoText(b.at)+'</div></div>'
+          +'<button class="btn ghost sm" data-restore="'+b.id+'" data-tier="'+t[0]+'">Restore</button>'
+          +'</div>';
+      }).join("") : '<div class="rc-empty sm">Empty.</div>';
+    });
+    return out;
+  }
+  function drawRollback(){
+    var cfg=recoveryCfg();
+    return '<div class="rc-secd" style="margin-bottom:12px">Undo everything logged in a window. '
+      +'The rollback is itself logged, so it can be undone.</div>'
+      + '<div class="rc-mins">'
+      + (cfg.windows||RECOVERY_WINDOWS).map(function(m){
+          var label = m<60 ? m+" min" : (m/60)+(m===60?" hour":" hours");
+          var n=actionLog.filter(function(a){ return a.at>=Date.now()-m*60000 && !a.reverted && a.undo; }).length;
+          return '<button class="rc-min" data-mins="'+m+'">'
+            +'<b>'+label+'</b><span>'+n+' action'+(n===1?"":"s")+'</span></button>';
+        }).join("")
+      + '</div>';
+  }
+  function openRecoverySettings(){
+    var cfg=recoveryCfg();
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="rcSetOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:400px">'
+      +'  <div class="sheet-hd"><h3>Recovery settings</h3>'
+      +'    <button class="x-btn" id="rsX">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="fld"><label>Rollback windows (minutes, comma separated)</label>'
+      +'      <input class="inp" id="rsWins" value="'+esc((cfg.windows||RECOVERY_WINDOWS).join(", "))+'"></div>'
+      +'    <div class="fld"><label>Time zone for the log</label>'
+      +'      <select class="inp" id="rsTz"></select></div>'
+      +'    <div class="rq-warn" style="margin:14px 0 0">Recommended: keep at least one short window '
+      +'      (5 min) for slips and one long (1 hour) for a bad session. Nothing is ever destroyed by a '
+      +'      rollback \u2014 it is logged and reversible.</div>'
+      +'  </div>'
+      +'  <div class="sheet-ft"><button class="btn ghost sm" id="rsCancel">Cancel</button>'
+      +'    <button class="btn primary sm" id="rsSave">Save</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var tzSel=host.querySelector("#rsTz");
+    var zones=["", "UTC","Asia/Dubai","Europe/London","America/New_York","America/Los_Angeles",
+               "Asia/Karachi","Asia/Singapore","Australia/Sydney"];
+    try{ var local=Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if(local && zones.indexOf(local)<0) zones.splice(1,0,local); }catch(e){}
+    tzSel.innerHTML=zones.map(function(z){
+      return '<option value="'+esc(z)+'"'+(z===cfg.tz?" selected":"")+'>'+(z||"Device default")+'</option>';
+    }).join("");
+    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector("#rsX").onclick=close;
+    host.querySelector("#rsCancel").onclick=close;
+    host.querySelector("#rsSave").onclick=function(){
+      var wins=host.querySelector("#rsWins").value.split(",")
+        .map(function(x){ return parseInt(x,10); })
+        .filter(function(x){ return x>0 && x<=1440; });
+      cfg.windows = wins.length ? wins : RECOVERY_WINDOWS.slice();
+      cfg.tz = tzSel.value;
+      persistNow(); close(); flashSaved("recovery settings saved"); openRecoverySheet();
+    };
+  }
+
+
+  /* ---- diagnostics export: logs and vault contents as one file ---- */
+  function exportDiagnostics(){
+    var report={
+      _format:"mymoney-diagnostics", _v:1,
+      generatedAt:new Date().toISOString(),
+      app:{ transactions:(state.transactions||[]).length,
+            portfolios:(state.portfolios||[]).length,
+            currency:state.currency },
+      environment:{
+        userAgent:navigator.userAgent,
+        secureContext:!!window.isSecureContext,
+        framed:(function(){ try{ return window.self!==window.top; }catch(e){ return true; } })(),
+        online:navigator.onLine,
+        storage:(typeof StorageManager!=="undefined" && StorageManager.activeName)
+                 ? StorageManager.activeName() : "unknown"
+      },
+      actionLog:actionLog.slice(0,200),
+      vault:{
+        deep:vault.deep.map(function(b){ return {id:b.id, at:b.at, count:b.items.length, mass:b.mass}; }),
+        hidden:vault.hidden.map(function(b){ return {id:b.id, at:b.at, count:b.items.length, mass:b.mass}; })
+      },
+      trash:(state.trash||[]).map(function(t){ return {at:t.at}; })
+    };
+    var url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:"application/json"}));
+    var a=document.createElement("a");
+    a.href=url; a.download="mymoney-diagnostics-"+todayStr()+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    flashSaved("diagnostics exported");
+  }
+  function bindRecoveryEntry(){
+    var b=document.getElementById("openRecoveryBtn");
+    if(b && !b._bound){ b._bound=true; b.addEventListener("click", openRecoverySheet); }
+    var e=document.getElementById("exportDiagBtn");
+    if(e && !e._bound){ e._bound=true; e.addEventListener("click", exportDiagnostics); }
+  }
+
+  /* ============================================================
+     FAILED-ATTEMPT LOG
+
+     The goal is knowing someone tried to get in. That's achieved by
+     recording attempts — it does not require photographing whoever
+     picked up the device. A phone that silently photographs anyone
+     who touches it captures family, colleagues and visitors who never
+     agreed to it, and in many places that is unlawful regardless of
+     who owns the hardware. So: timestamps, not covert photos.
+     ============================================================ */
+  var ATTEMPTS_KEY="mymoney_attempts_v1";
+  var attempts=[];
+  function loadAttempts(){
+    try{ var r=localStorage.getItem(ATTEMPTS_KEY); if(r) attempts=JSON.parse(r)||[]; }catch(e){}
+  }
+  function saveAttempts(){
+    try{ localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts.slice(0,60))); }catch(e){}
+  }
+  function recordFailedAttempt(kind){
+    attempts.unshift({at:Date.now(), kind:kind||"pin", seen:false});
+    if(attempts.length>60) attempts.length=60;
+    saveAttempts();
+  }
+  function unseenAttempts(){ return attempts.filter(function(a){ return !a.seen; }); }
+  function markAttemptsSeen(){ attempts.forEach(function(a){ a.seen=true; }); saveAttempts(); }
+
+  /* Shown once, after a successful unlock — not a silent record you
+     never learn about. */
+  function showAttemptBanner(){
+    var list=unseenAttempts();
+    if(!list.length) return;
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="attemptOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:420px">'
+      +'  <div class="sheet-hd"><h3>⚠️ Failed unlock attempts</h3>'
+      +'    <button class="x-btn" id="atX">✕</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="rq-warn">There '+(list.length===1?"was <b>1</b> failed attempt":"were <b>"+list.length+"</b> failed attempts")
+      +'      to unlock this app since you were last in.</div>'
+      +'    <div class="rc-sec">When</div>'
+      +      list.slice(0,12).map(function(a){
+              return '<div class="rc-card"><div class="rc-ic">⛔</div>'
+                +'<div class="rc-main"><div class="rc-t">'+esc(a.kind==="face"?"Face didn\u2019t match":"Wrong PIN")+'</div>'
+                +'<div class="rc-s">'+esc(fmtLogTime(a.at))+' · '+agoText(a.at)+'</div></div></div>';
+            }).join("")
+      +'    <div class="rc-secd" style="margin-top:12px">If this was you, nothing to do. If it wasn’t, '
+      +'      consider changing your PIN and exporting a backup.</div>'
+      +'  </div>'
+      +'  <div class="sheet-ft"><button class="btn ghost sm" id="atClear">Clear log</button>'
+      +'    <button class="btn primary sm" id="atOk">Got it</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    function close(){ markAttemptsSeen(); if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector("#atX").onclick=close;
+    host.querySelector("#atOk").onclick=close;
+    host.querySelector("#atClear").onclick=function(){
+      attempts=[]; saveAttempts(); if(host.parentNode) host.parentNode.removeChild(host);
+      flashSaved("attempt log cleared");
+    };
+  }
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -11140,6 +11608,10 @@ AI_TYPES.join(", "),
     bindFacePanel();
     bindSplit();
     refreshWllmUI();
+    loadVault();
+    loadAttempts();
+    bindHiddenUnlock();
+    bindRecoveryEntry();
     bindAllDatePickers();
     /* Sheets are built at runtime, so watch for date inputs added later
        rather than hunting down every place that creates one. */
@@ -11507,6 +11979,8 @@ AI_TYPES.join(", "),
   <div style="padding:0 20px">
         <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Recent actions<span class="mut" id="actCount" style="font-size:11px;font-weight:400;letter-spacing:0;text-transform:none;margin-left:8px"></span></div>
         <div class="hint" style="margin:0 0 10px">Changes from this session, newest first. Undoing one also undoes anything after it.</div>
+        <button class="btn ghost sm" id="openRecoveryBtn" style="width:100%;margin-bottom:10px">🗄️ Deep recovery &amp; rollback</button>
+        <button class="btn ghost sm" id="exportDiagBtn" style="width:100%;margin-bottom:10px">📄 Export system diagnostics</button>
         <div id="actList"></div>
       </div>
       <hr class="sep">
