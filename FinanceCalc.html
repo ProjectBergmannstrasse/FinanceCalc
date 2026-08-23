@@ -825,7 +825,7 @@
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
 
-  /* ── AI chat / findings ─────────────────────────────────────── */
+  /* ── Financial Auditor ───────────────────────────────────────── */
   .aud-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
   .aud-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
   .aud-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;flex:1}
@@ -1154,8 +1154,10 @@
 </div>
 
 
+<!-- Monte Carlo Wealth Simulator -->
 
 
+<!-- Local LLM Financial Auditor -->
 
 
 <!-- Security & Integrity -->
@@ -4906,7 +4908,7 @@ AI_TYPES.join(", "),
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
   /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
      Trading folds into Your money; Layout & wording folds into Appearance;
-     AI lives under Extra, with its own sub-boxes. */
+     AI folds into Security & privacy alongside the other on-device features. */
   /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
      Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
@@ -4918,7 +4920,7 @@ AI_TYPES.join(", "),
      has:["Trading","Import trades from a file"]},
     {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, face unlock, splitting, cloud folder",
+    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, encryption, auditor, on-device AI",
      has:[], ids:["secWrap"]},
     {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
      has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
@@ -5466,7 +5468,7 @@ AI_TYPES.join(", "),
 
 
   /* ============================================================
-     FINDINGS ENGINE + ON-DEVICE MODELS
+     FINANCIAL AUDITOR — three tiers, all local
 
      TIER 1 — Rules engine (offline, zero download, always works)
        Statistical analysis of your actual transaction data:
@@ -6083,7 +6085,7 @@ AI_TYPES.join(", "),
 
 
   /* ============================================================
-     AI CHAT — a real conversation, with attachments
+     AUDITOR CHAT — a real conversation, with attachments
      Was one-shot: type, get an answer, gone. Now keeps history so
      follow-ups work ("what about last month?"), and takes files —
      text ones are read and included, binaries are named honestly
@@ -6210,13 +6212,13 @@ AI_TYPES.join(", "),
       }
       return null;
     }).then(function(ans){
-      setAnswer(ans || "No model is ready yet. Chrome 127+ has one built in — otherwise set one up in Settings › Extra › AI mode.");
+      setAnswer(ans || "No on-device model is ready. Chrome 127+ has one built in, or load WebLLM from the ⚡ tab.");
     }).catch(function(e){
       setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
     });
   }
 
-  /* The chat used to sit several taps deep in Settings.
+  /* The chat lived four taps deep (Settings > Security > Auditor > Ask AI).
      Something you'd use daily shouldn't be buried, so this opens the same
      chat in a sheet from the dashboard. One chat, one history — the panel
      in Settings and this sheet share chatLog. */
@@ -6290,7 +6292,7 @@ AI_TYPES.join(", "),
       }
       set("no model \u2014 tap to set up","");
       el.style.cursor="pointer";
-      el.onclick=function(){ openAiSettings(); };
+      el.onclick=function(){ openAuditorTo("webllm"); };
     });
   }
 
@@ -6937,8 +6939,8 @@ AI_TYPES.join(", "),
         +'<button class="x-btn" id="fpX">✕</button></div>'
       +'<div class="sheet-bd">'+listHtml
         +'<div style="font-size:11px;color:var(--mut);margin-top:6px;line-height:1.6">'
-          +'Spotted automatically from your own figures. Ask AI to talk it through, '
-          +'or open Money to see the entries behind it.</div>'
+          +'Detected automatically from your own figures. Ask an on-device model to explain it, '
+          +'or open the auditor for the full picture.</div>'
       +'</div>'
       +'<div class="sheet-ft">'
         +'<button class="btn ghost sm" id="fpDismiss">Dismiss</button>'
@@ -6953,7 +6955,7 @@ AI_TYPES.join(", "),
     ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
 
     ov.querySelector("#fpAudit").onclick=function(){
-      close(); openAiSettings();
+      close(); openAuditorTo("rules");
     };
     ov.querySelector("#fpAsk").onclick=function(){
       close();
@@ -6965,8 +6967,10 @@ AI_TYPES.join(", "),
     };
   }
 
-  /* Jump to the AI section in Settings, where the model controls live. */
-  function openAiSettings(){
+  // open the auditor panel scrolled into view, on a chosen tab
+  /* The auditor panel is gone; anything that used to jump to it opens the
+     AI section in Settings, where those controls now live. */
+  function openAuditorTo(tier){
     setTab("pageSettings");
     var sec=document.getElementById("aiSection");
     if(!sec) return;
@@ -6982,20 +6986,20 @@ AI_TYPES.join(", "),
      ready, say so and open the tab that can fix it — rather than
      failing silently or pretending an answer. */
   function askBestLocalEngine(question){
-    openAiSettings();
+    openAuditorTo("ai");
     if(q) q.value=question;
     initBuiltinAi().then(function(ready){
       if(ready){
         return;
       }
       if(window._wllmEngine){
-        openAiSettings();
+        openAuditorTo("webllm");
         if(wq) wq.value=question;
         return;
       }
       if(resp) resp.innerHTML='<div class="aud-llm-resp" style="color:var(--amber)">'
-        +'No model is ready yet. Chrome 127+ has one built in, or set one up in '
-        +'Settings \u203a Extra \u203a AI mode.</div>';
+        +'No on-device model is ready yet. Chrome 127+ has one built in, or load WebLLM '
+        +'from the ⚡ tab for a one-time download.</div>';
     });
   }
 
@@ -10806,7 +10810,7 @@ AI_TYPES.join(", "),
     <details class="sect sect-nested">
       <summary class="sect-h"><span class="sect-i">💬</span>
         <span class="sect-tt"><span class="sect-t">Ask AI</span>
-          <span class="sect-s">Chat about your money, on your device</span></span>
+          <span class="sect-d">Chat about your money, on your device</span></span>
         <span class="sect-c">▸</span></summary>
       <div class="sect-b">
         <div class="subhint" style="margin-bottom:10px">Runs entirely on this device once a model is ready. Nothing is sent anywhere.</div>
@@ -10825,7 +10829,7 @@ AI_TYPES.join(", "),
     <details class="sect sect-nested">
       <summary class="sect-h"><span class="sect-i">📷</span>
         <span class="sect-tt"><span class="sect-t">Auto-analyse photos</span>
-          <span class="sect-s">Read receipts and fill entries in</span></span>
+          <span class="sect-d">Read receipts and fill entries in</span></span>
         <span class="sect-c">▸</span></summary>
       <div class="sect-b">
         <div class="subhint" style="margin-bottom:12px">Snap a receipt and it fills the amount, date and merchant. The <b>local scanner</b> needs no key and no internet. Adding a cloud key below reads messier photos more accurately.</div>
@@ -10871,7 +10875,7 @@ AI_TYPES.join(", "),
     <details class="sect sect-nested">
       <summary class="sect-h"><span class="sect-i">👤</span>
         <span class="sect-tt"><span class="sect-t">Facial recognition</span>
-          <span class="sect-s">The model behind face unlock</span></span>
+          <span class="sect-d">The model behind face unlock</span></span>
         <span class="sect-c">▸</span></summary>
       <div class="sect-b">
         <div class="subhint" style="margin-bottom:12px">Face unlock compares a 128-number descriptor of your face, computed on this device. The model downloads once (~6MB) and then works offline.</div>
