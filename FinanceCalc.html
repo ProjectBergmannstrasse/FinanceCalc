@@ -825,41 +825,7 @@
   .copy-cancel{color:var(--mut);font-weight:500;align-items:center;margin-top:2px}
   .td-copy{margin-right:auto}
 
-  /* Monte Carlo Simulator */
-  .mc-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;
-    margin:10px 0;overflow:hidden}
-  .mc-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
-    cursor:pointer;gap:8px;user-select:none}
-  .mc-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;
-    display:flex;align-items:center;gap:7px}
-  .mc-head .mc-caret{font-size:10px;color:var(--mut);transition:transform .25s ease}
-  .mc-body{padding:14px 16px 16px}
-  .mc-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-  .mc-inputs .fld{margin:0}
-  .mc-inputs .fld label{font-size:10px}
-  .mc-inputs .fld input,.mc-inputs .fld select{font-size:13px;padding:8px 10px;min-height:40px}
-  .mc-run{width:100%;margin-top:4px}
-  .mc-result{margin-top:14px}
-  .mc-canvas-wrap{position:relative;width:100%;height:200px;border-radius:10px;
-    background:var(--panel);overflow:hidden;margin-bottom:12px}
-  .mc-canvas-wrap canvas{display:block;width:100%;height:100%}
-  .mc-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
-  .mc-stat{background:var(--panel);border-radius:10px;padding:9px 10px;text-align:center}
-  .mc-stat .mk{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--mut);font-weight:700;margin-bottom:3px}
-  .mc-stat .mv{font-size:16px;font-weight:800}
-  .mc-prob{text-align:center;font-size:12px;color:var(--mut);margin-top:6px;line-height:1.6}
-  .mc-prob b{color:var(--tx)}
-  .mc-bands{display:flex;gap:4px;height:14px;border-radius:7px;overflow:hidden;margin-bottom:6px}
-  .mc-band{height:100%;transition:width .5s cubic-bezier(.22,1,.36,1)}
-  .mc-legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--mut);margin-top:4px}
-  .mc-legend span{display:flex;align-items:center;gap:4px}
-  .mc-legend i{width:10px;height:10px;border-radius:2px;flex:none}
-  .mc-discl{font-size:10px;color:var(--mut);text-align:center;margin-top:10px;line-height:1.6;
-    border-top:1px solid var(--bd);padding-top:8px}
-  .mc-spinner{text-align:center;color:var(--mut);font-size:12px;padding:30px 0}
-
-  /* ── Financial Auditor ───────────────────────────────────────── */
+  /* ── AI chat / findings ─────────────────────────────────────── */
   .aud-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
   .aud-head{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
   .aud-head h3{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin:0;flex:1}
@@ -890,8 +856,6 @@
   .aud-progress-bar{height:100%;background:var(--up);border-radius:2px;transition:width .3s ease;width:0}
 
   /* Biometric lock screen */
-  #lockScreen{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;
-    opacity:0;transition:opacity .2s ease}
   #lockScreen.in{opacity:1}
   .lock-inner{text-align:center;width:min(340px,90vw)}
   .lock-icon{font-size:52px;margin-bottom:8px}
@@ -915,7 +879,6 @@
   /* Sub-budget rows */
   .sub-bud-row{display:flex;justify-content:space-between;padding:2px 0 2px 14px;font-size:11px}
   /* Shared link badge */
-  #rbacBadge{pointer-events:none}
 
   /* ── Security & Accounting panels ─────────────────────────── */
   .sec-wrap{background:var(--card);border:1px solid var(--bd);border-radius:14px;margin:10px 0;overflow:hidden}
@@ -954,6 +917,114 @@
   .ct-fill.over{background:var(--down)}
   .ct-add{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
   .ct-add .inp{min-height:38px;font-size:12px;padding:7px 9px}
+
+  .sect-nested{margin-top:8px;border-radius:11px;background:var(--panel);border:1px solid var(--bd)}
+  .sect-nested > .sect-h{padding:10px 12px}
+  .sect-nested .sect-t{font-size:12.5px}
+  .sect-nested > .sect-b{padding:0 12px 12px}
+  /* App lock */
+  #lockScreen{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;
+    align-items:center;justify-content:center;padding:20px;transition:opacity .22s ease;outline:none}
+  .lk-box{width:100%;max-width:300px;text-align:center}
+  .lk-icon{font-size:38px;margin-bottom:6px}
+  .lk-title{font-size:17px;font-weight:800;margin-bottom:4px}
+  .lk-sub{font-size:12.5px;color:var(--mut);min-height:18px;margin-bottom:18px}
+  .lk-dots{display:flex;gap:10px;justify-content:center;margin-bottom:22px}
+  .lk-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--bd2);
+    transition:background .15s ease,border-color .15s ease,transform .15s ease}
+  .lk-dot.on{background:var(--tx);border-color:var(--tx);transform:scale(1.15)}
+  .lk-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+  .lk-key{height:58px;border-radius:50%;border:1px solid var(--bd2);background:var(--card);
+    color:var(--tx);font:inherit;font-size:20px;font-weight:600;cursor:pointer;
+    transition:transform .1s ease,background .15s ease}
+  .lk-key:hover{background:var(--card2)}
+  .lk-key:active{transform:scale(.92);background:var(--card2)}
+  .lk-key.lk-blank{border:0;background:transparent;cursor:default}
+  .lk-box.shake{animation:shake .38s}
+
+  /* proper toggle switch — a bare checkbox looked unfinished */
+  .sw{position:relative;width:44px;height:26px;flex:none;cursor:pointer;display:inline-block}
+  .sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+  .sw i{position:absolute;inset:0;border-radius:99px;background:var(--card2);
+    border:1px solid var(--bd2);transition:background .22s ease,border-color .22s ease}
+  .sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+    background:var(--mut);transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .22s ease}
+  .sw input:checked + i{background:var(--up);border-color:var(--up)}
+  .sw input:checked + i::after{transform:translateX(18px);background:#04140b}
+  .sw input:focus-visible + i{outline:2px solid var(--cool);outline-offset:2px}
+  /* PIN setup + face sheets */
+  .pin-sheet{max-width:340px}
+  .pin-sub{font-size:12px;color:var(--mut);line-height:1.55;margin-bottom:16px}
+  .pin-err{color:var(--down);font-size:12px;font-weight:600;min-height:16px;
+    margin:2px 0 12px;display:none;animation:rise .18s}
+  #pinPad{max-width:250px;margin:0 auto}
+  .face-frame{position:relative;width:200px;height:200px;margin:4px auto 14px;
+    border-radius:50%;overflow:hidden;background:#000}
+  .face-frame video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+  .face-ring{position:absolute;inset:0;border-radius:50%;
+    border:3px solid var(--bd2);transition:border-color .25s ease,box-shadow .25s ease;pointer-events:none}
+  .face-ring.on{border-color:var(--up);box-shadow:0 0 0 4px rgba(61,220,132,.18)}
+  .face-status{font-size:12.5px;color:var(--mut);min-height:20px;line-height:1.5}
+
+  /* ── Ask AI chat ─────────────────────────────────────────────── */
+  .chat-sheet{max-width:540px;height:min(84vh,660px);display:flex;flex-direction:column}
+  .chat-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
+  .chat-hd h3{font-size:15px;margin:0;flex:none}
+  .chat-engine{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;
+    background:var(--card2);color:var(--mut);border:1px solid var(--bd2);white-space:nowrap}
+  .chat-engine.ready{background:rgba(61,220,132,.14);color:var(--up);border-color:rgba(61,220,132,.35)}
+  .chat-engine.busy{background:rgba(244,183,63,.14);color:var(--amber);border-color:rgba(244,183,63,.35)}
+  .chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;
+    scroll-behavior:smooth}
+  .chat-empty{margin:auto;text-align:center;color:var(--mut);max-width:280px}
+  .chat-empty .ce-ic{font-size:34px;margin-bottom:10px;opacity:.55}
+  .chat-empty .ce-t{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:6px}
+  .chat-empty .ce-d{font-size:12px;line-height:1.6}
+  .chat-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px}
+  .chat-sugg{font-size:11.5px;padding:7px 11px;border-radius:20px;background:var(--card2);
+    border:1px solid var(--bd2);color:var(--tx);cursor:pointer;font:inherit;font-size:11.5px;
+    transition:background .15s ease,transform .1s ease}
+  .chat-sugg:hover{background:var(--card)}
+  .chat-sugg:active{transform:scale(.96)}
+  .chat-turn{display:flex;flex-direction:column;gap:4px;max-width:86%;animation:chatIn .22s backwards}
+  @keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .chat-turn.me{align-self:flex-end;align-items:flex-end}
+  .chat-turn.ai{align-self:flex-start;align-items:flex-start}
+  .chat-who{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:0 4px}
+  .chat-bub{padding:11px 14px;border-radius:16px;font-size:13.5px;line-height:1.6;
+    white-space:pre-wrap;word-break:break-word}
+  .chat-turn.me .chat-bub{background:var(--up);color:#04140b;border-bottom-right-radius:5px;font-weight:500}
+  .chat-turn.ai .chat-bub{background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}
+  .chat-att{display:flex;flex-wrap:wrap;gap:5px;padding:0 4px}
+  .chat-att span{font-size:10.5px;background:var(--card2);border:1px solid var(--bd2);
+    border-radius:7px;padding:3px 7px;color:var(--mut)}
+  .chat-typing{display:flex;gap:4px;padding:13px 16px;background:var(--card2);
+    border:1px solid var(--bd);border-radius:16px;border-bottom-left-radius:5px;width:fit-content}
+  .chat-typing i{width:6px;height:6px;border-radius:50%;background:var(--mut);
+    animation:blink 1.3s infinite both}
+  .chat-typing i:nth-child(2){animation-delay:.18s}
+  .chat-typing i:nth-child(3){animation-delay:.36s}
+  @keyframes blink{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .chat-foot{border-top:1px solid var(--bd);padding:10px 12px}
+  .chat-pending{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .chat-pending:empty{display:none}
+  .chat-file{display:inline-flex;align-items:center;gap:6px;background:var(--card2);
+    border:1px solid var(--bd2);border-radius:9px;padding:5px 9px;font-size:11.5px;max-width:190px}
+  .chat-file b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chat-file button{border:0;background:transparent;color:var(--mut);cursor:pointer;
+    font-size:12px;padding:0;line-height:1}
+  .chat-file button:hover{color:var(--down)}
+  .chat-input-row{display:flex;gap:8px;align-items:flex-end}
+  .chat-input-row textarea{flex:1;min-height:44px;max-height:130px;resize:none;padding:12px 14px;
+    font-size:13.5px;border-radius:14px;line-height:1.45}
+  .chat-icon-btn{width:44px;height:44px;flex:none;border-radius:50%;border:1px solid var(--bd2);
+    background:var(--card2);color:var(--tx);font-size:17px;cursor:pointer;padding:0;
+    display:flex;align-items:center;justify-content:center;transition:transform .1s ease,background .15s ease}
+  .chat-icon-btn:hover{background:var(--card)}
+  .chat-icon-btn:active{transform:scale(.92)}
+  .chat-send{background:var(--up);border-color:var(--up);color:#04140b;font-weight:800}
+  .chat-send:disabled{opacity:.4;cursor:default}
+  .chat-hint{font-size:10.5px;color:var(--mut);text-align:center;margin-top:7px}
 </style>
 </head>
 <body>
@@ -1083,174 +1154,20 @@
 </div>
 
 
-<!-- Monte Carlo Wealth Simulator -->
-<div class="mc-wrap" id="mcWrap">
-  <div class="mc-head" id="mcHead" role="button" aria-expanded="false">
-    <h3>🎲 Wealth Simulator<span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px">Monte Carlo · 10,000 scenarios</span></h3>
-    <span class="mc-caret" id="mcCaret">▶</span>
-  </div>
-  <div class="mc-body" id="mcBody" style="display:none">
-    <div class="mc-inputs">
-      <div class="fld"><label>Current net worth</label>
-        <input class="inp" id="mcNW" inputmode="decimal" placeholder="e.g. 50000"></div>
-      <div class="fld"><label>Monthly savings add</label>
-        <input class="inp" id="mcSave" inputmode="decimal" placeholder="e.g. 2000"></div>
-      <div class="fld"><label>Target (retire/goal)</label>
-        <input class="inp" id="mcTarget" inputmode="decimal" placeholder="e.g. 1000000"></div>
-      <div class="fld"><label>Return profile</label>
-        <select class="inp" id="mcProfile">
-          <option value="conservative">Conservative (6% / 10% vol)</option>
-          <option value="moderate" selected>Moderate (8% / 13% vol)</option>
-          <option value="growth">Growth (10% / 16% vol)</option>
-          <option value="aggressive">Aggressive (12% / 20% vol)</option>
-        </select></div>
-    </div>
-    <div class="fld" style="margin-bottom:10px">
-      <label>Time horizon (years)</label>
-      <input type="range" id="mcYears" min="5" max="50" step="1" value="30"
-        style="width:100%;accent-color:var(--up)">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:2px">
-        <span>5 yr</span><span id="mcYrsLbl" style="font-weight:700;color:var(--tx)">30 yr</span><span>50 yr</span>
-      </div>
-    </div>
-    <button class="btn solid wide mc-run" id="mcRun">Run 10,000 scenarios</button>
-    <div id="mcResult" class="mc-result" style="display:none"></div>
-    <div class="mc-discl">Simulation uses log-normal annual returns with historical volatility.
-      Past market behaviour does not guarantee future results.<br>
-      For personal tracking only — not financial advice.</div>
-  </div>
-</div>
 
 
-<!-- Local LLM Financial Auditor -->
-<div class="aud-wrap" id="audWrap">
-  <div class="aud-head" id="audHead" role="button" aria-expanded="false">
-    <h3>🔍 Financial Auditor
-      <span style="font-size:9px;color:var(--mut);font-weight:500;margin-left:6px" id="audEngineLabel">local rules</span>
-    </h3>
-    <span class="aud-caret" id="audCaret">▶</span>
-  </div>
-  <div class="aud-body" id="audBody" style="display:none">
-    <div class="aud-llm-bar" id="audLlmBar">
-      <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
-      <span id="audLlmStatus">Checking for on-device AI…</span>
-    </div>
-    <div class="aud-tier" id="audTier">
-      <button class="btn ghost sm aud-tier-btn on" data-tier="rules" id="audBtnRules">📊 Rules</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="ai" id="audBtnAi">🧠 Ask AI</button>
-      <button class="btn ghost sm aud-tier-btn" data-tier="webllm" id="audBtnWebllm">⚡ WebLLM</button>
-    </div>
-    <!-- Rules panel -->
-    <div id="audPanelRules">
-      <button class="btn solid aud-run" id="audRunRules">Run audit</button>
-      <div id="audFindings" class="aud-findings"></div>
-    </div>
-    <!-- On-device AI panel -->
-    <div id="audPanelAi" style="display:none">
-      <div class="aud-query">
-        <input class="inp" id="audQuery" placeholder="e.g. Where am I overspending?">
-        <button class="btn solid sm" id="audAskBtn">Ask</button>
-      </div>
-      <div id="audAiResp"></div>
-    </div>
-    <!-- WebLLM panel -->
-    <div id="audPanelWebllm" style="display:none">
-      <div id="audWebllmSetup">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.65">
-          <b style="color:var(--tx)">One-time model download, then permanently offline.</b><br>
-          Loads Llama 3.2 1B (~660MB) into browser storage. After that it runs on your GPU
-          with no internet, no API key, no data leaving your device.
-        </div>
-        <div class="aud-progress" id="wllmProgress" style="display:none">
-          <div class="aud-progress-bar" id="wllmBar"></div>
-        </div>
-        <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin-bottom:8px;display:none"></div>
-        <button class="btn solid aud-run" id="wllmLoadBtn">Load model (660MB, once)</button>
-      </div>
-      <div id="audWebllmChat" style="display:none">
-        <div class="aud-query">
-          <input class="inp" id="wllmQuery" placeholder="Ask anything about your finances…">
-          <button class="btn solid sm" id="wllmAskBtn">Ask</button>
-        </div>
-        <div id="wllmResp"></div>
-      </div>
-    </div>
-    <div class="aud-discl">All analysis runs on your device. No data is sent anywhere.<br>
-      Not financial advice — for personal tracking only.</div>
-  </div>
-</div>
 
 
 <!-- Security & Integrity -->
-<div class="sec-wrap" id="secWrap">
-  <div class="sec-head" id="secHead" role="button" aria-expanded="false">
-    <h3>🛡️ Security &amp; Integrity</h3>
-    <span class="sec-caret" id="secCaret">▶</span>
-  </div>
-  <div class="sec-body" id="secBody" style="display:none">
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Biometric lock</div>
-        <div class="si-d">Face ID or fingerprint before the app opens. Handled by your device — nothing stored here.</div></div>
-      <button class="btn ghost sm" id="bioBtn">Enable</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Encrypted backup</div>
-        <div class="si-d">Password-protect an export before it leaves this device. No password recovery.</div></div>
-      <button class="btn ghost sm" id="encBtn">Export</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Restore encrypted file</div>
-        <div class="si-d">Import a password-protected backup.</div></div>
-      <button class="btn ghost sm" id="decBtn">Restore</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Tamper-evident records</div>
-        <div class="si-d" id="auditDesc">Seals your entries into a hash chain — later edits to sealed history become detectable.</div></div>
-      <span class="sec-status off" id="auditStatus">not sealed</span>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn ghost sm" id="auditVerifyBtn" style="flex:1">Verify</button>
-      <button class="btn solid sm" id="auditSealBtn" style="flex:1">Seal records</button>
-    </div>
-    <div class="sec-item" style="margin-top:6px">
-      <div class="si-main"><div class="si-t">Install as an app</div>
-        <div class="si-d">Add to your home screen; opens without a browser and works offline.</div></div>
-      <button class="btn ghost sm" id="pwaInstallBtn">Install</button>
-    </div>
-    <div class="sec-item">
-      <div class="si-main"><div class="si-t">Portfolio access</div>
-        <div class="si-d">Set this portfolio to view-only when handing the file to someone else. A guard rail, not encryption.</div></div>
-      <select class="inp" id="roleSelect" style="width:auto;min-height:38px;font-size:12px;padding:6px 9px">
-        <option value="owner">👑 Owner</option>
-        <option value="editor">✏️ Editor</option>
-        <option value="viewer">👁️ View only</option>
-      </select>
-    </div>
-    <input type="file" id="encFileInput" accept="application/json" style="display:none">
-  </div>
-</div>
 
 <!-- Accounting -->
-<div class="sec-wrap" id="deWrap">
-  <div class="sec-head" id="deHead" role="button" aria-expanded="false">
-    <h3>📒 Accounts &amp; Budgets</h3>
-    <span class="sec-caret" id="deCaret">▶</span>
-  </div>
-  <div class="sec-body" id="deBodyWrap" style="display:none">
-    <div class="seg" id="deSeg" style="display:flex;background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:4px;gap:2px;margin-bottom:12px">
-      <button class="btn ghost sm" data-v="books" id="deBtnBooks" style="flex:1;border:0;background:var(--tx);color:var(--bg)">Statements</button>
-      <button class="btn ghost sm" data-v="tree" id="deBtnTree" style="flex:1;border:0;background:transparent">Nested budgets</button>
-    </div>
-    <div id="deBody"></div>
-    <div id="catTreeBody" style="display:none"></div>
-  </div>
-</div>
 
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
   <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
   <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan receipt</button>
+  <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -1282,10 +1199,7 @@
       </div>
       <div class="fld" id="catFld" style="display:none">
         <label for="fCat">Category</label>
-        <select id="fCat">
-          <option>Snacks</option><option>Food</option><option>Toys</option>
-          <option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option>
-        </select>
+        <select id="fCat"></select>
       </div>
       <div class="fld" id="instFld" style="display:none">
         <label for="fInst">Instrument</label>
@@ -1523,7 +1437,7 @@
   </div>
   <div class="pf-hint">Add photos of receipts, statements or trade screenshots. Each image is read in full — one image can hold several transactions, or none.</div>
   <div style="padding:10px 20px">
-    <input type="file" id="aiFiles" accept="image/*" multiple style="display:none">
+    <input type="file" id="aiFiles" accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls,.json,.html,.css,.js,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.heic,.heif,.mp3,.wav,.m4a,.mp4,.mov,.webm,.zip,image/*,text/*,application/pdf" multiple style="display:none">
     <div class="data-btns">
       <button class="btn ghost sm" id="aiAddImgs">+ Add images</button>
       <button class="btn ghost sm" id="aiClearImgs">Clear</button>
@@ -2439,7 +2353,15 @@
       else if(scope!=="all" && monthKey(t.date)!==scope){ return; }
       var a=num(t.amount);
       r.net+=balDelta(t);
-      if(t.type==="spend"){ r.spent+=a; r.cats[t.cat||"Other"]=(r.cats[t.cat||"Other"]||0)+a; }
+      // Any outflow counts as spending, not just the legacy "spend" type — and a
+      // sub-category is reported under its top-level parent so the breakdown
+      // stays six slices instead of fragmenting into twenty.
+      if(balDelta(t)<0 && t.type!=="save" && t.type!=="tax_set"){
+        var out=Math.abs(balDelta(t));
+        r.spent+=out;
+        var c=t.cat||"Other", top=topCatOf(c);
+        r.cats[top]=(r.cats[top]||0)+out;
+      }
       else if(t.type==="trade_win"){ r.tradePL+=a; }
       else if(t.type==="trade_loss"){ r.tradePL-=a; }
       else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
@@ -2803,6 +2725,7 @@
   function persist(){
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(function(){ doPersist(); }, 250);
+    if(typeof scheduleAutoDetect==="function") scheduleAutoDetect();
   }
   function buildRoot(){
     var p=activePortfolio();
@@ -4188,7 +4111,17 @@ AI_TYPES.join(", "),
         r.onload=function(){
           var url=r.result;
           var comma=url.indexOf(",");
-          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
+          var ext=(f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"";
+          var isImg=/^image\//.test(f.type||"") || ["jpg","jpeg","png","gif","webp","bmp","heic","heif"].indexOf(ext.toLowerCase())>=0;
+          if(isImg){
+            aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url, name:f.name});
+          } else {
+            // Anything not an image is attached as text the model can actually read.
+            // Binary formats (zip, mp4) can't be interpreted, so we say so rather
+            // than sending megabytes of base64 the model will choke on.
+            aiImages.push({mime:f.type||"application/octet-stream", b64:url.slice(comma+1),
+                           url:url, name:f.name, isFile:true, ext:ext.toLowerCase(), size:f.size});
+          }
           if(--left<=0) renderAiThumbs();
         };
         r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
@@ -4971,22 +4904,28 @@ AI_TYPES.join(", "),
      Built at RUNTIME from the existing DOM rather than by rewriting the markup. Sections
      aren't neat contiguous blocks (Bank & Trading is nested inside its own wrapper), so
      cutting the HTML on heading positions breaks nesting — moving live nodes can't. */
+  /* Six boxes. Nesting inside them is fine — a wall of top-level rows is not.
+     Trading folds into Your money; Layout & wording folds into Appearance;
+     AI lives under Extra, with its own sub-boxes. */
+  /* Six boxes, kept short. Trading earns its own; Data and Reset merge into
+     Extra, since backup and erase are the same errand. */
   var SETTINGS_GROUPS=[
-    {k:"look",  t:"Appearance",        i:"◐", sub:"Theme",
-     has:["Appearance"]},
-    {k:"money", t:"Your money",        i:"◈", sub:"Income, starting numbers, tax",
+    {k:"look",  t:"Appearance & layout", i:"◐", sub:"Theme, wording, card placement",
+     has:["Appearance","Wording","Layout"], ids:["settingsSlot"]},
+    {k:"money", t:"Your money",          i:"◈", sub:"Income, starting numbers, tax",
      has:["Monthly income","Setup & Starting Numbers","Tax Set-Aside"]},
-    {k:"trade", t:"Trading",           i:"◎", sub:"Trader mode, bank split, import",
+    {k:"trade", t:"Trading",             i:"◎", sub:"Trader mode, bank split, import",
      has:["Trading","Import trades from a file"]},
-    {k:"lay",   t:"Layout & wording",  i:"▦", sub:"Where cards live, what things are called",
-     has:["Wording","Layout"], ids:["settingsSlot"]},
-    {k:"auto",  t:"Automation",        i:"↻", sub:"Repeats, budgets, goals",
+    {k:"auto",  t:"Automation",          i:"↻", sub:"Repeats, budgets, goals",
      has:["Repeats","Monthly budgets","Savings goals"]},
-    {k:"ai",    t:"AI Mode",           i:"🤖", sub:"Read receipts automatically",
-     ids:["aiSection"]},
-    {k:"data",  t:"Data & backup",     i:"⛁", sub:"Backup, trash, print, storage, reset",
-     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"]}
+    {k:"sec",   t:"Security & privacy",  i:"🛡", sub:"Lock, face unlock, splitting, cloud folder",
+     has:[], ids:["secWrap"]},
+    {k:"extra", t:"Extra",               i:"⛁", sub:"Backup, storage, print, erase",
+     has:["Back Up & Data","Recent actions","Recently deleted","Print Transactions","Storage","Support","Danger Zone"],
+     ids:["aiSection"]}
   ];
+
+
   function settingsHeadingOf(el){
     var h=el.querySelector && el.querySelector('div[style*="text-transform:uppercase"]');
     return h ? h.textContent.replace(/\s+/g," ").trim() : null;
@@ -5018,6 +4957,43 @@ AI_TYPES.join(", "),
       var any=Array.prototype.some.call(b.children, function(el){ return el.style.display!=="none"; });
       det.style.display = any ? "" : "none";
     });
+  }
+
+  /* The catch-all box would otherwise be nine loose blocks stacked in a row.
+     Sub-group it so it reads as a few small boxes rather than a wall. */
+  var EXTRA_SUBS=[
+    {t:"Backup & restore", i:"⛁", has:["Back Up & Data","Copy from","From"]},
+    {t:"History",          i:"↺", has:["Recent actions","Recently deleted"]},
+    {t:"Print & storage",  i:"⎙", has:["Print Transactions","Storage","Support"]},
+    {t:"AI mode",          i:"🤖", has:["AI MODE","AI Mode","AI mode"], ids:["aiSection"]},
+    {t:"Erase",            i:"⚠", has:["Danger Zone"]}
+  ];
+  function subGroupExtra(){
+    var det=document.querySelector('details.sect[data-k="extra"]');
+    if(!det || det._subbed) return;
+    var body=det.querySelector(".sect-b"); if(!body) return;
+    var kids=Array.prototype.slice.call(body.children);
+    if(kids.length<5) return;                       // already short enough
+    var textOf=function(el){ return (el.textContent||"").slice(0,120); };
+    var boxes=[], made={};
+    EXTRA_SUBS.forEach(function(g){
+      var mine=kids.filter(function(el){
+        if(g.ids && g.ids.indexOf(el.id)>=0) return true;
+        return g.has.some(function(h){ return textOf(el).indexOf(h)>=0; });
+      });
+      if(!mine.length) return;
+      var sub=document.createElement("details");
+      sub.className="sect sect-nested";
+      sub.innerHTML='<summary class="sect-h"><span class="sect-i">'+g.i+'</span>'
+        +'<span class="sect-tt"><span class="sect-t">'+esc(g.t)+'</span></span>'
+        +'<span class="sect-c">▸</span></summary><div class="sect-b"></div>';
+      var sb=sub.querySelector(".sect-b");
+      mine.forEach(function(el){ sb.appendChild(el); made[kids.indexOf(el)]=1; });
+      boxes.push(sub);
+    });
+    // anything unmatched stays at the top of the box, above the sub-boxes
+    boxes.forEach(function(b){ body.appendChild(b); });
+    det._subbed=true;
   }
   function buildSettingsSections(){
     var page=document.getElementById("pageSettings");
@@ -5490,227 +5466,7 @@ AI_TYPES.join(", "),
 
 
   /* ============================================================
-     MONTE CARLO WEALTH SIMULATOR
-     Runs 10,000 independent simulations of portfolio growth using
-     log-normal annual returns (matching real market behaviour —
-     returns are not normally distributed; their LOG is). Each sim
-     compounds monthly, adds the user's savings each month, and
-     records the year the target was first reached (if ever).
-
-     Outputs:
-       · probability of hitting the target in the horizon
-       · 10th / 25th / 50th / 75th / 90th percentile year
-       · stacked percentile bands over time (wealth fan chart)
-       · year-by-year median wealth line
-     ============================================================ */
-
-  var MC_PROFILES = {
-    conservative: {mean:0.06, std:0.10, label:"Conservative"},
-    moderate:     {mean:0.08, std:0.13, label:"Moderate"},
-    growth:       {mean:0.10, std:0.155,label:"Growth"},
-    aggressive:   {mean:0.12, std:0.20, label:"Aggressive"}
-  };
-
-  // Box-Muller transform: uniform → standard normal
-  function mcRandn(){
-    var u=0, v=0;
-    while(!u) u=Math.random();
-    while(!v) v=Math.random();
-    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
-  }
-
-  function runMonteCarlo(netWorth, monthlySavings, target, profileKey, years){
-    var prof = MC_PROFILES[profileKey] || MC_PROFILES.moderate;
-    var SIMS = 10000;
-    // Log-normal parameters — convert arithmetic mean/std to log-space
-    var logMu  = Math.log(1+prof.mean) - 0.5*Math.pow(Math.log(1+prof.std),2);
-    var logSig = Math.log(1+prof.std);
-
-    var reachedYear = new Array(SIMS);     // year target hit, or Infinity
-    // Track wealth at each year across all sims for the fan chart (store percentiles)
-    var yearWealth  = [];   // [year] -> sorted array of ending wealth across all sims
-    for(var y=0;y<=years;y++) yearWealth.push([]);
-
-    yearWealth[0] = new Array(SIMS).fill(netWorth);
-
-    for(var sim=0;sim<SIMS;sim++){
-      var w = netWorth;
-      var hit = -1;
-      for(var yr=1;yr<=years;yr++){
-        // one year of monthly compounding with random annual return
-        var annReturn = Math.exp(logMu + logSig*mcRandn()) - 1;
-        var mRate = Math.pow(1+annReturn, 1/12) - 1;
-        for(var mo=0;mo<12;mo++){
-          w = w*(1+mRate) + monthlySavings;
-        }
-        // clamp to zero — can't go below zero in this model (no leverage/margin)
-        if(w<0) w=0;
-        yearWealth[yr].push(w);
-        if(hit<0 && w>=target) hit=yr;
-      }
-      reachedYear[sim] = hit<0 ? Infinity : hit;
-    }
-
-    // sort each year's wealth array for percentile extraction
-    for(var y2=1;y2<=years;y2++) yearWealth[y2].sort(function(a,b){return a-b;});
-
-    var pct = function(arr, p){
-      var i = Math.max(0, Math.min(arr.length-1, Math.floor(p*(arr.length-1))));
-      return arr[i];
-    };
-
-    var finite = reachedYear.filter(function(x){ return isFinite(x); }).sort(function(a,b){return a-b;});
-    var probPct = (100*finite.length/SIMS);
-
-    return {
-      prob: probPct,
-      finite: finite,
-      p10:  finite.length ? pct(finite, 0.10) : null,
-      p25:  finite.length ? pct(finite, 0.25) : null,
-      p50:  finite.length ? pct(finite, 0.50) : null,
-      p75:  finite.length ? pct(finite, 0.75) : null,
-      p90:  finite.length ? pct(finite, 0.90) : null,
-      yearWealth: yearWealth,
-      years: years,
-      target: target,
-      profile: prof
-    };
-  }
-
-  function mcFmt(v){
-    if(v>=1e9) return "$"+(v/1e9).toFixed(1)+"B";
-    if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
-    if(v>=1e3) return "$"+(v/1e3).toFixed(0)+"K";
-    return "$"+v.toFixed(0);
-  }
-
-  function drawMcChart(canvas, res){
-    var W=canvas.width, H=canvas.height;
-    var ctx=canvas.getContext("2d");
-    ctx.clearRect(0,0,W,H);
-
-    var padL=42, padR=12, padT=14, padB=28;
-    var pw=W-padL-padR, ph=H-padT-padB;
-    var years=res.years;
-
-    // find chart max Y — 95th pct at the end or 1.2× target, whichever is larger
-    var yw=res.yearWealth;
-    var maxY=Math.max(res.target*1.2,
-      yw[years].length ? yw[years][Math.floor(.95*yw[years].length)] : res.target*2);
-
-    var xf=function(yr){ return padL+pw*(yr/years); };
-    var yf=function(v){ return padT+ph*(1-Math.min(v,maxY)/maxY); };
-
-    // percentile band colours (theme-aware)
-    var cs=getComputedStyle(document.documentElement);
-    var up=cs.getPropertyValue("--up").trim()||"#3ddc84";
-    var amber=cs.getPropertyValue("--amber").trim()||"#f4b73f";
-    var mut=cs.getPropertyValue("--mut").trim()||"#8a97a6";
-    var tx=cs.getPropertyValue("--tx").trim()||"#eef3f8";
-    var bd=cs.getPropertyValue("--bd").trim()||"#26313d";
-
-    // draw percentile bands p10-p90, p25-p75 (fan)
-    function band(pLo, pHi, color, alpha){
-      ctx.beginPath();
-      ctx.moveTo(xf(0), yf(yw[0][0]||0));
-      for(var y=0;y<=years;y++){
-        var arr=yw[y];
-        if(!arr.length) continue;
-        var v=arr[Math.max(0,Math.floor(pLo*(arr.length-1)))];
-        ctx.lineTo(xf(y), yf(v));
-      }
-      for(var y2=years;y2>=0;y2--){
-        var arr2=yw[y2];
-        if(!arr2.length) continue;
-        var v2=arr2[Math.min(arr2.length-1,Math.floor(pHi*(arr2.length-1)))];
-        ctx.lineTo(xf(y2), yf(v2));
-      }
-      ctx.closePath();
-      ctx.fillStyle=color; ctx.globalAlpha=alpha; ctx.fill(); ctx.globalAlpha=1;
-    }
-    band(0.10, 0.90, up, 0.12);   // wide band
-    band(0.25, 0.75, up, 0.22);   // middle band
-    band(0.40, 0.60, up, 0.30);   // tight band
-
-    // median line
-    ctx.beginPath(); ctx.lineWidth=2.5; ctx.strokeStyle=up; ctx.globalAlpha=0.9;
-    var first=true;
-    for(var y3=0;y3<=years;y3++){
-      var arr3=yw[y3]; if(!arr3.length) continue;
-      var v3=arr3[Math.floor(.5*(arr3.length-1))];
-      first ? ctx.moveTo(xf(y3),yf(v3)) : ctx.lineTo(xf(y3),yf(v3));
-      first=false;
-    }
-    ctx.stroke(); ctx.globalAlpha=1;
-
-    // target line
-    if(res.target<=maxY){
-      var ty=yf(res.target);
-      ctx.beginPath(); ctx.setLineDash([4,4]); ctx.lineWidth=1.5;
-      ctx.strokeStyle=amber; ctx.globalAlpha=0.8;
-      ctx.moveTo(padL,ty); ctx.lineTo(padL+pw,ty); ctx.stroke();
-      ctx.setLineDash([]); ctx.globalAlpha=1;
-      ctx.fillStyle=amber; ctx.font="bold 9px "+getComputedStyle(document.body).fontFamily;
-      ctx.textAlign="left"; ctx.fillText("TARGET",padL+3,ty-3);
-    }
-
-    // x-axis labels
-    ctx.fillStyle=mut; ctx.font="10px monospace"; ctx.textAlign="center";
-    var step=years<=20?5:years<=35?10:10;
-    for(var y4=0;y4<=years;y4+=step){
-      ctx.fillText("yr "+y4, xf(y4), H-6);
-    }
-    // y-axis labels
-    ctx.textAlign="right";
-    for(var i=0;i<=4;i++){
-      var val=maxY*(i/4), yl=yf(val);
-      ctx.fillText(mcFmt(val), padL-4, yl+3);
-      ctx.beginPath(); ctx.strokeStyle=bd; ctx.lineWidth=0.5; ctx.globalAlpha=0.5;
-      ctx.moveTo(padL,yl); ctx.lineTo(padL+pw,yl); ctx.stroke(); ctx.globalAlpha=1;
-    }
-  }
-
-  function renderMcResult(res, sym){
-    sym = sym||"$";
-    var probColor = res.prob>=80 ? "var(--up)" : res.prob>=50 ? "var(--amber)" : "var(--down)";
-    var yearOf = function(p){ return p!=null ? p+"yr" : "—"; };
-
-    var html = '<div class="mc-summary">'
-      +'<div class="mc-stat"><div class="mk">Probability</div>'
-        +'<div class="mv" style="color:'+probColor+'">'+res.prob.toFixed(0)+'%</div></div>'
-      +'<div class="mc-stat"><div class="mk">Median year</div>'
-        +'<div class="mv">'+(res.p50!=null?'yr '+res.p50:'&gt;'+res.years+'yr')+'</div></div>'
-      +'<div class="mc-stat"><div class="mk">Best 1-in-10</div>'
-        +'<div class="mv" style="color:var(--up)">'+(res.p10!=null?'yr '+res.p10:'—')+'</div></div>'
-      +'</div>'
-      +'<div class="mc-canvas-wrap"><canvas id="mcCanvas"></canvas></div>'
-      +'<div class="mc-prob">'
-        +'<b>'+res.prob.toFixed(1)+'%</b> of 10,000 scenarios hit your target'
-          +(res.p50!=null?' — most reach it by <b>year '+res.p50+'</b>':'.')
-        +'<br>Worst 10%: '+(res.p90!=null?'year '+res.p90:'never in '+res.years+' yr')
-        +' &nbsp;·&nbsp; Best 10%: '+(res.p10!=null?'year '+res.p10:'—')
-      +'</div>';
-
-    var box = document.getElementById("mcResult");
-    box.innerHTML = html; box.style.display="block";
-
-    // draw after DOM is ready
-    requestAnimationFrame(function(){
-      var canvas = document.getElementById("mcCanvas");
-      if(!canvas) return;
-      var wrap = canvas.parentElement;
-      var DPR = window.devicePixelRatio||1;
-      canvas.width  = wrap.offsetWidth  * DPR;
-      canvas.height = wrap.offsetHeight * DPR;
-      canvas.style.width  = wrap.offsetWidth+"px";
-      canvas.style.height = wrap.offsetHeight+"px";
-      var ctx=canvas.getContext("2d"); ctx.scale(DPR,DPR);
-      drawMcChart(canvas, res);
-    });
-  }
-
-  /* ============================================================
-     FINANCIAL AUDITOR — three tiers, all local
+     FINDINGS ENGINE + ON-DEVICE MODELS
 
      TIER 1 — Rules engine (offline, zero download, always works)
        Statistical analysis of your actual transaction data:
@@ -5841,47 +5597,31 @@ AI_TYPES.join(", "),
     return findings;
   }
 
-  function renderAuditFindings(findings){
-    var box=document.getElementById("audFindings"); if(!box) return;
-    box.innerHTML=findings.map(function(f){
-      return '<div class="aud-finding '+f.level+'">'
-        +'<span class="af-icon">'+f.icon+'</span>'
-        +'<div class="af-title">'+esc(f.title)+'</div>'
-        +'<div class="af-body">'+esc(f.body)+'</div></div>';
-    }).join("");
-    box.style.animation="none"; void box.offsetWidth; box.style.animation="";
-  }
+
 
   /* ── Tier 2: Chrome built-in AI (window.ai.languageModel) ──── */
   var _aiSession=null;
   async function initBuiltinAi(){
-    var bar=document.getElementById("audLlmBar");
-    var dot=document.getElementById("audLlmDot");
-    var lbl=document.getElementById("audLlmStatus");
-    var ebtn=document.getElementById("audEngineLabel");
-    if(!bar) return false;
+    // the old status bar is gone; the chat badge is the single indicator now
+    var dot=null, lbl=null;
     try{
       if(typeof window.ai==="undefined"||typeof window.ai.languageModel==="undefined"){
-        dot.style.background="var(--mut)";
-        lbl.textContent="Chrome built-in AI not available on this browser.";
+      /* status shown on the chat badge */
         return false;
       }
       var caps=await window.ai.languageModel.capabilities();
       if(caps.available==="no"){
-        dot.style.background="var(--mut)"; lbl.textContent="Chrome AI available but no model downloaded yet."; return false;
+      /* status shown on the chat badge */ return false;
       }
       if(caps.available==="after-download"){
-        dot.style.background="var(--amber)"; lbl.textContent="Chrome AI: downloading model (one-time)…";
+      /* status shown on the chat badge */
       }
       _aiSession=await window.ai.languageModel.create({
         systemPrompt:"You are a personal finance assistant. The user will share their financial summary and ask questions. Be concise, specific, and actionable. Do not give generic advice — refer to the actual numbers provided."
       });
-      dot.style.background="var(--up)";
-      lbl.textContent="Chrome built-in AI ready (Gemini Nano, fully local)";
-      if(ebtn) ebtn.textContent="Chrome AI";
+      /* status shown on the chat badge */
       return true;
-    }catch(e){ dot.style.background="var(--mut)";
-      lbl.textContent="Chrome AI error: "+String(e).slice(0,80); return false; }
+    }catch(e){ dot.style.background="var(--mut)"; return false; }
   }
   function financialContext(){
     var t=totals(), sym=state.currency, txs=sortedTx();
@@ -5909,47 +5649,112 @@ AI_TYPES.join(", "),
 
   /* ── Tier 3: WebLLM (Llama 3.2 1B, WebGPU) ─────────────────── */
   var _wllmEngine=null, _wllmLoaded=false;
-  function loadWebllm(){
+  /* The model weights live in the browser's Cache Storage after the first
+     download — but `window._wllmEngine` is a page variable and dies on reload,
+     so the app used to think nothing was there and asked you to "download"
+     again. It records the choice in localStorage and re-attaches to the
+     cached weights on boot, which is fast and needs no network. */
+  var WLLM_KEY="mymoney_wllm_v1";
+  var WLLM_MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
+  function wllmRemembered(){
+    try{ return localStorage.getItem(WLLM_KEY)===WLLM_MODEL; }catch(e){ return false; }
+  }
+  function rememberWllm(){ try{ localStorage.setItem(WLLM_KEY, WLLM_MODEL); }catch(e){} }
+  function forgetWllm(){ try{ localStorage.removeItem(WLLM_KEY); }catch(e){} }
+
+  function loadWebllm(opts){
+    opts=opts||{};
+    var silent=!!opts.silent;                 // true when re-attaching on boot
     var btn=document.getElementById("wllmLoadBtn");
     var prog=document.getElementById("wllmProgress");
     var bar=document.getElementById("wllmBar");
     var sta=document.getElementById("wllmLoadStatus");
-    // WebLLM needs its own runtime (~2MB JS) — unavoidable for in-browser LLM
-    // The model weights (~660MB for Llama 3.2 1B Q4) are downloaded once and cached
+    if(window._wllmEngine){ if(opts.onReady) opts.onReady(); return; }
+    if(window._wllmLoading){ return; }
+    window._wllmLoading=true;
+
+    var cached=wllmRemembered();
+    if(btn && !silent){
+      btn.disabled=true;
+      btn.textContent = cached ? "Reconnecting…" : "Starting…";
+    }
+    if(prog && !silent) prog.style.display="";
+    if(sta && !silent){
+      sta.style.display="";
+      sta.textContent = cached
+        ? "Reconnecting to the model already on this device…"
+        : "Fetching the runtime (~2MB)…";
+    }
     var SCRIPT_URL="https://esm.run/@mlc-ai/web-llm";
-    var MODEL="Llama-3.2-1B-Instruct-q4f16_1-MLC";
-    if(!btn||!prog||!bar||!sta) return;
-    btn.disabled=true; btn.textContent="Loading runtime…";
-    prog.style.display=""; sta.style.display="";
-    sta.textContent="Loading WebLLM runtime (~2MB)…";
-    // dynamically load the WebLLM runtime — the only external load in the whole app
     var script=document.createElement("script");
     script.type="module";
     script.textContent=[
       'import * as webllm from "'+SCRIPT_URL+'";',
-      'const engine=await webllm.CreateMLCEngine("'+MODEL+'",{',
-      '  initProgressCallback:function(p){',
-      '    var b=document.getElementById("wllmBar");',
-      '    var s=document.getElementById("wllmLoadStatus");',
-      '    if(b) b.style.width=(p.progress*100).toFixed(0)+"%";',
-      '    if(s) s.textContent=p.text||"Loading…";',
-      '  }',
-      '});',
-      'window._wllmEngine=engine;',
-      'window._wllmLoaded=true;',
-      'document.getElementById("wllmLoadBtn").style.display="none";',
-      'document.getElementById("wllmProgress").style.display="none";',
-      'document.getElementById("wllmLoadStatus").textContent="Llama 3.2 1B ready (WebGPU)";',
-      'document.getElementById("wllmLoadStatus").style.color="var(--up)";',
-      'document.getElementById("audWebllmChat").style.display="";',
-      'document.getElementById("audEngineLabel").textContent="WebLLM";',
+      'try{',
+      '  const engine=await webllm.CreateMLCEngine("'+WLLM_MODEL+'",{',
+      '    initProgressCallback:function(p){',
+      '      var b=document.getElementById("wllmBar");',
+      '      var s=document.getElementById("wllmLoadStatus");',
+      '      if(b) b.style.width=((p.progress||0)*100).toFixed(0)+"%";',
+      '      if(s) s.textContent=p.text||"Loading…";',
+      '      var cs=document.getElementById("chatEngine");',
+      '      if(cs) cs.textContent=(p.text||"loading").slice(0,42);',
+      '    }',
+      '  });',
+      '  window._wllmEngine=engine;',
+      '  window._wllmLoading=false;',
+      '  window.dispatchEvent(new CustomEvent("wllm-ready"));',
+      '}catch(err){',
+      '  window._wllmLoading=false;',
+      '  window.dispatchEvent(new CustomEvent("wllm-failed",{detail:String(err&&err.message||err)}));',
+      '}'
     ].join("\n");
     script.onerror=function(){
-      btn.disabled=false; btn.textContent="Load model (660MB, once)";
-      prog.style.display="none"; sta.textContent="Failed to load runtime. Check your connection.";
+      window._wllmLoading=false;
+      if(btn){ btn.disabled=false; btn.textContent="Load model (660MB, once)"; }
+      if(prog) prog.style.display="none";
+      if(sta) sta.textContent="Couldn't reach the runtime — check your connection.";
     };
     document.head.appendChild(script);
   }
+
+  function wllmMarkReady(){
+    rememberWllm();
+    var btn=document.getElementById("wllmLoadBtn");
+    var prog=document.getElementById("wllmProgress");
+    var sta=document.getElementById("wllmLoadStatus");
+    if(btn) btn.style.display="none";
+    if(prog) prog.style.display="none";
+    if(sta){ sta.style.display=""; sta.textContent="Llama 3.2 1B ready — running on your device."; sta.style.color="var(--up)"; }
+    if(chat) chat.style.display="";
+    var cs=document.getElementById("chatEngine");
+    if(cs){ cs.textContent="WebLLM \u00b7 on device"; cs.className="chat-engine ready"; }
+    refreshWllmUI();
+  }
+  function refreshWllmUI(){
+    var btn=document.getElementById("wllmLoadBtn");
+    var sta=document.getElementById("wllmLoadStatus");
+    if(!btn) return;
+    if(window._wllmEngine){ btn.style.display="none"; return; }
+    if(wllmRemembered()){
+      // already downloaded before — this is a reconnect, not a fresh download
+      btn.style.display=""; btn.disabled=false;
+      btn.textContent="Reconnect model (already downloaded)";
+      if(sta){ sta.style.display=""; sta.style.color="var(--mut)";
+        sta.textContent="The weights are cached on this device — reconnecting needs no download."; }
+    } else {
+      btn.style.display=""; btn.disabled=false;
+      btn.textContent="Load model (660MB, once)";
+    }
+  }
+  /* On boot, if they've loaded it before, quietly re-attach to the cached
+     weights so the chat just works instead of demanding a setup step. */
+  function autoRestoreWllm(){
+    if(!wllmRemembered() || window._wllmEngine) return;
+    if(!navigator.onLine){ return; }        // runtime script still needs the network
+    loadWebllm({silent:true});
+  }
+
   async function askWebllm(query){
     var eng=window._wllmEngine; if(!eng) return null;
     var ctx=financialContext();
@@ -5965,1153 +5770,226 @@ AI_TYPES.join(", "),
   /* ── bind all three tiers ────────────────────────────────────── */
 
   /* ============================================================
-     FEATURE 1: BIOMETRIC LOCK (WebAuthn + PIN fallback)
-     Purpose: financial data on a shared device stays private.
+     APP LOCK — works everywhere, including a double-clicked file
 
-     Flow:
-       First launch → set up PIN (biometric if supported)
-       Every open → lock screen until authenticated
-       Auto-lock after N minutes of inactivity
-       Correct credential → decrypt session key → render app
-  ============================================================ */
-  var LOCK_KEY="mymoney_lock_v1";
-  var _lockSession=false;   // true once authenticated this session
-  var _lockTimer=null;
-  var _lockInactiveMs=10*60*1000;  // 10 minutes default
+     The old lock used WebAuthn only, which needs https. Opened from
+     disk it looked enabled and did nothing. This replaces it:
 
-  function lockState(){ try{ return JSON.parse(localStorage.getItem(LOCK_KEY)||"{}"); }catch(e){ return {}; } }
-  function saveLockState(o){ try{ localStorage.setItem(LOCK_KEY, JSON.stringify(o)); }catch(e){} }
+       PIN (always)      — 4+ digits, key-stretched, verifies a stored
+                           hash. Works on file://, no server, no API.
+       Face ID (bonus)   — when the page IS on https/localhost and a
+                           platform sensor exists, offer it as a faster
+                           unlock on top of the PIN. Never the only way in.
 
-  function isLockEnabled(){
-    var ls=lockState(); return !!(ls.pin||ls.credId);
+     Honest about strength: the PIN gate stops someone picking up your
+     phone or laptop. It is not full-disk encryption — a determined
+     person with the file and DevTools can still read the underlying
+     store. The UI says exactly that rather than implying more.
+     ============================================================ */
+
+  var LOCKV="mymoney_lock_v2";
+  var lockCfg={ on:false, salt:"", hash:"", rounds:60000, bio:false, credId:"", failCount:0, lockedUntil:0 };
+  function loadLock(){
+    try{ var r=localStorage.getItem(LOCKV); if(r) lockCfg=Object.assign(lockCfg, JSON.parse(r)); }catch(e){}
   }
+  function saveLock(){ try{ localStorage.setItem(LOCKV, JSON.stringify(lockCfg)); }catch(e){} }
 
-  // ── PIN helpers ──────────────────────────────────────────────
-  async function hashPin(pin, salt){
-    var enc=new TextEncoder();
-    var keyMat=await crypto.subtle.importKey("raw",enc.encode(pin),{name:"PBKDF2"},false,["deriveBits"]);
-    var bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:enc.encode(salt||"mymoney"),iterations:200000,hash:"SHA-256"},keyMat,256);
-    return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  /* ---- pure-JS SHA-256: crypto.subtle is unavailable on file:// ---- */
+  function jsSha256(msg){
+    function rotr(x,n){ return (x>>>n)|(x<<(32-n)); }
+    var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    var bytes=[];
+    for(var i=0;i<msg.length;i++){
+      var c=msg.charCodeAt(i);
+      if(c<128) bytes.push(c);
+      else if(c<2048){ bytes.push(192|(c>>6),128|(c&63)); }
+      else { bytes.push(224|(c>>12),128|((c>>6)&63),128|(c&63)); }
+    }
+    var bitLen=bytes.length*8;
+    bytes.push(0x80);
+    while(bytes.length%64!==56) bytes.push(0);
+    for(var j=7;j>=0;j--) bytes.push((bitLen/Math.pow(2,j*8))&255);
+    var w=new Array(64);
+    for(var b=0;b<bytes.length;b+=64){
+      for(var t=0;t<16;t++)
+        w[t]=(bytes[b+t*4]<<24)|(bytes[b+t*4+1]<<16)|(bytes[b+t*4+2]<<8)|bytes[b+t*4+3];
+      for(t=16;t<64;t++){
+        var s0=rotr(w[t-15],7)^rotr(w[t-15],18)^(w[t-15]>>>3);
+        var s1=rotr(w[t-2],17)^rotr(w[t-2],19)^(w[t-2]>>>10);
+        w[t]=(w[t-16]+s0+w[t-7]+s1)|0;
+      }
+      var a=H[0],bb=H[1],c2=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for(t=0;t<64;t++){
+        var S1=rotr(e,6)^rotr(e,11)^rotr(e,25);
+        var ch=(e&f)^(~e&g);
+        var t1=(h+S1+ch+K[t]+w[t])|0;
+        var S0=rotr(a,2)^rotr(a,13)^rotr(a,22);
+        var maj=(a&bb)^(a&c2)^(bb&c2);
+        var t2=(S0+maj)|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c2;c2=bb;bb=a;a=(t1+t2)|0;
+      }
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+bb)|0;H[2]=(H[2]+c2)|0;H[3]=(H[3]+d)|0;
+      H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    return H.map(function(x){ return ("00000000"+(x>>>0).toString(16)).slice(-8); }).join("");
   }
-
-  // ── WebAuthn helpers ─────────────────────────────────────────
-  function webAuthnSupported(){ return !!(window.PublicKeyCredential && navigator.credentials); }
-
-  async function registerBiometric(){
-    if(!webAuthnSupported()) return null;
+  function randHex(n){
+    var out="";
     try{
-      var chal=new Uint8Array(32); crypto.getRandomValues(chal);
-      var uid=new Uint8Array(16); crypto.getRandomValues(uid);
-      var cred=await navigator.credentials.create({publicKey:{
-        challenge:chal, rp:{name:"My Money Tracker",id:location.hostname||"localhost"},
-        user:{id:uid,name:"user",displayName:"My Money"},
-        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-        authenticatorSelection:{userVerification:"required"},
-        timeout:60000
-      }});
-      return Array.from(new Uint8Array(cred.rawId)).map(b=>b.toString(16).padStart(2,"0")).join("");
-    }catch(e){ return null; }
+      var a=new Uint8Array(n); crypto.getRandomValues(a);
+      for(var i=0;i<n;i++) out+=("0"+a[i].toString(16)).slice(-2);
+    }catch(e){
+      for(var j=0;j<n*2;j++) out+=Math.floor(Math.random()*16).toString(16);
+    }
+    return out;
+  }
+  /* Iterated hashing so a stolen hash can't be brute-forced instantly.
+     Chunked through setTimeout so the UI doesn't freeze on slower phones. */
+  function stretchPin(pin, salt, rounds, onDone, onProgress){
+    var h=salt+"|"+pin, i=0;
+    var CHUNK=4000;
+    (function step(){
+      var end=Math.min(i+CHUNK, rounds);
+      for(; i<end; i++) h=jsSha256(h);
+      if(onProgress) onProgress(i/rounds);
+      if(i<rounds) setTimeout(step,0);
+      else onDone(h);
+    })();
   }
 
-  async function verifyBiometric(credIdHex){
-    if(!webAuthnSupported()||!credIdHex) return false;
-    try{
-      var chal=new Uint8Array(32); crypto.getRandomValues(chal);
-      var credIdBytes=new Uint8Array(credIdHex.match(/.{2}/g).map(b=>parseInt(b,16)));
-      var assertion=await navigator.credentials.get({publicKey:{
-        challenge:chal, timeout:60000, userVerification:"required",
-        allowCredentials:[{type:"public-key",id:credIdBytes}]
-      }});
-      return !!assertion;
-    }catch(e){ return false; }
+  function lockIsOn(){ return !!(lockCfg.on && lockCfg.hash); }
+  function lockCooldownLeft(){
+    var left=(lockCfg.lockedUntil||0)-Date.now();
+    return left>0 ? Math.ceil(left/1000) : 0;
   }
 
-  // ── Lock screen UI ───────────────────────────────────────────
-  function showLockScreen(onUnlock){
-    var ls=lockState();
-    var hasBio=ls.credId&&webAuthnSupported();
-    var el=document.getElementById("lockScreen");
-    if(el) el.remove();
-    var div=document.createElement("div");
-    div.id="lockScreen";
-    div.innerHTML='<div class="lock-inner">'
-      +'<div class="lock-icon">🔐</div>'
-      +'<div class="lock-title">My Money</div>'
-      +'<div class="lock-sub">Enter your PIN to continue</div>'
-      +'<div class="lock-dots" id="lockDots">○ ○ ○ ○</div>'
-      +'<input type="password" id="lockPinInput" inputmode="numeric" maxlength="6" autocomplete="off" '
-        +'style="position:absolute;opacity:0;pointer-events:none" aria-label="PIN">'
-      +'<div class="lock-pad" id="lockPad"></div>'
-      +(hasBio?'<button class="btn ghost sm" id="lockBioBtn" style="margin-top:14px;width:200px">Use Face ID / Fingerprint</button>':'')
-      +'<div class="lock-err" id="lockErr"></div></div>';
-    document.body.appendChild(div);
-    requestAnimationFrame(function(){ div.classList.add("in"); });
+  function setLockPin(pin, cb){
+    var salt=randHex(16);
+    stretchPin(pin, salt, lockCfg.rounds, function(h){
+      lockCfg.on=true; lockCfg.salt=salt; lockCfg.hash=h;
+      lockCfg.failCount=0; lockCfg.lockedUntil=0;
+      saveLock(); cb(true);
+    });
+  }
+  function verifyPin(pin, cb, onProgress){
+    stretchPin(pin, lockCfg.salt, lockCfg.rounds, function(h){
+      var ok = h===lockCfg.hash;
+      if(ok){ lockCfg.failCount=0; lockCfg.lockedUntil=0; }
+      else {
+        lockCfg.failCount=(lockCfg.failCount||0)+1;
+        // slow down guessing without ever locking the owner out permanently
+        if(lockCfg.failCount>=5){
+          var wait=Math.min(300, Math.pow(2, lockCfg.failCount-5)*5);
+          lockCfg.lockedUntil=Date.now()+wait*1000;
+        }
+      }
+      saveLock(); cb(ok);
+    }, onProgress);
+  }
+  function clearLock(){
+    lockCfg={on:false,salt:"",hash:"",rounds:60000,bio:false,credId:"",failCount:0,lockedUntil:0};
+    saveLock();
+  }
+
+  /* ---- optional Face ID, only where it can actually work ---- */
+  function bioPossible(){
+    return !!(window.PublicKeyCredential && navigator.credentials &&
+              navigator.credentials.create && window.isSecureContext);
+  }
+
+  /* ---- the lock screen ---- */
+  function showLockScreen(){
+    if(!lockIsOn()) return;
+    var ov=document.createElement("div");
+    ov.id="lockScreen";
+    ov.innerHTML=
+       '<div class="lk-box">'
+      +'  <div class="lk-icon">🔒</div>'
+      +'  <div class="lk-title">My Money</div>'
+      +'  <div class="lk-sub" id="lkSub">Enter your PIN</div>'
+      +'  <div class="lk-dots" id="lkDots"></div>'
+      +'  <div class="lk-pad" id="lkPad"></div>'
+      +'  <button class="btn ghost sm" id="lkBio" style="display:none;margin-top:12px">👤 Use Face ID</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    document.body.style.overflow="hidden";
 
     var entered="";
-    function updateDots(){
-      var d=document.getElementById("lockDots"); if(!d) return;
-      d.textContent=Array(4).fill(0).map((_,i)=>entered.length>i?"●":"○").join(" ");
+    var dots=ov.querySelector("#lkDots"), sub=ov.querySelector("#lkSub");
+    function drawDots(){
+      dots.innerHTML="";
+      for(var i=0;i<Math.max(4,entered.length);i++){
+        var s=document.createElement("span");
+        s.className="lk-dot"+(i<entered.length?" on":"");
+        dots.appendChild(s);
+      }
     }
-    function showErr(msg){ var e=document.getElementById("lockErr"); if(e){e.textContent=msg;e.style.color="var(--down)";} }
-    async function tryPin(){
-      var stored=ls.pin, salt=ls.salt||"mymoney";
-      var h=await hashPin(entered, salt);
-      if(h===stored){ unlock(); }
-      else{ showErr("Wrong PIN — try again"); entered=""; updateDots(); }
-    }
-    function unlock(){
-      _lockSession=true;
-      div.classList.remove("in");
-      setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); },250);
-      resetLockTimer();
-      if(onUnlock) onUnlock();
-    }
-    // number pad
-    var pad=document.getElementById("lockPad");
-    [1,2,3,4,5,6,7,8,9,"",0,"⌫"].forEach(function(k){
+    drawDots();
+    var pad=ov.querySelector("#lkPad");
+    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
       var b=document.createElement("button");
-      b.className="lock-key"+(k===""?" lock-key-blank":"");
-      b.textContent=k===""?"":String(k);
-      if(k!=="") b.addEventListener("click",function(){
-        if(k==="⌫"){ entered=entered.slice(0,-1); updateDots(); return; }
-        if(entered.length>=6) return;
-        entered+=String(k); updateDots();
-        if(entered.length===4||entered.length===6) tryPin();
+      b.className="lk-key"+(k===""?" lk-blank":"");
+      b.textContent=k;
+      if(k==="") b.disabled=true;
+      b.addEventListener("click", function(){
+        if(lockCooldownLeft()>0){ sub.textContent="Too many tries — wait "+lockCooldownLeft()+"s"; return; }
+        if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
+        if(entered.length>=12) return;
+        entered+=k; drawDots();
+        if(entered.length>=4) trySubmit();
       });
       pad.appendChild(b);
     });
-    // biometric
-    var bioBtn=document.getElementById("lockBioBtn");
-    if(bioBtn) bioBtn.addEventListener("click",async function(){
-      bioBtn.disabled=true; bioBtn.textContent="Waiting…";
-      var ok=await verifyBiometric(ls.credId);
-      if(ok) unlock(); else{ showErr("Biometric failed — use PIN"); bioBtn.disabled=false; bioBtn.textContent="Use Face ID / Fingerprint"; }
-    });
-    // keyboard
-    document.getElementById("lockPinInput").focus();
-    div.addEventListener("keydown",function(e){
-      if(e.key>="0"&&e.key<="9"){ if(entered.length<6){entered+=e.key;updateDots();} if(entered.length===4||entered.length===6) tryPin(); }
-      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); updateDots(); }
-    });
-    // auto-attempt biometric on first show
-    if(hasBio) setTimeout(function(){ if(bioBtn&&!bioBtn.disabled) bioBtn.click(); },400);
-  }
-
-  function resetLockTimer(){
-    clearTimeout(_lockTimer);
-    if(!isLockEnabled()) return;
-    _lockTimer=setTimeout(function(){
-      _lockSession=false;
-      showLockScreen(function(){ render(); });
-    }, _lockInactiveMs);
-  }
-
-  function initLock(){
-    // touch events reset the inactivity timer
-    ["click","keydown","touchstart","mousemove"].forEach(function(ev){
-      document.addEventListener(ev,function(){ if(_lockSession) resetLockTimer(); },true);
-    });
-    if(!isLockEnabled()){ _lockSession=true; return; }
-    showLockScreen(function(){});
-  }
-
-  // ── Setup / change PIN from settings ────────────────────────
-  function openLockSetup(){
-    var ls=lockState();
-    var hasBio=webAuthnSupported();
-    openOverlay(
-      '<div class="sheet"><div class="sheet-hd"><h3>🔐 App Lock</h3><button class="x-btn" id="lsX">✕</button></div>'
-      +'<div class="sheet-bd">'
-        +'<div class="fld"><label>New PIN (4–6 digits)</label>'
-          +'<input class="inp" id="lsPin1" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digits"></div>'
-        +'<div class="fld"><label>Confirm PIN</label>'
-          +'<input class="inp" id="lsPin2" type="password" inputmode="numeric" maxlength="6" placeholder="repeat PIN"></div>'
-        +(hasBio?'<div class="fld" style="display:flex;align-items:center;gap:10px;padding:10px 0">'
-          +'<label style="flex:1;cursor:pointer"><b>Also use Face ID / Fingerprint</b>'
-            +'<span class="mut" style="display:block;font-size:11px">Registers your biometric after saving</span></label>'
-          +'<input type="checkbox" id="lsBio" class="pf-switch" style="width:auto;height:auto"></div>':"")
-        +(ls.pin?'<button class="btn danger wide" id="lsRemove" style="margin-top:8px">Remove lock</button>':"")
-      +'</div>'
-      +'<div class="sheet-ft"><button class="btn sm" id="lsCancel">Cancel</button>'
-        +'<button class="btn sm solid" id="lsSave">Save lock</button></div></div>',
-      {ready:async function(ov,close){
-        ov.querySelector("#lsX").onclick=close;
-        ov.querySelector("#lsCancel").onclick=close;
-        var rmBtn=ov.querySelector("#lsRemove");
-        if(rmBtn) rmBtn.onclick=function(){
-          saveLockState({}); _lockSession=true; close(); flashSaved("lock removed");
-        };
-        ov.querySelector("#lsSave").onclick=async function(){
-          var p1=ov.querySelector("#lsPin1").value;
-          var p2=ov.querySelector("#lsPin2").value;
-          if(!/^\d{4,6}$/.test(p1)){ shake(ov.querySelector("#lsPin1")); return; }
-          if(p1!==p2){ shake(ov.querySelector("#lsPin2")); return; }
-          var salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
-          var hashed=await hashPin(p1,salt);
-          var newState={pin:hashed,salt:salt};
-          var bioCb=ov.querySelector("#lsBio");
-          if(bioCb&&bioCb.checked){
-            var credId=await registerBiometric();
-            if(credId) newState.credId=credId;
-          }
-          saveLockState(newState);
-          close(); flashSaved("lock set");
-        };
-      }}
-    );
-  }
-
-  /* ============================================================
-     FEATURE 2: ENCRYPTED BACKUP (PBKDF2 + AES-GCM)
-     Purpose: exported backup files are encrypted at rest.
-     Even if someone finds the .enc file they can't read it
-     without your password. Full round-trip: encrypt → file → import → decrypt.
-  ============================================================ */
-  async function deriveAesKey(password, salt){
-    var enc=new TextEncoder();
-    var keyMat=await crypto.subtle.importKey("raw",enc.encode(password),{name:"PBKDF2"},false,["deriveKey"]);
-    return crypto.subtle.deriveKey(
-      {name:"PBKDF2",salt:salt,iterations:250000,hash:"SHA-256"},
-      keyMat,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
-  }
-  async function encryptJson(json, password){
-    var salt=crypto.getRandomValues(new Uint8Array(16));
-    var iv  =crypto.getRandomValues(new Uint8Array(12));
-    var key=await deriveAesKey(password,salt);
-    var enc=new TextEncoder();
-    var ct=await crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,enc.encode(json));
-    // pack: magic(4) + salt(16) + iv(12) + ciphertext
-    var magic=new TextEncoder().encode("MME1");
-    var out=new Uint8Array(4+16+12+ct.byteLength);
-    out.set(magic,0); out.set(salt,4); out.set(iv,20);
-    out.set(new Uint8Array(ct),32);
-    return out;
-  }
-  async function decryptBytes(bytes, password){
-    var magic=new TextDecoder().decode(bytes.slice(0,4));
-    if(magic!=="MME1") throw new Error("not an encrypted backup");
-    var salt=bytes.slice(4,20), iv=bytes.slice(20,32), ct=bytes.slice(32);
-    var key=await deriveAesKey(password,salt);
-    var plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:iv},key,ct);
-    return new TextDecoder().decode(plain);
-  }
-
-  // ── Export encrypted ─────────────────────────────────────────
-  function exportEncrypted(){
-    openOverlay(
-      '<div class="sheet"><div class="sheet-hd"><h3>🔒 Encrypted export</h3><button class="x-btn" id="eeX">✕</button></div>'
-      +'<div class="sheet-bd">'
-        +'<div class="mut" style="font-size:12px;margin-bottom:12px;line-height:1.65">'
-          +'Your backup is encrypted with AES-256-GCM. Without the password it is unreadable — '
-          +'even if someone finds the file.</div>'
-        +'<div class="fld"><label>Encryption password</label>'
-          +'<input class="inp" id="eePw1" type="password" placeholder="choose a strong password"></div>'
-        +'<div class="fld"><label>Confirm password</label>'
-          +'<input class="inp" id="eePw2" type="password" placeholder="repeat password"></div>'
-      +'</div>'
-      +'<div class="sheet-ft"><button class="btn sm" id="eeCancel">Cancel</button>'
-        +'<button class="btn sm solid" id="eeGo">Export encrypted</button></div></div>',
-      {ready:async function(ov,close){
-        ov.querySelector("#eeX").onclick=close;
-        ov.querySelector("#eeCancel").onclick=close;
-        ov.querySelector("#eeGo").onclick=async function(){
-          var p1=ov.querySelector("#eePw1").value, p2=ov.querySelector("#eePw2").value;
-          if(!p1||p1.length<4){ shake(ov.querySelector("#eePw1")); return; }
-          if(p1!==p2){ shake(ov.querySelector("#eePw2")); return; }
-          var btn=ov.querySelector("#eeGo"); btn.textContent="Encrypting…"; btn.disabled=true;
-          try{
-            var json=JSON.stringify(buildRoot());
-            var enc=await encryptJson(json,p1);
-            var blob=new Blob([enc],{type:"application/octet-stream"});
-            var url=URL.createObjectURL(blob);
-            var a=document.createElement("a"); a.href=url;
-            var d=new Date(); var ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-            a.download="mymoney-backup-"+ds+".mme";
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-            close(); flashSaved("encrypted backup saved");
-          }catch(e){ btn.textContent="Export encrypted"; btn.disabled=false; flashSaved("encryption failed: "+String(e).slice(0,50)); }
-        };
-      }}
-    );
-  }
-  // ── Import encrypted ────────────────────────────────────────
-  function importEncrypted(file){
-    openOverlay(
-      '<div class="sheet"><div class="sheet-hd"><h3>🔓 Decrypt backup</h3><button class="x-btn" id="deX">✕</button></div>'
-      +'<div class="sheet-bd">'
-        +'<div class="fld"><label>Password</label>'
-          +'<input class="inp" id="dePw" type="password" placeholder="the password you used to encrypt"></div>'
-        +'<div class="lock-err" id="deErr"></div>'
-      +'</div>'
-      +'<div class="sheet-ft"><button class="btn sm" id="deCancel">Cancel</button>'
-        +'<button class="btn sm solid" id="deGo">Decrypt &amp; import</button></div></div>',
-      {ready:function(ov,close){
-        ov.querySelector("#deX").onclick=close;
-        ov.querySelector("#deCancel").onclick=close;
-        ov.querySelector("#deGo").onclick=async function(){
-          var pw=ov.querySelector("#dePw").value; if(!pw) return;
-          var btn=ov.querySelector("#deGo"); btn.textContent="Decrypting…"; btn.disabled=true;
-          var err=ov.querySelector("#deErr");
-          try{
-            var buf=await file.arrayBuffer();
-            var json=await decryptBytes(new Uint8Array(buf),pw);
-            applyLoaded(json); persist(); render();
-            close(); flashSaved("backup decrypted and loaded");
-          }catch(e){
-            err.textContent="Wrong password or corrupted file"; err.style.color="var(--down)";
-            btn.textContent="Decrypt & import"; btn.disabled=false;
-          }
-        };
-      }}
-    );
-  }
-
-  /* ============================================================
-     FEATURE 3: IMMUTABLE AUDIT CHAIN (SHA-256 hash chaining)
-     Purpose: tamper-evident records for tax disputes or sharing
-     with an accountant. Each transaction hashes the previous,
-     forming a Merkle-style chain. Any tampering breaks it.
-  ============================================================ */
-  async function sha256hex(str){
-    var buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
-  }
-  function txCanonical(tx){
-    // deterministic string for hashing — order matters, no undefined fields
-    return [tx.id,tx.date||"",tx.type||"",String(num(tx.amount)),tx.note||"",tx.cat||""].join("|");
-  }
-  async function buildChain(txs){
-    var prev="0000000000000000000000000000000000000000000000000000000000000000";
-    var chain=[]; var sorted=txs.slice().sort(function(a,b){return (a.id||0)-(b.id||0);});
-    for(var i=0;i<sorted.length;i++){
-      var h=await sha256hex(prev+"|"+txCanonical(sorted[i]));
-      chain.push({id:sorted[i].id,hash:h}); prev=h;
+    function unlock(){
+      ov.style.opacity="0";
+      document.body.style.overflow="";
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
     }
-    return {chain:chain,tip:prev,count:sorted.length,at:Date.now()};
-  }
-  async function verifyChain(txs,stored){
-    if(!stored||!stored.chain) return {ok:false,reason:"No chain saved — run Seal first."};
-    var sorted=txs.slice().sort(function(a,b){return (a.id||0)-(b.id||0);});
-    if(sorted.length!==stored.count) return {ok:false,reason:"Entry count changed: was "+stored.count+", now "+sorted.length+"."};
-    var prev="0000000000000000000000000000000000000000000000000000000000000000";
-    for(var i=0;i<sorted.length;i++){
-      var h=await sha256hex(prev+"|"+txCanonical(sorted[i]));
-      if(h!==stored.chain[i].hash) return {ok:false,reason:"Chain broken at entry #"+(i+1)+" (id="+sorted[i].id+"). Data was modified after sealing."};
-      prev=h;
+    var busy=false;
+    function trySubmit(){
+      if(busy) return;
+      var cd=lockCooldownLeft();
+      if(cd>0){ sub.textContent="Too many tries — wait "+cd+"s"; return; }
+      busy=true; sub.textContent="Checking…";
+      verifyPin(entered, function(ok){
+        busy=false;
+        if(ok){ unlock(); return; }
+        entered=""; drawDots();
+        var left=lockCooldownLeft();
+        sub.textContent= left>0 ? "Wrong PIN — wait "+left+"s" : "Wrong PIN, try again";
+        var box=ov.querySelector(".lk-box");
+        box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
+      }, function(p){ if(p<1) sub.textContent="Checking… "+Math.round(p*100)+"%"; });
     }
-    if(prev!==stored.tip) return {ok:false,reason:"Tip hash mismatch — chain tampered."};
-    return {ok:true,count:sorted.length};
-  }
-
-  var CHAIN_KEY="mymoney_auditchain";
-  function loadChain(){ try{ return JSON.parse(localStorage.getItem(CHAIN_KEY)||"null"); }catch(e){return null;} }
-  function saveChain(c){ try{ localStorage.setItem(CHAIN_KEY,JSON.stringify(c)); }catch(e){} }
-
-  async function sealLedger(){
-    var txs=state.transactions||[];
-    var chain=await buildChain(txs);
-    saveChain(chain);
-    return chain;
-  }
-  async function verifyLedger(){
-    var txs=state.transactions||[];
-    var stored=loadChain();
-    return verifyChain(txs,stored);
-  }
-
-  function openAuditChainPanel(){
-    var stored=loadChain();
-    var sealedAt=stored?new Date(stored.at).toLocaleString():"Never";
-    openOverlay(
-      '<div class="sheet"><div class="sheet-hd"><h3>⛓️ Audit Chain</h3><button class="x-btn" id="acX">✕</button></div>'
-      +'<div class="sheet-bd">'
-        +'<div style="font-size:12px;color:var(--mut);margin-bottom:12px;line-height:1.65">'
-          +'SHA-256 hash chain across all your transactions. Seal it now, then verify later '
-          +'to prove no entries were modified — useful for tax records or sharing with an accountant.</div>'
-        +'<div class="mc-stat" style="margin-bottom:10px">'
-          +'<div class="mk">Chain status</div>'
-          +'<div id="acStatus" class="mv" style="font-size:14px">'+(stored?"Sealed "+stored.count+" entries":"Not sealed")+'</div>'
-          +'<div style="font-size:11px;color:var(--mut);margin-top:3px">Last sealed: '+sealedAt+'</div></div>'
-        +'<div id="acResult" style="font-size:13px;margin-top:8px"></div>'
-      +'</div>'
-      +'<div class="sheet-ft">'
-        +'<button class="btn sm" id="acVerify">Verify chain</button>'
-        +'<button class="btn sm solid" id="acSeal">Seal now</button>'
-        +'<button class="btn sm" id="acX2">Close</button></div></div>',
-      {ready:function(ov,close){
-        ov.querySelector("#acX").onclick=close;
-        ov.querySelector("#acX2").onclick=close;
-        ov.querySelector("#acSeal").onclick=async function(){
-          var btn=ov.querySelector("#acSeal"); btn.disabled=true; btn.textContent="Sealing…";
-          var c=await sealLedger();
-          ov.querySelector("#acStatus").textContent="Sealed "+c.count+" entries";
-          ov.querySelector("#acResult").innerHTML='<span style="color:var(--up)">✅ Chain sealed. Tip: '+c.tip.slice(0,16)+"…</span>";
-          btn.disabled=false; btn.textContent="Seal now";
-        };
-        ov.querySelector("#acVerify").onclick=async function(){
-          var btn=ov.querySelector("#acVerify"); btn.disabled=true; btn.textContent="Verifying…";
-          var r=await verifyLedger();
-          ov.querySelector("#acResult").innerHTML=r.ok
-            ?'<span style="color:var(--up)">✅ Chain intact — '+r.count+' entries verified. No tampering detected.</span>'
-            :'<span style="color:var(--down)">🚨 '+esc(r.reason)+'</span>';
-          btn.disabled=false; btn.textContent="Verify chain";
-        };
-      }}
-    );
-  }
-
-  /* ============================================================
-     FEATURE 4: SUB-BUDGET NESTING (category + subcategory)
-     Purpose: Food → Groceries vs Dining Out, not just "Food".
-     Backward compatible: old entries without subcategory still work.
-     The subcategory field is optional — only the entry form + budget
-     display changes. Roll-up: parent budget = sum of children.
-  ============================================================ */
-  var SUB_CATS={
-    "Food":["Groceries","Dining out","Coffee & drinks","Takeaway","Other food"],
-    "Shopping":["Clothing","Electronics","Home goods","Beauty","Other shopping"],
-    "Transport":["Fuel","Public transit","Parking","Taxi / rideshare","Maintenance"],
-    "Utilities":["Electricity","Water","Internet","Phone","Other utilities"],
-    "Entertainment":["Streaming","Going out","Books & games","Sports","Other entertainment"],
-    "Health":["Pharmacy","Doctor","Gym","Insurance","Other health"],
-    "Other":[]
-  };
-  // any cat not in SUB_CATS gets no subcategory options
-  function subCatsFor(cat){ return SUB_CATS[cat]||[]; }
-
-  function bindSubcategoryField(){
-    var catSel=document.getElementById("fCat");
-    var subWrap=document.getElementById("fSubcatWrap");
-    var subSel=document.getElementById("fSubcat");
-    if(!catSel||!subWrap||!subSel) return;
-    function update(){
-      var subs=subCatsFor(catSel.value);
-      subWrap.style.display=subs.length?"":"none";
-      subSel.innerHTML='<option value="">— none —</option>'
-        +subs.map(function(s){ return '<option value="'+esc(s)+'">'+esc(s)+'</option>'; }).join("");
-    }
-    catSel.addEventListener("change",update); update();
-  }
-
-  // rollup: total spent in a parent category (includes all subcategories)
-  function spentInCat(cat, txs, period){
-    return (txs||state.transactions).filter(function(tx){
-      return tx.cat===cat&&balDelta(tx)<0&&(!period||monthKey(tx.date||"")===period);
-    }).reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0)
-    +(state.transactions||[]).filter(function(tx){
-      return (subCatsFor(cat)).indexOf(tx.subcat||"")>=0&&balDelta(tx)<0&&(!period||monthKey(tx.date||"")===period);
-    }).reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);
-  }
-
-  // render the budget section with subcategory breakdown
-  function renderSubBudgetRow(cat, sym, thisM){
-    var cap=budgetFor(cat), spent=spentInCat(cat,null,thisM);
-    var subs=subCatsFor(cat);
-    var pct=cap>0?Math.min(100,spent/cap*100):0;
-    var over=cap>0&&spent>cap;
-    var subRows=subs.map(function(sub){
-      var ss=state.transactions.filter(function(tx){ return tx.subcat===sub&&balDelta(tx)<0&&monthKey(tx.date||"")===thisM; })
-        .reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);
-      if(!ss) return "";
-      return '<div class="sub-bud-row"><span class="sub-bud-name mut">↳ '+esc(sub)+'</span><span class="sub-bud-amt mut">'+sym+ss.toFixed(2)+'</span></div>';
-    }).join("");
-    return '<div class="bud-row'+(over?" bud-over":"")+'">'+
-      '<div class="bud-row-hd"><span>'+esc(cat)+(cap?'<span class="bud-cap"> / '+sym+cap.toFixed(0)+'</span>':"")+'</span>'+
-      '<span class="bud-amt'+(over?" bud-over-t":"")+'">'+sym+spent.toFixed(2)+'</span></div>'+
-      (cap?'<div class="bud-bar"><div class="bud-fill'+(over?" bud-fill-over":"")
-        +'" style="width:'+pct+'%"></div></div>':"")
-      +subRows+'</div>';
-  }
-
-  // patch into existing entry form: add subcat field after the cat selector
-  function injectSubcatField(){
-    var catFld=document.getElementById("fCat");
-    if(!catFld||document.getElementById("fSubcatWrap")) return;
-    var wrap=document.createElement("div");
-    wrap.className="fld"; wrap.id="fSubcatWrap"; wrap.style.display="none";
-    wrap.innerHTML='<label>Sub-category <span class="mut">(optional)</span></label>'
-      +'<select id="fSubcat" class="inp"><option value="">— none —</option></select>';
-    catFld.parentElement.parentElement.insertBefore(wrap, catFld.parentElement.nextSibling);
-    bindSubcategoryField();
-  }
-  // call after bindLabels / after the form is in the DOM
-  function initSubBudgets(){
-    injectSubcatField();
-    // patch save: read subcat alongside cat
-    var origSubmit=document.getElementById("entryForm");
-    if(!origSubmit||origSubmit._subPatched) return;
-    origSubmit._subPatched=true;
-    origSubmit.addEventListener("submit",function(){
-      var sub=document.getElementById("fSubcat");
-      if(sub&&sub.value&&window._currentTxDraft) window._currentTxDraft.subcat=sub.value;
-    },true);
-  }
-
-  /* ============================================================
-     FEATURE 5: PWA INSTALL (blob service worker + manifest)
-     Purpose: install the app to your phone or desktop home screen
-     so it opens like a native app — no browser UI, works offline.
-
-     Strategy for a single-file app:
-     · The manifest is injected as a <link> with a JSON blob URL
-     · The service worker is created from an inline blob and
-       registered — this works in Chrome; Safari/Firefox may block
-       blob-URL service worker registration from file://
-     · An "Install" button appears when the browser fires the
-       beforeinstallprompt event (Chrome on Android/desktop)
-  ============================================================ */
-  var _pwaPrompt=null;
-  var _swReg=null;
-
-  function registerBlobSW(){
-    if(!("serviceWorker" in navigator)) return;
-    var swCode=[
-      '"use strict";',
-      'var CACHE="mymoney-v1";',
-      'var FILES=["/"];',   // for file:// there are no URLs to cache — just handle fetches
-      'self.addEventListener("install",function(e){',
-      '  e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll([]); }));',
-      '  self.skipWaiting();',
-      '});',
-      'self.addEventListener("activate",function(e){',
-      '  e.waitUntil(clients.claim());',
-      '});',
-      'self.addEventListener("fetch",function(e){',
-      '  e.respondWith(caches.match(e.request).then(function(r){ return r||fetch(e.request); }));',
-      '});',
-    ].join("\n");
-    try{
-      var blob=new Blob([swCode],{type:"text/javascript"});
-      var swUrl=URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl,{scope:"./"}).then(function(r){
-        _swReg=r;
-      }).catch(function(){});  // blob SW blocked on some configs — silent fallback
-    }catch(e){}
-  }
-
-  function injectManifest(){
-    if(document.querySelector('link[rel="manifest"]')) return;
-    var manifest={
-      name:"My Money Tracker",short_name:"Money",
-      start_url:"./",display:"standalone",
-      theme_color:"#0b0e14",background_color:"#0b0e14",
-      icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E💰%3C/text%3E%3C/svg%3E",
-        sizes:"any",type:"image/svg+xml"}]
-    };
-    var blob=new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"});
-    var url=URL.createObjectURL(blob);
-    var link=document.createElement("link");
-    link.rel="manifest"; link.href=url;
-    document.head.appendChild(link);
-  }
-
-  function initPWA(){
-    injectManifest();
-    registerBlobSW();
-    // capture the install prompt
-    window.addEventListener("beforeinstallprompt",function(e){
-      e.preventDefault(); _pwaPrompt=e;
-      // show the install button in settings
-      var btn=document.getElementById("pwaInstallBtn");
-      if(btn){ btn.style.display=""; btn.disabled=false; }
+    // physical keyboard
+    ov.addEventListener("keydown", function(e){
+      if(/^[0-9]$/.test(e.key)){ if(entered.length<12){ entered+=e.key; drawDots(); if(entered.length>=4) trySubmit(); } }
+      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); drawDots(); }
+      else if(e.key==="Enter" && entered.length>=4) trySubmit();
     });
-    window.addEventListener("appinstalled",function(){
-      var btn=document.getElementById("pwaInstallBtn");
-      if(btn){ btn.textContent="✅ Installed!"; btn.disabled=true; }
-      flashSaved("app installed to your device");
-    });
-  }
-  function triggerPwaInstall(){
-    if(_pwaPrompt){ _pwaPrompt.prompt(); _pwaPrompt.userChoice.then(function(){ _pwaPrompt=null; }); }
-    else{ appModal({title:"Install as app",message:"To install:\n• Chrome/Edge: tap the ⋮ menu → Install app\n• Safari (iOS): tap the Share button → Add to Home Screen\n• Firefox: tap ⋮ → Add to Home Screen",confirmText:"Got it",cancelText:"Close"}); }
-  }
+    ov.tabIndex=-1; setTimeout(function(){ try{ ov.focus(); }catch(e){} },50);
 
-  /* ============================================================
-     FEATURE 6: RBAC — FAMILY SHARING (Web Crypto signed tokens)
-     Purpose: give your spouse editor access, your accountant
-     viewer-only, cryptographically enforced. No server needed.
-
-     Architecture:
-     · Owner generates an asymmetric key pair (ECDSA P-256)
-       stored in IndexedDB (never exported)
-     · To share: owner signs a token {role,exp,label} → produces
-       a compact base64url string
-     · Recipient loads the app with the token in the URL hash,
-       or pastes it in → UI adapts to the role in real time
-     · Roles:
-         owner  → full access (default when no token)
-         editor → add/edit entries; no settings, no delete
-         viewer → read-only; no forms visible
-  ============================================================ */
-  var _rbacRole="owner";   // current session role
-  var RBAC_KEY_IDB="mymoney_rbac_keys";
-
-  // ── key management ───────────────────────────────────────────
-  async function getRbacKeys(){
-    var db=await openMoneyDB();
-    var store=db.transaction("meta","readonly").objectStore("meta");
-    return new Promise(function(res,rej){
-      var rq=store.get(RBAC_KEY_IDB);
-      rq.onsuccess=function(){ res(rq.result||null); };
-      rq.onerror=rej;
-    });
-  }
-  async function saveRbacKeys(keys){
-    var db=await openMoneyDB();
-    var store=db.transaction("meta","readwrite").objectStore("meta");
-    return new Promise(function(res,rej){
-      var rq=store.put(keys,RBAC_KEY_IDB);
-      rq.onsuccess=res; rq.onerror=rej;
-    });
-  }
-  async function getOrCreateKeyPair(){
-    var stored=await getRbacKeys();
-    if(stored) return stored;
-    var pair=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign","verify"]);
-    var pub=await crypto.subtle.exportKey("jwk",pair.publicKey);
-    var priv=await crypto.subtle.exportKey("jwk",pair.privateKey);
-    var k={pub:pub,priv:priv};
-    await saveRbacKeys(k);
-    return k;
-  }
-  async function loadSigningKeys(){
-    var k=await getOrCreateKeyPair();
-    var privKey=await crypto.subtle.importKey("jwk",k.priv,{name:"ECDSA",namedCurve:"P-256"},false,["sign"]);
-    var pubKey=await crypto.subtle.importKey("jwk",k.pub,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
-    return {priv:privKey,pub:pubKey,pubJwk:k.pub};
-  }
-  function b64url(bytes){ return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,""); }
-  function fromb64url(s){ var b=atob(s.replace(/-/g,"+").replace(/_/g,"/")); return new Uint8Array(b.length).map((_,i)=>b.charCodeAt(i)); }
-
-  // ── token creation ───────────────────────────────────────────
-  async function createShareToken(role, label, expDays){
-    var keys=await loadSigningKeys();
-    var payload={role:role,label:label||"",exp:Date.now()+(expDays||30)*864e5,pub:keys.pubJwk};
-    var payloadStr=JSON.stringify(payload);
-    var sig=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},keys.priv,new TextEncoder().encode(payloadStr));
-    return b64url(new TextEncoder().encode(payloadStr))+"."+b64url(sig);
-  }
-
-  // ── token verification ───────────────────────────────────────
-  async function verifyToken(token){
-    try{
-      var parts=token.split(".");
-      if(parts.length<2) return null;
-      var payloadBytes=fromb64url(parts[0]);
-      var sig=fromb64url(parts[1]);
-      var payload=JSON.parse(new TextDecoder().decode(payloadBytes));
-      if(!payload.exp||Date.now()>payload.exp) return null;
-      var pubKey=await crypto.subtle.importKey("jwk",payload.pub,{name:"ECDSA",namedCurve:"P-256"},false,["verify"]);
-      var ok=await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},pubKey,sig,payloadBytes);
-      return ok?payload:null;
-    }catch(e){ return null; }
-  }
-
-  // ── role enforcement ─────────────────────────────────────────
-  function applyRole(role){
-    _rbacRole=role||"owner";
-    var body=document.body;
-    body.setAttribute("data-role",_rbacRole);
-    // CSS in the stylesheet hides/disables elements per role
-    var badge=document.getElementById("rbacBadge");
-    if(!badge){badge=document.createElement("div");badge.id="rbacBadge";document.body.appendChild(badge);}
-    if(_rbacRole==="owner"){ badge.style.display="none"; }
-    else{
-      badge.style.cssText="position:fixed;bottom:calc(var(--bar)+env(safe-area-inset-bottom,0px)+8px);right:12px;"
-        +"z-index:99;background:var(--amber);color:#000;font-size:10px;font-weight:800;"
-        +"padding:4px 8px;border-radius:6px;letter-spacing:.04em";
-      badge.textContent=_rbacRole==="viewer"?"👁 VIEW ONLY":"✏️ EDITOR";
-    }
-  }
-  // check URL hash for a token on load
-  async function checkRbacToken(){
-    var hash=location.hash.slice(1);
-    if(!hash.startsWith("rbac=")) return;
-    var token=hash.slice(5);
-    var payload=await verifyToken(token);
-    if(payload){ applyRole(payload.role); location.hash=""; flashSaved("Loaded as "+payload.role+(payload.label?" ("+payload.label+")":"")); }
-    else{ flashSaved("Invalid or expired access token"); }
-  }
-
-  function openSharePanel(){
-    openOverlay(
-      '<div class="sheet"><div class="sheet-hd"><h3>👨‍👩‍👦 Family sharing</h3><button class="x-btn" id="spX">✕</button></div>'
-      +'<div class="sheet-bd">'
-        +'<div class="mut" style="font-size:12px;margin-bottom:12px;line-height:1.65">'
-          +'Generate a cryptographically signed access token. The recipient '
-          +'pastes it below or opens the shared link — their role is enforced locally.</div>'
-        +'<div class="fld"><label>Role</label><select class="inp" id="spRole">'
-          +'<option value="editor">Editor — can add entries, not delete or change settings</option>'
-          +'<option value="viewer">Viewer — read only, no changes</option></select></div>'
-        +'<div class="fld"><label>Label (who is this for?)</label>'
-          +'<input class="inp" id="spLabel" placeholder="e.g. Spouse, Accountant"></div>'
-        +'<div class="fld"><label>Expires (days)</label>'
-          +'<input class="inp" id="spExp" type="number" value="30" min="1" max="365"></div>'
-        +'<div id="spOut" style="display:none;margin-top:10px">'
-          +'<label style="font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px">Access token (copy and send)</label>'
-          +'<textarea class="inp" id="spToken" rows="3" readonly style="font-size:11px;font-family:monospace;word-break:break-all"></textarea>'
-          +'<button class="btn sm" id="spCopy" style="margin-top:8px;width:100%">📋 Copy token</button></div>'
-        +'<div style="margin-top:14px;border-top:1px solid var(--bd);padding-top:12px">'
-          +'<label style="font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px">Or paste a received token</label>'
-          +'<div style="display:flex;gap:8px"><input class="inp" id="spPaste" placeholder="paste token here">'
-          +'<button class="btn sm" id="spActivate">Activate</button></div></div>'
-      +'</div>'
-      +'<div class="sheet-ft"><button class="btn sm" id="spCancel">Close</button>'
-        +'<button class="btn sm solid" id="spGen">Generate token</button></div></div>',
-      {ready:function(ov,close){
-        ov.querySelector("#spX").onclick=close;
-        ov.querySelector("#spCancel").onclick=close;
-        ov.querySelector("#spGen").onclick=async function(){
-          var btn=ov.querySelector("#spGen"); btn.disabled=true; btn.textContent="Signing…";
-          var role=ov.querySelector("#spRole").value;
-          var label=ov.querySelector("#spLabel").value.trim();
-          var exp=parseInt(ov.querySelector("#spExp").value,10)||30;
-          var token=await createShareToken(role,label,exp);
-          ov.querySelector("#spToken").value=token;
-          ov.querySelector("#spOut").style.display="";
-          btn.disabled=false; btn.textContent="Generate token";
-        };
-        ov.querySelector("#spCopy").onclick=function(){
-          var t=ov.querySelector("#spToken").value; if(!t) return;
-          if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ flashSaved("token copied"); });
-          else{ ov.querySelector("#spToken").select(); document.execCommand("copy"); flashSaved("copied"); }
-        };
-        ov.querySelector("#spActivate").onclick=async function(){
-          var token=ov.querySelector("#spPaste").value.trim();
-          if(!token) return;
-          var payload=await verifyToken(token);
-          if(payload){ applyRole(payload.role); close(); flashSaved("Activated as "+payload.role); }
-          else flashSaved("Invalid or expired token");
-        };
-      }}
-    );
-  }
-
-  async function initRbac(){
-    await checkRbacToken();
-    // pre-generate keys so the first token creation is instant
-    try{ await getOrCreateKeyPair(); }catch(e){}
-  }
-
-
-  function bindEnterpriseFeatures(){
-    var lb=document.getElementById("lockSetupBtn");
-    if(lb) lb.addEventListener("click",openLockSetup);
-    var ee=document.getElementById("encExportBtn");
-    if(ee) ee.addEventListener("click",exportEncrypted);
-    var ac=document.getElementById("auditChainBtn");
-    if(ac) ac.addEventListener("click",openAuditChainPanel);
-    var sp=document.getElementById("shareAccessBtn");
-    if(sp) sp.addEventListener("click",openSharePanel);
-    var pi=document.getElementById("pwaInstallBtn");
-    if(pi) pi.addEventListener("click",triggerPwaInstall);
-    // encrypted import: detect .mme files in the existing import button
-    var impFile=document.getElementById("impFile");
-    if(impFile) impFile.addEventListener("change",function(e){
-      var f=e.target.files&&e.target.files[0]; if(!f) return;
-      if(f.name.endsWith(".mme")){ importEncrypted(f); e.target.value=""; }
-      // .json files fall through to the existing import handler
-    },true);
-    // sub-budget: patch the entry form after it's in the DOM
-    var fCat=document.getElementById("fCat");
-    if(fCat&&!document.getElementById("fSubcatWrap")) injectSubcatField();
-  }
-
-  /* ============================================================
-     SECURITY & INTEGRITY MODULE
-     Three related systems, all built on the Web Crypto API:
-       1. Biometric lock (WebAuthn)  — Face ID / fingerprint on open
-       2. Encrypted backups          — PBKDF2 + AES-GCM password protection
-       3. Immutable audit chain      — SHA-256 linked entries, tamper-evident
-     Everything runs locally. No server, no key escrow, no recovery —
-     if you forget the backup password, the file is genuinely unreadable.
-     ============================================================ */
-
-  var SEC_KEY="mymoney_sec_v1";
-  var secCfg={ bioEnabled:false, credId:null, auditEnabled:true, lastChainHash:null };
-  function loadSecCfg(){
-    try{ var r=localStorage.getItem(SEC_KEY); if(r) secCfg=Object.assign(secCfg, JSON.parse(r)); }catch(e){}
-  }
-  function saveSecCfg(){ try{ localStorage.setItem(SEC_KEY, JSON.stringify(secCfg)); }catch(e){} }
-
-  /* ── 1. BIOMETRIC LOCK (WebAuthn) ─────────────────────────────
-     Uses the platform authenticator — Face ID on iPhone/Mac,
-     fingerprint on Android/Windows Hello. The credential never
-     leaves the device and there is no server to verify against;
-     we use it purely as a local presence check before unlocking. */
-  function bioAvailable(){
-    return !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create);
-  }
-  function b64ToBuf(b64){
-    var bin=atob(b64.replace(/-/g,"+").replace(/_/g,"/"));
-    var arr=new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    return arr.buffer;
-  }
-  function bufToB64(buf){
-    var bytes=new Uint8Array(buf), s="";
-    for(var i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
-    return btoa(s);
-  }
-  async function bioEnrol(){
-    if(!bioAvailable()) throw new Error("Biometrics not supported on this device/browser");
-    var challenge=crypto.getRandomValues(new Uint8Array(32));
-    var userId=crypto.getRandomValues(new Uint8Array(16));
-    var cred=await navigator.credentials.create({
-      publicKey:{
-        challenge:challenge,
-        rp:{name:"My Money Tracker"},
-        user:{id:userId, name:"local-user", displayName:"My Money"},
-        pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
-        authenticatorSelection:{
-          authenticatorAttachment:"platform",   // on-device only: Face ID / fingerprint
-          userVerification:"required",
-          residentKey:"preferred"
-        },
-        timeout:60000, attestation:"none"
-      }
-    });
-    if(!cred) throw new Error("Enrolment cancelled");
-    secCfg.bioEnabled=true;
-    secCfg.credId=bufToB64(cred.rawId);
-    saveSecCfg();
-    return true;
-  }
-  async function bioVerify(){
-    if(!secCfg.bioEnabled || !secCfg.credId) return true;   // not enabled = nothing to check
-    if(!bioAvailable()) return true;                        // can't check here; don't lock them out
-    var challenge=crypto.getRandomValues(new Uint8Array(32));
-    var assertion=await navigator.credentials.get({
-      publicKey:{
-        challenge:challenge,
-        allowCredentials:[{type:"public-key", id:b64ToBuf(secCfg.credId)}],
-        userVerification:"required",
-        timeout:60000
-      }
-    });
-    return !!assertion;
-  }
-  function bioDisable(){ secCfg.bioEnabled=false; secCfg.credId=null; saveSecCfg(); }
-
-  // the lock screen shown before the app is usable
-  function showLockScreen(){
-    var ov=document.createElement("div");
-    ov.id="lockScreen";
-    ov.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;"
-      +"align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:24px;text-align:center";
-    ov.innerHTML='<div style="font-size:44px">🔒</div>'
-      +'<div style="font-size:16px;font-weight:800">My Money Tracker</div>'
-      +'<div style="font-size:13px;color:var(--mut);max-width:280px;line-height:1.6" id="lockMsg">'
-        +'Unlock with Face ID or your fingerprint to see your finances.</div>'
-      +'<button class="btn primary" id="lockBtn" style="min-width:180px">Unlock</button>'
-      +'<button class="btn ghost sm" id="lockBypass" style="display:none;font-size:11px">'
-        +'Biometrics unavailable — continue anyway</button>';
-    document.body.appendChild(ov);
-    var attempts=0;
-    var tryUnlock=function(){
-      var msg=document.getElementById("lockMsg");
-      msg.textContent="Waiting for verification…";
-      bioVerify().then(function(ok){
-        if(ok){ ov.style.opacity="0"; ov.style.transition="opacity .25s";
-          setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },260); }
-        else { msg.textContent="Verification failed. Try again."; }
-      }).catch(function(e){
-        attempts++;
-        msg.textContent="Couldn't verify: "+String(e.message||e).slice(0,70);
-        // after two failures, offer the escape hatch — a locked-out user with no
-        // recovery path would simply lose access to their own records
-        if(attempts>=2) document.getElementById("lockBypass").style.display="";
+    // Face unlock as the quick path when it's set up and a camera exists
+    if(typeof faceCfg!=="undefined" && faceCfg.on && faceCfg.descriptor){
+      var bb=ov.querySelector("#lkBio");
+      bb.textContent="\uD83D\uDE00 Use face unlock";
+      bb.style.display="";
+      bb.addEventListener("click", function(){
+        sub.textContent="Opening the camera\u2026";
+        verifyFace(function(ok){
+          if(ok) unlock();
+          else sub.textContent="Face didn't match \u2014 use your PIN";
+        });
       });
-    };
-    document.getElementById("lockBtn").addEventListener("click", tryUnlock);
-    document.getElementById("lockBypass").addEventListener("click", function(){
-      if(ov.parentNode) ov.parentNode.removeChild(ov);
-    });
-    tryUnlock();   // prompt immediately
-  }
-
-  /* ── 2. ENCRYPTED BACKUPS (PBKDF2 + AES-GCM) ──────────────────
-     The plain export is fine for your own machine. This is for
-     when the backup leaves it — cloud drive, email, a USB stick.
-     250k PBKDF2 iterations; salt and IV stored alongside the
-     ciphertext. No password recovery by design. */
-  async function encryptBackup(plaintext, password){
-    var enc=new TextEncoder();
-    var salt=crypto.getRandomValues(new Uint8Array(16));
-    var iv=crypto.getRandomValues(new Uint8Array(12));
-    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    var key=await crypto.subtle.deriveKey(
-      {name:"PBKDF2", salt:salt, iterations:250000, hash:"SHA-256"},
-      km, {name:"AES-GCM", length:256}, false, ["encrypt"]);
-    var ct=await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, enc.encode(plaintext));
-    return JSON.stringify({
-      _format:"mymoney-encrypted-backup", _v:1,
-      kdf:"PBKDF2-SHA256", iterations:250000,
-      salt:bufToB64(salt), iv:bufToB64(iv), data:bufToB64(ct)
-    }, null, 2);
-  }
-  async function decryptBackup(fileText, password){
-    var obj=JSON.parse(fileText);
-    if(obj._format!=="mymoney-encrypted-backup") throw new Error("Not an encrypted backup file");
-    var enc=new TextEncoder();
-    var km=await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-    var key=await crypto.subtle.deriveKey(
-      {name:"PBKDF2", salt:new Uint8Array(b64ToBuf(obj.salt)), iterations:obj.iterations||250000, hash:"SHA-256"},
-      km, {name:"AES-GCM", length:256}, false, ["decrypt"]);
-    var pt=await crypto.subtle.decrypt({name:"AES-GCM", iv:new Uint8Array(b64ToBuf(obj.iv))}, key, b64ToBuf(obj.data));
-    return new TextDecoder().decode(pt);
-  }
-
-  /* ── 3. IMMUTABLE AUDIT CHAIN (SHA-256 linked) ────────────────
-     Each entry's hash includes the hash before it. Change any past
-     transaction and every hash after it stops matching — so silent
-     edits become visible. Relevant here for trading P&L records and
-     anything split with someone else, where "these are the numbers
-     we agreed" needs to be provable later. */
-  async function sha256Hex(str){
-    var buf=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
-  }
-  // canonical form — key order must never vary or hashes won't reproduce
-  function canonicalTx(t){
-    return JSON.stringify({
-      id:t.id, date:t.date||"", type:t.type||"", amount:num(t.amount),
-      cat:t.cat||"", note:t.note||"", inst:t.inst||""
-    });
-  }
-  async function buildAuditChain(){
-    var txs=sortedTx();
-    var prev="0".repeat(64), chain=[];
-    for(var i=0;i<txs.length;i++){
-      var h=await sha256Hex(prev+canonicalTx(txs[i]));
-      chain.push({id:txs[i].id, date:txs[i].date, prev:prev, hash:h});
-      prev=h;
     }
-    return chain;
-  }
-  async function verifyAuditChain(){
-    var stored=state.auditChain;
-    if(!Array.isArray(stored)||!stored.length){
-      return {status:"none", message:"No audit chain recorded yet. Seal your records to start one."};
-    }
-    var txs=sortedTx();
-    var prev="0".repeat(64);
-    var firstBreak=null, checked=0;
-    for(var i=0;i<stored.length;i++){
-      var tx=txs.filter(function(x){ return String(x.id)===String(stored[i].id); })[0];
-      if(!tx){ firstBreak={idx:i, reason:"entry deleted", id:stored[i].id, date:stored[i].date}; break; }
-      var h=await sha256Hex(prev+canonicalTx(tx));
-      checked++;
-      if(h!==stored[i].hash){ firstBreak={idx:i, reason:"entry modified", id:stored[i].id, date:stored[i].date}; break; }
-      prev=h;
-    }
-    var added=txs.length-stored.length;
-    if(firstBreak){
-      return {status:"broken", message:"Chain breaks at entry "+(firstBreak.idx+1)+" of "+stored.length
-        +" ("+firstBreak.reason+", dated "+(firstBreak.date||"?")+"). Everything before it is still verified.",
-        verified:firstBreak.idx, total:stored.length};
-    }
-    return {status:"ok", verified:checked, total:stored.length, added:added>0?added:0,
-      message:checked+" sealed entr"+(checked===1?"y":"ies")+" verified intact"
-        +(added>0?" · "+added+" new entr"+(added===1?"y":"ies")+" not yet sealed":"")+"."};
-  }
-  async function sealAuditChain(){
-    var chain=await buildAuditChain();
-    state.auditChain=chain;
-    state.auditSealedAt=new Date().toISOString();
-    persistNow();
-    return chain.length;
-  }
-
-  /* ============================================================
-     DOUBLE-ENTRY VIEW + NESTED BUDGETS
-
-     Double-entry here is a LENS over the existing single-entry
-     data, not a rewrite of it. Every transaction already implies
-     two sides (spending moves value from Cash to an Expense
-     account); this derives those sides on the fly. Nothing about
-     the stored format changes, so no existing save breaks — but
-     you get a real Balance Sheet and Income Statement out of it.
-     ============================================================ */
-
-  // Which two accounts each transaction type touches: [debit, credit]
-  var LEDGER_MAP={
-    income:        ["Cash","Income"],
-    salary:        ["Cash","Income"],
-    expense:       ["Expenses","Cash"],
-    spend:         ["Expenses","Cash"],
-    pay_someone:   ["Expenses","Cash"],
-    pay_debt:      ["Liabilities","Cash"],
-    pay_debt_balance:["Liabilities","Cash"],
-    borrow:        ["Expenses","Liabilities"],
-    borrow_cash:   ["Cash","Liabilities"],
-    move_to_debt:  ["Cash","Liabilities"],
-    save:          ["Savings","Cash"],
-    withdraw:      ["Cash","Savings"],
-    trade_win:     ["Cash","Income"],
-    trade_loss:    ["Expenses","Cash"],
-    tax_set:       ["TaxReserve","Cash"],
-    tax_pay:       ["Liabilities","TaxReserve"],
-    to_trading:    ["Trading","Cash"],
-    from_trading:  ["Cash","Trading"],
-    adjust:        ["Cash","Equity"]
-  };
-  var ACCOUNT_KIND={
-    Cash:"asset", Savings:"asset", Trading:"asset", TaxReserve:"asset",
-    Liabilities:"liability", Equity:"equity", Income:"income", Expenses:"expense"
-  };
-
-  function buildDoubleEntry(){
-    var accounts={};
-    function touch(name, amt){
-      if(!accounts[name]) accounts[name]={name:name, kind:ACCOUNT_KIND[name]||"asset", debit:0, credit:0};
-      return accounts[name];
-    }
-    // opening balances seed the books
-    var op=state.opening||{};
-    if(num(op.balance)) { touch("Cash").debit  += num(op.balance); touch("Equity").credit += num(op.balance); }
-    if(num(op.savings)) { touch("Savings").debit += num(op.savings); touch("Equity").credit += num(op.savings); }
-    if(num(op.trading)) { touch("Trading").debit += num(op.trading); touch("Equity").credit += num(op.trading); }
-    if(num(op.debt))    { touch("Equity").debit += num(op.debt);    touch("Liabilities").credit += num(op.debt); }
-
-    var journal=[];
-    sortedTx().forEach(function(t){
-      var map=LEDGER_MAP[t.type];
-      if(!map) return;
-      var amt=Math.abs(num(t.amount));
-      if(!amt) return;
-      touch(map[0]).debit  += amt;
-      touch(map[1]).credit += amt;
-      journal.push({date:t.date, note:t.note||t.cat||(TYPE_META[t.type]||{}).label||t.type,
-        debit:map[0], credit:map[1], amount:amt});
-    });
-
-    var list=Object.keys(accounts).map(function(k){
-      var a=accounts[k];
-      // assets & expenses carry debit balances; liabilities, equity & income carry credit
-      var debitNature=(a.kind==="asset"||a.kind==="expense");
-      a.balance = debitNature ? (a.debit-a.credit) : (a.credit-a.debit);
-      return a;
-    });
-    var totalDebit=list.reduce(function(s,a){ return s+a.debit; },0);
-    var totalCredit=list.reduce(function(s,a){ return s+a.credit; },0);
-    return {accounts:list, journal:journal, totalDebit:totalDebit, totalCredit:totalCredit,
-      balanced: Math.abs(totalDebit-totalCredit) < 0.01};
-  }
-
-  function renderDoubleEntry(){
-    var box=document.getElementById("deBody"); if(!box) return;
-    var de=buildDoubleEntry(), sym=state.currency;
-    function money(v){ return sym+Math.abs(v).toFixed(2); }
-    var byKind=function(k){ return de.accounts.filter(function(a){ return a.kind===k; }); };
-
-    var assets=byKind("asset"), liabs=byKind("liability"), eq=byKind("equity");
-    var income=byKind("income"), expenses=byKind("expense");
-    var sumOf=function(arr){ return arr.reduce(function(s,a){ return s+a.balance; },0); };
-
-    var totalAssets=sumOf(assets), totalLiabs=sumOf(liabs);
-    var netWorth=totalAssets-totalLiabs;
-    var totalIncome=sumOf(income), totalExp=sumOf(expenses);
-
-    function rows(arr){
-      if(!arr.length) return '<div class="de-row de-empty"><span>none</span><span>—</span></div>';
-      return arr.map(function(a){
-        return '<div class="de-row"><span>'+esc(a.name)+'</span><span class="mono">'+money(a.balance)+'</span></div>';
-      }).join("");
-    }
-
-    box.innerHTML=
-       '<div class="de-statement"><div class="de-h">Balance Sheet</div>'
-        +'<div class="de-sec">Assets</div>'+rows(assets)
-        +'<div class="de-row de-total"><span>Total assets</span><span class="mono">'+money(totalAssets)+'</span></div>'
-        +'<div class="de-sec">Liabilities</div>'+rows(liabs)
-        +'<div class="de-row de-total"><span>Total liabilities</span><span class="mono">'+money(totalLiabs)+'</span></div>'
-        +'<div class="de-row de-net"><span>Net worth</span><span class="mono" style="color:'
-          +(netWorth>=0?"var(--up)":"var(--down)")+'">'+(netWorth<0?"−":"")+money(netWorth)+'</span></div>'
-      +'</div>'
-      +'<div class="de-statement"><div class="de-h">Income Statement</div>'
-        +'<div class="de-sec">Income</div>'+rows(income)
-        +'<div class="de-sec">Expenses</div>'+rows(expenses)
-        +'<div class="de-row de-net"><span>Net result</span><span class="mono" style="color:'
-          +((totalIncome-totalExp)>=0?"var(--up)":"var(--down)")+'">'
-          +((totalIncome-totalExp)<0?"−":"+")+money(totalIncome-totalExp)+'</span></div>'
-      +'</div>'
-      +'<div class="de-check '+(de.balanced?"ok":"bad")+'">'
-        +(de.balanced
-          ? "✅ Books balance — debits "+money(de.totalDebit)+" = credits "+money(de.totalCredit)
-          : "⚠️ Out of balance by "+money(de.totalDebit-de.totalCredit)
-            +" — debits "+money(de.totalDebit)+" vs credits "+money(de.totalCredit))
-      +'</div>';
-  }
-
-  /* ── NESTED SUB-BUDGETS ──────────────────────────────────────
-     A tree over the flat category list: Food ▸ Groceries ▸ Dairy.
-     Spending on a leaf rolls up into every parent, so a cap on
-     "Food" covers everything beneath it. Stored as a simple
-     parent map so existing flat categories keep working. */
-  function subTree(){ return state.catTree || {}; }   // {child: parent}
-  function catChildren(parent){
-    var t=subTree();
-    return Object.keys(t).filter(function(c){ return t[c]===parent; });
-  }
-  function catRoots(){
-    var t=subTree(), all={};
-    CAT_LIST.forEach(function(c){ all[c]=1; });
-    Object.keys(t).forEach(function(c){ all[c]=1; });
-    return Object.keys(all).filter(function(c){ return !t[c]; });
-  }
-  // spend on a category INCLUDING everything nested under it
-  function catSpendDeep(cat, monthFilter){
-    var direct=0;
-    sortedTx().forEach(function(t){
-      if(t.cat!==cat) return;
-      if(monthFilter && (t.date||"").slice(0,7)!==monthFilter) return;
-      var d=balDelta(t); if(d<0) direct+=Math.abs(d);
-    });
-    catChildren(cat).forEach(function(ch){ direct+=catSpendDeep(ch, monthFilter); });
-    return direct;
-  }
-  function renderCatTree(){
-    var box=document.getElementById("catTreeBody"); if(!box) return;
-    var sym=state.currency, thisM=todayStr().slice(0,7);
-    function node(cat, depth){
-      var spend=catSpendDeep(cat, thisM);
-      var cap=budgetFor(cat);
-      var kids=catChildren(cat);
-      var pct=cap>0 ? Math.min(100, spend/cap*100) : 0;
-      var over=cap>0 && spend>cap;
-      return '<div class="ct-node" style="padding-left:'+(depth*16)+'px">'
-        +'<div class="ct-row">'
-          +'<span class="ct-name">'+(depth?"↳ ":"")+esc(cat)+'</span>'
-          +'<span class="ct-val mono'+(over?" over":"")+'">'+sym+spend.toFixed(0)
-            +(cap>0?' <span class="mut">/ '+sym+cap.toFixed(0)+'</span>':'')+'</span>'
-        +'</div>'
-        +(cap>0?'<div class="ct-bar"><div class="ct-fill'+(over?" over":"")+'" style="width:'+pct+'%"></div></div>':'')
-        +kids.map(function(k){ return node(k, depth+1); }).join("")
-        +'</div>';
-    }
-    var roots=catRoots();
-    box.innerHTML=roots.map(function(r){ return node(r,0); }).join("")
-      +'<div class="ct-add">'
-        +'<input class="inp" id="ctChild" placeholder="new sub-category" style="flex:2">'
-        +'<select class="inp" id="ctParent" style="flex:2">'
-          +roots.concat(Object.keys(subTree())).filter(function(v,i,a){ return a.indexOf(v)===i; })
-            .map(function(c){ return '<option>'+esc(c)+'</option>'; }).join("")
-        +'</select>'
-        +'<button class="btn sm solid" id="ctAdd" style="flex:1">Nest</button>'
-      +'</div>';
-    var addBtn=document.getElementById("ctAdd");
-    if(addBtn) addBtn.addEventListener("click", function(){
-      var child=(document.getElementById("ctChild").value||"").trim();
-      var parent=document.getElementById("ctParent").value;
-      if(!child){ shake(document.getElementById("ctChild")); return; }
-      if(child===parent){ shake(document.getElementById("ctChild")); return; }
-      if(!state.catTree) state.catTree={};
-      state.catTree[child]=parent;
-      if(CAT_LIST.indexOf(child)<0) CAT_LIST.push(child);
-      persistNow(); renderCatTree(); flashSaved("nested under "+parent);
-    });
   }
 
   /* ============================================================
@@ -7180,327 +6058,949 @@ AI_TYPES.join(", "),
     return c.toDataURL("image/png");
   }
   function triggerInstall(){
-    if(!_deferredPrompt){
-      flashSaved("Use your browser menu → Add to Home Screen");
+    if(_deferredPrompt){
+      _deferredPrompt.prompt();
+      _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
       return;
     }
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(function(){ _deferredPrompt=null; });
+    /* Chrome only fires beforeinstallprompt over https with a service worker,
+       and Safari never fires it. Rather than a toast that vanishes, say exactly
+       what to tap on the browser they're actually using. */
+    var ua=navigator.userAgent||"";
+    var isIOS=/iPad|iPhone|iPod/.test(ua);
+    var isSafari=/^((?!chrome|android).)*safari/i.test(ua);
+    var installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
+    var msg;
+    if(installed) msg="It's already installed \u2014 you're running the installed copy now.";
+    else if(isIOS) msg="On iPhone or iPad: tap Share, then \u201cAdd to Home Screen\u201d.";
+    else if(isSafari) msg="In Safari: File \u2192 Add to Dock, or Share \u2192 Add to Home Screen.";
+    else if(location.protocol==="file:")
+      msg="Installing needs the app served over https \u2014 a file opened straight from disk can't be installed. Put it on GitHub Pages or any host and this will work.";
+    else msg="Open your browser menu and choose \u201cInstall app\u201d. If it's missing, the page needs https.";
+    appModal({title:"Install as an app", message:msg, confirmText:"OK"});
+  }
+
+
+
+  /* ============================================================
+     AI CHAT — a real conversation, with attachments
+     Was one-shot: type, get an answer, gone. Now keeps history so
+     follow-ups work ("what about last month?"), and takes files —
+     text ones are read and included, binaries are named honestly
+     rather than pretending the model can read them.
+     ============================================================ */
+  var chatLog=[];          // [{role:"user"|"ai", text, files:[{name,ext}]}]
+  var chatFiles=[];        // pending attachments for the next message
+  var CHAT_TEXT_EXT=["txt","csv","json","md","html","css","js","log","xml","yml","yaml","tsv"];
+
+  function chatFileIcon(ext){
+    return (typeof FILE_ICONS!=="undefined" && FILE_ICONS[ext]) ||
+           (typeof ATT_ICONS!=="undefined" && ATT_ICONS[ext]) || "📎";
+  }
+  function renderChatFiles(){
+    var strip=document.getElementById("chatFileStrip"); if(!strip) return;
+    strip.innerHTML=chatFiles.map(function(f,i){
+      return '<span class="chat-file">'+chatFileIcon(f.ext)
+        +'<b>'+esc(f.name)+'</b>'
+        +'<button data-i="'+i+'" title="Remove">\u2715</button></span>';
+    }).join("");
+    strip.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){
+        chatFiles.splice(+b.getAttribute("data-i"),1);
+        renderChatFiles();
+        if(window._chatSync) window._chatSync();
+      });
+    });
+  }
+  var CHAT_SUGGESTIONS=[
+    "Where am I overspending?",
+    "How's my savings rate?",
+    "Any unusual transactions?",
+    "What should I cut first?"
+  ];
+  function renderChatLog(){
+    var box=document.getElementById("chatLog"); if(!box) return;
+    if(!chatLog.length){
+      box.innerHTML='<div class="chat-empty">'
+        +'<div class="ce-ic">\uD83D\uDCAC</div>'
+        +'<div class="ce-t">Ask about your money</div>'
+        +'<div class="ce-d">Everything stays on this device. Attach a statement or receipt if it helps.</div>'
+        +'<div class="chat-chips">'
+        + CHAT_SUGGESTIONS.map(function(q){
+            return '<button class="chat-sugg" data-q="'+esc(q)+'">'+esc(q)+'</button>';
+          }).join("")
+        +'</div></div>';
+      box.querySelectorAll(".chat-sugg").forEach(function(b){
+        b.addEventListener("click", function(){
+          var inp=document.getElementById("chatInput");
+          if(inp){ inp.value=b.getAttribute("data-q"); if(window._chatSync) window._chatSync(); }
+          chatSend();
+        });
+      });
+      return;
+    }
+    box.innerHTML=chatLog.map(function(m){
+      var atts=(m.files&&m.files.length)
+        ? '<div class="chat-att">'+m.files.map(function(f){
+            return '<span>'+chatFileIcon(f.ext)+" "+esc(f.name)+'</span>'; }).join("")+'</div>'
+        : "";
+      if(m.pending){
+        return '<div class="chat-turn ai"><div class="chat-who">AI</div>'
+          +'<div class="chat-typing"><i></i><i></i><i></i></div></div>';
+      }
+      return '<div class="chat-turn '+(m.role==="user"?"me":"ai")+'">'
+        +'<div class="chat-who">'+(m.role==="user"?"You":"AI")+'</div>'
+        + atts
+        +'<div class="chat-bub">'+esc(m.text)+'</div></div>';
+    }).join("");
+    box.scrollTop=box.scrollHeight;
+  }
+  function chatPush(role, text, files){
+    chatLog.push({role:role, text:text, files:files||[]});
+    if(chatLog.length>40) chatLog=chatLog.slice(-40);   // keep the context sane
+    renderChatLog();
+  }
+  // build the prompt: finances + attached text + the last few turns
+  function chatPrompt(question, files){
+    var parts=[financialContext()];
+    (files||[]).forEach(function(f){
+      if(f.text!=null){
+        parts.push("\n--- file: "+f.name+" ---\n"+String(f.text).slice(0,4000));
+      } else {
+        parts.push("\n(attached "+f.name+" — a "+(f.ext||"binary").toUpperCase()
+          +" file I can't read the contents of)");
+      }
+    });
+    var hist=chatLog.slice(-6).map(function(m){
+      return (m.role==="user"?"Me: ":"You: ")+m.text;
+    }).join("\n");
+    if(hist) parts.push("\nEarlier in this conversation:\n"+hist);
+    parts.push("\nQuestion: "+question);
+    return parts.join("");
+  }
+  function chatSend(){
+    var input=document.getElementById("chatInput");
+    var q=(input.value||"").trim();
+    if(!q && !chatFiles.length) return;
+    var files=chatFiles.slice();
+    chatPush("user", q || "(see attached)", files.map(function(f){ return {name:f.name, ext:f.ext}; }));
+    input.value=""; chatFiles=[]; renderChatFiles();
+    if(window._chatSync) window._chatSync();
+
+    chatLog.push({role:"ai", text:"", files:[], pending:true});
+    renderChatLog();
+    var idx=chatLog.length-1;
+    var setAnswer=function(txt){
+      chatLog[idx].text=txt; chatLog[idx].pending=false; renderChatLog();
+    };
+
+    var prompt=chatPrompt(q, files);
+    // whichever local engine is ready — built-in first, then WebLLM
+    initBuiltinAi().then(function(ready){
+      if(ready) return askBuiltinAi(prompt);
+      if(window._wllmEngine) return askWebllm(prompt);
+      if(wllmRemembered()){
+        // already downloaded — reconnect and answer once it's up
+        return new Promise(function(res){
+          var done=function(){ window.removeEventListener("wllm-ready",done); res(askWebllm(prompt)); };
+          window.addEventListener("wllm-ready",done);
+          loadWebllm({silent:true});
+          setTimeout(function(){ window.removeEventListener("wllm-ready",done); res(null); }, 60000);
+        });
+      }
+      return null;
+    }).then(function(ans){
+      setAnswer(ans || "No model is ready yet. Chrome 127+ has one built in — otherwise set one up in Settings › Extra › AI mode.");
+    }).catch(function(e){
+      setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
+    });
+  }
+
+  /* The chat used to sit several taps deep in Settings.
+     Something you'd use daily shouldn't be buried, so this opens the same
+     chat in a sheet from the dashboard. One chat, one history — the panel
+     in Settings and this sheet share chatLog. */
+  function openChatSheet(){
+    var host=document.getElementById("chatSheetHost");
+    if(!host){ host=document.createElement("div"); host.id="chatSheetHost"; document.body.appendChild(host); }
+    host.innerHTML=
+       '<div class="ov in" id="chatOv">'
+      +'  <div class="sheet chat-sheet">'
+      +'    <div class="chat-hd">'
+      +'      <h3>Ask AI</h3>'
+      +'      <span class="chat-engine" id="chatEngine">checking…</span>'
+      +'      <span style="flex:1"></span>'
+      +'      <button class="x-btn" id="chatClear" title="Clear this conversation">\u21bb</button>'
+      +'      <button class="x-btn" id="chatSheetX" title="Close">\u2715</button>'
+      +'    </div>'
+      +'    <div class="chat-body" id="chatLog"></div>'
+      +'    <div class="chat-foot">'
+      +'      <div class="chat-pending" id="chatFileStrip"></div>'
+      +'      <div class="chat-input-row">'
+      +'        <button class="chat-icon-btn" id="chatAttachBtn" title="Attach a file">\uD83D\uDCCE</button>'
+      +'        <textarea id="chatInput" class="inp" rows="1" placeholder="Ask about your money\u2026"></textarea>'
+      +'        <button class="chat-icon-btn chat-send" id="chatSend" title="Send" disabled>\u2191</button>'
+      +'      </div>'
+      +'      <div class="chat-hint">Runs on your device \u00b7 Enter to send, Shift+Enter for a new line</div>'
+      +'    </div>'
+      +'    <input type="file" id="chatFileInput" multiple style="display:none"'
+      +'      accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">'
+      +'  </div></div>';
+    bindChat();
+    renderChatLog(); renderChatFiles();
+
+    var close=function(){ host.innerHTML=""; document.removeEventListener("keydown", onEsc); };
+    var onEsc=function(e){ if(e.key==="Escape") close(); };
+    document.getElementById("chatSheetX").onclick=close;
+    document.getElementById("chatOv").addEventListener("click", function(e){
+      if(e.target.id==="chatOv") close();
+    });
+    document.addEventListener("keydown", onEsc);
+
+    // grow the box as they type, up to a limit
+    var ta=document.getElementById("chatInput");
+    var send=document.getElementById("chatSend");
+    var sync=function(){
+      ta.style.height="auto";
+      ta.style.height=Math.min(130, ta.scrollHeight)+"px";
+      send.disabled = !ta.value.trim() && !chatFiles.length;
+    };
+    ta.addEventListener("input", sync);
+    setTimeout(function(){ try{ ta.focus(); }catch(e){} sync(); },120);
+    window._chatSync=sync;
+
+    refreshChatEngine();
+  }
+
+  /* One clear badge for which engine will answer — and if the model was
+     downloaded before, reconnect silently instead of asking again. */
+  function refreshChatEngine(){
+    var el=document.getElementById("chatEngine");
+    if(!el) return;
+    var set=function(txt,cls){ el.textContent=txt; el.className="chat-engine"+(cls?" "+cls:""); };
+    if(window._wllmEngine){ set("WebLLM \u00b7 on device","ready"); return; }
+    if(window._wllmLoading){ set("loading model\u2026","busy"); return; }
+    set("checking\u2026","busy");
+    initBuiltinAi().then(function(ready){
+      if(ready){ set("Chrome AI \u00b7 on device","ready"); return; }
+      if(wllmRemembered()){
+        set("reconnecting\u2026","busy");
+        loadWebllm({silent:true});
+        return;
+      }
+      set("no model \u2014 tap to set up","");
+      el.style.cursor="pointer";
+      el.onclick=function(){ openAiSettings(); };
+    });
+  }
+
+  /* The launchers live outside bindChat on purpose: bindChat returns early
+     when the chat isn't on screen, so anything bound after it would silently
+     never attach. */
+  function bindChatLaunchers(){
+    ["chatOpenBtn","chatOpenBtn2"].forEach(function(id){
+      var b=document.getElementById(id);
+      if(b && !b._chatBound){ b._chatBound=true; b.addEventListener("click", openChatSheet); }
+    });
+  }
+  function bindChat(){
+    var input=document.getElementById("chatInput");
+    var send=document.getElementById("chatSend");
+    var attach=document.getElementById("chatAttachBtn");
+    var file=document.getElementById("chatFileInput");
+    if(!input||!send) return;
+    send.addEventListener("click", chatSend);
+    input.addEventListener("keydown", function(e){
+      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); chatSend(); }
+    });
+    if(attach&&file){
+      attach.addEventListener("click", function(){ file.click(); });
+      file.addEventListener("change", function(e){
+        var list=Array.prototype.slice.call(e.target.files||[]);
+        e.target.value="";
+        list.forEach(function(f){
+          var ext=((f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"").toLowerCase();
+          var rec={name:f.name, ext:ext, size:f.size};
+          if(CHAT_TEXT_EXT.indexOf(ext)>=0 && f.size<400000){
+            var r=new FileReader();
+            r.onload=function(){ rec.text=r.result; chatFiles.push(rec); renderChatFiles(); };
+            r.onerror=function(){ chatFiles.push(rec); renderChatFiles(); };
+            r.readAsText(f);
+          } else {
+            chatFiles.push(rec); renderChatFiles();   // named, contents not sent
+          }
+        });
+      });
+    }
+    var clear=document.getElementById("chatClear");
+    if(clear) clear.addEventListener("click", function(){
+      chatLog=[]; chatFiles=[]; renderChatLog(); renderChatFiles();
+    });
+    renderChatLog();
   }
 
   /* ============================================================
-     SHARED PORTFOLIO ROLES
-     The enterprise version of this is RBAC with signed JWTs and a
-     central authority. For a personal app shared with family or a
-     client, that machinery is overkill — what's actually needed is
-     "let them look without letting them edit". A role is set on the
-     portfolio and locks the editing UI. It's a guard rail, not a
-     security boundary, and it says so plainly rather than implying
-     protection it can't provide.
+     BILL SPLITTING
+     Splitting is a per-entry fact, so turning it off later must not
+     rewrite history: an entry saved as split stays split, and shows
+     the share you actually paid. The setting only decides whether
+     NEW entries default to being split.
      ============================================================ */
-  var ROLES={
-    owner:  {label:"Owner",     canEdit:true,  canDelete:true,  canExport:true,  icon:"👑"},
-    editor: {label:"Editor",    canEdit:true,  canDelete:false, canExport:true,  icon:"✏️"},
-    viewer: {label:"View only", canEdit:false, canDelete:false, canExport:true,  icon:"👁️"}
-  };
-  function currentRole(){
-    var p=activePortfolio();
-    return ROLES[(p&&p.role)||"owner"] || ROLES.owner;
+  function splitCfg(){
+    if(!state.settings) state.settings={};
+    if(state.settings.splitOn===undefined) state.settings.splitOn=false;
+    if(!state.settings.splitWays) state.settings.splitWays=2;
+    return state.settings;
   }
-  function applyRoleUI(){
-    var r=currentRole();
-    // editing controls
-    var form=document.getElementById("entryForm");
-    if(form) form.style.display = r.canEdit ? "" : "none";
-    var note=document.getElementById("roleNotice");
-    if(!note && !r.canEdit){
-      note=document.createElement("div");
-      note.id="roleNotice";
-      note.style.cssText="background:var(--card2);border:1px solid var(--bd2);border-radius:11px;"
-        +"padding:11px 13px;margin:10px 0;font-size:12px;color:var(--mut);text-align:center";
-      note.innerHTML=r.icon+" <b style='color:var(--tx)'>"+r.label+"</b> — entries are read-only in this portfolio.";
-      var host=document.getElementById("pageLedger");
-      if(host) host.insertBefore(note, host.firstChild);
-    } else if(note && r.canEdit){
-      note.remove();
+  function splitIsOn(){ return !!splitCfg().splitOn; }
+  function splitWays(){ return Math.max(2, num(splitCfg().splitWays)||2); }
+  // what a stored entry means, regardless of the current setting
+  function txSplitWays(t){ return t && t.splitWays ? Math.max(2,num(t.splitWays)) : 1; }
+  function txIsSplit(t){ return txSplitWays(t)>1; }
+  function txSplitNote(t){
+    if(!txIsSplit(t)) return "";
+    var n=txSplitWays(t), full=Math.abs(num(t.amount))*n;
+    return "Split "+n+" ways — "+fmt(full,state.currency)+" total, your share "+fmt(Math.abs(num(t.amount)),state.currency);
+  }
+  function bindSplit(){
+    var chk=document.getElementById("splitOnChk");
+    var ways=document.getElementById("splitWaysInp");
+    var note=document.getElementById("splitNote");
+    function paint(){
+      if(!note) return;
+      note.textContent = splitIsOn()
+        ? "New bills default to splitting "+splitWays()+" ways. Entries already saved keep whatever they were."
+        : "New bills are logged in full. Past split entries keep their split and still show it.";
     }
-    // delete buttons
-    document.querySelectorAll("[data-act='del'],#tdDel,#wipeBtn").forEach(function(b){
-      b.style.display = r.canDelete ? "" : "none";
-    });
-    var badge=document.getElementById("roleBadge");
-    if(badge){ badge.textContent=r.icon+" "+r.label; }
-  }
-  function setPortfolioRole(role){
-    var p=activePortfolio(); if(!p) return;
-    p.role=role; persistNow(); applyRoleUI(); renderPortfolioUI&&renderPortfolioUI();
-    flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
+    if(chk){
+      chk.checked=splitIsOn();
+      chk.addEventListener("change", function(){
+        splitCfg().splitOn=chk.checked; persistNow(); paint();
+        var row=document.getElementById("splitWaysRow");
+        if(row) row.style.display=chk.checked?"":"none";
+        flashSaved(chk.checked?"splitting on":"splitting off");
+      });
+    }
+    if(ways){
+      ways.value=splitWays();
+      ways.addEventListener("change", function(){
+        var v=Math.max(2, Math.min(20, num(ways.value)||2));
+        ways.value=v; splitCfg().splitWays=v; persistNow(); paint();
+      });
+    }
+    var row=document.getElementById("splitWaysRow");
+    if(row) row.style.display=splitIsOn()?"":"none";
+    paint();
   }
 
-  /* ── bind the security + accounting panels ─────────────────── */
+  /* ============================================================
+     FACE UNLOCK — camera check first, real recognition optional
+
+     Honest layering, because this is security and vagueness is
+     worse than a limitation:
+
+       1. Camera check   — getUserMedia. Always local. If there's no
+                           camera we say so and never offer face unlock.
+       2. Face present   — FaceDetector where the browser has it. This
+                           proves a face is in frame, NOT whose face.
+                           On its own that is not authentication.
+       3. Recognition    — face-api.js (~6MB, one-time download, then
+                           cached). Computes a 128-number descriptor of
+                           YOUR face and compares by euclidean distance.
+                           This is the part that actually identifies you.
+
+     Without step 3 the app will not pretend: face unlock stays
+     unavailable rather than shipping a lock any face can open.
+     ============================================================ */
+
+  var FACE_KEY="mymoney_face_v1";
+  var faceCfg={ on:false, descriptor:null, threshold:0.42, model:false };
+  function loadFace(){
+    try{ var r=localStorage.getItem(FACE_KEY); if(r) faceCfg=Object.assign(faceCfg, JSON.parse(r)); }catch(e){}
+  }
+  function saveFace(){ try{ localStorage.setItem(FACE_KEY, JSON.stringify(faceCfg)); }catch(e){} }
+
+  /* ---- 1. is there a camera at all? ---- */
+  function cameraCheck(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+      return Promise.resolve({ok:false, why:"This browser can't reach a camera."});
+    if(!window.isSecureContext)
+      return Promise.resolve({ok:false, why:"Camera access needs https. Opened straight from disk (file://) the browser blocks it."});
+    if(!navigator.mediaDevices.enumerateDevices)
+      return Promise.resolve({ok:true, why:""});   // can't enumerate; try anyway
+    return navigator.mediaDevices.enumerateDevices().then(function(list){
+      var cams=list.filter(function(d){ return d.kind==="videoinput"; });
+      return cams.length
+        ? {ok:true, why:"", count:cams.length}
+        : {ok:false, why:"No camera found on this device."};
+    }).catch(function(){ return {ok:true, why:""}; });
+  }
+
+  /* ---- 2. face-api.js, fetched once then cached by the browser ---- */
+  var _faceApiReady=false, _faceApiLoading=null;
+  var FACEAPI_URL="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js";
+  var FACEAPI_MODELS="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/";
+  function loadFaceApi(onProgress){
+    if(_faceApiReady) return Promise.resolve(true);
+    if(_faceApiLoading) return _faceApiLoading;
+    _faceApiLoading=new Promise(function(resolve,reject){
+      if(onProgress) onProgress("Fetching the face model (~6MB, once)…");
+      var sc=document.createElement("script");
+      sc.src=FACEAPI_URL;
+      sc.onload=function(){
+        if(!window.faceapi){ reject(new Error("face-api didn't load")); return; }
+        if(onProgress) onProgress("Loading model weights…");
+        Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(FACEAPI_MODELS),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACEAPI_MODELS),
+          faceapi.nets.faceRecognitionNet.loadFromUri(FACEAPI_MODELS)
+        ]).then(function(){
+          _faceApiReady=true; faceCfg.model=true; saveFace();
+          if(onProgress) onProgress("Model ready.");
+          resolve(true);
+        }).catch(reject);
+      };
+      sc.onerror=function(){ reject(new Error("Couldn't download the face model — check your connection.")); };
+      document.head.appendChild(sc);
+    });
+    return _faceApiLoading;
+  }
+
+  /* ---- camera sheet used for both enrolling and unlocking ---- */
+  function openCameraSheet(opts){
+    // opts: {title, action:"enrol"|"verify", onResult(descriptorOrMatch), onCancel}
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="faceOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:400px">'
+      +'  <div class="sheet-hd"><h3>'+esc(opts.title||"Face")+'</h3>'
+      +'    <button class="x-btn" id="faceX">✕</button></div>'
+      +'  <div class="sheet-bd" style="text-align:center">'
+      +'    <div class="face-frame"><video id="faceVideo" autoplay playsinline muted></video>'
+      +'      <div class="face-ring" id="faceRing"></div></div>'
+      +'    <div class="face-status" id="faceStatus">Starting the camera…</div>'
+      +'  </div>'
+      +'  <div class="sheet-ft"><button class="btn ghost sm" id="faceCancel">Cancel</button>'
+      +'    <button class="btn solid sm" id="faceGo" disabled>'
+      +      (opts.action==="enrol"?"Capture":"Unlock")+'</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var stream=null, stopped=false;
+    var video=host.querySelector("#faceVideo");
+    var status=host.querySelector("#faceStatus");
+    var go=host.querySelector("#faceGo");
+    var ring=host.querySelector("#faceRing");
+    function say(t,kind){
+      status.textContent=t;
+      status.style.color = kind==="bad"?"var(--down)" : kind==="ok"?"var(--up)" : "var(--mut)";
+    }
+    function cleanup(){
+      stopped=true;
+      if(stream) stream.getTracks().forEach(function(t){ t.stop(); });
+      if(host.parentNode) host.parentNode.removeChild(host);
+    }
+    host.querySelector("#faceX").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
+    host.querySelector("#faceCancel").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
+
+    navigator.mediaDevices.getUserMedia({video:{facingMode:"user", width:320, height:240}})
+      .then(function(s){
+        stream=s; video.srcObject=s;
+        say("Line your face up inside the circle.");
+        go.disabled=false;
+        // live "face in frame?" hint where the browser can do it natively
+        if(typeof window.FaceDetector!=="undefined"){
+          var fd=new window.FaceDetector({fastMode:true, maxDetectedFaces:1});
+          var tick=function(){
+            if(stopped) return;
+            fd.detect(video).then(function(faces){
+              if(stopped) return;
+              var has=faces&&faces.length;
+              ring.classList.toggle("on", !!has);
+              say(has?"Face detected — ready.":"No face in frame yet.", has?"ok":null);
+              setTimeout(tick, 400);
+            }).catch(function(){ setTimeout(tick, 800); });
+          };
+          setTimeout(tick, 500);
+        }
+      })
+      .catch(function(err){
+        var m=String(err&&err.name||err);
+        say(/NotAllowed/.test(m) ? "Camera permission was refused."
+          : /NotFound/.test(m)   ? "No camera found on this device."
+          : /NotReadable/.test(m)? "The camera is in use by another app."
+          : "Couldn't start the camera: "+m, "bad");
+        go.disabled=true;
+      });
+
+    go.onclick=function(){
+      go.disabled=true;
+      say("Reading your face…");
+      loadFaceApi(function(msg){ say(msg); }).then(function(){
+        return faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks(true).withFaceDescriptor();
+      }).then(function(det){
+        if(!det){ say("Couldn't see a face clearly — try better light.", "bad"); go.disabled=false; return; }
+        var desc=Array.from(det.descriptor);
+        if(opts.action==="enrol"){
+          cleanup(); opts.onResult&&opts.onResult(desc);
+        } else {
+          var saved=faceCfg.descriptor;
+          if(!saved){ say("No face is enrolled.", "bad"); go.disabled=false; return; }
+          var dist=Math.sqrt(desc.reduce(function(sum,v,i){ var d=v-saved[i]; return sum+d*d; },0));
+          if(dist<=faceCfg.threshold){ say("Matched.", "ok"); setTimeout(function(){ cleanup(); opts.onResult&&opts.onResult(true); },400); }
+          else { say("That's not a match (distance "+dist.toFixed(2)+"). Use your PIN.", "bad"); go.disabled=false; }
+        }
+      }).catch(function(e){
+        say(String(e&&e.message||e).slice(0,110), "bad");
+        go.disabled=false;
+      });
+    };
+  }
+
+  function enrolFace(cb){
+    cameraCheck().then(function(c){
+      if(!c.ok){
+        appModal({title:"Face unlock unavailable", message:c.why, confirmText:"OK"});
+        cb&&cb(false); return;
+      }
+      openCameraSheet({
+        title:"Set up face unlock", action:"enrol",
+        onResult:function(desc){
+          faceCfg.on=true; faceCfg.descriptor=desc; saveFace();
+          flashSaved("face unlock on"); cb&&cb(true);
+        },
+        onCancel:function(){ cb&&cb(false); }
+      });
+    });
+  }
+  function verifyFace(cb){
+    if(!faceCfg.on || !faceCfg.descriptor){ cb(false); return; }
+    openCameraSheet({
+      title:"Unlock with your face", action:"verify",
+      onResult:function(ok){ cb(!!ok); },
+      onCancel:function(){ cb(false); }
+    });
+  }
+  function faceDisable(){ faceCfg.on=false; faceCfg.descriptor=null; saveFace(); }
+
+  /* ============================================================
+     PIN SETUP — a real keypad, and it always tells you what's wrong
+
+     The old version used a plain text prompt: type a PIN, and if it
+     was too short or didn't match, the dialog just closed. Silent
+     failure on a security control is the worst possible behaviour —
+     you'd think the lock was on when it wasn't. This one never
+     closes without saying why.
+     ============================================================ */
+  function openPinSetup(){
+    var stage=1, first="", entered="";
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="pinSetupOv";
+    host.innerHTML=
+       '<div class="sheet pin-sheet">'
+      +'  <div class="sheet-hd"><h3 id="pinTitle">Choose a PIN</h3>'
+      +'    <button class="x-btn" id="pinX">✕</button></div>'
+      +'  <div class="sheet-bd" style="text-align:center">'
+      +'    <div class="pin-sub" id="pinSub">4 to 12 digits. There is no recovery — if you forget it you\u2019d have to clear the app\u2019s data and restore a backup.</div>'
+      +'    <div class="lk-dots" id="pinDots"></div>'
+      +'    <div class="pin-err" id="pinErr"></div>'
+      +'    <div class="lk-pad" id="pinPad"></div>'
+      +'  </div>'
+      +'  <div class="sheet-ft"><button class="btn ghost sm" id="pinCancel">Cancel</button>'
+      +'    <button class="btn solid sm" id="pinNext" disabled>Next</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+
+    var dots=host.querySelector("#pinDots"), err=host.querySelector("#pinErr");
+    var title=host.querySelector("#pinTitle"), sub=host.querySelector("#pinSub");
+    var next=host.querySelector("#pinNext");
+    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector("#pinX").onclick=close;
+    host.querySelector("#pinCancel").onclick=close;
+
+    function showErr(msg){
+      err.textContent=msg||"";
+      err.style.display=msg?"block":"none";
+      if(msg){
+        var sh=host.querySelector(".pin-sheet");
+        sh.classList.remove("shake"); void sh.offsetWidth; sh.classList.add("shake");
+      }
+    }
+    function drawDots(){
+      dots.innerHTML="";
+      var n=Math.max(4, entered.length);
+      for(var i=0;i<n;i++){
+        var s=document.createElement("span");
+        s.className="lk-dot"+(i<entered.length?" on":"");
+        dots.appendChild(s);
+      }
+      next.disabled = entered.length<4;
+      next.textContent = stage===1 ? "Next" : "Set PIN";
+    }
+    function press(k){
+      showErr("");
+      if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
+      if(entered.length>=12){ showErr("A PIN can be at most 12 digits."); return; }
+      entered+=k; drawDots();
+    }
+    var pad=host.querySelector("#pinPad");
+    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
+      var b=document.createElement("button");
+      b.className="lk-key"+(k===""?" lk-blank":"");
+      b.textContent=k; if(k==="") b.disabled=true;
+      b.addEventListener("click", function(){ press(k); });
+      pad.appendChild(b);
+    });
+    host.addEventListener("keydown", function(e){
+      if(/^[0-9]$/.test(e.key)) press(e.key);
+      else if(e.key==="Backspace") press("⌫");
+      else if(e.key==="Enter" && entered.length>=4) next.click();
+    });
+    host.tabIndex=-1; setTimeout(function(){ try{ host.focus(); }catch(e){} },50);
+
+    next.onclick=function(){
+      if(entered.length<4){ showErr("A PIN needs at least 4 digits — you've entered "+entered.length+"."); return; }
+      if(stage===1){
+        first=entered; entered=""; stage=2;
+        title.textContent="Confirm your PIN";
+        sub.textContent="Type the same PIN again so we know it's what you meant.";
+        showErr(""); drawDots();
+        return;
+      }
+      if(entered!==first){
+        showErr("Those two didn't match. Starting again.");
+        first=""; entered=""; stage=1;
+        title.textContent="Choose a PIN";
+        sub.textContent="4 to 12 digits. There is no recovery.";
+        drawDots();
+        return;
+      }
+      next.disabled=true; next.textContent="Saving…";
+      setLockPin(first, function(){
+        close();
+        refreshSecUI();
+        flashSaved("app lock on");
+        // offer face unlock only if a camera is genuinely there
+        cameraCheck().then(function(c){
+          if(!c.ok) return;
+          appModal({title:"Add face unlock?",
+            message:"Unlock with your face instead of typing the PIN. Needs a one-time ~6MB model download, then it runs entirely on your device. Your PIN keeps working either way.",
+            confirmText:"Set it up", cancelText:"PIN only",
+            onConfirm:function(){ enrolFace(function(){ refreshSecUI(); }); }});
+        });
+      });
+    };
+    drawDots();
+  }
+
+  window.addEventListener("wllm-ready", function(){ wllmMarkReady(); });
+  window.addEventListener("wllm-failed", function(e){
+    var sta=document.getElementById("wllmLoadStatus");
+    if(sta){ sta.style.display=""; sta.style.color="var(--amber)";
+      sta.textContent="Couldn't start the model: "+String(e.detail||"").slice(0,90); }
+    refreshWllmUI();
+  });
+
+  /* The facial-recognition sub-box: show whether a camera exists and let the
+     model be fetched ahead of time, so the first unlock isn't a surprise wait. */
+  function refreshFacePanel(){
+    var camNote=document.getElementById("camNote");
+    var camStat=document.getElementById("camStatus");
+    var mNote=document.getElementById("faceModelNote");
+    var mBtn=document.getElementById("faceModelBtn");
+    if(!camNote && !mBtn) return;
+    cameraCheck().then(function(c){
+      if(camStat){
+        camStat.textContent = c.ok ? "found" : "none";
+        camStat.className = "sec-status "+(c.ok?"on":"warn");
+      }
+      if(camNote) camNote.textContent = c.ok
+        ? "A camera is available on this device."
+        : c.why;
+      if(mBtn) mBtn.disabled = !c.ok;
+    });
+    if(!mBtn) return;
+    if(_faceApiReady || faceCfg.model){
+      mBtn.textContent="Ready"; mBtn.disabled=true;
+      if(mNote){ mNote.textContent="Downloaded and cached — face unlock works offline."; mNote.style.color="var(--up)"; }
+    } else {
+      mBtn.textContent="Download";
+      if(mNote){ mNote.textContent="Not downloaded yet (~6MB, once)."; mNote.style.color=""; }
+    }
+  }
+  function bindFacePanel(){
+    var mBtn=document.getElementById("faceModelBtn");
+    if(mBtn) mBtn.addEventListener("click", function(){
+      var mNote=document.getElementById("faceModelNote");
+      mBtn.disabled=true; mBtn.textContent="Downloading…";
+      loadFaceApi(function(msg){ if(mNote){ mNote.textContent=msg; mNote.style.color="var(--mut)"; } })
+        .then(function(){ flashSaved("face model ready"); refreshFacePanel(); })
+        .catch(function(e){
+          mBtn.disabled=false; mBtn.textContent="Retry";
+          if(mNote){ mNote.textContent=String(e&&e.message||e).slice(0,110); mNote.style.color="var(--amber)"; }
+        });
+    });
+    refreshFacePanel();
+  }
   function bindSecurityPanel(){
-    loadSecCfg();
-    var head=document.getElementById("secHead"), body=document.getElementById("secBody"),
-        caret=document.getElementById("secCaret");
-    if(!head||!body) return;
-    head.addEventListener("click", function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open){ refreshSecUI(); refreshAuditStatus(); }
+    loadLock();
+    loadFace();
+    // The panel now lives inside a settings <details> box, so it has no collapse
+    // header of its own — a second layer of clicking looked broken when the
+    // outer box was shut. Refresh when the box it sits in is opened instead.
+    var body=document.getElementById("secBody");
+    if(!body) return;
+    var outer=body.closest("details.sect");
+    if(outer) outer.addEventListener("toggle", function(){
+      if(outer.open){ refreshSecUI(); }
     });
 
     // biometric
+    /* App lock: PIN first (works anywhere), Face ID as an optional extra
+       where the page is on https and a sensor exists. */
     var bioBtn=document.getElementById("bioBtn");
     if(bioBtn) bioBtn.addEventListener("click", function(){
-      if(secCfg.bioEnabled){
-        appModal({title:"Turn off biometric lock?",
-          message:"The app will open without asking for Face ID or a fingerprint.",
-          confirmText:"Turn off", cancelText:"Keep on", onConfirm:function(){
-            bioDisable(); refreshSecUI(); flashSaved("biometric lock off"); }});
+      if(lockIsOn()){
+        appModal({title:"Turn off the app lock?",
+          message:"The app will open without asking for your PIN"+(faceCfg.on?" or your face":"")+".",
+          confirmText:"Turn off", cancelText:"Keep it on",
+          onConfirm:function(){ clearLock(); faceDisable(); refreshSecUI(); flashSaved("app lock off"); }});
         return;
       }
-      if(!bioAvailable()){ flashSaved("This device/browser doesn't support biometrics"); return; }
-      bioBtn.textContent="…"; bioBtn.disabled=true;
-      bioEnrol().then(function(){ refreshSecUI(); flashSaved("biometric lock on"); })
-        .catch(function(e){ flashSaved(String(e.message||e).slice(0,60)); })
-        .then(function(){ bioBtn.disabled=false; refreshSecUI(); });
+      openPinSetup();      // proper keypad, and it always says what went wrong
     });
 
-    // encrypted export
-    var encBtn=document.getElementById("encBtn");
-    if(encBtn) encBtn.addEventListener("click", function(){
-      appModal({title:"Encrypted backup", message:"Choose a password. There is no way to recover it — if you lose it the file is unreadable.",
-        input:{placeholder:"password (min 8 characters)"}, confirmText:"Encrypt & download",
-        onConfirm:function(pw){
-          if(!pw||pw.length<8){ flashSaved("password must be 8+ characters"); return; }
-          var payload=JSON.stringify(buildRoot());
-          encryptBackup(payload, pw).then(function(enc){
-            var url=URL.createObjectURL(new Blob([enc],{type:"application/json"}));
-            var a=document.createElement("a");
-            a.href=url; a.download="mymoney-encrypted-"+todayStr()+".json";
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-            flashSaved("encrypted backup saved");
-          }).catch(function(e){ flashSaved("encryption failed: "+String(e).slice(0,40)); });
-        }});
+    // separate control for face unlock, so it can be added or removed on its own
+    var faceBtn=document.getElementById("faceBtn");
+    if(faceBtn) faceBtn.addEventListener("click", function(){
+      if(!lockIsOn()){
+        appModal({title:"Set a PIN first",
+          message:"Face unlock sits on top of the PIN — the PIN is the fallback whenever your face can't be read.",
+          confirmText:"OK"});
+        return;
+      }
+      if(faceCfg.on){
+        appModal({title:"Remove face unlock?", message:"You'll unlock with your PIN only.",
+          confirmText:"Remove", cancelText:"Keep",
+          onConfirm:function(){ faceDisable(); refreshSecUI(); flashSaved("face unlock removed"); }});
+        return;
+      }
+      enrolFace(function(){ refreshSecUI(); });
     });
 
-    // encrypted restore
-    var decBtn=document.getElementById("decBtn"), encFile=document.getElementById("encFileInput");
-    if(decBtn&&encFile){
-      decBtn.addEventListener("click", function(){ encFile.click(); });
-      encFile.addEventListener("change", function(e){
-        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
-        var r=new FileReader();
-        r.onload=function(){
-          var text=r.result;
-          appModal({title:"Restore encrypted backup", message:"Enter the password for this file.",
-            input:{placeholder:"password"}, confirmText:"Decrypt & restore",
-            onConfirm:function(pw){
-              decryptBackup(text, pw).then(function(plain){
-                applyLoaded(plain); persistNow(); render();
-                flashSaved("backup restored");
-              }).catch(function(){ flashSaved("wrong password, or the file is damaged"); });
-            }});
-        };
-        r.readAsText(f);
-      });
+    /* Cloud sync, done honestly.
+       MEGA's API can't be driven from a static page: mega.nz sends no CORS
+       headers for arbitrary origins, and uploads are chunked and end-to-end
+       encrypted behind a proprietary handshake. A real "MEGA integration"
+       would need a server to proxy it, which this app deliberately doesn't have.
+       The same outcome without any of that: write into a folder MEGA's own
+       desktop client already syncs. The File System Access tier does exactly
+       that, so this points it at the right folder and lets MEGA do the upload. */
+    var cloudBtn=document.getElementById("cloudFolderBtn");
+    var cloudNote=document.getElementById("cloudNote");
+    if(cloudBtn){
+      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
+        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
+        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
+      } else {
+        cloudBtn.addEventListener("click", function(){
+          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
+          TierFSA.pickFolder()
+            .then(function(){ return StorageManager.init(); })
+            .then(function(){ return StorageManager.write(buildRoot()); })
+            .then(function(){
+              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
+              flashSaved("cloud folder linked");
+              return refreshStorageBadge();
+            })
+            .catch(function(e){
+              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
+            });
+        });
+      }
     }
-
-    // audit chain
-    var sealBtn=document.getElementById("auditSealBtn");
-    if(sealBtn) sealBtn.addEventListener("click", function(){
-      sealBtn.disabled=true; sealBtn.textContent="Sealing…";
-      sealAuditChain().then(function(n){
-        flashSaved("sealed "+n+" entries"); refreshAuditStatus();
-      }).catch(function(e){ flashSaved("seal failed"); })
-        .then(function(){ sealBtn.disabled=false; sealBtn.textContent="Seal records"; });
-    });
-    var verBtn=document.getElementById("auditVerifyBtn");
-    if(verBtn) verBtn.addEventListener("click", function(){
-      verBtn.disabled=true; verBtn.textContent="Checking…";
-      verifyAuditChain().then(function(res){
-        appModal({title: res.status==="ok" ? "✅ Records verified"
-                       : res.status==="broken" ? "⚠️ Chain broken" : "No chain yet",
-          message: res.message, confirmText:"OK"});
-        refreshAuditStatus();
-      }).then(function(){ verBtn.disabled=false; verBtn.textContent="Verify"; });
-    });
-
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
 
     // role
-    var roleSel=document.getElementById("roleSelect");
-    if(roleSel){
-      var p=activePortfolio();
-      roleSel.value=(p&&p.role)||"owner";
-      roleSel.addEventListener("change", function(){ setPortfolioRole(roleSel.value); });
+    var adChk=document.getElementById("autoDetectChk");
+    if(adChk){
+      adChk.checked=!(state.settings&&state.settings.autoDetect===false);
+      adChk.addEventListener("change",function(){
+        if(!state.settings) state.settings={};
+        state.settings.autoDetect=adChk.checked; persistNow();
+        flashSaved(adChk.checked?"auto-detect on":"auto-detect off");
+      });
     }
     refreshSecUI();
   }
   function refreshSecUI(){
-    var bioBtn=document.getElementById("bioBtn");
-    if(bioBtn){
-      if(!bioAvailable()){ bioBtn.textContent="Unsupported"; bioBtn.disabled=true; }
-      else { bioBtn.textContent=secCfg.bioEnabled?"Turn off":"Enable"; bioBtn.disabled=false; }
+    var btn=document.getElementById("bioBtn");
+    var note=document.getElementById("bioNote");
+    if(btn){
+      btn.textContent = lockIsOn() ? "Turn off" : "Set PIN";
+      btn.disabled=false;
+      if(note){
+        note.textContent = lockIsOn()
+          ? "On — PIN required to open"+(faceCfg.on?", face unlock enabled":"")+"."
+          : "A PIN before the app opens. Works everywhere, including a file opened from disk.";
+        note.style.color = lockIsOn() ? "var(--up)" : "";
+      }
     }
+    var fb=document.getElementById("faceBtn");
+    var fn=document.getElementById("faceNote");
+    if(!fb) return;
+    cameraCheck().then(function(c){
+      if(!c.ok){
+        fb.textContent="Unavailable"; fb.disabled=true;
+        if(fn){ fn.textContent=c.why; fn.style.color="var(--amber)"; }
+        return;
+      }
+      fb.disabled=false;
+      fb.textContent = faceCfg.on ? "Remove" : "Set up";
+      if(fn){
+        fn.textContent = faceCfg.on
+          ? "On — your face is matched on this device. PIN still works as a fallback."
+          : "Unlock with your face. One-time ~6MB model download, then it runs offline.";
+        fn.style.color = faceCfg.on ? "var(--up)" : "";
+      }
+    });
   }
-  function refreshAuditStatus(){
-    var el=document.getElementById("auditStatus"); if(!el) return;
-    if(!Array.isArray(state.auditChain)||!state.auditChain.length){
-      el.className="sec-status off"; el.textContent="not sealed"; return;
+
+
+
+  /* ============================================================
+     AUTO-DETECT — runs the audit quietly in the background and
+     only interrupts when something genuinely warrants it.
+
+     Rules:
+       · Only "flag" level findings raise a popup. Warnings stay
+         in the panel; nobody wants a dialog because their coffee
+         spending rose 12%.
+       · Each distinct finding alerts once, then stays quiet until
+         it clears and recurs — a popup you see every launch gets
+         dismissed on reflex and stops meaning anything.
+       · Debounced after edits so a burst of entries triggers one
+         check, not twenty.
+     ============================================================ */
+  var _autoDetectSeen={};
+  var _autoDetectTimer=null;
+  var AUTODETECT_KEY="mymoney_flags_seen";
+
+  function loadFlagsSeen(){
+    try{ var r=localStorage.getItem(AUTODETECT_KEY); if(r) _autoDetectSeen=JSON.parse(r)||{}; }catch(e){}
+  }
+  function saveFlagsSeen(){
+    try{ localStorage.setItem(AUTODETECT_KEY, JSON.stringify(_autoDetectSeen)); }catch(e){}
+  }
+
+  function scheduleAutoDetect(){
+    if(state.settings && state.settings.autoDetect===false) return;
+    if(_autoDetectTimer) clearTimeout(_autoDetectTimer);
+    _autoDetectTimer=setTimeout(runAutoDetect, 1200);
+  }
+
+  function runAutoDetect(){
+    if(state.settings && state.settings.autoDetect===false) return;
+    if(typeof runAuditRules!=="function") return;
+    if(!state.transactions || state.transactions.length<3) return;   // nothing to judge yet
+    var findings;
+    try{ findings=runAuditRules(); }catch(e){ return; }
+    var flags=findings.filter(function(f){ return f.level==="flag"; });
+    if(!flags.length){
+      // conditions cleared — allow them to alert again if they return
+      _autoDetectSeen={}; saveFlagsSeen();
+      return;
     }
-    verifyAuditChain().then(function(res){
-      if(res.status==="ok"){
-        el.className="sec-status "+(res.added>0?"warn":"on");
-        el.textContent=res.added>0 ? res.added+" unsealed" : "verified";
-      } else if(res.status==="broken"){
-        el.className="sec-status bad"; el.textContent="tampered";
-      } else { el.className="sec-status off"; el.textContent="not sealed"; }
-    });
-  }
-  function bindAccountingPanel(){
-    var head=document.getElementById("deHead"), body=document.getElementById("deBodyWrap"),
-        caret=document.getElementById("deCaret");
-    if(!head||!body) return;
-    head.addEventListener("click", function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open) renderDoubleEntry();
-    });
-    var bBooks=document.getElementById("deBtnBooks"), bTree=document.getElementById("deBtnTree");
-    var deB=document.getElementById("deBody"), ctB=document.getElementById("catTreeBody");
-    function seg(which){
-      var books=which==="books";
-      if(bBooks){ bBooks.style.background=books?"var(--tx)":"transparent"; bBooks.style.color=books?"var(--bg)":"var(--mut)"; }
-      if(bTree){  bTree.style.background =books?"transparent":"var(--tx)"; bTree.style.color =books?"var(--mut)":"var(--bg)"; }
-      if(deB) deB.style.display=books?"":"none";
-      if(ctB) ctB.style.display=books?"none":"";
-      if(books) renderDoubleEntry(); else renderCatTree();
-    }
-    if(bBooks) bBooks.addEventListener("click", function(){ seg("books"); });
-    if(bTree)  bTree.addEventListener("click",  function(){ seg("tree"); });
+    var fresh=flags.filter(function(f){ return !_autoDetectSeen[f.title]; });
+    if(!fresh.length) return;
+    fresh.forEach(function(f){ _autoDetectSeen[f.title]=Date.now(); });
+    saveFlagsSeen();
+    showFlagPopup(fresh);
   }
 
+  function showFlagPopup(flags){
+    var listHtml=flags.map(function(f){
+      return '<div class="aud-finding flag" style="margin-bottom:8px">'
+        +'<span class="af-icon">'+f.icon+'</span>'
+        +'<div class="af-title">'+esc(f.title)+'</div>'
+        +'<div class="af-body">'+esc(f.body)+'</div></div>';
+    }).join("");
 
-  function bindAuditor(){
-    var head=document.getElementById("audHead");
-    var body=document.getElementById("audBody");
-    var caret=document.getElementById("audCaret");
-    if(!head||!body) return;
-    var _tier="rules";
-    function showTier(t){
-      _tier=t;
-      ["rules","ai","webllm"].forEach(function(id){
-        var btn=document.getElementById("audBtn"+id.charAt(0).toUpperCase()+id.slice(1));
-        var panel=document.getElementById("audPanel"+id.charAt(0).toUpperCase()+id.slice(1));
-        if(btn) btn.classList.toggle("on",id===t);
-        if(panel) panel.style.display=id===t?"":"none";
-      });
-    }
-    document.querySelectorAll(".aud-tier-btn").forEach(function(b){
-      b.addEventListener("click",function(){ showTier(b.getAttribute("data-tier")); });
-    });
-    head.addEventListener("click",function(){
-      var open=body.style.display==="none";
-      body.style.display=open?"":"none";
-      if(caret) caret.style.transform=open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded",open?"true":"false");
-      if(open) initBuiltinAi().then(function(){});
-    });
-    // rules
-    var runBtn=document.getElementById("audRunRules");
-    if(runBtn) runBtn.addEventListener("click",function(){
-      runBtn.textContent="Auditing…"; runBtn.disabled=true;
-      setTimeout(function(){
-        var f=runAuditRules();
-        renderAuditFindings(f);
-        runBtn.textContent="Run audit"; runBtn.disabled=false;
-      },20);
-    });
-    // Chrome AI
-    var askBtn=document.getElementById("audAskBtn");
-    if(askBtn) askBtn.addEventListener("click",async function(){
-      var q=document.getElementById("audQuery").value.trim();
-      var resp=document.getElementById("audAiResp"); if(!resp||!q) return;
-      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Thinking…</div>';
-      try{
-        var ans=await askBuiltinAi(q);
-        resp.innerHTML=ans
-          ?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
-          :'<div class="aud-llm-resp" style="color:var(--amber)">Chrome built-in AI not available. Try the Rules tab or load WebLLM.</div>';
-      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
-    });
-    document.getElementById("audQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") askBtn.click(); });
-    // WebLLM
-    var wLoad=document.getElementById("wllmLoadBtn");
-    if(wLoad) wLoad.addEventListener("click",loadWebllm);
-    var wAsk=document.getElementById("wllmAskBtn");
-    if(wAsk) wAsk.addEventListener("click",async function(){
-      var q=document.getElementById("wllmQuery").value.trim();
-      var resp=document.getElementById("wllmResp"); if(!resp||!q) return;
-      resp.innerHTML='<div class="aud-llm-resp"><span class="aud-spinner"></span> Generating…</div>';
-      try{
-        var ans=await askWebllm(q);
-        resp.innerHTML=ans?'<div class="aud-llm-resp">'+esc(ans)+'</div>'
-          :'<div class="aud-llm-resp" style="color:var(--amber)">No response. Is the model loaded?</div>';
-      }catch(e){ resp.innerHTML='<div class="aud-llm-resp" style="color:var(--out)">Error: '+esc(String(e).slice(0,100))+'</div>'; }
-    });
-    document.getElementById("wllmQuery").addEventListener("keydown",function(e){ if(e.key==="Enter") wAsk.click(); });
+    var ov=document.createElement("div");
+    ov.className="ov in";
+    ov.style.cssText="position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);"
+      +"display:flex;align-items:center;justify-content:center;padding:16px";
+    ov.innerHTML='<div class="sheet" style="max-width:460px">'
+      +'<div class="sheet-hd"><h3>⚠️ Something needs your attention</h3>'
+        +'<button class="x-btn" id="fpX">✕</button></div>'
+      +'<div class="sheet-bd">'+listHtml
+        +'<div style="font-size:11px;color:var(--mut);margin-top:6px;line-height:1.6">'
+          +'Spotted automatically from your own figures. Ask AI to talk it through, '
+          +'or open Money to see the entries behind it.</div>'
+      +'</div>'
+      +'<div class="sheet-ft">'
+        +'<button class="btn ghost sm" id="fpDismiss">Dismiss</button>'
+        +'<button class="btn ghost sm" id="fpAudit">See details</button>'
+        +'<button class="btn primary sm" id="fpAsk">Ask AI</button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+
+    var close=function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); };
+    ov.querySelector("#fpX").onclick=close;
+    ov.querySelector("#fpDismiss").onclick=close;
+    ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
+
+    ov.querySelector("#fpAudit").onclick=function(){
+      close(); openAiSettings();
+    };
+    ov.querySelector("#fpAsk").onclick=function(){
+      close();
+      // route to whichever local engine is actually available
+      var q="I have these issues with my finances: "
+        + flags.map(function(f){ return f.title+" — "+f.body; }).join(" | ")
+        + ". What should I do about it?";
+      askBestLocalEngine(q);
+    };
   }
 
-  function bindMonteCarlo(){
-    var head = document.getElementById("mcHead");
-    var body = document.getElementById("mcBody");
-    var caret= document.getElementById("mcCaret");
-    if(!head||!body) return;
+  /* Jump to the AI section in Settings, where the model controls live. */
+  function openAiSettings(){
+    setTab("pageSettings");
+    var sec=document.getElementById("aiSection");
+    if(!sec) return;
+    var box=sec.closest("details.sect");
+    if(box) box.open=true;
+    var first=sec.querySelector("details.sect-nested");
+    if(first) first.open=true;
+    try{ sec.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){}
+  }
 
-    // pre-fill from the app's current net worth
-    var nwEl=document.getElementById("mcNW");
-    if(nwEl){ var t=totals(); if(t.net>0) nwEl.value=Math.round(t.net); }
-
-    // toggle open/close
-    head.addEventListener("click", function(){
-      var open = body.style.display==="none";
-      body.style.display = open?"":"none";
-      if(caret) caret.style.transform = open?"rotate(90deg)":"";
-      head.setAttribute("aria-expanded", open?"true":"false");
-      if(open && !nwEl.value){ var t2=totals(); if(t2.net>0) nwEl.value=Math.round(t2.net); }
-    });
-
-    var yrs=document.getElementById("mcYears"), lbl=document.getElementById("mcYrsLbl");
-    if(yrs&&lbl) yrs.addEventListener("input", function(){ lbl.textContent=yrs.value+" yr"; });
-
-    document.getElementById("mcRun").addEventListener("click", function(){
-      var nw   = parseFloat(document.getElementById("mcNW").value);
-      var save = parseFloat(document.getElementById("mcSave").value);
-      var tgt  = parseFloat(document.getElementById("mcTarget").value);
-      var prof = document.getElementById("mcProfile").value;
-      var yrsV = parseInt(document.getElementById("mcYears").value, 10);
-
-      if(!isFinite(nw))  { shake(document.getElementById("mcNW")); return; }
-      if(!isFinite(save)){ shake(document.getElementById("mcSave")); return; }
-      if(!isFinite(tgt)||tgt<=0){ shake(document.getElementById("mcTarget")); return; }
-
-      var btn=document.getElementById("mcRun");
-      btn.textContent="Running…"; btn.disabled=true;
-      document.getElementById("mcResult").innerHTML='<div class="mc-spinner">Simulating 10,000 scenarios…</div>';
-      document.getElementById("mcResult").style.display="block";
-
-      // run async so the spinner actually paints
-      setTimeout(function(){
-        var res = runMonteCarlo(nw, save, tgt, prof, yrsV);
-        renderMcResult(res, state.currency);
-        btn.textContent="Run 10,000 scenarios"; btn.disabled=false;
-      }, 20);
+  /* Pick whichever local engine exists: Chrome built-in AI first (no
+     download), then WebLLM if the model is loaded. If neither is
+     ready, say so and open the tab that can fix it — rather than
+     failing silently or pretending an answer. */
+  function askBestLocalEngine(question){
+    openAiSettings();
+    if(q) q.value=question;
+    initBuiltinAi().then(function(ready){
+      if(ready){
+        return;
+      }
+      if(window._wllmEngine){
+        openAiSettings();
+        if(wq) wq.value=question;
+        return;
+      }
+      if(resp) resp.innerHTML='<div class="aud-llm-resp" style="color:var(--amber)">'
+        +'No model is ready yet. Chrome 127+ has one built in, or set one up in '
+        +'Settings \u203a Extra \u203a AI mode.</div>';
     });
   }
+
+
+
 
   /* ============================================================
      BILL REMINDERS — Web Notifications for upcoming bills
@@ -7891,6 +7391,9 @@ AI_TYPES.join(", "),
       document.getElementById("recDay").value=String(+todayStr().slice(8,10));
       document.getElementById("recAmt").value="";
       document.getElementById("recNote").value="";
+      // reset the auto flag too — otherwise the last rule's setting silently
+      // carries over to the next one you create
+      var ra=document.getElementById("recAuto"); if(ra) ra.checked=false;
       recurFormUI();
     });
     document.getElementById("recType").addEventListener("change", recurFormUI);
@@ -7928,20 +7431,84 @@ AI_TYPES.join(", "),
      A cap is per calendar month, always measured against the CURRENT month — not against
      whatever months happen to be ticked in the filter. A budget you're "under" only
      because you deselected a month would be actively misleading. */
-  var CAT_LIST=["Snacks","Food","Toys","Stationery","Shopping","Games","Other"];
   function budgets(){ return (state.budgets && typeof state.budgets==="object") ? state.budgets : {}; }
+  /* Six top-level categories with four sub-categories each — balanced and
+     universal, replacing the old ad-hoc list. The tree seeds on first run
+     only; anything added afterwards is left alone. Declared here, above
+     every use, so it can't hoist as undefined. */
+  var CAT_LIST=["Food","Home","Transport","Shopping","Health","Money"];
+  var CAT_TREE_DEFAULT={
+    "Groceries":"Food",   "Restaurants":"Food",    "Coffee":"Food",       "Takeaway":"Food",
+    "Rent":"Home",        "Utilities":"Home",      "Internet":"Home",     "Repairs":"Home",
+    "Fuel":"Transport",   "Taxi":"Transport",      "Parking":"Transport", "Transit":"Transport",
+    "Clothes":"Shopping", "Electronics":"Shopping","Gifts":"Shopping",    "Household":"Shopping",
+    "Pharmacy":"Health",  "Doctor":"Health",       "Fitness":"Health",    "Insurance":"Health",
+    "Fees":"Money",       "Subscriptions":"Money", "Education":"Money",   "Other":"Money"
+  };
+  /* Walk a category up to its top-level parent, so reporting rolls a
+     sub-category into the six headline groups rather than listing it
+     separately. Guards against a cycle in a hand-edited tree. */
+  function topCatOf(cat){
+    var tree=(state.catTree||{}), cur=cat, hops=0;
+    while(tree[cur] && hops++<10) cur=tree[cur];
+    return cur||cat;
+  }
+  function subTree(){
+    if(!state.catTree) state.catTree=Object.assign({}, CAT_TREE_DEFAULT);
+    return state.catTree;
+  }
+  /* Fill a category select from the tree, grouped so the six top-level
+     options stay readable however many subs sit beneath them. */
+  function fillCatSelect(el, selected){
+    if(!el) return;
+    var tree=subTree(), groups={};
+    CAT_LIST.forEach(function(t){ groups[t]=[]; });
+    Object.keys(tree).forEach(function(c){
+      var par=tree[c]; if(!groups[par]) groups[par]=[]; groups[par].push(c);
+    });
+    var html="";
+    CAT_LIST.forEach(function(top){
+      html+='<optgroup label="'+esc(top)+'">'
+          +'<option value="'+esc(top)+'">'+esc(top)+'</option>';
+      (groups[top]||[]).slice().sort().forEach(function(k){
+        html+='<option value="'+esc(k)+'">\u00a0\u00a0'+esc(k)+'</option>';
+      });
+      html+='</optgroup>';
+    });
+    el.innerHTML=html;
+    if(selected) el.value=selected;
+  }
+  function fillAllCatSelects(){
+    fillCatSelect(document.getElementById("fCat"));
+    fillCatSelect(document.getElementById("recCat"));
+  }
   function budgetFor(cat){
     var v=budgets()[cat];
     return (typeof v==="number" && isFinite(v) && v>0) ? v : 0;
   }
+  /* Every category that rolls up into `cat`, including cat itself and any
+     depth of nesting beneath it. Without this a cap on "Food" would ignore
+     everything actually tagged "Groceries" and read as zero spent. */
+  function catAndDescendants(cat){
+    var tree=subTree(), out=[cat], queue=[cat];
+    while(queue.length){
+      var parent=queue.shift();
+      Object.keys(tree).forEach(function(child){
+        if(tree[child]===parent && out.indexOf(child)<0){ out.push(child); queue.push(child); }
+      });
+    }
+    return out;
+  }
   function spentThisMonth(cat){
     var mk=monthKey(todayStr());
+    var wanted=catAndDescendants(cat);
     var total=0;
     state.transactions.forEach(function(t){
-      if(t.type!=="spend") return;
+      // outflow of any kind, not just the legacy "spend" type
+      if(balDelta(t)>=0) return;
       if(monthKey(t.date)!==mk) return;
-      if((t.cat||"Other")!==cat) return;
-      total+=Math.abs(num(t.amount));
+      if(wanted.indexOf(t.cat||"Other")<0) return;
+      total+=Math.abs(balDelta(t));
     });
     return total;
   }
@@ -9482,7 +9049,9 @@ AI_TYPES.join(", "),
     refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
-    document.getElementById("fSplit").value="1";
+    // default the split field from the setting — off means 1 (no split)
+    document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
+      ? String(splitWays()) : "1";
     var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
     // Picking a new photo used to REPLACE the old one. Now they add, and each existing
@@ -10422,7 +9991,8 @@ AI_TYPES.join(", "),
         maybeWarnBudget(tx2);
         maybeWarnPlan(tx2);
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
-        document.getElementById("fSplit").value="1";
+        document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
+          ? String(splitWays()) : "1";
         document.getElementById("fInst").value="";
         hideSplitHint();
         clearPhotoPick();
@@ -10991,11 +10561,15 @@ AI_TYPES.join(", "),
     bindChartMode();
     bindTraderToggle();
     bindLayout();
+    loadLock();
+    fillAllCatSelects();
     bindSecurityPanel();
-    bindAccountingPanel();
+    bindFacePanel();
+    bindSplit();
+    refreshWllmUI();
+    bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
+    bindChat();
     initPWA();
-    bindAuditor();
-    bindMonteCarlo();
     bindRecurring();
     bindGoals();
     bindTrash();
@@ -11014,18 +10588,19 @@ AI_TYPES.join(", "),
       migrateTraderFlag();   // already has trades ⇒ they trade; don't hide their tab
       applyLayout();         // cards to their chosen pages before anything paints
       applyTraderMode();     // hide trading UI unless they've said they trade
-      buildSettingsSections();  // 19 stacked blocks -> 7 collapsed rows
+      buildSettingsSections();
+      subGroupExtra();  // 19 stacked blocks -> 7 collapsed rows
       refreshSettingsSections();
       refreshSelects();      // native OS dropdowns -> the app's own sheet
       render(); renderPortfolioUI(); refreshStorageBadge();
       initBillNotifs();
-      initSubBudgets();
+      loadFlagsSeen();
+      autoRestoreWllm();   // re-attach to a model already on this device                     // remember which problems were already raised
+      setTimeout(runAutoDetect, 2500);     // first sweep once the data has settled
+      if(lockIsOn()) showLockScreen();
     });
     initSync();
     initPWA();
-    initRbac();
-    initLock();
-    bindEnterpriseFeatures();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -11038,19 +10613,49 @@ AI_TYPES.join(", "),
     <h1>⚙️ Settings</h1>
   </div>
 
-
-  <!-- Security section in settings -->
-  <div style="padding:18px 20px 0">
-    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Security &amp; Privacy</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <button class="btn ghost sm wide" id="lockSetupBtn">🔐 App lock (Face ID / PIN)</button>
-      <button class="btn ghost sm wide" id="encExportBtn">🔒 Export encrypted backup</button>
-      <button class="btn ghost sm wide" id="auditChainBtn">⛓️ Audit chain (tamper-proof records)</button>
-      <button class="btn ghost sm wide" id="shareAccessBtn">👨‍👩‍👦 Family sharing &amp; access tokens</button>
-      <button class="btn ghost sm wide" id="pwaInstallBtn" style="display:none">📲 Install as app</button>
+<div class="sec-wrap" id="secWrap">
+  <div class="sec-body" id="secBody">
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">App lock</div>
+        <div class="si-d" id="bioNote">Face ID or fingerprint before the app opens. Handled by your device.</div></div>
+      <button class="btn ghost sm" id="bioBtn">Enable</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Face unlock</div>
+        <div class="si-d" id="faceNote">Unlock with your face. Needs a camera.</div></div>
+      <button class="btn ghost sm" id="faceBtn">Set up</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Auto-detect problems</div>
+        <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
+      <label class="sw"><input type="checkbox" id="autoDetectChk" checked><i></i></label>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Cloud sync folder</div>
+        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
+      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Split bills</div>
+        <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
+      <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
+    </div>
+    <div class="sec-item" id="splitWaysRow" style="display:none">
+      <div class="si-main"><div class="si-t">Ways to split</div>
+        <div class="si-d">How many people share a bill by default.</div></div>
+      <input class="inp" id="splitWaysInp" type="number" min="2" max="20" value="2"
+             style="width:74px;min-height:38px;text-align:center">
+    </div>
+    <div class="sec-item" style="margin-top:6px">
+      <div class="si-main"><div class="si-t">Install as an app</div>
+        <div class="si-d">Add to your home screen; opens without a browser and works offline.</div></div>
+      <button class="btn ghost sm" id="pwaInstallBtn">Install</button>
     </div>
   </div>
-  <hr style="border:none;border-top:1px solid var(--bd);margin:18px 0">
+</div>
+
+
+
 
   <!-- Theme picker -->
   <div style="padding:18px 20px 0">
@@ -11196,40 +10801,94 @@ AI_TYPES.join(", "),
 
   <!-- AI Mode — hidden entirely while offline -->
   <div id="aiSection" style="padding:0 20px;display:none">
-    <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">🤖 AI Mode <span id="aiStatusPill" style="font-weight:500;text-transform:none;letter-spacing:0"></span></div>
-    <div class="subhint" style="margin-bottom:12px">Reads receipts and screenshots and fills in entries for you. Needs internet, so this section disappears when you're offline.</div>
 
-    <div class="split-row">
-      <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
-      <select id="aiProvA" style="max-width:130px"></select>
-    </div>
-    <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
-      <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
-    </div>
-    <div class="subhint" id="aiWarnA" style="display:none;color:var(--down);margin:-4px 0 10px"></div>
+    <!-- 1. Ask AI -->
+    <details class="sect sect-nested">
+      <summary class="sect-h"><span class="sect-i">💬</span>
+        <span class="sect-tt"><span class="sect-t">Ask AI</span>
+          <span class="sect-s">Chat about your money, on your device</span></span>
+        <span class="sect-c">▸</span></summary>
+      <div class="sect-b">
+        <div class="subhint" style="margin-bottom:10px">Runs entirely on this device once a model is ready. Nothing is sent anywhere.</div>
+        <button class="btn solid" id="chatOpenBtn2" style="width:100%">💬 Open chat</button>
+        <div id="wllmBox" style="margin-top:12px">
+          <div class="aud-progress" id="wllmProgress" style="display:none">
+            <div class="aud-progress-bar" id="wllmBar"></div></div>
+          <div id="wllmLoadStatus" style="font-size:11px;color:var(--mut);margin:8px 0;display:none"></div>
+          <button class="btn ghost sm" id="wllmLoadBtn" style="width:100%">Load model (660MB, once)</button>
+          <div class="subhint" style="margin-top:8px">Chrome 127+ has a model built in and needs no download. Otherwise Llama 3.2 1B downloads once, then works offline.</div>
+        </div>
+      </div>
+    </details>
 
-    <div class="split-row">
-      <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
-      <select id="aiProvB" style="max-width:130px"></select>
-    </div>
-    <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
-      <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
-    </div>
-    <div class="subhint" id="aiWarnB" style="display:none;color:var(--down);margin:-4px 0 8px"></div>
+    <!-- 2. Auto-analyse photos -->
+    <details class="sect sect-nested">
+      <summary class="sect-h"><span class="sect-i">📷</span>
+        <span class="sect-tt"><span class="sect-t">Auto-analyse photos</span>
+          <span class="sect-s">Read receipts and fill entries in</span></span>
+        <span class="sect-c">▸</span></summary>
+      <div class="sect-b">
+        <div class="subhint" style="margin-bottom:12px">Snap a receipt and it fills the amount, date and merchant. The <b>local scanner</b> needs no key and no internet. Adding a cloud key below reads messier photos more accurately.</div>
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Local scanner</div>
+            <div class="si-d" id="ocrNote">Built into the browser. No key, no internet.</div></div>
+          <span class="sec-status on" id="ocrStatus">always on</span>
+        </div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin:14px 0 8px">Cloud engines <span id="aiStatusPill" style="font-weight:500;text-transform:none;letter-spacing:0"></span></div>
+        <div class="split-row">
+          <div class="nm">Engine A <span class="mut" style="font-size:11px">(required)</span></div>
+          <select id="aiProvA" style="max-width:130px"></select>
+        </div>
+        <input type="password" id="aiKeyA" placeholder="API key for engine A" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <input type="text" id="aiModelA" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+          <button class="btn ghost sm" id="aiFindA" style="flex:none">Find models</button>
+        </div>
+        <div class="subhint" id="aiWarnA" style="display:none;color:var(--down);margin:-4px 0 10px"></div>
+        <div class="split-row">
+          <div class="nm">Engine B <span class="mut" style="font-size:11px">(recommended)</span></div>
+          <select id="aiProvB" style="max-width:130px"></select>
+        </div>
+        <input type="password" id="aiKeyB" placeholder="API key for engine B — leave blank to skip cross-checking" autocomplete="off" spellcheck="false" style="width:100%;margin-bottom:6px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="text" id="aiModelB" placeholder="model (blank = auto)" autocomplete="off" spellcheck="false" style="flex:1;font-family:var(--mono);font-size:11.5px">
+          <button class="btn ghost sm" id="aiFindB" style="flex:none">Find models</button>
+        </div>
+        <div class="subhint" id="aiWarnB" style="display:none;color:var(--down);margin:-4px 0 8px"></div>
+        <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
+        <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
+        <div class="data-btns">
+          <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
+          <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
+          <button class="btn ghost sm" id="aiClearBtn">Forget keys</button>
+        </div>
+        <div class="subhint" id="aiTestOut" style="margin-top:8px"></div>
+        <div class="subhint" style="margin-top:10px;color:var(--mut)">🔒 Keys stay on this device and are deliberately <b>excluded from backups and exports</b>, so sharing a backup never leaks them. Anyone with access to this device can read them.</div>
+      </div>
+    </details>
 
-    <div class="subhint" id="aiCrossHint" style="margin-bottom:10px"></div>
-    <div class="subhint" id="aiOriginWarn" style="display:none;margin-bottom:10px;color:var(--amber)"></div>
-    <div class="data-btns">
-      <button class="btn ghost sm" id="aiHelpBtn">How do I get a key?</button>
-      <button class="btn ghost sm" id="aiTestBtn">Test keys</button>
-      <button class="btn ghost sm" id="aiClearBtn">Forget keys</button>
-    </div>
-    <div class="subhint" id="aiTestOut" style="margin-top:8px"></div>
-    <div class="subhint" style="margin-top:10px;color:var(--mut)">🔒 Keys are stored on this device only and are deliberately <b>excluded from backups and exports</b> — so sharing a backup never leaks them. Anyone with access to this device can read them.</div>
+    <!-- 3. Facial recognition -->
+    <details class="sect sect-nested">
+      <summary class="sect-h"><span class="sect-i">👤</span>
+        <span class="sect-tt"><span class="sect-t">Facial recognition</span>
+          <span class="sect-s">The model behind face unlock</span></span>
+        <span class="sect-c">▸</span></summary>
+      <div class="sect-b">
+        <div class="subhint" style="margin-bottom:12px">Face unlock compares a 128-number descriptor of your face, computed on this device. The model downloads once (~6MB) and then works offline.</div>
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Camera</div>
+            <div class="si-d" id="camNote">Checking…</div></div>
+          <span class="sec-status off" id="camStatus">—</span>
+        </div>
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Face model</div>
+            <div class="si-d" id="faceModelNote">Not downloaded yet.</div></div>
+          <button class="btn ghost sm" id="faceModelBtn">Download</button>
+        </div>
+        <div class="subhint" style="margin-top:10px">Set face unlock on or off in <b>Security &amp; privacy</b>.</div>
+      </div>
+    </details>
+
   </div>
 
   <hr class="sep" style="margin:20px" id="aiSectionSep">
@@ -11302,7 +10961,7 @@ AI_TYPES.join(", "),
           <option value="pay_debt_balance">Pay down debt</option>
         </select></div>
       <div class="fld" id="recCatFld"><label for="recCat">Category</label>
-        <select id="recCat"><option>Snacks</option><option>Food</option><option>Toys</option><option>Stationery</option><option>Shopping</option><option>Games</option><option>Other</option></select></div>
+        <select id="recCat"></select></div>
       <div class="fld"><label for="recAmt">Amount</label><input type="number" id="recAmt" step="0.01" min="0" inputmode="decimal" placeholder="0.00"></div>
       <div class="fld"><label for="recNote">Note <span class="mut">(optional)</span></label><input type="text" id="recNote" maxlength="60" placeholder="e.g. rent"></div>
       <div class="fld"><label for="recFreq">How often</label>
