@@ -941,6 +941,34 @@
   .lk-key:active{transform:scale(.92);background:var(--card2)}
   .lk-key.lk-blank{border:0;background:transparent;cursor:default}
   .lk-box.shake{animation:shake .38s}
+
+  /* proper toggle switch — a bare checkbox looked unfinished */
+  .sw{position:relative;width:44px;height:26px;flex:none;cursor:pointer;display:inline-block}
+  .sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+  .sw i{position:absolute;inset:0;border-radius:99px;background:var(--card2);
+    border:1px solid var(--bd2);transition:background .22s ease,border-color .22s ease}
+  .sw i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+    background:var(--mut);transition:transform .22s cubic-bezier(.34,1.56,.64,1),background .22s ease}
+  .sw input:checked + i{background:var(--up);border-color:var(--up)}
+  .sw input:checked + i::after{transform:translateX(18px);background:#04140b}
+  .sw input:focus-visible + i{outline:2px solid var(--cool);outline-offset:2px}
+  /* AI chat */
+  .chat-wrap{display:flex;flex-direction:column;gap:8px}
+  .chat-log{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+    padding:4px 2px;scroll-behavior:smooth}
+  .chat-empty{color:var(--mut);font-size:12px;text-align:center;padding:22px 10px;line-height:1.6}
+  .chat-msg{max-width:88%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.55;
+    white-space:pre-wrap;word-break:break-word;animation:rise .2s backwards}
+  .chat-msg.me{align-self:flex-end;background:var(--up);color:#04140b;border-bottom-right-radius:5px;font-weight:600}
+  .chat-msg.ai{align-self:flex-start;background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}
+  .chat-files{font-size:11px;opacity:.8;margin-bottom:4px}
+  .chat-row{display:flex;gap:7px;align-items:flex-end}
+  .chat-row textarea{flex:1;min-height:42px;max-height:110px;resize:none;padding:10px 12px;font-size:13px}
+  .chat-chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--bd2);
+    border-radius:8px;padding:4px 8px;font-size:11px;margin:0 5px 5px 0}
+  .chat-chip button{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:11px;padding:0 0 0 2px}
+  .chat-chip button:hover{color:var(--down)}
+  #chatFileStrip:empty{display:none}
 </style>
 </head>
 <body>
@@ -1354,7 +1382,7 @@
   </div>
   <div class="pf-hint">Add photos of receipts, statements or trade screenshots. Each image is read in full — one image can hold several transactions, or none.</div>
   <div style="padding:10px 20px">
-    <input type="file" id="aiFiles" accept="image/*" multiple style="display:none">
+    <input type="file" id="aiFiles" accept=".pdf,.docx,.doc,.txt,.csv,.xlsx,.xls,.json,.html,.css,.js,.jpg,.jpeg,.png,.gif,.svg,.webp,.bmp,.heic,.heif,.mp3,.wav,.m4a,.mp4,.mov,.webm,.zip,image/*,text/*,application/pdf" multiple style="display:none">
     <div class="data-btns">
       <button class="btn ghost sm" id="aiAddImgs">+ Add images</button>
       <button class="btn ghost sm" id="aiClearImgs">Clear</button>
@@ -4028,7 +4056,17 @@ AI_TYPES.join(", "),
         r.onload=function(){
           var url=r.result;
           var comma=url.indexOf(",");
-          aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url});
+          var ext=(f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"";
+          var isImg=/^image\//.test(f.type||"") || ["jpg","jpeg","png","gif","webp","bmp","heic","heif"].indexOf(ext.toLowerCase())>=0;
+          if(isImg){
+            aiImages.push({mime:f.type||"image/jpeg", b64:url.slice(comma+1), url:url, name:f.name});
+          } else {
+            // Anything not an image is attached as text the model can actually read.
+            // Binary formats (zip, mp4) can't be interpreted, so we say so rather
+            // than sending megabytes of base64 the model will choke on.
+            aiImages.push({mime:f.type||"application/octet-stream", b64:url.slice(comma+1),
+                           url:url, name:f.name, isFile:true, ext:ext.toLowerCase(), size:f.size});
+          }
           if(--left<=0) renderAiThumbs();
         };
         r.onerror=function(){ if(--left<=0) renderAiThumbs(); };
@@ -6025,6 +6063,258 @@ AI_TYPES.join(", "),
     var p=activePortfolio(); if(!p) return;
     p.role=role; persistNow(); applyRoleUI(); renderPortfolioUI&&renderPortfolioUI();
     flashSaved("role: "+(ROLES[role]||ROLES.owner).label);
+  }
+
+  /* ============================================================
+     AUDITOR CHAT — a real conversation, with attachments
+     Was one-shot: type, get an answer, gone. Now keeps history so
+     follow-ups work ("what about last month?"), and takes files —
+     text ones are read and included, binaries are named honestly
+     rather than pretending the model can read them.
+     ============================================================ */
+  var chatLog=[];          // [{role:"user"|"ai", text, files:[{name,ext}]}]
+  var chatFiles=[];        // pending attachments for the next message
+  var CHAT_TEXT_EXT=["txt","csv","json","md","html","css","js","log","xml","yml","yaml","tsv"];
+
+  function chatFileIcon(ext){
+    return (typeof FILE_ICONS!=="undefined" && FILE_ICONS[ext]) ||
+           (typeof ATT_ICONS!=="undefined" && ATT_ICONS[ext]) || "📎";
+  }
+  function renderChatFiles(){
+    var strip=document.getElementById("chatFileStrip"); if(!strip) return;
+    strip.innerHTML=chatFiles.map(function(f,i){
+      return '<span class="chat-chip">'+chatFileIcon(f.ext)+' '+esc(f.name.slice(0,22))
+        +'<button data-i="'+i+'" title="Remove">✕</button></span>';
+    }).join("");
+    strip.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){ chatFiles.splice(+b.getAttribute("data-i"),1); renderChatFiles(); });
+    });
+  }
+  function renderChatLog(){
+    var box=document.getElementById("chatLog"); if(!box) return;
+    if(!chatLog.length){
+      box.innerHTML='<div class="chat-empty">Ask anything about your money. Attach a statement, receipt or CSV if it helps.</div>';
+      return;
+    }
+    box.innerHTML=chatLog.map(function(m){
+      var files=(m.files&&m.files.length)
+        ? '<div class="chat-files">'+m.files.map(function(f){ return chatFileIcon(f.ext)+" "+esc(f.name); }).join("  ")+'</div>' : "";
+      return '<div class="chat-msg '+(m.role==="user"?"me":"ai")+'">'
+        +files+'<div class="chat-txt">'+esc(m.text)+'</div></div>';
+    }).join("");
+    box.scrollTop=box.scrollHeight;
+  }
+  function chatPush(role, text, files){
+    chatLog.push({role:role, text:text, files:files||[]});
+    if(chatLog.length>40) chatLog=chatLog.slice(-40);   // keep the context sane
+    renderChatLog();
+  }
+  // build the prompt: finances + attached text + the last few turns
+  function chatPrompt(question, files){
+    var parts=[financialContext()];
+    (files||[]).forEach(function(f){
+      if(f.text!=null){
+        parts.push("\n--- file: "+f.name+" ---\n"+String(f.text).slice(0,4000));
+      } else {
+        parts.push("\n(attached "+f.name+" — a "+(f.ext||"binary").toUpperCase()
+          +" file I can't read the contents of)");
+      }
+    });
+    var hist=chatLog.slice(-6).map(function(m){
+      return (m.role==="user"?"Me: ":"You: ")+m.text;
+    }).join("\n");
+    if(hist) parts.push("\nEarlier in this conversation:\n"+hist);
+    parts.push("\nQuestion: "+question);
+    return parts.join("");
+  }
+  function chatSend(){
+    var input=document.getElementById("chatInput");
+    var q=(input.value||"").trim();
+    if(!q && !chatFiles.length) return;
+    var files=chatFiles.slice();
+    chatPush("user", q || "(see attached)", files.map(function(f){ return {name:f.name, ext:f.ext}; }));
+    input.value=""; chatFiles=[]; renderChatFiles();
+
+    var thinking=document.createElement("div");
+    chatPush("ai", "…");
+    var idx=chatLog.length-1;
+    var setAnswer=function(txt){ chatLog[idx].text=txt; renderChatLog(); };
+
+    var prompt=chatPrompt(q, files);
+    // whichever local engine is ready — built-in first, then WebLLM
+    initBuiltinAi().then(function(ready){
+      if(ready) return askBuiltinAi(prompt);
+      if(window._wllmEngine) return askWebllm(prompt);
+      return null;
+    }).then(function(ans){
+      setAnswer(ans || "No on-device model is ready. Chrome 127+ has one built in, or load WebLLM from the ⚡ tab.");
+    }).catch(function(e){
+      setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
+    });
+  }
+  function bindChat(){
+    var input=document.getElementById("chatInput");
+    var send=document.getElementById("chatSend");
+    var attach=document.getElementById("chatAttachBtn");
+    var file=document.getElementById("chatFileInput");
+    if(!input||!send) return;
+    send.addEventListener("click", chatSend);
+    input.addEventListener("keydown", function(e){
+      if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); chatSend(); }
+    });
+    if(attach&&file){
+      attach.addEventListener("click", function(){ file.click(); });
+      file.addEventListener("change", function(e){
+        var list=Array.prototype.slice.call(e.target.files||[]);
+        e.target.value="";
+        list.forEach(function(f){
+          var ext=((f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||"").toLowerCase();
+          var rec={name:f.name, ext:ext, size:f.size};
+          if(CHAT_TEXT_EXT.indexOf(ext)>=0 && f.size<400000){
+            var r=new FileReader();
+            r.onload=function(){ rec.text=r.result; chatFiles.push(rec); renderChatFiles(); };
+            r.onerror=function(){ chatFiles.push(rec); renderChatFiles(); };
+            r.readAsText(f);
+          } else {
+            chatFiles.push(rec); renderChatFiles();   // named, contents not sent
+          }
+        });
+      });
+    }
+    var clear=document.getElementById("chatClear");
+    if(clear) clear.addEventListener("click", function(){
+      chatLog=[]; chatFiles=[]; renderChatLog(); renderChatFiles();
+    });
+    renderChatLog();
+  }
+
+  /* ============================================================
+     SHARE A PORTFOLIO — owner / editor / viewer, MT5-style
+
+     Live shared viewing needs a server; a static file can't host a
+     database. What this does instead is export ONE portfolio as a
+     file stamped with the role you grant. Open it and the app
+     honours that role: a viewer copy can't add, edit or delete.
+
+     Being straight about it: this is a working agreement, not a
+     security boundary. Someone determined can edit the file. It
+     stops accidents and sets expectations — it doesn't stop an
+     adversary, and the UI says so.
+     ============================================================ */
+  function exportPortfolioShare(role){
+    var p=activePortfolio();
+    if(!p){ flashSaved("no portfolio to share"); return; }
+    var payload={
+      _format:"mymoney-portfolio-share", _v:1,
+      role: role || "viewer",
+      sharedAt: new Date().toISOString(),
+      sharedBy: (state.owner||"").slice(0,40),
+      portfolio: { id:p.id, name:p.name, data:p.data }
+    };
+    var name=(p.name||"portfolio").replace(/[^\w\-]+/g,"_").toLowerCase();
+    var url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}));
+    var a=document.createElement("a");
+    a.href=url; a.download="mymoney-"+name+"-"+role+"-"+todayStr()+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    flashSaved(role==="viewer" ? "view-only copy saved" : role+" copy saved");
+  }
+  function importPortfolioShare(text){
+    var obj;
+    try{ obj=JSON.parse(text); }catch(e){ flashSaved("that file isn't readable"); return; }
+    if(obj._format!=="mymoney-portfolio-share"){ flashSaved("not a shared portfolio file"); return; }
+    var incoming=obj.portfolio;
+    if(!incoming||!incoming.data){ flashSaved("that file has no portfolio in it"); return; }
+    var roleLabel={owner:"full access",editor:"can edit, can't delete",viewer:"view only"}[obj.role]||obj.role;
+    appModal({
+      title:"Add “"+esc(incoming.name||"portfolio")+"”?",
+      message:"Shared"+(obj.sharedBy?" by "+esc(obj.sharedBy):"")+" as "+esc(roleLabel)+"."
+             +" It'll be added alongside your own portfolios — nothing you have is overwritten.",
+      confirmText:"Add it", cancelText:"Cancel",
+      onConfirm:function(){
+        var copy=JSON.parse(JSON.stringify(incoming));
+        copy.id="shared_"+Date.now().toString(36);
+        copy.name=(incoming.name||"Shared")+(obj.role==="viewer"?" (view only)":"");
+        copy.role=obj.role||"viewer";
+        state.portfolios.push(copy);
+        persistNow();
+        flashSaved("added as "+roleLabel);
+        renderPortfolioUI&&renderPortfolioUI();
+        applyRoleUI&&applyRoleUI();
+      }
+    });
+  }
+  function bindShare(){
+    var vBtn=document.getElementById("shareViewBtn");
+    var eBtn=document.getElementById("shareEditBtn");
+    var iBtn=document.getElementById("shareImportBtn");
+    var file=document.getElementById("shareFileInput");
+    if(vBtn) vBtn.addEventListener("click", function(){ exportPortfolioShare("viewer"); });
+    if(eBtn) eBtn.addEventListener("click", function(){ exportPortfolioShare("editor"); });
+    if(iBtn&&file){
+      iBtn.addEventListener("click", function(){ file.click(); });
+      file.addEventListener("change", function(e){
+        var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
+        var r=new FileReader();
+        r.onload=function(){ importPortfolioShare(r.result); };
+        r.onerror=function(){ flashSaved("couldn't read that file"); };
+        r.readAsText(f);
+      });
+    }
+  }
+
+  /* ============================================================
+     BILL SPLITTING
+     Splitting is a per-entry fact, so turning it off later must not
+     rewrite history: an entry saved as split stays split, and shows
+     the share you actually paid. The setting only decides whether
+     NEW entries default to being split.
+     ============================================================ */
+  function splitCfg(){
+    if(!state.settings) state.settings={};
+    if(state.settings.splitOn===undefined) state.settings.splitOn=false;
+    if(!state.settings.splitWays) state.settings.splitWays=2;
+    return state.settings;
+  }
+  function splitIsOn(){ return !!splitCfg().splitOn; }
+  function splitWays(){ return Math.max(2, num(splitCfg().splitWays)||2); }
+  // what a stored entry means, regardless of the current setting
+  function txSplitWays(t){ return t && t.splitWays ? Math.max(2,num(t.splitWays)) : 1; }
+  function txIsSplit(t){ return txSplitWays(t)>1; }
+  function txSplitNote(t){
+    if(!txIsSplit(t)) return "";
+    var n=txSplitWays(t), full=Math.abs(num(t.amount))*n;
+    return "Split "+n+" ways — "+fmt(full,state.currency)+" total, your share "+fmt(Math.abs(num(t.amount)),state.currency);
+  }
+  function bindSplit(){
+    var chk=document.getElementById("splitOnChk");
+    var ways=document.getElementById("splitWaysInp");
+    var note=document.getElementById("splitNote");
+    function paint(){
+      if(!note) return;
+      note.textContent = splitIsOn()
+        ? "New bills default to splitting "+splitWays()+" ways. Entries already saved keep whatever they were."
+        : "New bills are logged in full. Past split entries keep their split and still show it.";
+    }
+    if(chk){
+      chk.checked=splitIsOn();
+      chk.addEventListener("change", function(){
+        splitCfg().splitOn=chk.checked; persistNow(); paint();
+        var row=document.getElementById("splitWaysRow");
+        if(row) row.style.display=chk.checked?"":"none";
+        flashSaved(chk.checked?"splitting on":"splitting off");
+      });
+    }
+    if(ways){
+      ways.value=splitWays();
+      ways.addEventListener("change", function(){
+        var v=Math.max(2, Math.min(20, num(ways.value)||2));
+        ways.value=v; splitCfg().splitWays=v; persistNow(); paint();
+      });
+    }
+    var row=document.getElementById("splitWaysRow");
+    if(row) row.style.display=splitIsOn()?"":"none";
+    paint();
   }
 
   function bindSecurityPanel(){
@@ -8403,7 +8693,9 @@ AI_TYPES.join(", "),
     refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
-    document.getElementById("fSplit").value="1";
+    // default the split field from the setting — off means 1 (no split)
+    document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
+      ? String(splitWays()) : "1";
     var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
     // Picking a new photo used to REPLACE the old one. Now they add, and each existing
@@ -9343,7 +9635,8 @@ AI_TYPES.join(", "),
         maybeWarnBudget(tx2);
         maybeWarnPlan(tx2);
         document.getElementById("fAmt").value=""; document.getElementById("fNote").value="";
-        document.getElementById("fSplit").value="1";
+        document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
+          ? String(splitWays()) : "1";
         document.getElementById("fInst").value="";
         hideSplitHint();
         clearPhotoPick();
@@ -9915,6 +10208,9 @@ AI_TYPES.join(", "),
     loadLock();
     fillAllCatSelects();
     bindSecurityPanel();
+    bindShare();
+    bindSplit();
+    bindChat();
     initPWA();
     bindAuditor();
     bindRecurring();
@@ -9978,11 +10274,21 @@ AI_TYPES.join(", "),
         <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
         <span id="audLlmStatus">Checking for on-device AI…</span>
       </div>
-      <div class="aud-query">
-        <input class="inp" id="audQuery" placeholder="Where am I overspending?">
-        <button class="btn solid sm" id="audAskBtn">Ask</button>
+      <div class="chat-wrap">
+        <div class="chat-log" id="chatLog"></div>
+        <div id="chatFileStrip"></div>
+        <div class="chat-row">
+          <button class="btn ghost sm" id="chatAttachBtn" title="Attach a file">📎</button>
+          <textarea id="chatInput" class="inp" placeholder="Ask anything… (Enter to send)"></textarea>
+          <button class="btn solid sm" id="chatSend">Send</button>
+        </div>
+        <button class="btn ghost sm" id="chatClear" style="font-size:11px;align-self:flex-end">Clear chat</button>
       </div>
-      <div id="audAiResp"></div>
+      <input type="file" id="chatFileInput" multiple style="display:none"
+        accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">
+      <div id="audAiResp" style="display:none"></div>
+      <input class="inp" id="audQuery" style="display:none">
+      <button id="audAskBtn" style="display:none"></button>
     </div>
     <div id="audPanelWebllm" style="display:none">
       <div id="audWebllmSetup">
@@ -10015,12 +10321,37 @@ AI_TYPES.join(", "),
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Auto-detect problems</div>
         <div class="si-d">Watches your figures and warns you when something serious shows up. Only real problems interrupt.</div></div>
-      <input type="checkbox" id="autoDetectChk" checked style="width:auto;min-height:auto">
+      <label class="sw"><input type="checkbox" id="autoDetectChk" checked><i></i></label>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Cloud sync folder</div>
         <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
       <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Share this portfolio</div>
+        <div class="si-d">Send someone a copy with the access you choose. A working agreement, not a security boundary — a determined person can edit the file.</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn ghost sm" id="shareViewBtn">View only</button>
+        <button class="btn ghost sm" id="shareEditBtn">Can edit</button>
+      </div>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Open a shared portfolio</div>
+        <div class="si-d">Add someone else's shared file alongside your own. Nothing of yours is overwritten.</div></div>
+      <button class="btn ghost sm" id="shareImportBtn">Open</button>
+    </div>
+    <input type="file" id="shareFileInput" accept="application/json" style="display:none">
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Split bills</div>
+        <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
+      <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
+    </div>
+    <div class="sec-item" id="splitWaysRow" style="display:none">
+      <div class="si-main"><div class="si-t">Ways to split</div>
+        <div class="si-d">How many people share a bill by default.</div></div>
+      <input class="inp" id="splitWaysInp" type="number" min="2" max="20" value="2"
+             style="width:74px;min-height:38px;text-align:center">
     </div>
     <div class="sec-item" style="margin-top:6px">
       <div class="si-main"><div class="si-t">Install as an app</div>
