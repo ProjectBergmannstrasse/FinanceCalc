@@ -1079,6 +1079,52 @@
     color:var(--mut);font:inherit;font-size:12px;text-decoration:underline;
     cursor:pointer;padding:6px}
   .lk-forgot:hover{color:var(--tx)}
+
+  /* ── sheets ──────────────────────────────────────────────────────
+     These class names were used throughout but never had any CSS, so
+     every sheet rendered as raw stacked elements with the close button
+     floating loose. This is the actual styling. */
+  .sheet{background:var(--panel);border:1px solid var(--bd2);border-radius:18px;
+    width:100%;max-width:440px;max-height:88vh;display:flex;flex-direction:column;
+    overflow:hidden;box-shadow:0 22px 56px rgba(0,0,0,.55);
+    animation:sheetIn .24s cubic-bezier(.22,1,.36,1) backwards}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  .sheet-hd{display:flex;align-items:center;gap:10px;padding:15px 16px;
+    border-bottom:1px solid var(--bd);flex:none}
+  .sheet-hd h3{font-size:15px;font-weight:800;margin:0;flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sheet-bd{padding:16px;overflow-y:auto;flex:1;min-height:0}
+  .sheet-ft{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--bd);flex:none}
+  .sheet-ft .btn{flex:1}
+  .x-btn{width:32px;height:32px;flex:none;border-radius:50%;border:1px solid var(--bd2);
+    background:var(--card);color:var(--mut);font-size:14px;line-height:1;cursor:pointer;
+    padding:0;display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease,color .15s ease,transform .1s ease}
+  .x-btn:hover{background:var(--card2);color:var(--tx)}
+  .x-btn:active{transform:scale(.9)}
+
+  .face-sheet{max-width:400px}
+  .face-frame{position:relative;width:210px;height:210px;margin:2px auto 16px;
+    border-radius:50%;overflow:hidden;background:#000;flex:none}
+  .face-frame video,.face-frame img{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+  .face-frame img{transform:none}
+  .face-ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--bd2);
+    transition:border-color .25s ease,box-shadow .25s ease;pointer-events:none}
+  .face-ring.on{border-color:var(--up);box-shadow:0 0 0 5px rgba(61,220,132,.16)}
+  .face-blocked{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:44px;opacity:.25}
+  .face-status{font-size:13px;color:var(--mut);min-height:20px;line-height:1.5;text-align:center}
+  .face-fix{display:flex;gap:8px;margin-top:14px}
+  .face-fix .btn{flex:1}
+  .face-help{margin-top:12px;background:var(--card2);border:1px solid var(--bd);border-radius:11px;
+    padding:11px 13px;font-size:11.5px;line-height:1.6;color:var(--mut)}
+  .face-help b{color:var(--tx)}
+  .fp-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .fp-row{display:flex;align-items:center;gap:10px;background:var(--card2);border:1px solid var(--bd);
+    border-radius:10px;padding:9px 11px;font-size:12.5px}
+  .fp-row .fp-n{flex:1;font-weight:600}
+  .fp-row button{border:0;background:transparent;color:var(--mut);cursor:pointer;font-size:13px;padding:2px 4px}
+  .fp-row button:hover{color:var(--down)}
 </style>
 </head>
 <body>
@@ -6132,6 +6178,7 @@ AI_TYPES.join(", "),
     var isIOS=/iPad|iPhone|iPod/.test(ua);
     var isSafari=/^((?!chrome|android).)*safari/i.test(ua);
     var installed=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;
+    var framed=false; try{ framed=(window.self!==window.top); }catch(e){ framed=true; }
     var msg;
     if(installed) msg="It's already installed \u2014 you're running the installed copy now.";
     else if(isIOS) msg="On iPhone or iPad: tap Share, then \u201cAdd to Home Screen\u201d.";
@@ -6488,6 +6535,9 @@ AI_TYPES.join(", "),
       return Promise.resolve({ok:false, why:"This browser can't reach a camera."});
     if(!window.isSecureContext)
       return Promise.resolve({ok:false, why:"Camera access needs https. Opened straight from disk (file://) the browser blocks it."});
+    var framed=false; try{ framed=(window.self!==window.top); }catch(e){ framed=true; }
+    if(framed)
+      return Promise.resolve({ok:false, why:"The camera is blocked inside a frame. Open this in its own tab to use face unlock."});
     if(!navigator.mediaDevices.enumerateDevices)
       return Promise.resolve({ok:true, why:""});   // can't enumerate; try anyway
     return navigator.mediaDevices.enumerateDevices().then(function(list){
@@ -6529,29 +6579,45 @@ AI_TYPES.join(", "),
   }
 
   /* ---- camera sheet used for both enrolling and unlocking ---- */
+  /* ── camera sheet: retry, upload fallback, multiple faces ──────── */
   function openCameraSheet(opts){
-    // opts: {title, action:"enrol"|"verify", onResult(descriptorOrMatch), onCancel}
     var host=document.createElement("div");
     host.className="ov in"; host.id="faceOv";
     host.innerHTML=
-       '<div class="sheet" style="max-width:400px">'
+       '<div class="sheet face-sheet">'
       +'  <div class="sheet-hd"><h3>'+esc(opts.title||"Face")+'</h3>'
-      +'    <button class="x-btn" id="faceX">✕</button></div>'
-      +'  <div class="sheet-bd" style="text-align:center">'
-      +'    <div class="face-frame"><video id="faceVideo" autoplay playsinline muted></video>'
-      +'      <div class="face-ring" id="faceRing"></div></div>'
-      +'    <div class="face-status" id="faceStatus">Starting the camera…</div>'
+      +'    <button class="x-btn" id="faceX" title="Cancel">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="face-frame" id="faceFrame">'
+      +'      <video id="faceVideo" autoplay playsinline muted></video>'
+      +'      <img id="facePhoto" alt="" style="display:none">'
+      +'      <div class="face-ring" id="faceRing"></div>'
+      +'      <div class="face-blocked" id="faceBlocked" style="display:none">\uD83D\uDCF7</div>'
+      +'    </div>'
+      +'    <div class="face-status" id="faceStatus">Starting the camera\u2026</div>'
+      +'    <div class="face-fix" id="faceFix" style="display:none">'
+      +'      <button class="btn ghost sm" id="faceRetry">Ask again</button>'
+      +'      <button class="btn ghost sm" id="faceUpload">Use a photo instead</button>'
+      +'    </div>'
+      +'    <div class="face-help" id="faceHelp" style="display:none"></div>'
       +'  </div>'
       +'  <div class="sheet-ft"><button class="btn ghost sm" id="faceCancel">Cancel</button>'
-      +'    <button class="btn solid sm" id="faceGo" disabled>'
+      +'    <button class="btn primary sm" id="faceGo" disabled>'
       +      (opts.action==="enrol"?"Capture":"Unlock")+'</button></div>'
+      +'  <input type="file" id="facePhotoInput" accept="image/*" style="display:none">'
       +'</div>';
     document.body.appendChild(host);
-    var stream=null, stopped=false;
+
+    var stream=null, stopped=false, usingPhoto=false;
     var video=host.querySelector("#faceVideo");
+    var photo=host.querySelector("#facePhoto");
     var status=host.querySelector("#faceStatus");
     var go=host.querySelector("#faceGo");
     var ring=host.querySelector("#faceRing");
+    var fix=host.querySelector("#faceFix");
+    var help=host.querySelector("#faceHelp");
+    var blocked=host.querySelector("#faceBlocked");
+
     function say(t,kind){
       status.textContent=t;
       status.style.color = kind==="bad"?"var(--down)" : kind==="ok"?"var(--up)" : "var(--mut)";
@@ -6564,86 +6630,168 @@ AI_TYPES.join(", "),
     host.querySelector("#faceX").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
     host.querySelector("#faceCancel").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
 
-    navigator.mediaDevices.getUserMedia({video:{facingMode:"user", width:320, height:240}})
-      .then(function(s){
-        stream=s; video.srcObject=s;
-        say("Line your face up inside the circle.");
+    /* A refused permission used to be a dead end. Now: explain how to undo it
+       for this browser, offer to ask again, and offer a photo instead. */
+    function permissionRefused(){
+      blocked.style.display=""; video.style.display="none";
+      fix.style.display=""; go.disabled=true;
+      say("Camera permission was refused.","bad");
+      var ua=navigator.userAgent||"";
+      help.style.display="";
+      help.innerHTML = /iPhone|iPad|iPod/.test(ua)
+        ? "On iOS: <b>Settings \u203a Safari \u203a Camera</b>, set it to Ask or Allow, then reload."
+        : /Safari/.test(ua) && !/Chrome/.test(ua)
+        ? "In Safari: <b>Safari \u203a Settings for This Website</b>, set Camera to Allow, then reload."
+        : "In Chrome or Edge: click the <b>\uD83D\uDD12 icon</b> beside the address bar, allow Camera, then reload.";
+    }
+    function startCamera(){
+      blocked.style.display="none"; video.style.display=""; photo.style.display="none";
+      usingPhoto=false; fix.style.display="none"; help.style.display="none";
+      // some browsers/contexts have no mediaDevices at all — the photo route still works
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        blocked.style.display=""; video.style.display="none";
+        fix.style.display=""; go.disabled=true;
+        say("No camera is available here \u2014 you can still use a photo.","bad");
+        var rt=host.querySelector("#faceRetry"); if(rt) rt.style.display="none";
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({video:{facingMode:"user", width:320, height:240}})
+        .then(function(s){
+          stream=s; video.srcObject=s;
+          say("Line your face up inside the circle.");
+          go.disabled=false;
+          if(typeof window.FaceDetector!=="undefined"){
+            var fd=new window.FaceDetector({fastMode:true, maxDetectedFaces:1});
+            var tick=function(){
+              if(stopped||usingPhoto) return;
+              fd.detect(video).then(function(faces){
+                if(stopped||usingPhoto) return;
+                var has=faces&&faces.length;
+                ring.classList.toggle("on", !!has);
+                say(has?"Face detected \u2014 ready.":"No face in frame yet.", has?"ok":null);
+                setTimeout(tick,400);
+              }).catch(function(){ setTimeout(tick,800); });
+            };
+            setTimeout(tick,500);
+          }
+        })
+        .catch(function(err){
+          var m=String(err&&err.name||err);
+          if(/NotAllowed|Permission/i.test(m)){ permissionRefused(); return; }
+          go.disabled=true; fix.style.display="";
+          say(/NotFound/.test(m) ? "No camera found on this device."
+            : /NotReadable/.test(m)? "The camera is being used by another app."
+            : "Couldn't start the camera: "+m, "bad");
+        });
+    }
+    host.querySelector("#faceRetry").onclick=startCamera;
+
+    /* Photo fallback — the model works the same on a still image. */
+    var fileInput=host.querySelector("#facePhotoInput");
+    host.querySelector("#faceUpload").onclick=function(){ fileInput.click(); };
+    fileInput.onchange=function(e){
+      var f=e.target.files&&e.target.files[0]; if(!f) return;
+      e.target.value="";
+      if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+      var r=new FileReader();
+      r.onload=function(){
+        usingPhoto=true;
+        blocked.style.display="none";
+        video.style.display="none";
+        photo.src=r.result; photo.style.display="";
+        say("Photo loaded \u2014 press "+(opts.action==="enrol"?"Capture":"Unlock")+".","ok");
         go.disabled=false;
-        // live "face in frame?" hint where the browser can do it natively
-        if(typeof window.FaceDetector!=="undefined"){
-          var fd=new window.FaceDetector({fastMode:true, maxDetectedFaces:1});
-          var tick=function(){
-            if(stopped) return;
-            fd.detect(video).then(function(faces){
-              if(stopped) return;
-              var has=faces&&faces.length;
-              ring.classList.toggle("on", !!has);
-              say(has?"Face detected — ready.":"No face in frame yet.", has?"ok":null);
-              setTimeout(tick, 400);
-            }).catch(function(){ setTimeout(tick, 800); });
-          };
-          setTimeout(tick, 500);
-        }
-      })
-      .catch(function(err){
-        var m=String(err&&err.name||err);
-        say(/NotAllowed/.test(m) ? "Camera permission was refused."
-          : /NotFound/.test(m)   ? "No camera found on this device."
-          : /NotReadable/.test(m)? "The camera is in use by another app."
-          : "Couldn't start the camera: "+m, "bad");
-        go.disabled=true;
-      });
+      };
+      r.readAsDataURL(f);
+    };
 
     go.onclick=function(){
       go.disabled=true;
-      say("Reading your face…");
+      say("Reading the face\u2026");
+      var source=usingPhoto?photo:video;
       loadFaceApi(function(msg){ say(msg); }).then(function(){
-        return faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        return faceapi.detectSingleFace(source, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks(true).withFaceDescriptor();
       }).then(function(det){
-        if(!det){ say("Couldn't see a face clearly — try better light.", "bad"); go.disabled=false; return; }
+        if(!det){ say("Couldn't see a face clearly \u2014 try better light or another photo.","bad");
+          go.disabled=false; fix.style.display=""; return; }
         var desc=Array.from(det.descriptor);
-        if(opts.action==="enrol"){
-          cleanup(); opts.onResult&&opts.onResult(desc);
-        } else {
-          var saved=faceCfg.descriptor;
-          if(!saved){ say("No face is enrolled.", "bad"); go.disabled=false; return; }
-          var dist=Math.sqrt(desc.reduce(function(sum,v,i){ var d=v-saved[i]; return sum+d*d; },0));
-          if(dist<=faceCfg.threshold){ say("Matched.", "ok"); setTimeout(function(){ cleanup(); opts.onResult&&opts.onResult(true); },400); }
-          else { say("That's not a match (distance "+dist.toFixed(2)+"). Use your PIN.", "bad"); go.disabled=false; }
-        }
+        if(opts.action==="enrol"){ cleanup(); opts.onResult&&opts.onResult(desc); return; }
+        // unlock: match against every enrolled person
+        var best=matchFace(desc);
+        if(best){ say("Welcome back, "+best.name+".","ok");
+          setTimeout(function(){ cleanup(); opts.onResult&&opts.onResult(true,best); },500); }
+        else { say("That doesn't match anyone enrolled. Use your PIN.","bad"); go.disabled=false; }
       }).catch(function(e){
-        say(String(e&&e.message||e).slice(0,110), "bad");
-        go.disabled=false;
+        say(String(e&&e.message||e).slice(0,110),"bad"); go.disabled=false;
       });
     };
+
+    startCamera();
   }
 
+  /* ── multiple people can unlock ─────────────────────────────────
+     faceCfg.people = [{id,name,descriptor}]. The old single-descriptor
+     shape is migrated on load so existing setups keep working. */
+  function facePeople(){
+    if(!faceCfg.people){
+      faceCfg.people = (faceCfg.descriptor)
+        ? [{id:"me", name:"Me", descriptor:faceCfg.descriptor}]
+        : [];
+    }
+    return faceCfg.people;
+  }
+  function matchFace(desc){
+    var best=null, bestDist=Infinity;
+    facePeople().forEach(function(p){
+      if(!p.descriptor) return;
+      var d=Math.sqrt(desc.reduce(function(s,v,i){ var x=v-p.descriptor[i]; return s+x*x; },0));
+      if(d<bestDist){ bestDist=d; best=p; }
+    });
+    return (best && bestDist<=faceCfg.threshold) ? best : null;
+  }
+  function addFacePerson(name, desc){
+    var list=facePeople();
+    list.push({id:"p"+Date.now().toString(36), name:name||("Person "+(list.length+1)), descriptor:desc});
+    faceCfg.on=true; faceCfg.descriptor=list[0].descriptor;   // keep legacy field in step
+    saveFace();
+  }
+  function removeFacePerson(id){
+    faceCfg.people=facePeople().filter(function(p){ return p.id!==id; });
+    if(!faceCfg.people.length){ faceCfg.on=false; faceCfg.descriptor=null; }
+    else faceCfg.descriptor=faceCfg.people[0].descriptor;
+    saveFace();
+  }
   function enrolFace(cb){
     cameraCheck().then(function(c){
-      if(!c.ok){
+      // a refused permission is still worth opening the sheet for — it can be retried
+      // or swapped for a photo in there. Only a genuinely absent camera stops us.
+      if(!c.ok && /No camera found|frame|https/.test(c.why)){
         appModal({title:"Face unlock unavailable", message:c.why, confirmText:"OK"});
         cb&&cb(false); return;
       }
       openCameraSheet({
         title:"Set up face unlock", action:"enrol",
         onResult:function(desc){
-          faceCfg.on=true; faceCfg.descriptor=desc; saveFace();
-          flashSaved("face unlock on"); cb&&cb(true);
+          appModal({title:"Whose face is this?",
+            message:"Give it a name so you can tell people apart later.",
+            input:{placeholder:"e.g. Me, or a family member"}, confirmText:"Save",
+            onConfirm:function(name){
+              addFacePerson((name||"").trim()||"Me", desc);
+              flashSaved("face saved"); refreshSecUI(); refreshFacePanel(); cb&&cb(true);
+            }});
         },
         onCancel:function(){ cb&&cb(false); }
       });
     });
   }
   function verifyFace(cb){
-    if(!faceCfg.on || !faceCfg.descriptor){ cb(false); return; }
-    openCameraSheet({
-      title:"Unlock with your face", action:"verify",
-      onResult:function(ok){ cb(!!ok); },
-      onCancel:function(){ cb(false); }
-    });
+    if(!faceCfg.on || !facePeople().length){ cb(false); return; }
+    openCameraSheet({ title:"Unlock with your face", action:"verify",
+      onResult:function(ok){ cb(!!ok); }, onCancel:function(){ cb(false); } });
   }
-  function faceDisable(){ faceCfg.on=false; faceCfg.descriptor=null; saveFace(); }
+  function faceDisable(){ faceCfg.on=false; faceCfg.descriptor=null; faceCfg.people=[]; saveFace(); }
+
 
   /* ============================================================
      PIN SETUP — a real keypad, and it always tells you what's wrong
@@ -6790,7 +6938,31 @@ AI_TYPES.join(", "),
       if(mNote){ mNote.textContent="Not downloaded yet (~6MB, once)."; mNote.style.color=""; }
     }
   }
+  function renderFacePeople(){
+    var box=document.getElementById("facePeopleList"); if(!box) return;
+    var list=facePeople();
+    if(!list.length){
+      box.innerHTML='<div class="subhint" style="padding:4px 2px">Nobody enrolled yet.</div>';
+      return;
+    }
+    box.innerHTML=list.map(function(p){
+      return '<div class="fp-row"><span>\uD83D\uDC64</span><span class="fp-n">'+esc(p.name)+'</span>'
+        +'<button data-id="'+p.id+'" title="Remove">\u2715</button></div>';
+    }).join("");
+    box.querySelectorAll("button").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id=b.getAttribute("data-id");
+        var who=(facePeople().filter(function(x){return x.id===id;})[0]||{}).name||"this face";
+        appModal({title:"Remove "+esc(who)+"?", message:"They won't be able to unlock with their face.",
+          confirmText:"Remove", cancelText:"Keep",
+          onConfirm:function(){ removeFacePerson(id); renderFacePeople(); refreshSecUI(); flashSaved("removed"); }});
+      });
+    });
+  }
   function bindFacePanel(){
+    var addBtn=document.getElementById("faceAddBtn");
+    if(addBtn) addBtn.addEventListener("click", function(){ enrolFace(function(){ renderFacePeople(); }); });
+    renderFacePeople();
     var mBtn=document.getElementById("faceModelBtn");
     if(mBtn) mBtn.addEventListener("click", function(){
       var mNote=document.getElementById("faceModelNote");
@@ -7205,37 +7377,6 @@ AI_TYPES.join(", "),
       enrolFace(function(){ refreshSecUI(); });
     });
 
-    /* Cloud sync, done honestly.
-       MEGA's API can't be driven from a static page: mega.nz sends no CORS
-       headers for arbitrary origins, and uploads are chunked and end-to-end
-       encrypted behind a proprietary handshake. A real "MEGA integration"
-       would need a server to proxy it, which this app deliberately doesn't have.
-       The same outcome without any of that: write into a folder MEGA's own
-       desktop client already syncs. The File System Access tier does exactly
-       that, so this points it at the right folder and lets MEGA do the upload. */
-    var cloudBtn=document.getElementById("cloudFolderBtn");
-    var cloudNote=document.getElementById("cloudNote");
-    if(cloudBtn){
-      if(typeof window.showDirectoryPicker!=="function" || typeof TierFSA==="undefined"){
-        cloudBtn.textContent="Unsupported"; cloudBtn.disabled=true;
-        if(cloudNote) cloudNote.textContent="Needs Chrome or Edge on desktop. Elsewhere, export a backup and drop it in your cloud folder.";
-      } else {
-        cloudBtn.addEventListener("click", function(){
-          if(cloudNote) cloudNote.textContent="Choose the folder your cloud app syncs\u2026";
-          TierFSA.pickFolder()
-            .then(function(){ return StorageManager.init(); })
-            .then(function(){ return StorageManager.write(buildRoot()); })
-            .then(function(){
-              if(cloudNote){ cloudNote.textContent="Linked \u2014 every save writes into your synced folder."; cloudNote.style.color="var(--up)"; }
-              flashSaved("cloud folder linked");
-              return refreshStorageBadge();
-            })
-            .catch(function(e){
-              if(cloudNote){ cloudNote.textContent="Couldn't link that folder: "+((e&&e.message)||e); cloudNote.style.color="var(--amber)"; }
-            });
-        });
-      }
-    }
     // PWA install
     var pwaBtn=document.getElementById("pwaInstallBtn");
     if(pwaBtn) pwaBtn.addEventListener("click", triggerInstall);
@@ -11083,11 +11224,6 @@ AI_TYPES.join(", "),
       <label class="sw"><input type="checkbox" id="autoDetectChk" checked><i></i></label>
     </div>
     <div class="sec-item">
-      <div class="si-main"><div class="si-t">Cloud sync folder</div>
-        <div class="si-d" id="cloudNote">Save straight into your MEGA, Dropbox or iCloud folder — their app syncs it to the cloud for you.</div></div>
-      <button class="btn ghost sm" id="cloudFolderBtn">Choose</button>
-    </div>
-    <div class="sec-item">
       <div class="si-main"><div class="si-t">Split bills</div>
         <div class="si-d" id="splitNote">New bills are logged in full.</div></div>
       <label class="sw"><input type="checkbox" id="splitOnChk"><i></i></label>
@@ -11337,7 +11473,13 @@ AI_TYPES.join(", "),
             <div class="si-d" id="faceModelNote">Not downloaded yet.</div></div>
           <button class="btn ghost sm" id="faceModelBtn">Download</button>
         </div>
-        <div class="subhint" style="margin-top:10px">Set face unlock on or off in <b>Security &amp; privacy</b>.</div>
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Who can unlock</div>
+            <div class="si-d">More than one person can be enrolled.</div></div>
+          <button class="btn ghost sm" id="faceAddBtn">Add face</button>
+        </div>
+        <div class="fp-list" id="facePeopleList"></div>
+        <div class="subhint" style="margin-top:10px">Turn face unlock on or off in <b>Security &amp; privacy</b>.</div>
       </div>
     </details>
 
