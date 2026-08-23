@@ -1113,6 +1113,7 @@
 <div class="panel">
   <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
   <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan receipt</button>
+  <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -6152,6 +6153,64 @@ AI_TYPES.join(", "),
       setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
     });
   }
+
+  /* The chat lived four taps deep (Settings > Security > Auditor > Ask AI).
+     Something you'd use daily shouldn't be buried, so this opens the same
+     chat in a sheet from the dashboard. One chat, one history — the panel
+     in Settings and this sheet share chatLog. */
+  function openChatSheet(){
+    var host=document.getElementById("chatSheetHost");
+    if(!host){
+      host=document.createElement("div");
+      host.id="chatSheetHost";
+      document.body.appendChild(host);
+    }
+    host.innerHTML=
+       '<div class="ov in" id="chatOv">'
+      +'  <div class="sheet" style="max-width:520px;height:min(80vh,620px)">'
+      +'    <div class="sheet-hd"><h3>💬 Ask AI</h3>'
+      +'      <span id="chatSheetStatus" style="font-size:11px;color:var(--mut);flex:1;text-align:right;margin-right:8px"></span>'
+      +'      <button class="x-btn" id="chatSheetX">✕</button></div>'
+      +'    <div class="sheet-bd" style="display:flex;flex-direction:column;flex:1;overflow:hidden">'
+      +'      <div class="chat-log" id="chatLog" style="flex:1;max-height:none"></div>'
+      +'      <div id="chatFileStrip"></div>'
+      +'      <div class="chat-row" style="margin-top:8px">'
+      +'        <button class="btn ghost sm" id="chatAttachBtn" title="Attach a file">📎</button>'
+      +'        <textarea id="chatInput" class="inp" placeholder="Ask anything… (Enter to send)"></textarea>'
+      +'        <button class="btn solid sm" id="chatSend">Send</button>'
+      +'      </div>'
+      +'    </div>'
+      +'    <input type="file" id="chatFileInput" multiple style="display:none" accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">'
+      +'    <div class="sheet-ft"><button class="btn ghost sm" id="chatClear">Clear chat</button>'
+      +'      <button class="btn ghost sm" id="chatSheetClose">Close</button></div>'
+      +'  </div></div>';
+    bindChat();                       // same handlers, same history
+    renderChatLog(); renderChatFiles();
+    var close=function(){ host.innerHTML=""; };
+    document.getElementById("chatSheetX").onclick=close;
+    document.getElementById("chatSheetClose").onclick=close;
+    document.getElementById("chatOv").addEventListener("click", function(e){
+      if(e.target.id==="chatOv") close();
+    });
+    var esc=function(e){ if(e.key==="Escape"){ close(); document.removeEventListener("keydown",esc); } };
+    document.addEventListener("keydown", esc);
+    // tell them up front which engine will answer
+    var st=document.getElementById("chatSheetStatus");
+    initBuiltinAi().then(function(ready){
+      if(st) st.textContent = ready ? "on-device AI ready"
+        : (window._wllmEngine ? "WebLLM ready" : "no model — Settings › Extra › AI mode");
+    });
+    setTimeout(function(){ var i=document.getElementById("chatInput"); if(i) i.focus(); },120);
+  }
+  /* The launchers live outside bindChat on purpose: bindChat returns early
+     when the chat isn't on screen, so anything bound after it would silently
+     never attach. */
+  function bindChatLaunchers(){
+    ["chatOpenBtn","chatOpenBtn2"].forEach(function(id){
+      var b=document.getElementById(id);
+      if(b && !b._chatBound){ b._chatBound=true; b.addEventListener("click", openChatSheet); }
+    });
+  }
   function bindChat(){
     var input=document.getElementById("chatInput");
     var send=document.getElementById("chatSend");
@@ -10210,6 +10269,7 @@ AI_TYPES.join(", "),
     bindSecurityPanel();
     bindShare();
     bindSplit();
+    bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
     bindChat();
     initPWA();
     bindAuditor();
@@ -10274,18 +10334,11 @@ AI_TYPES.join(", "),
         <span class="aud-llm-dot" id="audLlmDot" style="background:var(--mut)"></span>
         <span id="audLlmStatus">Checking for on-device AI…</span>
       </div>
-      <div class="chat-wrap">
-        <div class="chat-log" id="chatLog"></div>
-        <div id="chatFileStrip"></div>
-        <div class="chat-row">
-          <button class="btn ghost sm" id="chatAttachBtn" title="Attach a file">📎</button>
-          <textarea id="chatInput" class="inp" placeholder="Ask anything… (Enter to send)"></textarea>
-          <button class="btn solid sm" id="chatSend">Send</button>
-        </div>
-        <button class="btn ghost sm" id="chatClear" style="font-size:11px;align-self:flex-end">Clear chat</button>
+      <div style="text-align:center;padding:14px 8px">
+        <button class="btn solid" id="chatOpenBtn2" style="width:100%">💬 Open chat</button>
+        <div class="mut" style="font-size:11px;margin-top:8px;line-height:1.5">
+          Ask about your money and attach files. Also on the dashboard.</div>
       </div>
-      <input type="file" id="chatFileInput" multiple style="display:none"
-        accept=".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*">
       <div id="audAiResp" style="display:none"></div>
       <input class="inp" id="audQuery" style="display:none">
       <button id="audAskBtn" style="display:none"></button>
