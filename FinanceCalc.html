@@ -6577,7 +6577,32 @@ AI_TYPES.join(", "),
   function saveFace(){ try{ localStorage.setItem(FACE_KEY, JSON.stringify(faceCfg)); }catch(e){} }
 
   /* ---- 1. is there a camera at all? ---- */
+  /* A hard off switch the user controls. Checked before any camera call,
+     so blocking it here blocks face unlock and enrolment too — not just
+     hidden from the UI. Survives reloads. */
+  var CAM_KEY="mymoney_cam_off";
+  function cameraBlocked(){
+    try{ return localStorage.getItem(CAM_KEY)==="1"; }catch(e){ return false; }
+  }
+  function setCameraBlocked(off){
+    try{ off ? localStorage.setItem(CAM_KEY,"1") : localStorage.removeItem(CAM_KEY); }catch(e){}
+    // stop any stream that happens to be live this second
+    if(off){
+      try{
+        document.querySelectorAll("video").forEach(function(v){
+          if(v.srcObject && v.srcObject.getTracks)
+            v.srcObject.getTracks().forEach(function(t){ t.stop(); });
+          v.srcObject=null;
+        });
+      }catch(e){}
+      var ov=document.getElementById("faceOv");
+      if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    }
+  }
   function cameraCheck(){
+    if(cameraBlocked())
+      return Promise.resolve({ok:false, blocked:true,
+        why:"You've switched the camera off for this app. Turn it back on to use face unlock."});
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
       return Promise.resolve({ok:false, why:"This browser can't reach a camera."});
     if(!window.isSecureContext)
@@ -6694,6 +6719,14 @@ AI_TYPES.join(", "),
     function startCamera(){
       blocked.style.display="none"; video.style.display=""; photo.style.display="none";
       usingPhoto=false; fix.style.display="none"; help.style.display="none";
+      // the user's own off switch wins over everything else
+      if(cameraBlocked()){
+        blocked.style.display=""; video.style.display="none";
+        fix.style.display=""; go.disabled=true;
+        say("Camera access is switched off in Settings \u2014 a photo still works.","bad");
+        var rt0=host.querySelector("#faceRetry"); if(rt0) rt0.style.display="none";
+        return;
+      }
       // some browsers/contexts have no mediaDevices at all — the photo route still works
       if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
         blocked.style.display=""; video.style.display="none";
@@ -7006,7 +7039,43 @@ AI_TYPES.join(", "),
       });
     });
   }
+  function bindCameraSwitch(){
+    var chk=document.getElementById("camAllowChk");
+    var note=document.getElementById("camSwitchNote");
+    if(!chk || chk._bound) return;
+    chk._bound=true;
+    var paint=function(){
+      var off=cameraBlocked();
+      chk.checked=!off;
+      if(note){
+        note.textContent = off
+          ? "Blocked. Nothing in this app can open the camera."
+          : "Allowed. Turn this off to block the app from the camera entirely.";
+        note.style.color = off ? "var(--amber)" : "";
+      }
+    };
+    chk.addEventListener("change", function(){
+      var wantOff=!chk.checked;
+      if(wantOff && faceCfg.on){
+        appModal({title:"Block the camera?",
+          message:"Face unlock needs it. Blocking the camera turns face unlock off \u2014 your PIN still works.",
+          confirmText:"Block it", cancelText:"Cancel",
+          onConfirm:function(){
+            setCameraBlocked(true); faceDisable();
+            paint(); refreshSecUI(); refreshFacePanel(); renderFacePeople&&renderFacePeople();
+            flashSaved("camera blocked");
+          }});
+        chk.checked=true;   // stays on until they confirm
+        return;
+      }
+      setCameraBlocked(wantOff);
+      paint(); refreshFacePanel(); refreshSecUI();
+      flashSaved(wantOff?"camera blocked":"camera allowed");
+    });
+    paint();
+  }
   function bindFacePanel(){
+    bindCameraSwitch();
     var addBtn=document.getElementById("faceAddBtn");
     if(addBtn) addBtn.addEventListener("click", function(){ enrolFace(function(){ renderFacePeople(); }); });
     renderFacePeople();
@@ -11935,6 +12004,11 @@ AI_TYPES.join(", "),
         <span class="sect-c">▸</span></summary>
       <div class="sect-b">
         <div class="subhint" style="margin-bottom:12px">Face unlock compares a 128-number descriptor of your face, computed on this device. The model downloads once (~6MB) and then works offline.</div>
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Camera access</div>
+            <div class="si-d" id="camSwitchNote">Allowed. Turn this off to block the app from the camera entirely.</div></div>
+          <label class="sw"><input type="checkbox" id="camAllowChk" checked><i></i></label>
+        </div>
         <div class="sec-item" style="border:0;padding:6px 0">
           <div class="si-main"><div class="si-t">Camera</div>
             <div class="si-d" id="camNote">Checking…</div></div>
