@@ -397,8 +397,16 @@
   /* These were three separate absolutely-positioned buttons all pinned to
      top:14px right:16px — so they stacked on top of each other. They live in
      a row now, which also wraps instead of overflowing on a narrow screen. */
-  .ai-launch-row{position:absolute;top:12px;right:14px;z-index:2;
-    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 28px)}
+  /* In normal flow, NOT absolute. Absolute positioning is exactly what made
+     these three buttons pile on top of each other and sit over the heading. */
+  .p-head-tools{flex-wrap:wrap;gap:8px}
+  .ai-launch-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+    margin-left:auto}
+  @media (max-width:460px){
+    .p-head-tools h2{width:100%}
+    .ai-launch-row{margin-left:0;width:100%;justify-content:flex-start}
+    .ai-launch{flex:1;min-width:0;text-align:center}
+  }
   .ai-launch{border:1px solid var(--bd2);border-radius:8px;
     background:var(--card2);color:var(--tx);font:inherit;font-size:11.5px;font-weight:700;
     padding:6px 10px;cursor:pointer;transition:border-color .13s,transform .1s;-webkit-tap-highlight-color:transparent}
@@ -1455,14 +1463,14 @@
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
-  <div class="ai-launch-row">
-    <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill</button>
-    <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan</button>
-    <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
-  </div>
-  <div class="p-head">
+  <div class="p-head p-head-tools">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
+    <div class="ai-launch-row">
+      <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill</button>
+      <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan</button>
+      <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
+    </div>
   </div>
   <div class="p-body">
     <div class="subhint">To log a <b>purchase</b>, pick <b>Spent on something</b>, choose a category, type the amount. That’s what fills the “By month” spending.</div>
