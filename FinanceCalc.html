@@ -6407,7 +6407,7 @@ AI_TYPES.join(", "),
         return loadFaceApi();
       })
       .then(function(){
-        var tries=0, told=false;
+        var tries=0, told=false, loggedFace=false;
         var tick=function(){
           if(!_autoFace.stream || !document.getElementById("lockScreen")){ _autoFace.stop(); return; }
           faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
@@ -6422,8 +6422,15 @@ AI_TYPES.join(", "),
                   setTimeout(function(){ onMatch(who); }, 350);
                   return;
                 }
-                // keep trying rather than giving up — they may just be at an angle
-                if(++tries===8 && !told){ told=true; setStatus && setStatus("Still looking \u2014 or enter your PIN"); }
+                /* An unrecognised face IS the signal worth recording. Give it a
+                   few frames first — a bad angle or poor light shouldn't count as
+                   someone else — then log it once per lock screen, not per frame. */
+                tries++;
+                if(tries===8 && !told){ told=true; setStatus && setStatus("Not recognised \u2014 enter your PIN"); }
+                if(tries===12 && !loggedFace){
+                  loggedFace=true;
+                  recordFailedAttempt("face");
+                }
               }
               // no timeout: keep watching for as long as this screen is open
               _autoFace.raf=setTimeout(tick, 450);
