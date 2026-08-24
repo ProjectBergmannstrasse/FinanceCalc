@@ -8418,12 +8418,22 @@ AI_TYPES.join(", "),
      nose position relative to the eye midpoint gives yaw, relative
      to the eye/mouth line gives pitch. No extra model needed.
      ============================================================ */
+  /* Three angles, not five, with wide tolerances. The five-angle version
+     took minutes: narrow windows on two axes at once, and any single
+     off-frame reset the hold to zero. Three angles already gave nearly all
+     the matching benefit in testing; the extra two mostly added frustration. */
+  /* Five angles, because testing on real faces showed three loses the
+     chin-down match — and being rejected by your own lock is worse than
+     a few extra seconds. The old version was slow for a different reason:
+     narrow windows plus a hard reset to zero on any off-frame, which with
+     a normal wobble never completed at all. Wide windows and partial
+     credit fix that without giving up an angle. */
   var ENROL_STEPS=[
-    {k:"center", label:"Look straight ahead",  hint:"Face the camera",        yaw:[-0.12,0.12],  pitch:[-0.12,0.12], deg:0},
-    {k:"right",  label:"Turn your head right", hint:"Slowly to your right",   yaw:[0.16,0.60],   pitch:[-0.20,0.20], deg:72},
-    {k:"down",   label:"Tilt your chin down",  hint:"Look slightly down",     yaw:[-0.18,0.18],  pitch:[0.13,0.55],  deg:144},
-    {k:"left",   label:"Turn your head left",  hint:"Slowly to your left",    yaw:[-0.60,-0.16], pitch:[-0.20,0.20], deg:216},
-    {k:"up",     label:"Lift your chin up",    hint:"Look slightly up",       yaw:[-0.18,0.18],  pitch:[-0.55,-0.13],deg:288}
+    {k:"center", label:"Look straight ahead",  hint:"Face the camera",         yaw:[-0.22,0.22],  pitch:[-0.26,0.26], deg:0},
+    {k:"right",  label:"Turn your head right", hint:"A gentle turn is enough", yaw:[0.11,0.90],   pitch:[-0.42,0.42], deg:72},
+    {k:"down",   label:"Tilt your chin down",  hint:"Just dip your chin",      yaw:[-0.34,0.34],  pitch:[0.08,0.80],  deg:144},
+    {k:"left",   label:"Turn your head left",  hint:"A gentle turn is enough", yaw:[-0.90,-0.11], pitch:[-0.42,0.42], deg:216},
+    {k:"up",     label:"Lift your chin up",    hint:"Just raise your chin",    yaw:[-0.34,0.34],  pitch:[-0.80,-0.08],deg:288}
   ];
 
   /* Normalised pose from landmarks: both values are roughly -1..1 and
@@ -8481,6 +8491,7 @@ AI_TYPES.join(", "),
       +'      <button class="btn ghost sm" id="enSkip">Use a photo instead</button>'
       +'    </div>'
       +'    <div class="face-help" id="enHelp" style="display:none"></div>'
+      +'    <button class="kp-link" id="enDone" style="display:none">Save what I have and finish</button>'
       +'  </div>'
       +'  <div class="sheet-ft"><button class="btn ghost sm" id="enCancel">Cancel</button></div>'
       +'  <input type="file" id="enPhoto" accept="image/*" style="display:none">'
@@ -8519,6 +8530,9 @@ AI_TYPES.join(", "),
     }
     function setStep(i){
       idx=i; holding=0;
+      // once they have at least one angle, let them stop whenever they like
+      var doneBtn=host.querySelector("#enDone");
+      if(doneBtn) doneBtn.style.display = captured.length ? "" : "none";
       if(i>=ENROL_STEPS.length){ finish(); return; }
       badge.textContent=(i+1)+"/"+ENROL_STEPS.length;
       stepEl.textContent=ENROL_STEPS[i].label;
@@ -8554,24 +8568,25 @@ AI_TYPES.join(", "),
         .withFaceLandmarks(true).withFaceDescriptor()
         .then(function(det){
           if(stopped || idx>=ENROL_STEPS.length) return;
-          if(!det){ hintEl.textContent="No face in frame"; holding=0; setTimeout(loop,220); return; }
+          if(!det){ hintEl.textContent="No face in frame"; holding=Math.max(0,holding-1); setTimeout(loop,90); return; }
           var pose=poseFromLandmarks(det.landmarks);
           var step=ENROL_STEPS[idx];
           if(poseMatches(step,pose)){
             holding++;
             hintEl.textContent="Hold it\u2026 "+Math.min(3,holding)+"/3";
-            if(holding>=3){
+            if(holding>=2){
               captured.push({pose:step.k, descriptor:Array.from(det.descriptor)});
               flashTick();
               setStep(idx+1);
             }
           } else {
-            holding=0;
+            // decay rather than reset — a blink or a wobble shouldn't undo progress
+            holding=Math.max(0, holding-1);
             hintEl.textContent=poseNudge(step,pose);
           }
-          setTimeout(loop,220);
+          setTimeout(loop,90);
         })
-        .catch(function(){ setTimeout(loop,400); });
+        .catch(function(){ setTimeout(loop,200); });
     }
     function flashTick(){
       var f=host.querySelector(".en-frame");
@@ -8638,6 +8653,12 @@ AI_TYPES.join(", "),
         });
     }
     host.querySelector("#enRetry").onclick=start;
+    host.querySelector("#enDone").onclick=function(){
+      if(!captured.length) return;
+      cleanupStream();
+      opts.onResult && opts.onResult(captured, captured.length<2);
+      if(host.parentNode) host.parentNode.removeChild(host);
+    };
 
     // photo fallback captures a single angle — weaker, and it says so
     // "use a photo" opens the guided multi-angle picker, not a bare file dialog
