@@ -1404,6 +1404,12 @@
   .ov.page-mode .kp{max-width:340px}
   .ov.page-mode .kp-key{padding:19px 0;font-size:22px}
   #lockScreen .kp{max-width:320px}
+
+  .en-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .en-chip{font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;
+    border:1px solid var(--bd2);background:var(--card);color:var(--mut);
+    transition:background .2s ease,color .2s ease,border-color .2s ease}
+  .en-chip.on{background:rgba(61,220,132,.15);color:var(--up);border-color:rgba(61,220,132,.4)}
 </style>
 </head>
 <body>
@@ -8467,6 +8473,46 @@ AI_TYPES.join(", "),
     return "Hold still\u2026";
   }
 
+  /* ============================================================
+     FACE ENROLMENT — continuous sweep, Apple-style
+
+     The old flow asked you to hit five exact poses and hold each
+     one. That's backwards: you end up fighting the tolerance
+     window. This instead grabs a descriptor every frame while you
+     simply rotate your head, sorts them into pose buckets, and
+     keeps the best sample per bucket — the one closest to that
+     bucket's centre. You just turn; it takes what it needs.
+
+     Finishes as soon as every bucket has a sample, so a smooth
+     sweep completes in roughly 4 seconds.
+     ============================================================ */
+  var SWEEP_BUCKETS=[
+    {k:"left",   label:"left",     yaw:[-0.95,-0.13], pitch:[-0.50,0.50], mid:[-0.34,0]},
+    {k:"center", label:"centre",   yaw:[-0.13,0.13],  pitch:[-0.28,0.28], mid:[0,0]},
+    {k:"right",  label:"right",    yaw:[0.13,0.95],   pitch:[-0.50,0.50], mid:[0.34,0]},
+    {k:"up",     label:"chin up",  yaw:[-0.40,0.40],  pitch:[-0.85,-0.09],mid:[0,-0.28]},
+    {k:"down",   label:"chin down",yaw:[-0.40,0.40],  pitch:[0.09,0.85],  mid:[0,0.28]}
+  ];
+  function bucketFor(pose){
+    if(!pose) return null;
+    // vertical buckets win when the chin is clearly moved, else horizontal
+    for(var i=0;i<SWEEP_BUCKETS.length;i++){
+      var b=SWEEP_BUCKETS[i];
+      if(b.k!=="up" && b.k!=="down") continue;
+      if(pose.yaw>=b.yaw[0]&&pose.yaw<=b.yaw[1]&&pose.pitch>=b.pitch[0]&&pose.pitch<=b.pitch[1]) return b;
+    }
+    for(var j=0;j<SWEEP_BUCKETS.length;j++){
+      var c=SWEEP_BUCKETS[j];
+      if(c.k==="up"||c.k==="down") continue;
+      if(pose.yaw>=c.yaw[0]&&pose.yaw<=c.yaw[1]&&pose.pitch>=c.pitch[0]&&pose.pitch<=c.pitch[1]) return c;
+    }
+    return null;
+  }
+  function poseScore(b, pose){
+    // distance from the bucket's ideal centre — lower is a better sample
+    return Math.hypot(pose.yaw-b.mid[0], pose.pitch-b.mid[1]);
+  }
+
   function openGuidedEnrol(opts){
     opts=opts||{};
     var host=document.createElement("div");
@@ -8482,16 +8528,17 @@ AI_TYPES.join(", "),
       +'        <video id="enVideo" autoplay playsinline muted></video>'
       +'        <div class="face-blocked" id="enBlocked" style="display:none">\uD83D\uDCF7</div>'
       +'      </div>'
-      +'      <div class="en-badge" id="enBadge">1/5</div>'
+      +'      <div class="en-badge" id="enBadge">0/5</div>'
       +'    </div>'
-      +'    <div class="en-step" id="enStep">Look straight ahead</div>'
+      +'    <div class="en-step" id="enStep">Turn your head slowly in a circle</div>'
       +'    <div class="en-hint" id="enHint">Starting the camera\u2026</div>'
+      +'    <div class="en-chips" id="enChips"></div>'
       +'    <div class="face-fix" id="enFix" style="display:none">'
       +'      <button class="btn ghost sm" id="enRetry">Ask again</button>'
       +'      <button class="btn ghost sm" id="enSkip">Use a photo instead</button>'
       +'    </div>'
       +'    <div class="face-help" id="enHelp" style="display:none"></div>'
-      +'    <button class="kp-link" id="enDone" style="display:none">Save what I have and finish</button>'
+      +'    <button class="kp-link" id="enDone" style="display:none">Save what I have</button>'
       +'  </div>'
       +'  <div class="sheet-ft"><button class="btn ghost sm" id="enCancel">Cancel</button></div>'
       +'  <input type="file" id="enPhoto" accept="image/*" style="display:none">'
@@ -8503,94 +8550,130 @@ AI_TYPES.join(", "),
     var hintEl=host.querySelector("#enHint");
     var badge=host.querySelector("#enBadge");
     var ticks=host.querySelector("#enTicks");
+    var chips=host.querySelector("#enChips");
     var fix=host.querySelector("#enFix");
     var help=host.querySelector("#enHelp");
     var blocked=host.querySelector("#enBlocked");
-    var stream=null, stopped=false, idx=0, holding=0, busy=false;
-    var captured=[];
+    var doneBtn=host.querySelector("#enDone");
 
-    // the ring of ticks that fill in as each angle is captured
-    function drawTicks(){
-      var n=54, out="";
+    var stream=null, stopped=false, running=false;
+    var best={};              // bucket key -> {score, descriptor}
+    var frames=0, startedAt=0;
+
+    /* Release everything. The old version stopped the tracks but left
+       srcObject attached, which can keep the camera indicator lit. */
+    function releaseCamera(){
+      stopped=true; running=false;
+      try{
+        if(stream){ stream.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} }); }
+        if(video){ video.pause&&video.pause(); video.srcObject=null; video.removeAttribute("src"); video.load&&video.load(); }
+      }catch(e){}
+      stream=null;
+    }
+    function destroy(){ releaseCamera(); if(host.parentNode) host.parentNode.removeChild(host); }
+
+    host.querySelector("#enX").onclick=function(){ destroy(); opts.onCancel&&opts.onCancel(); };
+    host.querySelector("#enCancel").onclick=function(){ destroy(); opts.onCancel&&opts.onCancel(); };
+    // if this element ever leaves the DOM by any route, the camera goes with it
+    try{
+      new MutationObserver(function(_,obs){
+        if(!document.getElementById("enrolOv")){ releaseCamera(); obs.disconnect(); }
+      }).observe(document.body,{childList:true});
+    }catch(e){}
+    window.addEventListener("pagehide", releaseCamera);
+    document.addEventListener("visibilitychange", function(){ if(document.hidden) releaseCamera(); });
+
+    function got(){ return Object.keys(best).length; }
+    function drawRing(){
+      var n=60, out="";
+      var per=n/SWEEP_BUCKETS.length;
       for(var i=0;i<n;i++){
+        var seg=Math.floor(i/per);
+        var b=SWEEP_BUCKETS[seg];
+        var has=!!best[b.k];
         var ang=(i/n)*360-90;
-        var stepIdx=Math.floor(i/(n/ENROL_STEPS.length));
-        var done=stepIdx<idx;
-        var active=stepIdx===idx;
-        var r1=done||active?96:99, r2=done?112:108;
+        var r1=has?95:99, r2=has?113:107;
         var x1=120+r1*Math.cos(ang*Math.PI/180), y1=120+r1*Math.sin(ang*Math.PI/180);
         var x2=120+r2*Math.cos(ang*Math.PI/180), y2=120+r2*Math.sin(ang*Math.PI/180);
-        var col=done?"var(--up)":active?"var(--tx)":"var(--bd2)";
-        var w=done||active?3:2;
         out+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)
-           +'" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"'
-           +(active?' opacity="0.9"':done?'':' opacity="0.4"')+'/>';
+          +'" stroke="'+(has?"var(--up)":"var(--bd2)")+'" stroke-width="'+(has?3:2)
+          +'" stroke-linecap="round"'+(has?'':' opacity="0.45"')+'/>';
       }
       ticks.innerHTML=out;
+      badge.textContent=got()+"/"+SWEEP_BUCKETS.length;
+      chips.innerHTML=SWEEP_BUCKETS.map(function(b){
+        return '<span class="en-chip'+(best[b.k]?" on":"")+'">'+(best[b.k]?"\u2713 ":"")+esc(b.label)+'</span>';
+      }).join("");
+      doneBtn.style.display = got()>0 ? "" : "none";
     }
-    function setStep(i){
-      idx=i; holding=0;
-      // once they have at least one angle, let them stop whenever they like
-      var doneBtn=host.querySelector("#enDone");
-      if(doneBtn) doneBtn.style.display = captured.length ? "" : "none";
-      if(i>=ENROL_STEPS.length){ finish(); return; }
-      badge.textContent=(i+1)+"/"+ENROL_STEPS.length;
-      stepEl.textContent=ENROL_STEPS[i].label;
-      hintEl.textContent=ENROL_STEPS[i].hint;
-      drawTicks();
-    }
-    function cleanup(){
-      stopped=true;
-      if(stream) stream.getTracks().forEach(function(t){ t.stop(); });
-      if(host.parentNode) host.parentNode.removeChild(host);
-    }
-    host.querySelector("#enX").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
-    host.querySelector("#enCancel").onclick=function(){ cleanup(); opts.onCancel&&opts.onCancel(); };
 
     function finish(){
-      stepEl.textContent="All done";
-      hintEl.textContent="Saving your face\u2026";
-      drawTicks();
-      cleanupStream();
-      opts.onResult&&opts.onResult(captured);
-      setTimeout(function(){ if(host.parentNode) host.parentNode.removeChild(host); }, 500);
+      if(stopped) return;
+      releaseCamera();
+      var angles=SWEEP_BUCKETS.filter(function(b){ return best[b.k]; })
+        .map(function(b){ return {pose:b.k, descriptor:best[b.k].descriptor}; });
+      stepEl.textContent="Got it";
+      hintEl.textContent=angles.length+" angle"+(angles.length===1?"":"s")+" captured";
+      drawRing();
+      setTimeout(function(){
+        if(host.parentNode) host.parentNode.removeChild(host);
+        opts.onResult && opts.onResult(angles, angles.length<3);
+      }, 450);
     }
-    function cleanupStream(){
-      stopped=true;
-      if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
-    }
+    doneBtn.onclick=finish;
 
-    /* The loop: detect, check the pose matches this step, require it held
-       for a few frames so a passing glance doesn't count, then capture. */
+    /* Capture every frame, keep the best per bucket. No holding, no
+       "hit this exact pose" — just keep moving and it fills in. */
     function loop(){
-      if(stopped || busy || idx>=ENROL_STEPS.length) return;
+      if(stopped || !running) return;
       faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
         .withFaceLandmarks(true).withFaceDescriptor()
         .then(function(det){
-          if(stopped || idx>=ENROL_STEPS.length) return;
-          if(!det){ hintEl.textContent="No face in frame"; holding=Math.max(0,holding-1); setTimeout(loop,90); return; }
+          if(stopped) return;
+          frames++;
+          if(!det){ hintEl.textContent="Keep your face in the circle"; setTimeout(loop,70); return; }
           var pose=poseFromLandmarks(det.landmarks);
-          var step=ENROL_STEPS[idx];
-          if(poseMatches(step,pose)){
-            holding++;
-            hintEl.textContent="Hold it\u2026 "+Math.min(3,holding)+"/3";
-            if(holding>=2){
-              captured.push({pose:step.k, descriptor:Array.from(det.descriptor)});
-              flashTick();
-              setStep(idx+1);
+          var b=bucketFor(pose);
+          if(phase==="center"){
+            // hold nothing — just wait until they're roughly facing forward
+            if(b && b.k==="center"){
+              var sc0=poseScore(b,pose);
+              if(!best.center || sc0<best.center.score){
+                best.center={score:sc0, descriptor:Array.from(det.descriptor)};
+              }
+              if(sc0<0.10){
+                phase="sweep";
+                drawRing();
+                stepEl.textContent="Now turn your head in a slow circle";
+                var f0=host.querySelector(".en-frame");
+                f0.classList.remove("pop"); void f0.offsetWidth; f0.classList.add("pop");
+              }
+            } else {
+              hintEl.textContent="Look straight at the camera to begin";
             }
-          } else {
-            // decay rather than reset — a blink or a wobble shouldn't undo progress
-            holding=Math.max(0, holding-1);
-            hintEl.textContent=poseNudge(step,pose);
+            setTimeout(loop,70);
+            return;
           }
-          setTimeout(loop,90);
+          if(b){
+            var score=poseScore(b,pose);
+            if(!best[b.k] || score<best[b.k].score){
+              var isNew=!best[b.k];
+              best[b.k]={score:score, descriptor:Array.from(det.descriptor)};
+              if(isNew){
+                drawRing();
+                var f=host.querySelector(".en-frame");
+                f.classList.remove("pop"); void f.offsetWidth; f.classList.add("pop");
+              }
+            }
+          }
+          var missing=SWEEP_BUCKETS.filter(function(x){ return !best[x.k]; });
+          if(!missing.length){ finish(); return; }
+          hintEl.textContent = missing.length<=2
+            ? "Almost \u2014 now look "+missing.map(function(x){return x.label;}).join(" and ")
+            : "Keep turning slowly\u2026";
+          setTimeout(loop,70);
         })
-        .catch(function(){ setTimeout(loop,200); });
-    }
-    function flashTick(){
-      var f=host.querySelector(".en-frame");
-      f.classList.remove("pop"); void f.offsetWidth; f.classList.add("pop");
+        .catch(function(){ setTimeout(loop,150); });
     }
 
     function permissionRefused(){
@@ -8606,15 +8689,19 @@ AI_TYPES.join(", "),
         ? "In Safari: <b>Safari \u203a Settings for This Website</b>, set Camera to Allow, then reload."
         : "In Chrome or Edge: click the <b>\uD83D\uDD12 icon</b> by the address bar, allow Camera, then reload.";
     }
+    /* A circular sweep never crosses dead centre — yaw and pitch are out of
+       phase, so when yaw is 0 the chin is at its extreme. Capturing centre
+       first, before the turn starts, is how Apple does it too: look at me,
+       then rotate. */
+    var phase="center";
     function start(){
       if(inFrame() && !_faceApiReady && !window.faceapi){
         blocked.style.display=""; video.style.display="none";
         stepEl.textContent="Not available in a frame";
         stepEl.style.color="var(--amber)";
-        hintEl.textContent="The face model can't be downloaded inside a frame. Open the file in its own tab.";
+        hintEl.textContent="The face model can't download inside a frame. Open the file in its own tab.";
         fix.style.display="";
-        var r0=host.querySelector("#enRetry"); if(r0) r0.style.display="none";
-        var s0=host.querySelector("#enSkip"); if(s0) s0.style.display="none";
+        host.querySelector("#enRetry").style.display="none";
         return;
       }
       if(cameraBlocked()){
@@ -8629,71 +8716,45 @@ AI_TYPES.join(", "),
       if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
         blocked.style.display=""; video.style.display="none";
         stepEl.textContent="No camera available";
-        hintEl.textContent="You can still enrol from a photo.";
+        hintEl.textContent="You can still enrol from photos.";
         fix.style.display="";
         host.querySelector("#enRetry").style.display="none";
         return;
       }
       stepEl.style.color=""; blocked.style.display="none"; video.style.display="";
       fix.style.display="none"; help.style.display="none";
+      hintEl.textContent="Starting the camera\u2026";
       navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:480,height:480}})
         .then(function(s){
           stream=s; video.srcObject=s; stopped=false;
           hintEl.textContent="Loading the face model\u2026";
           return loadFaceApi(function(m){ hintEl.textContent=m; });
         })
-        .then(function(){ setStep(0); loop(); })
+        .then(function(){
+          running=true; startedAt=Date.now();
+          stepEl.textContent="Look straight at the camera";
+          hintEl.textContent="Then turn your head in a slow circle";
+          loop();
+        })
         .catch(function(err){
           var m=String(err&&err.name||err);
           if(/NotAllowed|Permission/i.test(m)){ permissionRefused(); return; }
           stepEl.textContent="Couldn't start the camera";
           stepEl.style.color="var(--down)";
-          hintEl.textContent=m.slice(0,90);
+          hintEl.textContent=String(err&&err.message||m).slice(0,110);
           fix.style.display="";
         });
     }
     host.querySelector("#enRetry").onclick=start;
-    host.querySelector("#enDone").onclick=function(){
-      if(!captured.length) return;
-      cleanupStream();
-      opts.onResult && opts.onResult(captured, captured.length<2);
-      if(host.parentNode) host.parentNode.removeChild(host);
-    };
-
-    // photo fallback captures a single angle — weaker, and it says so
-    // "use a photo" opens the guided multi-angle picker, not a bare file dialog
     host.querySelector("#enSkip").onclick=function(){
-      cleanupStream();
-      if(host.parentNode) host.parentNode.removeChild(host);
+      destroy();
       openPhotoEnrol({ onResult:opts.onResult, onCancel:opts.onCancel });
     };
-    var pIn=host.querySelector("#enPhoto");
-    pIn.onchange=function(e){
-      var f=e.target.files&&e.target.files[0]; if(!f) return; e.target.value="";
-      var r=new FileReader();
-      r.onload=function(){
-        var img=new Image();
-        img.onload=function(){
-          hintEl.textContent="Reading the photo\u2026";
-          loadFaceApi(function(m){ hintEl.textContent=m; }).then(function(){
-            return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
-              .withFaceLandmarks(true).withFaceDescriptor();
-          }).then(function(det){
-            if(!det){ hintEl.textContent="Couldn't find a face in that photo."; return; }
-            captured=[{pose:"center", descriptor:Array.from(det.descriptor)}];
-            cleanupStream();
-            opts.onResult&&opts.onResult(captured, true);
-            if(host.parentNode) host.parentNode.removeChild(host);
-          }).catch(function(err){ hintEl.textContent=String(err&&err.message||err).slice(0,90); });
-        };
-        img.src=r.result;
-      };
-      r.readAsDataURL(f);
-    };
 
-    drawTicks();
+    drawRing();
     start();
   }
+
 
   /* ============================================================
      BACKGROUND REVIEW + MULTI-AGENT DEEP CHECK
