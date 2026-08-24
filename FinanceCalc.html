@@ -6402,7 +6402,8 @@ AI_TYPES.join(", "),
     }catch(e){ return Promise.resolve(false); }
   }
 
-  var _autoFace={stream:null, raf:null, stop:function(){
+  var _autoFace={stream:null, raf:null, done:function(){}, stop:function(){
+    try{ this.done(); }catch(e){}
     if(this.raf){ clearTimeout(this.raf); this.raf=null; }
     if(this.stream){ this.stream.getTracks().forEach(function(t){ t.stop(); }); this.stream=null; }
   }};
@@ -6433,17 +6434,71 @@ AI_TYPES.join(", "),
     video.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
     ovEl.appendChild(video);
 
-    setStatus && setStatus("Looking for you\u2026");
+    /* Absolute backstop. Every individual step now has its own guard, but a
+       lock screen you can't get past is the worst possible failure — so if
+       nothing at all has resolved in 20s, give up and hand over to the PIN. */
+    var settled=false;
+    var giveUp=setTimeout(function(){
+      if(settled) return;
+      settled=true;
+      _autoFace.stop();
+      setStatus && setStatus("Face unlock didn\u2019t start \u2014 enter your PIN");
+    }, 20000);
+    _autoFace.done=function(){ settled=true; clearTimeout(giveUp); };
+
+    setStatus && setStatus("Starting the camera\u2026");
     // request directly — the browser only prompts the first time, then remembers
     navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:320,height:240}})
       .then(function(stream){
         _autoFace.stream=stream; video.srcObject=stream;
         try{ localStorage.setItem("mymoney_cam_granted","1"); }catch(e){}
-        setStatus && setStatus("Looking for you\u2026");
-        return loadFaceApi();
+        setStatus && setStatus("Starting the camera\u2026");
+        /* The model load had no deadline here. If it can't arrive — offline,
+           slow CDN, blocked in a frame — the promise never settles and the
+           screen sits on "Looking for you…" indefinitely. */
+        return Promise.race([
+          loadFaceApi(),
+          new Promise(function(_,rej){
+            setTimeout(function(){ rej(new Error("model-timeout")); }, 12000);
+          })
+        ]);
       })
       .then(function(){
-        var tries=0, told=false, loggedFace=false;
+        // the camera can also hand back a stream that never produces frames
+        /* Wait for actual frames, but never BLOCK on it: some browsers report
+           readyState late, and jsdom never advances it at all. Start detecting
+           either way after a short grace period — the detector simply finds
+           nothing if there's no picture, and the 20s backstop still applies. */
+        var waited=0;
+        var hasFrames=function(){
+          try{ return video.readyState>=2 || video.videoWidth>0; }catch(e){ return false; }
+        };
+        var go=function(){
+          _autoFace.done();
+          setStatus && setStatus("Looking for you\u2026");
+          beginDetection();
+        };
+        var poll=function(){
+          if(hasFrames()){ go(); return; }
+          waited+=150;
+          if(waited>=1500){ go(); return; }   // start anyway rather than stall
+          setTimeout(poll, 150);
+        };
+        poll();
+      })
+      .catch(function(err){
+        _autoFace.done();
+        _autoFace.stop();
+        var n=String(err&&(err.message||err.name)||err);
+        setStatus && setStatus(
+          /model-timeout/.test(n)   ? "Face model didn\u2019t load \u2014 enter your PIN"
+          : /NotAllowed|Permission/i.test(n) ? "Camera blocked \u2014 enter your PIN"
+          : /NotFound/i.test(n)     ? "No camera \u2014 enter your PIN"
+          : "Enter your PIN");
+      });
+
+    function beginDetection(){
+        var tries=0, told=false, loggedFace=false, blankFrames=0;
         var live=makeLivenessTracker();
         var tick=function(){
           if(!_autoFace.stream || !document.getElementById("lockScreen")){ _autoFace.stop(); return; }
@@ -6451,7 +6506,19 @@ AI_TYPES.join(", "),
             .withFaceLandmarks(true).withFaceDescriptor()
             .then(function(det){
               if(!_autoFace.stream) return;
+              if(!det){ blankFrames++; }
+              if(!det && blankFrames===25){
+                // 25 frames with nothing at all usually means no picture,
+                // not a shy user — stop implying it's still looking
+                setStatus && setStatus("Can\u2019t see anything \u2014 enter your PIN");
+              }
+              if(!det && blankFrames>=70){
+                _autoFace.stop();
+                setStatus && setStatus("No face seen \u2014 enter your PIN");
+                return;
+              }
               if(det){
+                blankFrames=0;
                 live.feed(det, video);
                 var who=matchFace(Array.from(det.descriptor));
                 if(who){
@@ -6498,15 +6565,7 @@ AI_TYPES.join(", "),
             .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
         };
         tick();
-      })
-      .catch(function(err){
-        _autoFace.stop();
-        var n=String(err&&err.name||err);
-        setStatus && setStatus(
-          /NotAllowed|Permission/i.test(n) ? "Camera blocked \u2014 enter your PIN"
-          : /NotFound/i.test(n) ? "No camera \u2014 enter your PIN"
-          : "Enter your PIN");
-      });
+    }
   }
   function showLockScreen(){
     if(!lockIsOn()) return;
