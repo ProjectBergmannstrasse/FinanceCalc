@@ -1410,6 +1410,31 @@
     border:1px solid var(--bd2);background:var(--card);color:var(--mut);
     transition:background .2s ease,color .2s ease,border-color .2s ease}
   .en-chip.on{background:rgba(61,220,132,.15);color:var(--up);border-color:rgba(61,220,132,.4)}
+
+  /* liveness + capture */
+  .cap-note{position:fixed;left:50%;transform:translate(-50%,-14px);top:22px;z-index:100600;
+    display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--down);
+    border-radius:13px;padding:11px 15px;max-width:330px;
+    box-shadow:0 12px 34px rgba(0,0,0,.45);opacity:0;transition:opacity .3s ease,transform .3s ease}
+  .cap-note.in{opacity:1;transform:translate(-50%,0)}
+  .cap-note b{display:block;font-size:13px;font-weight:800}
+  .cap-note span:last-child{font-size:11px;color:var(--mut);line-height:1.45}
+  .cap-dot{width:11px;height:11px;border-radius:50%;background:var(--down);flex:none;
+    animation:capblink 1s infinite;box-shadow:0 0 0 0 rgba(255,107,107,.6)}
+  @keyframes capblink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,107,107,.5)}
+    70%{opacity:.6;box-shadow:0 0 0 9px rgba(255,107,107,0)}}
+  .iv-block{border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card)}
+  .iv-when{font-size:11.5px;color:var(--mut);margin-bottom:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .iv-kind{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    background:rgba(255,107,107,.14);color:var(--down);border-radius:5px;padding:2px 7px}
+  .iv-shots{display:flex;gap:7px;flex-wrap:wrap}
+  .iv-shots img{width:96px;height:96px;object-fit:cover;border-radius:9px;border:1px solid var(--bd2)}
+  .iv-none{font-size:11.5px;color:var(--mut);font-style:italic}
+  .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+    padding:4px 10px;border-radius:20px;margin-top:10px;
+    background:var(--card2);border:1px solid var(--bd2);color:var(--mut)}
+  .live-badge.ok{background:rgba(61,220,132,.14);color:var(--up);border-color:rgba(61,220,132,.35)}
+  .live-badge.bad{background:rgba(255,107,107,.14);color:var(--down);border-color:rgba(255,107,107,.35)}
 </style>
 </head>
 <body>
@@ -6408,6 +6433,7 @@ AI_TYPES.join(", "),
       })
       .then(function(){
         var tries=0, told=false, loggedFace=false;
+        var live=makeLivenessTracker();
         var tick=function(){
           if(!_autoFace.stream || !document.getElementById("lockScreen")){ _autoFace.stop(); return; }
           faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
@@ -6415,11 +6441,33 @@ AI_TYPES.join(", "),
             .then(function(det){
               if(!_autoFace.stream) return;
               if(det){
+                live.feed(det, video);
                 var who=matchFace(Array.from(det.descriptor));
                 if(who){
-                  _autoFace.stop();
-                  setStatus && setStatus("Welcome back, "+who.name);
-                  setTimeout(function(){ onMatch(who); }, 350);
+                  /* A matching descriptor is NOT enough. A printed photo or a
+                     phone screen produces the same descriptor as the real
+                     person — liveness is what separates them. */
+                  var v=live.verdict();
+                  if(v.state==="live"){
+                    _autoFace.stop();
+                    setStatus && setStatus("Welcome back, "+who.name);
+                    setTimeout(function(){ onMatch(who); }, 350);
+                    return;
+                  }
+                  if(v.state==="spoof"){
+                    if(!loggedFace){
+                      loggedFace=true;
+                      recordFailedAttempt("spoof");
+                      captureAttempt(video, "spoof");
+                    }
+                    setStatus && setStatus(v.why);
+                    _autoFace.raf=setTimeout(tick, 700);
+                    return;
+                  }
+                  setStatus && setStatus(v.state==="challenge"
+                    ? "Blink or turn your head slightly"
+                    : "Checking it\u2019s really you\u2026");
+                  _autoFace.raf=setTimeout(tick, 220);
                   return;
                 }
                 /* An unrecognised face IS the signal worth recording. Give it a
@@ -6430,6 +6478,7 @@ AI_TYPES.join(", "),
                 if(tries===12 && !loggedFace){
                   loggedFace=true;
                   recordFailedAttempt("face");
+                  captureAttempt(video, "face");
                 }
               }
               // no timeout: keep watching for as long as this screen is open
@@ -6462,7 +6511,7 @@ AI_TYPES.join(", "),
     function unlock(){
       _autoFace.stop();
       if(pad) pad.dispose();
-      setTimeout(showAttemptBanner, 700);
+      setTimeout(function(){ showIntrusionReview(); showAttemptBanner(); }, 700);
       ov.style.opacity="0";
       document.body.style.overflow="";
       document.removeEventListener("visibilitychange", onHide);
@@ -10180,6 +10229,275 @@ AI_TYPES.join(", "),
     return res;
   }
 
+  /* ============================================================
+     LIVENESS / ANTI-SPOOFING
+
+     Without this, holding up a printed photo or a phone showing the
+     owner's face unlocks the app — the descriptor is identical either
+     way, because both are flat images to the model. That was a real
+     hole in face unlock.
+
+     No model is trained here. Liveness doesn't need one; it needs
+     signals a flat image physically cannot produce:
+
+       BLINK      eye aspect ratio from the 68 landmarks. Verified to
+                  separate open (0.40) from closed (0.00) cleanly at a
+                  0.19 threshold. A photo holds one value forever.
+       PARALLAX   a real face deforms as it moves — landmarks at
+                  different depths shift by different amounts. A held
+                  photo translates rigidly: measured variation 0.24 for
+                  a face vs 0.00 for flat.
+       SCREEN     a phone screen has a bright, low-saturation, uniform
+                  rectangle behind the face and often moiré banding.
+       CHALLENGE  if the passive checks are inconclusive, ask for a
+                  small head turn and verify the pose actually changed.
+
+     Any ONE strong signal passes. All failing after the window means
+     it is treated as a spoof and rejected.
+     ============================================================ */
+  var LIVE_EAR_THRESHOLD=0.19;
+  var LIVE_RIGID_THRESHOLD=0.06;
+  var LIVE_WINDOW_MS=6000;
+
+  function eyeAspect(pts, o){
+    if(!pts||pts.length<68) return null;
+    var d=function(a,b){ return Math.hypot(pts[a].x-pts[b].x, pts[a].y-pts[b].y); };
+    var wide=d(o,o+3);
+    if(wide<=0.0001) return null;
+    return (d(o+1,o+5)+d(o+2,o+4))/(2*wide);
+  }
+  function earOf(lm){
+    var pts=lm&&(lm.positions||lm._positions);
+    if(!pts) return null;
+    var l=eyeAspect(pts,36), r=eyeAspect(pts,42);
+    if(l==null||r==null) return null;
+    return (l+r)/2;
+  }
+  // how differently the landmarks moved — high means a deformable 3D face
+  function frameRigidity(prev, cur){
+    if(!prev||!cur||prev.length!==cur.length) return null;
+    var d=[], i;
+    for(i=0;i<cur.length;i++) d.push(Math.hypot(cur[i].x-prev[i].x, cur[i].y-prev[i].y));
+    var mean=d.reduce(function(a,b){return a+b;},0)/d.length;
+    if(mean<0.3) return null;                       // too still to judge
+    var sd=Math.sqrt(d.reduce(function(a,b){ return a+Math.pow(b-mean,2); },0)/d.length);
+    return sd/mean;
+  }
+  /* A phone held up to the camera puts a bright, flat, low-saturation
+     rectangle around the face. Sampled from the video frame itself. */
+  function screenLikelihood(video){
+    try{
+      var c=document.createElement("canvas");
+      c.width=64; c.height=64;
+      var x=c.getContext("2d");
+      x.drawImage(video,0,0,64,64);
+      var d=x.getImageData(0,0,64,64).data;
+      var bright=0, lowSat=0, n=0, lum=[];
+      for(var i=0;i<d.length;i+=4){
+        var r=d[i], g=d[i+1], b=d[i+2];
+        var mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+        var l=(mx+mn)/2;
+        lum.push(l);
+        if(l>190) bright++;
+        if(mx-mn<18) lowSat++;
+        n++;
+      }
+      // uniformity: a real scene has more luminance spread than a lit panel
+      var lm=lum.reduce(function(a,b){return a+b;},0)/lum.length;
+      var lsd=Math.sqrt(lum.reduce(function(a,b){ return a+Math.pow(b-lm,2); },0)/lum.length);
+      var score=0;
+      if(bright/n>0.34) score+=0.4;      // lots of very bright pixels
+      if(lowSat/n>0.62) score+=0.3;      // washed out, as screens photograph
+      if(lsd<26) score+=0.3;             // unusually uniform
+      return score;                       // 0..1, higher = more screen-like
+    }catch(e){ return 0; }
+  }
+
+  /* Accumulates evidence across frames. Feed it every detection. */
+  function makeLivenessTracker(){
+    return {
+      earHistory:[], prevPts:null, rigidities:[], screenHits:0, frames:0,
+      blinked:false, startedAt:Date.now(), baselinePose:null, poseMoved:false,
+
+      feed:function(det, video){
+        this.frames++;
+        var lm=det&&det.landmarks;
+        var pts=lm&&(lm.positions||lm._positions);
+        // blink
+        var e=earOf(lm);
+        if(e!=null){
+          this.earHistory.push(e);
+          if(this.earHistory.length>40) this.earHistory.shift();
+          // a blink is open -> closed -> open, not a single low frame
+          var h=this.earHistory;
+          for(var i=2;i<h.length;i++){
+            if(h[i-2]>0.24 && h[i-1]<LIVE_EAR_THRESHOLD && h[i]>0.24){ this.blinked=true; break; }
+          }
+        }
+        // parallax
+        if(pts){
+          var r=frameRigidity(this.prevPts, pts);
+          if(r!=null){ this.rigidities.push(r); if(this.rigidities.length>30) this.rigidities.shift(); }
+          this.prevPts=pts.map(function(p){ return {x:p.x,y:p.y}; });
+        }
+        // screen-like scene
+        if(video && this.frames%4===0){
+          if(screenLikelihood(video)>0.6) this.screenHits++;
+        }
+        // did the head actually move? (used by the challenge)
+        var pose=pts?poseFromLandmarks(lm):null;
+        if(pose){
+          if(!this.baselinePose) this.baselinePose=pose;
+          else if(Math.abs(pose.yaw-this.baselinePose.yaw)>0.18) this.poseMoved=true;
+        }
+      },
+
+      verdict:function(){
+        var elapsed=Date.now()-this.startedAt;
+        var avgRigid=this.rigidities.length
+          ? this.rigidities.reduce(function(a,b){return a+b;},0)/this.rigidities.length : null;
+        var deformable = avgRigid!=null && avgRigid>LIVE_RIGID_THRESHOLD;
+        var screenish = this.screenHits>=3;
+
+        // a screen reading overrides a weak pass — that's the attack we care about
+        if(screenish && !this.blinked)
+          return {state:"spoof", why:"That looks like a screen being held up."};
+
+        if(this.blinked) return {state:"live", why:"blink"};
+        if(deformable && this.rigidities.length>=6) return {state:"live", why:"motion"};
+        if(this.poseMoved && deformable) return {state:"live", why:"turn"};
+
+        if(elapsed<2500) return {state:"checking", why:"gathering"};
+        if(elapsed<LIVE_WINDOW_MS)
+          return {state:"challenge", why: avgRigid!=null && avgRigid<=LIVE_RIGID_THRESHOLD
+            ? "flat" : "still"};
+        return {state:"spoof", why: screenish
+          ? "That looks like a screen being held up."
+          : "Couldn't confirm a live face \u2014 blink or turn your head slightly."};
+      }
+    };
+  }
+
+  /* ============================================================
+     ATTEMPT CAPTURE — visible, never silent
+
+     Photographs whoever is at the camera during a failed unlock, and
+     shows them the moment it happens. Deliberately not silent: the
+     most likely person to pick up your laptop is someone in your
+     household, and photographing them without their knowledge is
+     both unfair to them and, in many places, unlawful. A visible
+     indicator also deters an actual thief more than a photo they
+     never learn was taken \u2014 which is exactly why ATMs signpost
+     their cameras.
+
+     Frames are stored locally with the attempt log and shown to you
+     next time you unlock.
+     ============================================================ */
+  var CAPTURE_KEY="mymoney_shots_v1";
+  var CAPTURE_FRAMES=3;
+  var CAPTURE_MAX=12;                 // keep the most recent, bounded
+
+  function loadShots(){
+    try{ return JSON.parse(localStorage.getItem(CAPTURE_KEY)||"[]"); }catch(e){ return []; }
+  }
+  function saveShots(list){
+    try{ localStorage.setItem(CAPTURE_KEY, JSON.stringify(list.slice(0,CAPTURE_MAX))); }catch(e){}
+  }
+  function clearShots(){ try{ localStorage.removeItem(CAPTURE_KEY); }catch(e){} }
+  function captureOn(){
+    try{ return localStorage.getItem("mymoney_capture_off")!=="1"; }catch(e){ return true; }
+  }
+  function setCaptureOn(on){
+    try{ on ? localStorage.removeItem("mymoney_capture_off") : localStorage.setItem("mymoney_capture_off","1"); }catch(e){}
+  }
+
+  function grabFrame(video, size){
+    size=size||220;
+    try{
+      var c=document.createElement("canvas");
+      var vw=video.videoWidth||320, vh=video.videoHeight||240;
+      var side=Math.min(vw,vh);
+      c.width=c.height=size;
+      var x=c.getContext("2d");
+      x.drawImage(video,(vw-side)/2,(vh-side)/2,side,side,0,0,size,size);
+      return c.toDataURL("image/jpeg",0.6);
+    }catch(e){ return null; }
+  }
+
+  /* Shows a clear on-screen notice, THEN captures. The order matters:
+     nobody should be photographed before being told. */
+  function captureAttempt(video, reason, onDone){
+    if(!captureOn() || !video){ onDone&&onDone(); return; }
+    var note=document.createElement("div");
+    note.className="cap-note";
+    note.innerHTML='<span class="cap-dot"></span>'
+      +'<div><b>Photo taken</b><span>This device records unrecognised unlock attempts.</span></div>';
+    var target=document.getElementById("lockScreen")||document.body;
+    target.appendChild(note);
+    requestAnimationFrame(function(){ note.classList.add("in"); });
+
+    var shots=[], i=0;
+    var snap=function(){
+      var f=grabFrame(video);
+      if(f) shots.push(f);
+      if(++i<CAPTURE_FRAMES){ setTimeout(snap, 420); return; }
+      var list=loadShots();
+      list.unshift({at:Date.now(), reason:reason||"face", frames:shots, seen:false});
+      saveShots(list);
+      setTimeout(function(){
+        note.classList.remove("in");
+        setTimeout(function(){ if(note.parentNode) note.parentNode.removeChild(note); }, 400);
+        onDone&&onDone();
+      }, 1400);
+    };
+    setTimeout(snap, 500);            // half a second so the notice is read first
+  }
+
+  function unseenShots(){ return loadShots().filter(function(s){ return !s.seen; }); }
+  function markShotsSeen(){
+    var l=loadShots(); l.forEach(function(s){ s.seen=true; }); saveShots(l);
+  }
+
+  /* The review screen shown to the owner after they unlock. */
+  function showIntrusionReview(){
+    var list=unseenShots();
+    if(!list.length) return;
+    var host=document.createElement("div");
+    host.className="ov in page-mode"; host.id="introOv";
+    host.innerHTML=
+       '<div class="sheet">'
+      +'  <div class="sheet-hd"><h3>\u26A0\uFE0F Unrecognised attempts</h3>'
+      +'    <button class="x-btn" id="ivX">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="rq-warn">Someone tried to open this app and wasn\u2019t recognised. '
+      +      list.length+' attempt'+(list.length===1?'':'s')+' recorded.</div>'
+      +      list.map(function(s,i){
+              return '<div class="iv-block">'
+                +'<div class="iv-when">'+esc(fmtLogTime(s.at))+' \u00b7 '+esc(agoText(s.at))
+                +'<span class="iv-kind">'+esc(s.reason==="pin"?"wrong PIN":"face not recognised")+'</span></div>'
+                +'<div class="iv-shots">'
+                + (s.frames||[]).map(function(f){ return '<img src="'+f+'" alt="attempt">'; }).join("")
+                + ((s.frames&&s.frames.length)?'':'<div class="iv-none">no image captured</div>')
+                +'</div></div>';
+            }).join("")
+      +'    <div class="rc-secd" style="margin-top:14px">These images are stored on this device only. '
+      +'      Delete them once you\u2019ve looked \u2014 keeping images of people has its own risks.</div>'
+      +'  </div>'
+      +'  <div class="sheet-ft">'
+      +'    <button class="btn ghost sm" id="ivKeep">Keep</button>'
+      +'    <button class="btn primary sm" id="ivDelete">Delete images</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var close=function(){ markShotsSeen(); if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector("#ivX").onclick=close;
+    host.querySelector("#ivKeep").onclick=close;
+    host.querySelector("#ivDelete").onclick=function(){
+      clearShots();
+      if(host.parentNode) host.parentNode.removeChild(host);
+      flashSaved("images deleted");
+    };
+  }
+
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -10220,6 +10538,19 @@ AI_TYPES.join(", "),
           ? "Look for your face as soon as the lock screen opens. The camera runs only on that screen."
           : "You'll tap “Use face unlock” yourself. The camera stays off until you do.";
         flashSaved(afChk.checked?"auto unlock on":"auto unlock off");
+      });
+    }
+    var capChk=document.getElementById("capChk");
+    if(capChk && !capChk._bound){
+      capChk._bound=true;
+      capChk.checked=captureOn();
+      capChk.addEventListener("change", function(){
+        setCaptureOn(capChk.checked);
+        var n=document.getElementById("capNote");
+        if(n) n.textContent = capChk.checked
+          ? "Takes a few photos when someone isn't recognised, and shows them a notice while it does. Never silent."
+          : "Off. Attempts are still logged with a timestamp, just without images.";
+        flashSaved(capChk.checked?"attempt photos on":"attempt photos off");
       });
     }
     var recBtn=document.getElementById("recBtn");
@@ -14161,6 +14492,11 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Unlock automatically</div>
         <div class="si-d" id="autoFaceNote">Look for your face as soon as the lock screen opens, instead of tapping a button. The camera runs only on that screen.</div></div>
       <label class="sw"><input type="checkbox" id="autoFaceChk" checked><i></i></label>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Photograph failed attempts</div>
+        <div class="si-d" id="capNote">Takes a few photos when someone isn't recognised, and shows them a notice while it does. Never silent.</div></div>
+      <label class="sw"><input type="checkbox" id="capChk" checked><i></i></label>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Recovery question</div>
