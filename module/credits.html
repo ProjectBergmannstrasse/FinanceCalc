@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Credits — FinanceCalc</title><style>
+:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+--bd:#242424;--bd2:#333;--card:#111;--card2:#1f1f1f;--mut:#9a9a9a;--amber:#e0a233}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px calc(72px + env(safe-area-inset-bottom,0px))}
+.m{max-width:640px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin:6px 0 4px}
+.sub{color:var(--mut);font-size:12.5px;margin-bottom:22px}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:24px 0 10px;font-weight:600}
+.cp-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;-webkit-user-select:none;text-decoration:none;color:inherit}
+.cp-row:hover{border-color:var(--bd2)}
+.cp-row:active{background:var(--card2)}
+.cp-row.cp-ok{border-color:var(--amber)}
+.cp-row.cp-ok .cp-tag{color:var(--amber);border-color:var(--amber)}
+.cp-ic{flex:none;font-size:16px;width:20px;text-align:center}
+.cp-main{flex:1;min-width:0}
+.cp-k{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+.cp-v{font-size:13px;font-weight:600;margin-top:2px;word-break:break-all;line-height:1.35}
+.cp-v.mono-wrap{font-size:11.5px;font-weight:500}
+.cp-tag{flex:none;font-size:10.5px;font-weight:700;color:var(--mut);border:1px solid var(--bd2);border-radius:5px;padding:3px 7px}
+.note{color:#5c5c5c;font-size:12px;margin-top:20px;line-height:1.6}
+.note a{color:var(--mut)}
+.pageanim{animation:pageIn .22s cubic-bezier(.22,1,.36,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;display:flex;gap:2px;padding:5px;border-radius:18px;background:rgba(17,17,17,.88);background:color-mix(in srgb, #111 88%, transparent);border:1px solid #333;box-shadow:0 12px 34px rgba(0,0,0,.5);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);width:min(420px,calc(100vw - 24px))}
+.tab{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;background:transparent;color:#9a9a9a;cursor:pointer;padding:8px 4px;min-height:50px;border-radius:14px;font:inherit;-webkit-tap-highlight-color:transparent;transition:color .2s ease,transform .12s ease}
+.tab:active{transform:scale(.93)}
+.tab.on{color:#e0a233}
+.tab-ic{font-size:17px;line-height:1;transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.tab.on .tab-ic{transform:translateY(-1px) scale(1.16)}
+.tab-t{font-size:10.5px;font-weight:700;letter-spacing:.2px}
+.tab-pill{position:absolute;top:5px;bottom:5px;z-index:0;border-radius:14px;background:#1f1f1f;border:1px solid #333;transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.pageanim{animation:none}.tab-pill,.tab,.tab-ic{transition:none}}
+</style></head><body>
+<div class="m pageanim">
+<div class="k">ProjectBergmannstrasse · FinanceCalc</div>
+<h1>Credits</h1>
+<p class="sub">Built and maintained by Zeeshan under the ProjectBergmannstrasse brand — 143 builds, v1.0 → v38.4, and 1,834 extracted modules.</p>
+
+<h2>Contact</h2>
+<a class="cp-row" href="mailto:67ace67a@gmail.com">
+  <span class="cp-ic">✉</span>
+  <div class="cp-main"><div class="cp-k">Email</div><div class="cp-v">67ace67a@gmail.com</div></div>
+  <span class="cp-tag">Write</span>
+</a>
+<a class="cp-row" href="https://github.com/ProjectBergmannstrasse">
+  <span class="cp-ic">⌂</span>
+  <div class="cp-main"><div class="cp-k">GitHub</div><div class="cp-v">github.com/ProjectBergmannstrasse</div></div>
+  <span class="cp-tag">Open</span>
+</a>
+
+<h2>Support</h2>
+<div class="cp-row" id="solRow" role="button" tabindex="0" aria-label="Copy Solana address">
+  <span class="cp-ic">◎</span>
+  <div class="cp-main"><div class="cp-k">Solana</div><div class="cp-v mono-wrap" id="solVal">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</div></div>
+  <span class="cp-tag" id="solTag">Copy</span>
+</div>
+
+<p class="note">Everything here is a single-file, offline-first HTML build — <a href="./index.html">browse the module library</a> or <a href="../index.html">the full version history</a>.</p>
+</div>
+
+<nav class="tabbar" id="pbBar" role="tablist">
+  <button type="button" class="tab" data-act="lib" role="tab" aria-selected="false"><span class="tab-ic">←</span><span class="tab-t">Library</span></button>
+  <button type="button" class="tab" data-act="hist" role="tab" aria-selected="false"><span class="tab-ic">≡</span><span class="tab-t">Versions</span></button>
+  <button type="button" class="tab" data-act="repo" role="tab" aria-selected="false"><span class="tab-ic">⌂</span><span class="tab-t">Repo</span></button>
+  <button type="button" class="tab on" data-act="cr" role="tab" aria-selected="true"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button>
+  <span class="tab-pill" id="pbPill"></span>
+</nav>
+
+<script>
+function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
+if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
+pill.style.left=(b.left-r.left)+"px";pill.style.width=b.width+"px";}
+function setTab(act){Array.prototype.forEach.call(document.querySelectorAll("#pbBar .tab"),function(b){
+var on=b.getAttribute("data-act")===act;b.classList.toggle("on",on);b.setAttribute("aria-selected",on?"true":"false");if(on)movePill(b);});}
+var acts={lib:function(){location.href="./index.html"},hist:function(){location.href="../index.html"},
+repo:function(){location.href="https://github.com/ProjectBergmannstrasse/FinanceCalc"},cr:function(){}};
+Array.prototype.forEach.call(document.querySelectorAll("#pbBar .tab"),function(b){
+b.addEventListener("click",function(){var a=b.getAttribute("data-act");setTab(a);acts[a]();});});
+window.addEventListener("resize",function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on)});
+window.addEventListener("load",function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on)});
+setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on)},60);
+function copySol(){var t=document.getElementById("solTag"),row=document.getElementById("solRow");
+(navigator.clipboard?navigator.clipboard.writeText(document.getElementById("solVal").textContent):Promise.reject())
+.then(function(){row.classList.add("cp-ok");t.textContent="Copied ✓";setTimeout(function(){row.classList.remove("cp-ok");t.textContent="Copy"},1500)},
+function(){t.textContent="Select it"});}
+document.getElementById("solRow").addEventListener("click",copySol);
+document.getElementById("solRow").addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();copySol()}});
+</script></body></html>

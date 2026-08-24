@@ -20,31 +20,30 @@ a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:
 .sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
 .swc{height:34px;border:1px solid #333;margin-bottom:6px}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-.tbar-pad{height:calc(78px + env(safe-area-inset-bottom,0px))}
-.tbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(420px,100vw - 24px);border-radius:18px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;display:flex;z-index:90;box-shadow:0 8px 30px rgba(0,0,0,.5)}
-.tbar .tpill{position:absolute;top:5px;bottom:5px;border-radius:13px;background:#2c2c2c;transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1)}
-.tbar button{flex:1;min-height:50px;background:none;border:0;color:#9a9a9a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;transition:color .2s,transform .12s cubic-bezier(.22,1,.36,1)}
-.tbar button:active{transform:scale(.93)}
-.tbar button .ic{font-size:16px;line-height:1;transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
-.tbar button .lb{font-size:10.5px;letter-spacing:.04em}
-.tbar button[aria-selected="true"]{color:#f2f2f2}
-.tbar button[aria-selected="true"] .ic{transform:translateY(-1px) scale(1.16)}
-.pageanim{animation:tpage .3s cubic-bezier(.22,1,.36,1)}
-@keyframes tpage{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.covl{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s;z-index:95}
-.covl.on{opacity:1;pointer-events:auto}
-.csheet{position:fixed;left:50%;transform:translate(-50%,110%);bottom:0;width:min(460px,100vw);background:#111;border:1px solid #333;border-bottom:0;border-radius:18px 18px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px));z-index:96;transition:transform .3s cubic-bezier(.22,1,.36,1)}
-.csheet.on{transform:translate(-50%,0)}
-.cs-k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
-.cs-t{font-weight:700;font-size:17px;margin:6px 0 14px}
-.cs-row{display:flex;gap:10px;align-items:center;border-top:1px solid #222;padding:10px 0;font-size:12.5px;flex-wrap:wrap}
-.cs-row>span{color:#5c5c5c;width:58px;flex:none;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
-.cs-row a{color:#f2f2f2;border-bottom:1px solid #333;text-decoration:none}
-.cs-row code{color:#f2f2f2;word-break:break-all;font-size:11.5px;flex:1;min-width:180px}
-.cs-copy{background:none;border:1px solid #333;color:#9a9a9a;font:inherit;font-size:11px;padding:4px 10px;cursor:pointer;transition:transform .12s,color .15s,border-color .15s}
-.cs-copy:hover{color:#f2f2f2;border-color:#f2f2f2}.cs-copy:active{transform:scale(.93)}
-.cs-close{margin-top:16px;width:100%;background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:11px;cursor:pointer;transition:transform .12s}
-.cs-close:active{transform:scale(.97)}
+
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+.pageanim{animation:pageIn .22s cubic-bezier(.22,1,.36,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  z-index:90;display:flex;gap:2px;padding:5px;border-radius:18px;
+  background:rgba(17,17,17,.88);
+  background:color-mix(in srgb, #111 88%, transparent);
+  border:1px solid #333;box-shadow:0 12px 34px rgba(0,0,0,.5);
+  backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);
+  width:min(420px,calc(100vw - 24px))}
+.tab{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;border:0;background:transparent;color:#9a9a9a;cursor:pointer;
+  padding:8px 4px;min-height:50px;border-radius:14px;font:inherit;
+  -webkit-tap-highlight-color:transparent;transition:color .2s ease,transform .12s ease}
+.tab:active{transform:scale(.93)}
+.tab.on{color:#e0a233}
+.tab-ic{font-size:17px;line-height:1;transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.tab.on .tab-ic{transform:translateY(-1px) scale(1.16)}
+.tab-t{font-size:10.5px;font-weight:700;letter-spacing:.2px}
+.tab-pill{position:absolute;top:5px;bottom:5px;z-index:0;border-radius:14px;
+  background:#1f1f1f;border:1px solid #333;
+  transition:left .32s cubic-bezier(.22,1,.36,1),width .32s cubic-bezier(.22,1,.36,1);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.pageanim{animation:none}.tab-pill,.tab,.tab-ic{transition:none}}
 .topmail{position:absolute;top:18px;right:0;color:#9a9a9a;font-size:12px;border-bottom:1px solid #333;text-decoration:none;transition:color .15s}
 .topmail:hover{color:#f2f2f2}
 </style></head><body><div class="m">
@@ -54,43 +53,26 @@ a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:
 <h2>Live preview</h2><div class="prev"><div class="pf-switch-nm"><span>Aa 1,234.56 — demo</span></div></div><style>.pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style><p style="color:#5c5c5c;font-size:12px;margin-top:8px">A sample element matching <code>.pf-switch-nm</code> is rendered above with the rule applied. Hover / focus states are live.</p>
 <h2>Source</h2><div class="row"><button class="act ghost" id="copy2">Copy code</button></div><pre>.pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</pre>
 <div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
-</div><div class="tbar-pad"></div>
-<nav class="tbar" role="tablist" aria-label="Actions"><span class="tpill" id="tpill"></span><button role="tab" aria-selected="true"><span class="ic">←</span><span class="lb">Library</span></button><button role="tab" aria-selected="false"><span class="ic">↓</span><span class="lb">Download</span></button><button role="tab" aria-selected="false"><span class="ic">⧉</span><span class="lb">Copy</span></button><button role="tab" aria-selected="false"><span class="ic">✳</span><span class="lb">Credits</span></button></nav>
-<div class="covl" id="covl"></div>
-<div class="csheet" id="csheet" role="dialog" aria-label="Credits">
-<div class="cs-k">Credits · ProjectBergmannstrasse</div>
-<div class="cs-t">Zeeshan · FinanceCalc</div>
-<div class="cs-row"><span>Email</span><a href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a></div>
-<div class="cs-row"><span>GitHub</span><a href="https://github.com/ProjectBergmannstrasse">github.com/ProjectBergmannstrasse</a></div>
-<div class="cs-row"><span>Solana</span><code id="solad">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</code><button class="cs-copy" id="solcp">copy</button></div>
-<button class="cs-close" id="csclose">Close</button>
-</div><script>var C=".pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";document.getElementById("copy2").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(C):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"})});</script><script>
-function tbInit(bs,acts){var pill=document.getElementById("tpill"),sel=0;
-function align(i){var b=bs[i];if(!b)return;pill.style.left=(b.offsetLeft||0)+"px";pill.style.width=(b.offsetWidth||0)+"px"}
-function select(i){sel=i;bs.forEach(function(b,j){b.setAttribute("aria-selected",j===i?"true":"false")});align(i);
-var m=document.querySelector(".m")||document.querySelector(".wrap");
-if(m){m.classList.remove("pageanim");void m.offsetWidth;m.classList.add("pageanim")}}
-if(window.addEventListener){window.addEventListener("resize",function(){align(sel)});window.addEventListener("load",function(){align(sel)});}
-bs.forEach(function(b,i){b.addEventListener("click",function(){select(i);acts[i](select)})});
-align(0);setTimeout(function(){align(sel)},250);return select}
-function crInit(sel){var covl=document.getElementById("covl"),sheet=document.getElementById("csheet");
-function openC(){covl.classList.add("on");sheet.classList.add("on")}
-function closeC(){covl.classList.remove("on");sheet.classList.remove("on");if(sel)sel(0)}
-covl.addEventListener("click",closeC);
-document.getElementById("csclose").addEventListener("click",closeC);
-document.getElementById("solcp").addEventListener("click",function(){var b=this;
-(navigator.clipboard?navigator.clipboard.writeText(document.getElementById("solad").textContent):Promise.reject())
-.then(function(){b.textContent="copied \u2713";setTimeout(function(){b.textContent="copy"},1200)},function(){b.textContent="select it"})});
-return openC}
+</div><nav class="tabbar" id="pbBar" role="tablist"><button type="button" class="tab on" data-act="lib" role="tab" aria-selected="true"><span class="tab-ic">←</span><span class="tab-t">Library</span></button><button type="button" class="tab" data-act="dl" role="tab" aria-selected="false"><span class="tab-ic">↓</span><span class="tab-t">Download</span></button><button type="button" class="tab" data-act="cp" role="tab" aria-selected="false"><span class="tab-ic">⧉</span><span class="tab-t">Copy</span></button><button type="button" class="tab" data-act="cr" role="tab" aria-selected="false"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button><span class="tab-pill" id="pbPill"></span></nav><script>var C=".pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";document.getElementById("copy2").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(C):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"})});</script><script>
+function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
+if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
+pill.style.left=(b.left-r.left)+"px";pill.style.width=b.width+"px";}
+function setTab(act){var btns=document.querySelectorAll("#pbBar .tab");
+Array.prototype.forEach.call(btns,function(b){var on=b.getAttribute("data-act")===act;
+b.classList.toggle("on",on);b.setAttribute("aria-selected",on?"true":"false");if(on)movePill(b);});
+var el=document.querySelector(".m")||document.querySelector(".wrap");
+if(el){el.classList.add("pageanim");el.style.animation="none";void el.offsetWidth;el.style.animation="";}}
+function bindTabs(acts){Array.prototype.forEach.call(document.querySelectorAll("#pbBar .tab"),function(b){
+b.addEventListener("click",function(){var a=b.getAttribute("data-act");setTab(a);if(acts[a])acts[a]();});});
+window.addEventListener("resize",function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);});
+window.addEventListener("load",function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);});
+setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);},60);}
 
-(function(){var F="pf-switch-nm-v1.html";var bs=[].slice.call(document.querySelectorAll(".tbar button"));var openC;
-var select=tbInit(bs,[
- function(){location.href="../index.html"},
- function(s){var a=document.createElement("a");a.href=encodeURIComponent(F);a.download=F;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){s(0)},600)},
- function(s){var pre=document.querySelector("pre");
+bindTabs({
+ lib:function(){location.href="../index.html"},
+ dl:function(){var a=document.createElement("a");a.href=encodeURIComponent("pf-switch-nm-v1.html");a.download="pf-switch-nm-v1.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){setTab("lib")},600)},
+ cp:function(){var pre=document.querySelector("pre");
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
-  .then(function(){setTimeout(function(){s(0)},800)},function(){});},
- function(){openC()}
-]);
-openC=crInit(select);
-})();</script></body></html>
+  .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
+ cr:function(){location.href="../credits.html"}
+});</script></body></html>
