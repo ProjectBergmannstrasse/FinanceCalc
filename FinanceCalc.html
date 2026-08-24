@@ -1198,6 +1198,39 @@
   .ag-fb{font-size:12px;color:var(--mut);line-height:1.55}
   .ag-slider{width:100%;accent-color:var(--up);margin:6px 0 4px}
   .ag-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
+
+  /* ── history: actions + deleted ──────────────────────────────── */
+  .hs-card{display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:13px;
+    border:1px solid var(--bd);background:var(--card);margin-bottom:8px;
+    animation:rise .2s backwards;transition:border-color .15s ease,transform .1s ease}
+  .hs-card:hover{border-color:var(--bd2)}
+  .hs-ic{width:34px;height:34px;flex:none;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;background:var(--card2);border:1px solid var(--bd)}
+  .hs-ic.add{background:rgba(61,220,132,.14);border-color:rgba(61,220,132,.3)}
+  .hs-ic.del{background:rgba(255,107,107,.14);border-color:rgba(255,107,107,.3)}
+  .hs-ic.edit{background:rgba(244,183,63,.14);border-color:rgba(244,183,63,.3)}
+  .hs-main{flex:1;min-width:0}
+  .hs-t{font-size:13.5px;font-weight:700;line-height:1.35;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hs-sub{font-size:11px;color:var(--mut);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .hs-dot{width:3px;height:3px;border-radius:50%;background:var(--bd2);flex:none}
+  .hs-amt{font-size:14px;font-weight:800;white-space:nowrap;flex:none}
+  .hs-amt.in{color:var(--up)} .hs-amt.out{color:var(--down)}
+  .hs-btn{flex:none;font-size:12px;font-weight:700;padding:7px 13px;border-radius:20px;
+    border:1px solid var(--bd2);background:var(--card2);color:var(--tx);cursor:pointer;
+    transition:background .15s ease,transform .1s ease}
+  .hs-btn:hover{background:var(--bd)}
+  .hs-btn:active{transform:scale(.94)}
+  .hs-pill{font-size:9.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 7px;border-radius:5px;background:var(--card2);color:var(--mut);border:1px solid var(--bd)}
+  .hs-pill.soon{background:rgba(255,107,107,.14);color:var(--down);border-color:rgba(255,107,107,.3)}
+  .hs-day{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--mut);margin:16px 2px 8px}
+  .hs-day:first-child{margin-top:2px}
+  .hs-empty{text-align:center;padding:32px 16px;color:var(--mut)}
+  .hs-empty .he-ic{font-size:30px;opacity:.4;margin-bottom:10px}
+  .hs-empty .he-t{font-size:13px;color:var(--tx);font-weight:700;margin-bottom:5px}
+  .hs-empty .he-d{font-size:11.5px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -4646,20 +4679,42 @@ AI_TYPES.join(", "),
     var box=document.getElementById("trashList");
     if(!box) return;
     var items=trashList(), sym=state.currency;
-    document.getElementById("trashBtns").style.display=items.length?"":"none";
-    if(!items.length){ box.innerHTML='<div class="tr-empty-msg">Nothing deleted recently.</div>'; return; }
-    box.innerHTML=items.slice(0,60).map(function(item,i){
+    var btns=document.getElementById("trashBtns");
+    if(btns) btns.style.display=items.length?"":"none";
+    if(!items.length){
+      box.innerHTML='<div class="hs-empty"><div class="he-ic">\uD83D\uDDD1\uFE0F</div>'
+        +'<div class="he-t">Nothing deleted recently</div>'
+        +'<div class="he-d">Deleted entries wait here for '+TRASH_DAYS+' days<br>before they\u2019re cleared.</div></div>';
+      return;
+    }
+    /* Same card shape as the action list, grouped by the day it was deleted,
+       showing the amount and how long is left — the old version buried all
+       of that in one grey line. */
+    var html="", lastDay="";
+    items.slice(0,60).forEach(function(item,i){
       var t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||"?"};
       var nm=(t.note||t.cat||meta.label||"Entry");
       var left=trashDaysLeft(item);
       var when = left<=0 ? "going now" : (left===1 ? "1 day left" : left+" days left");
-      return '<div class="tr-item" data-i="'+i+'">'
-        +'<div class="tr-item-main"><div class="tr-item-nm">'+esc(nm)+'</div>'
-        +'<div class="tr-item-sub">'+esc(t.date||"")+' · '+esc(meta.label)+(photosOf(t).length?" · 📎"+(photosOf(t).length>1?photosOf(t).length:""):"")+' · <span class="'+(left<=5?"tr-soon":"")+'">'+when+'</span></div></div>'
-        +'<div class="tr-item-amt">'+fmt(num(t.amount),sym)+'</div>'
-        +'<button type="button" class="tr-item-btn" data-i="'+i+'">Restore</button>'
+      var day=dayHeading(item.at||Date.now());
+      if(day!==lastDay){ html+='<div class="hs-day">deleted '+esc(day)+'</div>'; lastDay=day; }
+      var delta=balDelta(t);
+      var pics=photosOf(t).length;
+      html+='<div class="hs-card" style="animation-delay:'+Math.min(i*22,220)+'ms">'
+        +'<div class="hs-ic del">'+(meta.label||"?").charAt(0)+'</div>'
+        +'<div class="hs-main"><div class="hs-t">'+esc(nm)+'</div>'
+        +'<div class="hs-sub"><span>'+esc(t.date||"no date")+'</span>'
+        +'<span class="hs-dot"></span><span>'+esc(meta.label)+'</span>'
+        + (pics?'<span class="hs-dot"></span><span>\uD83D\uDCCE'+(pics>1?pics:"")+'</span>':"")
+        +'<span class="hs-pill'+(left<=5?" soon":"")+'">'+esc(when)+'</span>'
+        +'</div></div>'
+        +'<div class="hs-amt '+(delta>0?"in":delta<0?"out":"")+'">'
+        + (delta>0?"+":delta<0?"\u2212":"")+fmt(Math.abs(num(t.amount)),sym)+'</div>'
+        +'<button type="button" class="hs-btn tr-item-btn" data-i="'+i+'">Restore</button>'
         +'</div>';
-    }).join("")+(items.length>60?'<div class="tr-empty-msg">…and '+(items.length-60)+' more</div>':"");
+    });
+    if(items.length>60) html+='<div class="hs-empty" style="padding:14px"><div class="he-d">\u2026and '+(items.length-60)+' more</div></div>';
+    box.innerHTML=html;
     Array.prototype.forEach.call(box.querySelectorAll(".tr-item-btn"), function(b){
       b.addEventListener("click", function(){
         var tx=restoreFromTrash(+b.getAttribute("data-i"));
@@ -11325,20 +11380,51 @@ AI_TYPES.join(", "),
     if(s<3600) return Math.floor(s/60)+"m ago";
     return Math.floor(s/3600)+"h ago";
   }
+  /* Actions grouped by day, each an icon + what changed + when.
+     The old version was a flat list of bordered rows with no sense of
+     what any change actually did. */
+  function actionIcon(label){
+    var l=String(label||"").toLowerCase();
+    if(/delet|remov|eras|trash/.test(l)) return {c:"del", i:"\uD83D\uDDD1\uFE0F"};
+    if(/edit|updat|chang|renam/.test(l)) return {c:"edit", i:"\u270F\uFE0F"};
+    if(/add|creat|log|new|import/.test(l)) return {c:"add", i:"\u2795"};
+    if(/undo|restor|revert/.test(l))      return {c:"", i:"\u21A9\uFE0F"};
+    return {c:"", i:"\u2022"};
+  }
+  function dayHeading(ms){
+    var d=new Date(ms), now=new Date();
+    var same=function(a,b){ return a.toDateString()===b.toDateString(); };
+    if(same(d,now)) return "Today";
+    var y=new Date(now); y.setDate(y.getDate()-1);
+    if(same(d,y)) return "Yesterday";
+    try{ return d.toLocaleDateString(undefined,{weekday:"long", day:"numeric", month:"long"}); }
+    catch(e){ return d.toDateString(); }
+  }
   function renderActions(){
     var box=document.getElementById("actList");
     if(!box) return;
     var n=document.getElementById("actCount");
     if(n) n.textContent = ACTIONS.length ? ACTIONS.length+" change"+(ACTIONS.length===1?"":"s") : "";
     if(!ACTIONS.length){
-      box.innerHTML='<div class="hint" style="margin:0">Nothing to undo yet. Changes you make appear here, newest first.</div>';
+      box.innerHTML='<div class="hs-empty"><div class="he-ic">\u21BA</div>'
+        +'<div class="he-t">Nothing to undo yet</div>'
+        +'<div class="he-d">Every change you make is recorded here, newest first,<br>so you can step back at any point.</div></div>';
       return;
     }
-    box.innerHTML=ACTIONS.map(function(a,i){
-      return '<div class="act-row">'
-        +'<div class="act-t"><b>'+esc(a.label)+'</b><span class="act-w">'+actionAgo(a.at)+'</span></div>'
-        +'<button type="button" class="btn ghost sm act-u" data-i="'+i+'">Undo</button></div>';
-    }).join("");
+    var html="", lastDay="";
+    ACTIONS.forEach(function(a,i){
+      var day=dayHeading(a.at);
+      if(day!==lastDay){ html+='<div class="hs-day">'+esc(day)+'</div>'; lastDay=day; }
+      var ic=actionIcon(a.label);
+      html+='<div class="hs-card" style="animation-delay:'+Math.min(i*22,220)+'ms">'
+        +'<div class="hs-ic '+ic.c+'">'+ic.i+'</div>'
+        +'<div class="hs-main"><div class="hs-t">'+esc(a.label)+'</div>'
+        +'<div class="hs-sub"><span>'+esc(actionAgo(a.at))+'</span>'
+        + (i>0 ? '<span class="hs-dot"></span><span>undoes '+i+' later change'+(i===1?"":"s")+'</span>' : '')
+        +'</div></div>'
+        +'<button type="button" class="hs-btn act-u" data-i="'+i+'">Undo</button></div>';
+    });
+    box.innerHTML=html;
     Array.prototype.forEach.call(box.querySelectorAll(".act-u"), function(b){
       b.addEventListener("click", function(){ undoAction(+b.getAttribute("data-i")); });
     });
