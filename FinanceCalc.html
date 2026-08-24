@@ -1332,6 +1332,20 @@
   .led-more button:hover{background:var(--bd)}
   .led-more button:active{transform:scale(.98)}
   .led-more span{font-size:11px;font-weight:400;color:var(--mut)}
+
+  /* storage durability */
+  .dura-card{border-radius:13px;padding:13px 14px;border:1px solid var(--bd);background:var(--card)}
+  .dura-card.good{background:rgba(61,220,132,.1);border-color:rgba(61,220,132,.32)}
+  .dura-card.ok{background:rgba(61,220,132,.07);border-color:rgba(61,220,132,.22)}
+  .dura-card.warn{background:rgba(244,183,63,.1);border-color:rgba(244,183,63,.32)}
+  .dura-card.bad{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.32)}
+  .dura-h{font-size:13px;font-weight:800;margin-bottom:5px;line-height:1.35}
+  .dura-d{font-size:11.5px;color:var(--mut);line-height:1.6}
+  .dura-bar{height:5px;background:var(--card2);border-radius:3px;overflow:hidden;margin:10px 0 5px}
+  .dura-bar div{height:100%;background:var(--up);border-radius:3px;transition:width .4s ease}
+  .dura-use{font-size:10.5px;color:var(--mut)}
+  .dura-acts{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+  .dura-acts .btn{width:100%}
 </style>
 </head>
 <body>
@@ -9274,6 +9288,176 @@ AI_TYPES.join(", "),
     };
   }
 
+  /* ============================================================
+     STORAGE DURABILITY
+
+     Browser storage is not permanent, and the app should say so
+     rather than let someone assume their records are safe:
+
+       · Low disk space  → the browser evicts least-recently-used
+                           origins and deletes their databases
+       · Safari          → wipes script-writable storage after 7
+                           days without a visit (ITP)
+       · Private window  → everything vanishes when the tab closes
+
+     Two real defences, in order of strength:
+
+       1. A folder you choose (File System Access). A real file on
+          your disk. No eviction, no 7-day rule, survives clearing
+          the browser entirely. Chrome/Edge desktop only.
+       2. navigator.storage.persist(). Asks the browser to exempt
+          this origin from eviction. Chrome usually grants it once
+          the app looks used; Firefox prompts; Safari ignores it —
+          so it helps, but it is not a guarantee, and the UI says so.
+
+     Backups remain the only thing that survives losing the device.
+     ============================================================ */
+  var DURA_KEY="mymoney_dura_v1";
+
+  function isPrivateWindow(){
+    // A private window gives a tiny quota. Not a perfect test, but the
+    // quota gap between normal and private is large and reliable enough.
+    try{
+      if(!navigator.storage || !navigator.storage.estimate) return Promise.resolve(false);
+      return navigator.storage.estimate().then(function(e){
+        return (e && e.quota && e.quota < 300*1024*1024) || false;
+      }).catch(function(){ return false; });
+    }catch(e){ return Promise.resolve(false); }
+  }
+  function isSafari(){
+    var ua=navigator.userAgent||"";
+    return /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
+  }
+  function persistState(){
+    try{
+      if(!navigator.storage || !navigator.storage.persisted) return Promise.resolve("unsupported");
+      return navigator.storage.persisted().then(function(p){ return p?"granted":"not-granted"; })
+        .catch(function(){ return "unsupported"; });
+    }catch(e){ return Promise.resolve("unsupported"); }
+  }
+  function requestPersist(){
+    try{
+      if(!navigator.storage || !navigator.storage.persist) return Promise.resolve(false);
+      return navigator.storage.persist().catch(function(){ return false; });
+    }catch(e){ return Promise.resolve(false); }
+  }
+  function storageEstimate(){
+    try{
+      if(!navigator.storage || !navigator.storage.estimate) return Promise.resolve(null);
+      return navigator.storage.estimate().catch(function(){ return null; });
+    }catch(e){ return Promise.resolve(null); }
+  }
+
+  /* One combined verdict, so the UI can be blunt about the real risk. */
+  function durabilityReport(){
+    return Promise.all([persistState(), isPrivateWindow(), storageEstimate()])
+      .then(function(r){
+        var persisted=r[0], priv=r[1], est=r[2];
+        var usingFolder = (typeof TierFSA!=="undefined" && TierFSA._dirHandle) ? true : false;
+        var level, headline, detail, actions=[];
+        if(priv){
+          level="bad";
+          headline="Private window — everything is lost when you close it";
+          detail="Nothing written here survives this tab. Export a backup before you finish, or reopen the app in a normal window.";
+          actions.push("backup");
+        } else if(usingFolder){
+          level="good";
+          headline="Saving to a folder on your disk";
+          detail="A real file, outside the browser's control. Not affected by eviction, Safari's 7-day rule, or clearing browser data.";
+        } else if(persisted==="granted"){
+          level="ok";
+          headline="Storage marked persistent";
+          detail="The browser has agreed not to evict this app's data when disk space runs low."
+            + (isSafari() ? " Safari still clears script storage after 7 days without a visit, so keep backups." : "");
+          if(isSafari()) { level="warn"; actions.push("folder","backup"); } else actions.push("folder");
+        } else {
+          level="warn";
+          headline="Storage is evictable";
+          detail = isSafari()
+            ? "Safari deletes this app's storage after 7 days without opening it, and may clear it earlier if disk space runs low."
+            : "If your disk fills up, the browser can delete this app's data to make room. It picks the sites you haven't opened recently.";
+          actions.push("persist","folder","backup");
+        }
+        var pct=null;
+        if(est && est.quota) pct=Math.min(100, Math.round((est.usage||0)/est.quota*100));
+        return {level:level, headline:headline, detail:detail, actions:actions,
+                persisted:persisted, priv:priv, folder:usingFolder,
+                usage:est&&est.usage, quota:est&&est.quota, pct:pct};
+      });
+  }
+  function fmtBytes(b){
+    if(b==null) return "—";
+    if(b>=1073741824) return (b/1073741824).toFixed(1)+" GB";
+    if(b>=1048576) return (b/1048576).toFixed(1)+" MB";
+    if(b>=1024) return (b/1024).toFixed(0)+" KB";
+    return b+" B";
+  }
+
+  /* Ask for persistence quietly on boot, once. Chrome grants it silently
+     when the app looks genuinely used, so there's no prompt to annoy anyone. */
+  function autoRequestPersist(){
+    try{ if(localStorage.getItem(DURA_KEY)==="asked") return; }catch(e){}
+    persistState().then(function(st){
+      if(st!=="not-granted") return;
+      // only once there's something worth protecting
+      if(!state.transactions || state.transactions.length<5) return;
+      requestPersist().then(function(ok){
+        try{ localStorage.setItem(DURA_KEY,"asked"); }catch(e){}
+        if(ok) refreshDurabilityUI();
+      });
+    });
+  }
+
+  function refreshDurabilityUI(){
+    var box=document.getElementById("duraBox");
+    if(!box) return;
+    durabilityReport().then(function(r){
+      var icon = r.level==="good" ? "\uD83D\uDD12" : r.level==="ok" ? "\u2713"
+               : r.level==="bad" ? "\u26A0\uFE0F" : "\u26A0\uFE0F";
+      var html='<div class="dura-card '+r.level+'">'
+        +'<div class="dura-h">'+icon+' '+esc(r.headline)+'</div>'
+        +'<div class="dura-d">'+esc(r.detail)+'</div>';
+      if(r.quota){
+        html+='<div class="dura-bar"><div style="width:'+(r.pct||0)+'%"></div></div>'
+          +'<div class="dura-use">'+fmtBytes(r.usage)+' of '+fmtBytes(r.quota)+' used</div>';
+      }
+      html+='</div>';
+      if(r.actions.length){
+        html+='<div class="dura-acts">';
+        if(r.actions.indexOf("persist")>=0)
+          html+='<button class="btn ghost sm" id="duraPersist">Ask to keep permanently</button>';
+        if(r.actions.indexOf("folder")>=0 && window.showDirectoryPicker)
+          html+='<button class="btn ghost sm" id="duraFolder">Save to a folder instead</button>';
+        if(r.actions.indexOf("backup")>=0)
+          html+='<button class="btn ghost sm" id="duraBackup">Export a backup now</button>';
+        html+='</div>';
+      }
+      box.innerHTML=html;
+      var pb=document.getElementById("duraPersist");
+      if(pb) pb.addEventListener("click", function(){
+        pb.disabled=true; pb.textContent="Asking\u2026";
+        requestPersist().then(function(ok){
+          flashSaved(ok?"storage marked persistent":"the browser declined");
+          if(!ok) appModal({title:"The browser said no",
+            message:"Browsers only grant this once an app looks genuinely used \u2014 try again after a few more visits. "
+              +"Saving to a folder works regardless, and so do backups.", confirmText:"OK"});
+          refreshDurabilityUI();
+        });
+      });
+      var fb=document.getElementById("duraFolder");
+      if(fb) fb.addEventListener("click", function(){
+        var pick=document.getElementById("tierPickFolder");
+        if(pick) pick.click();
+        else flashSaved("folder saving needs Chrome or Edge on desktop");
+      });
+      var bb=document.getElementById("duraBackup");
+      if(bb) bb.addEventListener("click", function(){
+        var ex=document.getElementById("exportBtn")||document.getElementById("backupBtn");
+        if(ex) ex.click(); else flashSaved("open Extra \u203a Backup & restore");
+      });
+    });
+  }
+
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -13167,6 +13351,8 @@ AI_TYPES.join(", "),
     loadAttempts();
     bindRecoveryEntry();
     watchPageOverlays();
+    refreshDurabilityUI();
+    setTimeout(autoRequestPersist, 3000);
     bindAllDatePickers();
     /* Sheets are built at runtime, so watch for date inputs added later
        rather than hunting down every place that creates one. */
@@ -13347,6 +13533,8 @@ AI_TYPES.join(", "),
   <!-- Storage tier dashboard -->
   <div style="padding:0 20px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);margin-bottom:12px">Storage</div>
+    <div class="hint" style="margin:0 0 12px">Browser storage isn't permanent. Low disk space, Safari's 7-day rule and private windows can all wipe it.</div>
+    <div id="duraBox" style="margin-bottom:14px"></div>
     <div class="hint">Where your data actually lives. It tries these in order and falls back automatically — nothing here needs to be touched unless you want to.</div>
     <div id="tierList"></div>
     <div class="data-btns" style="margin-top:12px">
