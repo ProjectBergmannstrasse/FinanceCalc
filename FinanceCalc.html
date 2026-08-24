@@ -1323,6 +1323,15 @@
   .pe-tips{margin-top:18px;padding-top:14px;border-top:1px solid var(--bd);
     display:flex;flex-direction:column;gap:7px}
   .pe-tip{font-size:11.5px;color:var(--mut);line-height:1.45}
+
+  .led-more{padding:14px 10px;text-align:center}
+  .led-more button{width:100%;padding:13px;border-radius:12px;border:1px solid var(--bd2);
+    background:var(--card2);color:var(--tx);font:inherit;font-size:13px;font-weight:700;cursor:pointer;
+    display:flex;flex-direction:column;gap:3px;align-items:center;
+    transition:background .15s ease,transform .1s ease}
+  .led-more button:hover{background:var(--bd)}
+  .led-more button:active{transform:scale(.98)}
+  .led-more span{font-size:11px;font-weight:400;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -2325,7 +2334,10 @@
   // Both the search filter and the export checkboxes are transient UI state scoped to
   // whichever portfolio is on screen — carrying them across a switch means the export
   // button counts entries that no longer exist in the ledger you're looking at.
+  var LEDGER_STEP=200;      // rows rendered per page — keeps the DOM small
+  var ledgerShown=LEDGER_STEP;
   function resetLedgerView(){
+    ledgerShown=LEDGER_STEP;
     searchQuery="";
     var sEl=document.getElementById("ledSearch"); if(sEl) sEl.value="";
     selectedIds={};
@@ -11482,7 +11494,14 @@ AI_TYPES.join(", "),
       return;
     }
     var html="";
-    list.forEach(function(t){
+    /* Only build rows for what's on screen. Every entry used to become a DOM
+       row with its own buttons and handlers — at 100k entries that's hundreds
+       of thousands of nodes and the tab freezes. A "show more" window keeps
+       the DOM small no matter how much history there is. */
+    var _total=list.length;
+    if(ledgerShown<LEDGER_STEP) ledgerShown=LEDGER_STEP;
+    var _shown=Math.min(ledgerShown, _total);
+    list.slice(0, _shown).forEach(function(t){
       var d=t.date.split("-"), dd=(+d[2]), mm=MONTHS[(+d[1])-1];
       var meta=TYPE_META[t.type]||{label:t.type};
       var db=balDelta(t), dd2=debtDelta(t), ds=savDelta(t);
@@ -11513,7 +11532,18 @@ AI_TYPES.join(", "),
           +'<button class="del" data-id="'+t.id+'" title="Delete">\xd7</button>'
           +'</div>';
     });
+    // a "show more" footer instead of rendering the entire history
+    if(_total>_shown){
+      var _left=_total-_shown;
+      html+='<div class="led-more"><button type="button" id="ledMoreBtn">'
+        +'Show '+Math.min(LEDGER_STEP,_left).toLocaleString()+' more'
+        +'<span>'+_left.toLocaleString()+' older entr'+(_left===1?"y":"ies")+'</span></button></div>';
+    }
     led.innerHTML=html;
+    var _more=document.getElementById("ledMoreBtn");
+    if(_more) _more.addEventListener("click", function(){
+      ledgerShown+=LEDGER_STEP; render();
+    });
     Array.prototype.forEach.call(led.querySelectorAll(".del"), function(b){
       b.addEventListener("click", function(e){
         e.stopPropagation();
