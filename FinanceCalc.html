@@ -6511,7 +6511,13 @@ AI_TYPES.join(", "),
     function unlock(){
       _autoFace.stop();
       if(pad) pad.dispose();
-      setTimeout(function(){ showIntrusionReview(); showAttemptBanner(); }, 700);
+      setTimeout(function(){
+        // These both opened an overlay at the same moment, so the plain-text
+        // banner landed on top of the one with the photos — which is why a
+        // face failure looked like it had no image. One screen now.
+        if(unseenShots().length) showIntrusionReview();
+        else showAttemptBanner();
+      }, 700);
       ov.style.opacity="0";
       document.body.style.overflow="";
       document.removeEventListener("visibilitychange", onHide);
@@ -10462,6 +10468,11 @@ AI_TYPES.join(", "),
   function showIntrusionReview(){
     var list=unseenShots();
     if(!list.length) return;
+    // attempts recorded without an image (capture off, or no camera) still belong here
+    var shotTimes=list.map(function(s){ return s.at; });
+    var textOnly=unseenAttempts().filter(function(a){
+      return !shotTimes.some(function(t){ return Math.abs(t-a.at)<4000; });
+    });
     var host=document.createElement("div");
     host.className="ov in page-mode"; host.id="introOv";
     host.innerHTML=
@@ -10488,11 +10499,12 @@ AI_TYPES.join(", "),
       +'    <button class="btn primary sm" id="ivDelete">Delete images</button></div>'
       +'</div>';
     document.body.appendChild(host);
-    var close=function(){ markShotsSeen(); if(host.parentNode) host.parentNode.removeChild(host); };
+    var close=function(){ markShotsSeen(); markAttemptsSeen();
+      if(host.parentNode) host.parentNode.removeChild(host); };
     host.querySelector("#ivX").onclick=close;
     host.querySelector("#ivKeep").onclick=close;
     host.querySelector("#ivDelete").onclick=function(){
-      clearShots();
+      clearShots(); markAttemptsSeen();
       if(host.parentNode) host.parentNode.removeChild(host);
       flashSaved("images deleted");
     };
