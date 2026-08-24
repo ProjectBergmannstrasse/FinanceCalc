@@ -928,7 +928,7 @@
   /* App lock */
   #lockScreen{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;
     align-items:center;justify-content:center;padding:20px;transition:opacity .22s ease;outline:none}
-  .lk-box{width:100%;max-width:300px;text-align:center}
+  .lk-box{width:100%;max-width:320px;text-align:center}
   .lk-icon{font-size:38px;margin-bottom:6px}
   .lk-title{font-size:17px;font-weight:800;margin-bottom:4px}
   .lk-sub{font-size:12.5px;color:var(--mut);min-height:18px;margin-bottom:18px}
@@ -937,7 +937,7 @@
     transition:background .15s ease,border-color .15s ease,transform .15s ease}
   .lk-dot.on{background:var(--tx);border-color:var(--tx);transform:scale(1.15)}
   .lk-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
-  .lk-key{height:58px;border-radius:50%;border:1px solid var(--bd2);background:var(--card);
+  .lk-key{height:64px;border-radius:50%;border:1px solid var(--bd2);background:var(--card);
     color:var(--tx);font:inherit;font-size:20px;font-weight:600;cursor:pointer;
     transition:transform .1s ease,background .15s ease}
   .lk-key:hover{background:var(--card2)}
@@ -957,6 +957,19 @@
   .sw input:focus-visible + i{outline:2px solid var(--cool);outline-offset:2px}
   /* PIN setup + face sheets */
   .pin-sheet{max-width:340px}
+  /* In page mode the sheet fills the screen; the keypad centres itself in
+     that space instead of sitting in a narrow 340px column. */
+  .ov.page-mode .pin-sheet{max-width:100%}
+  .ov.page-mode .pin-sheet .sheet-bd{display:flex;flex-direction:column;justify-content:center;
+    max-width:360px}
+  .ov.page-mode #pinPad{max-width:280px}
+  .ov.page-mode .lk-key{height:66px;font-size:22px}
+  .ov.page-mode .lk-dots{margin-bottom:26px}
+  .ov.page-mode .face-sheet{max-width:100%}
+  .ov.page-mode .en-ring-wrap{width:280px;height:280px}
+  .ov.page-mode .en-ticks{width:280px;height:280px}
+  .ov.page-mode .en-frame{top:26px;left:26px;width:228px;height:228px}
+  .ov.page-mode .face-frame{width:250px;height:250px}
   .pin-sub{font-size:12px;color:var(--mut);line-height:1.55;margin-bottom:16px}
   .pin-err{color:var(--down);font-size:12px;font-weight:600;min-height:16px;
     margin:2px 0 12px;display:none;animation:rise .18s}
@@ -6756,15 +6769,35 @@ AI_TYPES.join(", "),
   var _faceApiReady=false, _faceApiLoading=null;
   var FACEAPI_URL="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js";
   var FACEAPI_MODELS="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/";
+  /* Running inside a frame, the sandbox blocks the external model download
+     outright. Say so before starting rather than after a 20-second wait. */
+  function inFrame(){ try{ return window.self!==window.top; }catch(e){ return true; } }
   function loadFaceApi(onProgress){
     if(_faceApiReady) return Promise.resolve(true);
     if(_faceApiLoading) return _faceApiLoading;
+    if(inFrame() && !window.faceapi){
+      return Promise.reject(new Error("Face recognition needs a one-time model download, and this "
+        +"app is running inside a frame where external downloads are blocked. Download the file and "
+        +"open it in its own tab \u2014 everything else works here."));
+    }
     _faceApiLoading=new Promise(function(resolve,reject){
       if(onProgress) onProgress("Fetching the face model (~6MB, once)…");
+      /* A script blocked by a sandbox or CSP often fires NEITHER onload nor
+         onerror — it simply never resolves, and the UI sits on "Fetching…"
+         forever. A timeout is the only way to notice. */
+      var settled=false;
+      var timer=setTimeout(function(){
+        if(settled) return;
+        settled=true; _faceApiLoading=null;
+        reject(new Error("The face model couldn't load. If this app is running inside a frame, "
+          +"external downloads are blocked — open the file in its own tab. Otherwise check your connection."));
+      }, 20000);
+      var finish=function(fn){ return function(v){ if(settled) return; settled=true; clearTimeout(timer); fn(v); }; };
+      var ok=finish(resolve), fail=finish(function(e){ _faceApiLoading=null; reject(e); });
       var sc=document.createElement("script");
       sc.src=FACEAPI_URL;
       sc.onload=function(){
-        if(!window.faceapi){ reject(new Error("face-api didn't load")); return; }
+        if(!window.faceapi){ fail(new Error("face-api loaded but didn't register.")); return; }
         if(onProgress) onProgress("Loading model weights…");
         Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(FACEAPI_MODELS),
@@ -6773,10 +6806,10 @@ AI_TYPES.join(", "),
         ]).then(function(){
           _faceApiReady=true; faceCfg.model=true; saveFace();
           if(onProgress) onProgress("Model ready.");
-          resolve(true);
-        }).catch(reject);
+          ok(true);
+        }).catch(fail);
       };
-      sc.onerror=function(){ reject(new Error("Couldn't download the face model — check your connection.")); };
+      sc.onerror=function(){ fail(new Error("Couldn't download the face model — check your connection.")); };
       document.head.appendChild(sc);
     });
     return _faceApiLoading;
@@ -7179,6 +7212,18 @@ AI_TYPES.join(", "),
       }
     });
     if(!mBtn) return;
+    if(inFrame() && !_faceApiReady && !faceCfg.model){
+      mBtn.textContent="Needs own tab"; mBtn.disabled=false;
+      mBtn.classList.add("btn-muted");
+      mBtn.onclick=function(){
+        appModal({title:"Open in its own tab",
+          message:"The face model is a one-time ~6MB download, and a framed page can't fetch it. "
+            +"Download this file and open it directly \u2014 face unlock will work there.",
+          confirmText:"OK"});
+      };
+      if(mNote){ mNote.textContent="Blocked while running inside a frame."; mNote.style.color="var(--amber)"; }
+      return;
+    }
     if(_faceApiReady || faceCfg.model){
       mBtn.textContent="Ready"; mBtn.disabled=true;
       if(mNote){ mNote.textContent="Downloaded and cached — face unlock works offline."; mNote.style.color="var(--up)"; }
@@ -8204,6 +8249,16 @@ AI_TYPES.join(", "),
         : "In Chrome or Edge: click the <b>\uD83D\uDD12 icon</b> by the address bar, allow Camera, then reload.";
     }
     function start(){
+      if(inFrame() && !_faceApiReady && !window.faceapi){
+        blocked.style.display=""; video.style.display="none";
+        stepEl.textContent="Not available in a frame";
+        stepEl.style.color="var(--amber)";
+        hintEl.textContent="The face model can't be downloaded inside a frame. Open the file in its own tab.";
+        fix.style.display="";
+        var r0=host.querySelector("#enRetry"); if(r0) r0.style.display="none";
+        var s0=host.querySelector("#enSkip"); if(s0) s0.style.display="none";
+        return;
+      }
       if(cameraBlocked()){
         blocked.style.display=""; video.style.display="none";
         stepEl.textContent="Camera access is switched off";
