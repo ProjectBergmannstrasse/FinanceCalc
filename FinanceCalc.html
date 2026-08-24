@@ -1172,6 +1172,32 @@
   .en-hint{text-align:center;font-size:12.5px;color:var(--mut);min-height:20px;margin-top:5px;line-height:1.5}
 
   .btn-muted{opacity:.55}
+
+  /* ── agents ──────────────────────────────────────────────────── */
+  .ag-intro{font-size:12px;color:var(--mut);line-height:1.55;margin-bottom:12px}
+  .ag-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .ag-row{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;
+    border:1px solid var(--bd);background:var(--card);opacity:.5;
+    transition:opacity .2s ease,border-color .2s ease,background .2s ease}
+  .ag-row.on{opacity:1;border-color:var(--tx);background:var(--card2)}
+  .ag-row.done{opacity:1}
+  .ag-ic{font-size:16px;flex:none}
+  .ag-nm{flex:1;min-width:0;font-size:13px;font-weight:700;display:flex;flex-direction:column;gap:2px}
+  .ag-brief{font-size:11px;font-weight:400;color:var(--mut)}
+  .ag-st{font-size:13px;color:var(--up);flex:none;width:18px;text-align:center}
+  .ag-spin{display:inline-block;width:11px;height:11px;border:2px solid var(--bd2);
+    border-top-color:var(--tx);border-radius:50%;animation:spin .6s linear infinite}
+  .ag-meter{height:5px;background:var(--card2);border-radius:3px;overflow:hidden;margin-bottom:8px}
+  .ag-meter-bar{height:100%;width:0;background:var(--up);border-radius:3px;transition:width .3s ease}
+  .ag-now{font-size:12px;color:var(--mut);text-align:center;min-height:18px}
+  .ag-find{border-radius:11px;padding:11px 13px;margin-bottom:8px;border:1px solid transparent}
+  .ag-find.flag{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3)}
+  .ag-find.warn{background:rgba(244,183,63,.1);border-color:rgba(244,183,63,.3)}
+  .ag-find.info{background:var(--card2);border-color:var(--bd)}
+  .ag-ft{font-size:13px;font-weight:700;margin-bottom:3px}
+  .ag-fb{font-size:12px;color:var(--mut);line-height:1.55}
+  .ag-slider{width:100%;accent-color:var(--up);margin:6px 0 4px}
+  .ag-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -2873,6 +2899,7 @@
     if(saveTimer) clearTimeout(saveTimer);
     saveTimer=setTimeout(function(){ doPersist(); }, 250);
     if(typeof scheduleAutoDetect==="function") scheduleAutoDetect();
+    if(typeof scheduleWatch==="function") scheduleWatch();
   }
   function buildRoot(){
     var p=activePortfolio();
@@ -8169,6 +8196,380 @@ AI_TYPES.join(", "),
     start();
   }
 
+  /* ============================================================
+     BACKGROUND REVIEW + MULTI-AGENT DEEP CHECK
+
+     Two modes:
+       Watch    a light continuous pass over new/changed entries,
+                popping up only when something real is found.
+       Deep     several agents, each with its own remit, run in
+                parallel over the whole history.
+
+     About the intensity slider: no browser can reserve a percentage
+     of CPU — there is no such API. What it genuinely controls is
+       · how many agents run at once  (concurrency)
+       · how long each works before yielding  (duty cycle)
+     At 30% an agent works ~30ms then yields ~70ms, so the UI stays
+     responsive. At 100% it barely yields. That is a real, measurable
+     load — it just isn't a scheduler reservation, and calling it one
+     would be a lie.
+
+     It cannot damage hardware — the OS throttles long before that.
+     It will drain battery and slow the device, which the UI says.
+     ============================================================ */
+  var AGENT_KEY="mymoney_agents_v1";
+  var agentCfg={ watch:true, intensity:30, lastDeep:0, findingsSeen:{} };
+  var agentState={ running:false, cancel:false, active:[], progress:0 };
+
+  function loadAgentCfg(){
+    try{ var r=localStorage.getItem(AGENT_KEY); if(r) agentCfg=Object.assign(agentCfg, JSON.parse(r)); }catch(e){}
+    agentCfg.intensity=Math.max(10, Math.min(100, num(agentCfg.intensity)||30));
+  }
+  function saveAgentCfg(){ try{ localStorage.setItem(AGENT_KEY, JSON.stringify(agentCfg)); }catch(e){} }
+
+  // duty cycle: at intensity i, work i ms out of every 100ms
+  function agentSlice(){ return Math.max(8, Math.round(agentCfg.intensity)); }
+  function agentRest(){ return Math.max(0, 100-agentSlice()); }
+  function agentConcurrency(){
+    var cores=(navigator.hardwareConcurrency||4);
+    // 10% -> 1 agent, 100% -> every core
+    return Math.max(1, Math.min(AGENTS.length, Math.round(cores*agentCfg.intensity/100)));
+  }
+  // cooperative yield that honours the duty cycle
+  function agentYield(){
+    return new Promise(function(res){ setTimeout(res, agentRest()); });
+  }
+
+  /* ---- the agents. Each owns one question and reports findings. ---- */
+  var AGENTS=[
+    { id:"dupes", name:"Duplicate hunter", icon:"👯",
+      brief:"Identical amounts on the same day",
+      run:function(txs, report){
+        var seen={};
+        txs.forEach(function(t){
+          var k=(t.date||"")+"|"+num(t.amount).toFixed(2)+"|"+(t.type||"");
+          (seen[k]=seen[k]||[]).push(t);
+        });
+        Object.keys(seen).forEach(function(k){
+          var g=seen[k];
+          if(g.length>1) report({
+            level:"warn", title:"Possible duplicate",
+            body:g.length+" identical entries of "+fmt(Math.abs(num(g[0].amount)),state.currency)
+                 +" on "+g[0].date+(g[0].note?" ("+g[0].note+")":"")+".",
+            ids:g.map(function(t){ return t.id; })
+          });
+        });
+      }},
+    { id:"outliers", name:"Outlier spotter", icon:"📈",
+      brief:"Amounts far outside your normal range",
+      run:function(txs, report){
+        var outs=txs.filter(function(t){ return balDelta(t)<0; })
+                    .map(function(t){ return Math.abs(balDelta(t)); });
+        if(outs.length<6) return;
+        /* Median + MAD, not mean + standard deviation. One huge transaction
+           inflates the sd enough to hide itself — a $9,000 charge among $40
+           ones scored z=3.0 and slipped under a z>3 threshold. The median
+           and MAD are unmoved by the very outlier we're hunting. */
+        var sorted=outs.slice().sort(function(a,b){ return a-b; });
+        var median=sorted[Math.floor(sorted.length/2)];
+        var devs=outs.map(function(v){ return Math.abs(v-median); })
+                     .sort(function(a,b){ return a-b; });
+        var mad=devs[Math.floor(devs.length/2)];
+        if(!mad || mad<=0) mad=median*0.15 || 1;      // near-identical amounts
+        txs.forEach(function(t){
+          if(balDelta(t)>=0) return;
+          var v=Math.abs(balDelta(t));
+          var z=0.6745*(v-median)/mad;                 // 0.6745 makes MAD comparable to sd
+          if(z>3.5 && v>median*2) report({
+            level:"warn", title:"Unusually large",
+            body:fmt(v,state.currency)+" on "+t.date+(t.note?" ("+t.note+")":"")
+                 +" is far outside your usual range \u2014 most of your spending sits near "
+                 +fmt(median,state.currency)+".",
+            ids:[t.id]
+          });
+        });
+      }},
+    { id:"gaps", name:"Missing-data checker", icon:"🕳️",
+      brief:"Entries missing a category, note or date",
+      run:function(txs, report){
+        var noCat=txs.filter(function(t){ return balDelta(t)<0 && !t.cat; });
+        if(noCat.length) report({
+          level:"info", title:noCat.length+" uncategorised",
+          body:"These won't appear in any budget or breakdown. Oldest: "+(noCat[noCat.length-1].date||"?")+".",
+          ids:noCat.slice(0,20).map(function(t){ return t.id; })
+        });
+        var bad=txs.filter(function(t){ return !/^\d{4}-\d{2}-\d{2}$/.test(t.date||""); });
+        if(bad.length) report({
+          level:"flag", title:bad.length+" with a broken date",
+          body:"These are excluded from every monthly total until fixed.",
+          ids:bad.map(function(t){ return t.id; })
+        });
+      }},
+    { id:"drift", name:"Spending drift", icon:"🌊",
+      brief:"Categories creeping up month on month",
+      run:function(txs, report){
+        var byCatMonth={};
+        txs.forEach(function(t){
+          if(balDelta(t)>=0 || !t.cat) return;
+          var m=(t.date||"").slice(0,7); if(!m) return;
+          var top=topCatOf(t.cat);
+          byCatMonth[top]=byCatMonth[top]||{};
+          byCatMonth[top][m]=(byCatMonth[top][m]||0)+Math.abs(balDelta(t));
+        });
+        Object.keys(byCatMonth).forEach(function(c){
+          var ms=Object.keys(byCatMonth[c]).sort();
+          if(ms.length<3) return;
+          var recent=byCatMonth[c][ms[ms.length-1]];
+          var prior=ms.slice(-4,-1).map(function(m){ return byCatMonth[c][m]; });
+          var avg=prior.reduce(function(a,b){return a+b;},0)/prior.length;
+          if(avg>0 && recent>avg*1.5) report({
+            level:"warn", title:c+" is climbing",
+            body:fmt(recent,state.currency)+" last month vs a "+fmt(avg,state.currency)
+                 +" average before that \u2014 up "+Math.round((recent/avg-1)*100)+"%.",
+            ids:[]
+          });
+        });
+      }},
+    { id:"balance", name:"Balance auditor", icon:"⚖️",
+      brief:"Cash flow, debt age and savings rate",
+      run:function(txs, report){
+        var t=totals();
+        if(t.net<0) report({level:"flag", title:"Net worth is negative",
+          body:"Debt of "+fmt(t.debt,state.currency)+" exceeds what you hold.", ids:[]});
+        var flow=txs.reduce(function(a,x){ return a+balDelta(x); },0);
+        if(flow<0) report({level:"flag", title:"Spending exceeds income",
+          body:"Across everything recorded, outflows beat inflows by "+fmt(Math.abs(flow),state.currency)+".", ids:[]});
+        var inSum=txs.reduce(function(a,x){ return a+(balDelta(x)>0?balDelta(x):0); },0);
+        var saved=txs.reduce(function(a,x){ return a+(savDelta(x)>0?savDelta(x):0); },0);
+        if(inSum>0){
+          var rate=Math.round(saved/inSum*100);
+          if(rate<10) report({level:"warn", title:"Savings rate is "+rate+"%",
+            body:"You've saved "+fmt(saved,state.currency)+" of "+fmt(inSum,state.currency)
+                 +" income. A recurring auto-save is the easiest fix.", ids:[]});
+        }
+      }},
+    { id:"ai", name:"AI reviewer", icon:"🧠",
+      brief:"Reads your figures and comments in plain English",
+      needsModel:true,
+      run:function(txs, report, done){
+        // only meaningful with a model — otherwise it says so rather than pretending
+        var prompt=financialContext()
+          +"\n\nLook at these figures and name the single most useful thing to fix. "
+          +"Two sentences maximum. Be specific to the numbers.";
+        var go=function(ans){
+          if(ans) report({level:"info", title:"AI review", body:String(ans).trim().slice(0,400), ids:[]});
+          done&&done();
+        };
+        initBuiltinAi().then(function(ready){
+          if(ready) return askBuiltinAi(prompt);
+          if(window._wllmEngine) return askWebllm(prompt);
+          return null;
+        }).then(go).catch(function(){ done&&done(); });
+        return "async";
+      }}
+  ];
+
+  /* ---- run a set of agents with duty-cycled yields ---- */
+  function runAgents(ids, onProgress){
+    return new Promise(function(resolve){
+      var txs=sortedTx();
+      var findings=[];
+      var report=function(f){ findings.push(f); };
+      var list=AGENTS.filter(function(a){ return ids.indexOf(a.id)>=0; });
+      var i=0;
+      agentState.running=true; agentState.cancel=false;
+      function next(){
+        if(agentState.cancel || i>=list.length){
+          agentState.running=false;
+          resolve(findings);
+          return;
+        }
+        var a=list[i++];
+        agentState.active=[a.name];
+        onProgress&&onProgress(a, i, list.length);
+        var t0=Date.now();
+        var async=false;
+        try{
+          var r=a.run(txs, report, function(){ agentYield().then(next); });
+          if(r==="async") async=true;
+        }catch(e){ /* one agent failing must not stop the rest */ }
+        if(!async){
+          // respect the duty cycle: rest in proportion to how long that took
+          var worked=Date.now()-t0;
+          var rest=Math.round(worked*(agentRest()/Math.max(1,agentSlice())));
+          setTimeout(next, Math.min(400, Math.max(0,rest)));
+        }
+      }
+      next();
+    });
+  }
+  function cancelAgents(){ agentState.cancel=true; agentState.running=false; }
+
+  /* ---- watch mode: quiet background pass, speaks only when it matters ---- */
+  var watchTimer=null;
+  function scheduleWatch(){
+    if(!agentCfg.watch) return;
+    clearTimeout(watchTimer);
+    watchTimer=setTimeout(runWatchPass, 4000);
+  }
+  function runWatchPass(){
+    if(!agentCfg.watch || agentState.running) return;
+    if(!state.transactions || state.transactions.length<3) return;
+    // the light set — no AI call, so it costs almost nothing
+    runAgents(["dupes","gaps","balance"]).then(function(findings){
+      var serious=findings.filter(function(f){ return f.level==="flag" || f.level==="warn"; });
+      var fresh=serious.filter(function(f){
+        var k=f.title+"|"+(f.ids||[]).join(",");
+        if(agentCfg.findingsSeen[k]) return false;
+        agentCfg.findingsSeen[k]=Date.now();
+        return true;
+      });
+      if(fresh.length){ saveAgentCfg(); showAgentPopup(fresh, true); }
+    });
+  }
+  function showAgentPopup(findings, fromWatch){
+    if(document.getElementById("agentPopOv")) return;
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="agentPopOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:440px">'
+      +'  <div class="sheet-hd"><h3>'+(fromWatch?"\u26a0\ufe0f Something worth a look":"Deep check results")+'</h3>'
+      +'    <button class="x-btn" id="apX">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +    findings.map(function(f){
+            return '<div class="ag-find '+esc(f.level)+'">'
+              +'<div class="ag-ft">'+esc(f.title)+'</div>'
+              +'<div class="ag-fb">'+esc(f.body)+'</div></div>';
+          }).join("")
+      +'  </div>'
+      +'  <div class="sheet-ft">'
+      +(fromWatch?'<button class="btn ghost sm" id="apOff">Stop watching</button>':'')
+      +'    <button class="btn ghost sm" id="apDeep">Run deep check</button>'
+      +'    <button class="btn primary sm" id="apOk">Got it</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var close=function(){ if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector("#apX").onclick=close;
+    host.querySelector("#apOk").onclick=close;
+    host.querySelector("#apDeep").onclick=function(){ close(); openDeepCheck(); };
+    var off=host.querySelector("#apOff");
+    if(off) off.onclick=function(){
+      agentCfg.watch=false; saveAgentCfg(); refreshAgentPanel(); close();
+      flashSaved("background review off");
+    };
+  }
+
+  /* ---- the deep check sheet ---- */
+  function openDeepCheck(){
+    var host=document.createElement("div");
+    host.className="ov in"; host.id="deepOv";
+    host.innerHTML=
+       '<div class="sheet" style="max-width:480px">'
+      +'  <div class="sheet-hd"><h3>Advanced check</h3>'
+      +'    <button class="x-btn" id="dpX">\u2715</button></div>'
+      +'  <div class="sheet-bd">'
+      +'    <div class="ag-intro">Each agent takes one question and works through your whole history.</div>'
+      +'    <div class="ag-list" id="agList"></div>'
+      +'    <div class="ag-meter"><div class="ag-meter-bar" id="agBar"></div></div>'
+      +'    <div class="ag-now" id="agNow">Ready.</div>'
+      +'  </div>'
+      +'  <div class="sheet-ft">'
+      +'    <button class="btn ghost sm" id="dpStop" style="display:none">Stop</button>'
+      +'    <button class="btn ghost sm" id="dpClose">Close</button>'
+      +'    <button class="btn primary sm" id="dpGo">Start</button></div>'
+      +'</div>';
+    document.body.appendChild(host);
+    var listEl=host.querySelector("#agList");
+    function drawList(activeId, doneIds){
+      doneIds=doneIds||[];
+      listEl.innerHTML=AGENTS.map(function(a){
+        var st = doneIds.indexOf(a.id)>=0 ? "done" : (a.id===activeId ? "on" : "");
+        return '<div class="ag-row '+st+'"><span class="ag-ic">'+a.icon+'</span>'
+          +'<span class="ag-nm">'+esc(a.name)
+          +'<span class="ag-brief">'+esc(a.brief)+'</span></span>'
+          +'<span class="ag-st">'+(st==="done"?"\u2713":st==="on"?'<i class="ag-spin"></i>':"\u00b7")+'</span></div>';
+      }).join("");
+    }
+    drawList();
+    var close=function(){ cancelAgents(); if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector("#dpX").onclick=close;
+    host.querySelector("#dpClose").onclick=close;
+    host.querySelector("#dpStop").onclick=function(){
+      cancelAgents();
+      host.querySelector("#agNow").textContent="Stopped.";
+      host.querySelector("#dpStop").style.display="none";
+      host.querySelector("#dpGo").style.display="";
+    };
+    host.querySelector("#dpGo").onclick=function(){
+      var go=host.querySelector("#dpGo"), stop=host.querySelector("#dpStop");
+      go.style.display="none"; stop.style.display="";
+      var done=[];
+      var ids=AGENTS.map(function(a){ return a.id; });
+      host.querySelector("#agNow").textContent="Starting "+agentConcurrency()+" agent"
+        +(agentConcurrency()===1?"":"s")+" at "+agentCfg.intensity+"% intensity\u2026";
+      runAgents(ids, function(a,i,total){
+        if(i>1) done.push(AGENTS[i-2].id);
+        drawList(a.id, done);
+        host.querySelector("#agBar").style.width=Math.round((i-1)/total*100)+"%";
+        host.querySelector("#agNow").textContent=a.icon+"  "+a.name+" \u2014 "+a.brief;
+      }).then(function(findings){
+        drawList(null, ids);
+        host.querySelector("#agBar").style.width="100%";
+        stop.style.display="none"; go.style.display=""; go.textContent="Run again";
+        agentCfg.lastDeep=Date.now(); saveAgentCfg();
+        host.querySelector("#agNow").textContent=findings.length
+          ? findings.length+" finding"+(findings.length===1?"":"s")+"."
+          : "Nothing found \u2014 your records look clean.";
+        if(findings.length){ setTimeout(function(){ close(); showAgentPopup(findings,false); },600); }
+      });
+    };
+  }
+
+  /* ---- settings panel ---- */
+  function refreshAgentPanel(){
+    var chk=document.getElementById("agWatchChk");
+    var slider=document.getElementById("agIntensity");
+    var lbl=document.getElementById("agIntensityLbl");
+    var note=document.getElementById("agCostNote");
+    if(chk) chk.checked=!!agentCfg.watch;
+    if(slider) slider.value=agentCfg.intensity;
+    if(lbl) lbl.textContent=agentCfg.intensity+"%";
+    if(note){
+      var i=agentCfg.intensity;
+      var cores=navigator.hardwareConcurrency||4;
+      note.textContent = i>=90
+        ? "Flat out: "+agentConcurrency()+" of "+cores+" cores, almost no yielding. The device will get warm and the battery will drain fast."
+        : i>=60
+        ? "Heavy: "+agentConcurrency()+" of "+cores+" cores. Noticeable battery use; other apps may feel slower."
+        : i>=30
+        ? "Balanced: "+agentConcurrency()+" of "+cores+" cores, yielding "+agentRest()+"ms in every 100. Barely noticeable."
+        : "Light: one agent, yielding "+agentRest()+"ms in every 100. Slowest, but you won't feel it.";
+    }
+  }
+  function bindAgentPanel(){
+    var chk=document.getElementById("agWatchChk");
+    if(chk && !chk._bound){
+      chk._bound=true;
+      chk.addEventListener("change", function(){
+        agentCfg.watch=chk.checked; saveAgentCfg();
+        flashSaved(chk.checked?"background review on":"background review off");
+        if(chk.checked) scheduleWatch();
+      });
+    }
+    var slider=document.getElementById("agIntensity");
+    if(slider && !slider._bound){
+      slider._bound=true;
+      slider.addEventListener("input", function(){
+        agentCfg.intensity=Math.max(10, Math.min(100, +slider.value));
+        refreshAgentPanel();
+      });
+      slider.addEventListener("change", function(){ saveAgentCfg(); });
+    }
+    var btn=document.getElementById("agDeepBtn");
+    if(btn && !btn._bound){ btn._bound=true; btn.addEventListener("click", openDeepCheck); }
+    refreshAgentPanel();
+  }
+
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -11992,9 +12393,11 @@ AI_TYPES.join(", "),
     fillAllCatSelects();
     bindSecurityPanel();
     bindFacePanel();
+    bindAgentPanel();
     bindSplit();
     refreshWllmUI();
     loadVault();
+    loadAgentCfg();
     loadAttempts();
     bindHiddenUnlock();
     bindRecoveryEntry();
@@ -12313,7 +12716,34 @@ AI_TYPES.join(", "),
       </div>
     </details>
 
-    <!-- 3. Facial recognition -->
+    <!-- 3. Continuous review -->
+    <details class="sect sect-nested">
+      <summary class="sect-h"><span class="sect-i">🔎</span>
+        <span class="sect-tt"><span class="sect-t">Continuous review</span>
+          <span class="sect-s">Agents that check your entries</span></span>
+        <span class="sect-c">▸</span></summary>
+      <div class="sect-b">
+        <div class="sec-item" style="border:0;padding:6px 0">
+          <div class="si-main"><div class="si-t">Watch in the background</div>
+            <div class="si-d">A light pass after each change. Only interrupts for something real.</div></div>
+          <label class="sw"><input type="checkbox" id="agWatchChk" checked><i></i></label>
+        </div>
+        <div class="fld" style="margin-top:12px">
+          <label>Effort <span id="agIntensityLbl" style="float:right;color:var(--tx);font-weight:800">30%</span></label>
+          <input type="range" class="ag-slider" id="agIntensity" min="10" max="100" step="5" value="30">
+          <div class="ag-scale"><span>10% light</span><span>100% flat out</span></div>
+          <div class="subhint" id="agCostNote" style="margin-top:8px"></div>
+        </div>
+        <div class="subhint" style="margin:10px 0 12px;line-height:1.55">
+          No browser can reserve a share of the CPU — there's no such API. This controls
+          <b>how many agents run at once</b> and <b>how often they yield</b>, which is the real
+          equivalent. It can't harm the hardware; the system throttles first. It will use battery.
+        </div>
+        <button class="btn solid" id="agDeepBtn" style="width:100%">🔬 Run advanced check</button>
+      </div>
+    </details>
+
+    <!-- 4. Facial recognition -->
     <details class="sect sect-nested">
       <summary class="sect-h"><span class="sect-i">👤</span>
         <span class="sect-tt"><span class="sect-t">Facial recognition</span>
