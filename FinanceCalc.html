@@ -941,8 +941,8 @@
   /* App lock */
   #lockScreen{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;
     align-items:center;justify-content:center;padding:20px;transition:opacity .22s ease;outline:none}
-  .lk-box{width:100%;max-width:320px;text-align:center}
-  .lk-icon{font-size:38px;margin-bottom:6px}
+  .lk-box{width:100%;max-width:340px;text-align:center}
+  .lk-icon{font-size:34px;margin-bottom:14px;opacity:.85}
   .lk-title{font-size:17px;font-weight:800;margin-bottom:4px}
   .lk-sub{font-size:12.5px;color:var(--mut);min-height:18px;margin-bottom:18px}
   .lk-dots{display:flex;gap:10px;justify-content:center;margin-bottom:22px}
@@ -1373,6 +1373,37 @@
   .fc-n{font-weight:700}
   .fc-n.up{color:var(--up)} .fc-n.down{color:var(--down)}
   .fc-b{width:88px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+  /* ── PIN keypad ──────────────────────────────────────────────── */
+  .kp{text-align:center;max-width:320px;margin:0 auto;width:100%}
+  .kp-title{font-size:17px;font-weight:800;letter-spacing:.01em;line-height:1.3}
+  .kp-sub{font-size:12.5px;color:var(--mut);margin-top:6px;line-height:1.55}
+  .kp-dots{display:flex;justify-content:center;gap:14px;margin:22px 0 8px}
+  .kp-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--bd2);
+    transition:background .15s ease,border-color .15s ease,transform .15s ease}
+  .kp-dot.on{background:var(--tx);border-color:var(--tx);transform:scale(1.1)}
+  .kp-dot.shake{animation:kpshake .42s}
+  @keyframes kpshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .kp-err{min-height:18px;font-size:12px;color:var(--down);margin-bottom:8px;line-height:1.4}
+  .kp-err.ok{color:var(--up)}
+  .kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .kp-key{font-family:var(--mono,ui-monospace,monospace);font-size:20px;font-weight:600;
+    padding:16px 0;border-radius:12px;border:1.5px solid var(--bd2);background:var(--card);
+    color:var(--tx);cursor:pointer;transition:background .12s ease,transform .1s ease}
+  .kp-key:hover{background:var(--card2)}
+  .kp-key:active{transform:scale(.93);background:var(--card2)}
+  .kp-ghost{font-size:12px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--mut);background:transparent;border-color:transparent}
+  .kp-ghost:hover{background:var(--card2);border-color:var(--bd)}
+  .kp-extra{margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .kp-extra:empty{display:none}
+  .kp-link{background:transparent;border:0;color:var(--mut);font:inherit;font-size:12px;
+    text-decoration:underline;cursor:pointer;padding:6px}
+  .kp-link:hover{color:var(--tx)}
+  /* larger keys when the pad owns the whole page */
+  .ov.page-mode .kp{max-width:340px}
+  .ov.page-mode .kp-key{padding:19px 0;font-size:22px}
+  #lockScreen .kp{max-width:320px}
 </style>
 </head>
 <body>
@@ -6391,120 +6422,82 @@ AI_TYPES.join(", "),
     if(!lockIsOn()) return;
     var ov=document.createElement("div");
     ov.id="lockScreen";
-    ov.innerHTML=
-       '<div class="lk-box">'
-      +'  <div class="lk-icon">🔒</div>'
-      +'  <div class="lk-title">My Money</div>'
-      +'  <div class="lk-sub" id="lkSub">Enter your PIN</div>'
-      +'  <div class="lk-dots" id="lkDots"></div>'
-      +'  <div class="lk-pad" id="lkPad"></div>'
-      +'  <button class="btn ghost sm" id="lkBio" style="display:none;margin-top:12px">👤 Use Face ID</button>'
-      +'  <button class="lk-forgot" id="lkForgot" style="display:none">Forgot your PIN?</button>'
+    ov.innerHTML='<div class="lk-box">'
+      +'<div class="lk-icon">\uD83D\uDD12</div>'
+      +'<div id="lkPadHost"></div>'
       +'</div>';
     document.body.appendChild(ov);
     document.body.style.overflow="hidden";
 
-    var entered="";
-    var dots=ov.querySelector("#lkDots"), sub=ov.querySelector("#lkSub");
-    function drawDots(){
-      dots.innerHTML="";
-      for(var i=0;i<Math.max(4,entered.length);i++){
-        var s=document.createElement("span");
-        s.className="lk-dot"+(i<entered.length?" on":"");
-        dots.appendChild(s);
-      }
-    }
-    drawDots();
-    var pad=ov.querySelector("#lkPad");
-    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
-      var b=document.createElement("button");
-      b.className="lk-key"+(k===""?" lk-blank":"");
-      b.textContent=k;
-      if(k==="") b.disabled=true;
-      b.addEventListener("click", function(){
-        if(lockCooldownLeft()>0){ sub.textContent="Too many tries — wait "+lockCooldownLeft()+"s"; return; }
-        if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
-        if(entered.length>=12) return;
-        entered+=k; drawDots();
-        if(entered.length>=4) trySubmit();
-      });
-      pad.appendChild(b);
-    });
     function unlock(){
-      _autoFace.stop();                     // camera off the instant we're in
+      _autoFace.stop();
+      if(pad) pad.dispose();
       setTimeout(showAttemptBanner, 700);
       ov.style.opacity="0";
       document.body.style.overflow="";
-      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
+      document.removeEventListener("visibilitychange", onHide);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 220);
     }
-    var busy=false;
-    function trySubmit(){
-      if(busy) return;
-      var cd=lockCooldownLeft();
-      if(cd>0){ sub.textContent="Too many tries — wait "+cd+"s"; return; }
-      busy=true; sub.textContent="Checking…";
-      verifyPin(entered, function(ok){
-        busy=false;
-        if(ok){ unlock(); return; }
-        entered=""; drawDots();
-        recordFailedAttempt("pin");
-        var left=lockCooldownLeft();
-        sub.textContent= left>0 ? "Wrong PIN — wait "+left+"s" : "Wrong PIN, try again";
-        var box=ov.querySelector(".lk-box");
-        box.classList.remove("shake"); void box.offsetWidth; box.classList.add("shake");
-      }, function(p){ if(p<1) sub.textContent="Checking… "+Math.round(p*100)+"%"; });
-    }
-    // physical keyboard
-    ov.addEventListener("keydown", function(e){
-      if(/^[0-9]$/.test(e.key)){ if(entered.length<12){ entered+=e.key; drawDots(); if(entered.length>=4) trySubmit(); } }
-      else if(e.key==="Backspace"){ entered=entered.slice(0,-1); drawDots(); }
-      else if(e.key==="Enter" && entered.length>=4) trySubmit();
+
+    // extras below the pad: face unlock and the recovery route
+    var extra="";
+    if(faceCfg.on && facePeople().length)
+      extra+='<button class="btn ghost sm" id="lkBio">\uD83D\uDE00 Use face unlock</button>';
+    if(recoveryOn())
+      extra+='<button class="kp-link" id="lkForgot">Forgot your PIN?</button>';
+
+    var pad=buildKeypad({
+      title:"My Money",
+      sub:"Enter your PIN",
+      len:4, max:12,
+      wrongText:"Wrong PIN \u2014 try again",
+      extra:extra,
+      validate:function(d, prog){
+        var cd=lockCooldownLeft();
+        if(cd>0) return Promise.resolve(false);
+        return new Promise(function(res){
+          verifyPin(d, function(ok){
+            if(!ok){
+              recordFailedAttempt("pin");
+              var left=lockCooldownLeft();
+              if(left>0) setTimeout(function(){ pad.say("Too many tries \u2014 wait "+left+"s"); }, 460);
+            }
+            res(ok);
+          }, prog);
+        });
+      },
+      onDone:unlock
     });
-    ov.tabIndex=-1; setTimeout(function(){ try{ ov.focus(); }catch(e){} },50);
+    document.getElementById("lkPadHost").appendChild(pad.el);
 
-    if(recoveryOn()){
-      var fg=ov.querySelector("#lkForgot");
-      fg.style.display="";
-      fg.addEventListener("click", function(){
-        openRecoveryUnlock(function(){ unlock(); });
-      });
-    }
+    var bio=pad.el.querySelector("#lkBio");
+    if(bio) bio.addEventListener("click", function(){
+      if(inFrame() && !window.faceapi){
+        pad.say("Face unlock needs the app in its own tab"); return;
+      }
+      pad.say("Opening the camera\u2026");
+      bio.disabled=true;
+      var answered=false;
+      var settle=function(ok){
+        if(answered) return; answered=true; bio.disabled=false;
+        if(ok) unlock();
+        else { recordFailedAttempt("face"); pad.say("Face didn\u2019t match \u2014 use your PIN"); }
+      };
+      setTimeout(function(){
+        if(answered) return; answered=true; bio.disabled=false;
+        var sh=document.getElementById("faceOv");
+        if(sh && sh.parentNode) sh.parentNode.removeChild(sh);
+        pad.say("Camera didn\u2019t start \u2014 use your PIN");
+      }, 15000);
+      verifyFace(settle);
+    });
+    var fg=pad.el.querySelector("#lkForgot");
+    if(fg) fg.addEventListener("click", function(){ openRecoveryUnlock(function(){ unlock(); }); });
 
-    /* Look for the owner automatically — but only while this screen is
-       showing, and only if they've already granted the camera. */
-    startAutoFace(ov, function(){ unlock(); }, function(msg){ sub.textContent=msg; });
+    // look for the owner automatically, only while this screen is up
+    startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?"ok":""); });
     var onHide=function(){ if(document.hidden) _autoFace.stop(); };
     document.addEventListener("visibilitychange", onHide);
-
-    // Face unlock as the quick path when it's set up and a camera exists
-    if(typeof faceCfg!=="undefined" && faceCfg.on && faceCfg.descriptor){
-      var bb=ov.querySelector("#lkBio");
-      bb.textContent="\uD83D\uDE00 Use face unlock";
-      bb.style.display="";
-      bb.addEventListener("click", function(){
-        // the model is an external download; inside a frame it can never arrive
-        if(inFrame() && !window.faceapi){
-          sub.textContent="Face unlock needs the app open in its own tab \u2014 use your PIN";
-          return;
-        }
-        sub.textContent="Opening the camera\u2026";
-        bb.disabled=true;
-        var answered=false;
-        var settle=function(ok){
-          if(answered) return; answered=true; bb.disabled=false;
-          if(ok) unlock();
-          else { recordFailedAttempt("face"); sub.textContent="Face didn\u2019t match \u2014 use your PIN"; }
-        };
-        // never leave them staring at "Opening the camera…"
-        setTimeout(function(){
-          if(answered) return; answered=true; bb.disabled=false;
-          var sheet=document.getElementById("faceOv");
-          if(sheet && sheet.parentNode) sheet.parentNode.removeChild(sheet);
-          sub.textContent="Camera didn\u2019t start \u2014 use your PIN";
-        }, 15000);
-        verifyFace(settle);
-      });
-    }
   }
 
   /* ============================================================
@@ -7282,105 +7275,196 @@ AI_TYPES.join(", "),
      closes without saying why.
      ============================================================ */
   function lockScreenOpen(){ return !!document.getElementById("lockScreen"); }
+  /* ============================================================
+     PIN KEYPAD — shared by setup and unlock
+
+     Layout adapted from a cleaner standalone component: fixed dots
+     rather than a growing row, Cancel and ⌫ living inside the 3×4
+     grid instead of floating elsewhere, and the dots themselves
+     shaking on a wrong entry while the pad stays open.
+
+     Deliberately NOT carried over from that component: it stored
+     the PIN in localStorage as plain text. Here the PIN is salted
+     and stretched, and only the hash is ever written.
+     ============================================================ */
+  var PIN_LEN_DEFAULT=4;
+
+  /* One keypad, driven by options:
+       title, sub      what it says
+       len             how many digits before it submits
+       validate(d)     async -> true/false. false = shake, stay open
+       onCancel        called if they back out
+       extra           optional HTML under the pad (forgot / face unlock)
+       host            element to render into (lock screen reuses its own) */
+  function buildKeypad(opts){
+    opts=opts||{};
+    var len=opts.len||PIN_LEN_DEFAULT;
+    var wrap=document.createElement("div");
+    wrap.className="kp";
+    wrap.innerHTML=
+       '<div class="kp-title"></div>'
+      +'<div class="kp-sub"></div>'
+      +'<div class="kp-dots"></div>'
+      +'<div class="kp-err"></div>'
+      +'<div class="kp-grid">'
+      +   [1,2,3,4,5,6,7,8,9].map(function(n){
+            return '<button type="button" class="kp-key" data-k="'+n+'">'+n+'</button>'; }).join("")
+      +  '<button type="button" class="kp-key kp-ghost" data-act="cancel">Cancel</button>'
+      +  '<button type="button" class="kp-key" data-k="0">0</button>'
+      +  '<button type="button" class="kp-key kp-ghost" data-act="back">\u232B</button>'
+      +'</div>'
+      +'<div class="kp-extra"></div>';
+
+    var titleEl=wrap.querySelector(".kp-title");
+    var subEl=wrap.querySelector(".kp-sub");
+    var dotsEl=wrap.querySelector(".kp-dots");
+    var errEl=wrap.querySelector(".kp-err");
+    var gridEl=wrap.querySelector(".kp-grid");
+    var extraEl=wrap.querySelector(".kp-extra");
+    var digits="", busy=false;
+
+    titleEl.textContent=opts.title||"Enter your PIN";
+    subEl.textContent=opts.sub||"";
+    if(opts.extra) extraEl.innerHTML=opts.extra;
+
+    function drawDots(){
+      var n=Math.max(len, digits.length);
+      if(dotsEl.children.length!==n){
+        dotsEl.innerHTML="";
+        for(var i=0;i<n;i++){
+          var s=document.createElement("span"); s.className="kp-dot"; dotsEl.appendChild(s);
+        }
+      }
+      Array.prototype.forEach.call(dotsEl.children, function(d,i){
+        d.classList.toggle("on", i<digits.length);
+      });
+    }
+    function shake(msg){
+      errEl.textContent=msg||"";
+      Array.prototype.forEach.call(dotsEl.children,function(d){ d.classList.add("shake"); });
+      setTimeout(function(){
+        Array.prototype.forEach.call(dotsEl.children,function(d){ d.classList.remove("shake"); });
+      },420);
+    }
+    function say(msg, kind){
+      errEl.textContent=msg||"";
+      errEl.className="kp-err"+(kind?" "+kind:"");
+    }
+    function press(k){
+      if(busy) return;
+      say("");
+      if(digits.length>=(opts.max||len)) return;
+      digits+=k; drawDots();
+      if(digits.length>=len) submit();
+    }
+    function back(){ if(busy) return; digits=digits.slice(0,-1); drawDots(); say(""); }
+    function submit(){
+      if(busy) return;
+      if(!opts.validate){ opts.onDone&&opts.onDone(digits); return; }
+      busy=true;
+      say("Checking\u2026");
+      Promise.resolve(opts.validate(digits, function(p){
+        if(p<1) say("Checking\u2026 "+Math.round(p*100)+"%");
+      })).then(function(ok){
+        busy=false;
+        if(ok){ say(""); opts.onDone&&opts.onDone(digits); return; }
+        digits=""; drawDots();
+        shake(opts.wrongText||"Wrong PIN \u2014 try again");
+      }).catch(function(){ busy=false; digits=""; drawDots(); shake("Something went wrong"); });
+    }
+
+    gridEl.addEventListener("click", function(e){
+      var b=e.target.closest("button"); if(!b) return;
+      var act=b.getAttribute("data-act");
+      if(act==="cancel"){ opts.onCancel&&opts.onCancel(); return; }
+      if(act==="back"){ back(); return; }
+      var k=b.getAttribute("data-k"); if(k) press(k);
+    });
+    // physical keyboard, for desktop
+    var onKey=function(e){
+      if(!wrap.isConnected){ document.removeEventListener("keydown", onKey); return; }
+      if(/^[0-9]$/.test(e.key)){ e.preventDefault(); press(e.key); }
+      else if(e.key==="Backspace"){ e.preventDefault(); back(); }
+      else if(e.key==="Enter" && digits.length>=len){ e.preventDefault(); submit(); }
+      else if(e.key==="Escape" && opts.onCancel){ e.preventDefault(); opts.onCancel(); }
+    };
+    document.addEventListener("keydown", onKey);
+
+    drawDots();
+    return {el:wrap, say:say, shake:shake, reset:function(){ digits=""; drawDots(); say(""); },
+            setTitle:function(t){ titleEl.textContent=t; },
+            setSub:function(t){ subEl.textContent=t; },
+            extra:extraEl, dispose:function(){ document.removeEventListener("keydown", onKey); }};
+  }
+
   function openPinSetup(){
-    var stage=1, first="", entered="";
     var host=document.createElement("div");
     host.className="ov in page-mode"+(lockScreenOpen()?" above-lock":""); host.id="pinSetupOv";
     host.innerHTML=
-       '<div class="sheet pin-sheet">'
-      +'  <div class="sheet-hd"><h3 id="pinTitle">Choose a PIN</h3>'
-      +'    <button class="x-btn" id="pinX">✕</button></div>'
-      +'  <div class="sheet-bd" style="text-align:center">'
-      +'    <div class="pin-sub" id="pinSub">4 to 12 digits. There is no recovery — if you forget it you\u2019d have to clear the app\u2019s data and restore a backup.</div>'
-      +'    <div class="lk-dots" id="pinDots"></div>'
-      +'    <div class="pin-err" id="pinErr"></div>'
-      +'    <div class="lk-pad" id="pinPad"></div>'
-      +'  </div>'
-      +'  <div class="sheet-ft"><button class="btn ghost sm" id="pinCancel">Cancel</button>'
-      +'    <button class="btn solid sm" id="pinNext" disabled>Next</button></div>'
+       '<div class="sheet">'
+      +'  <div class="sheet-hd"><h3>App lock</h3>'
+      +'    <button class="x-btn" id="pinX" title="Cancel">\u2715</button></div>'
+      +'  <div class="sheet-bd" id="pinBody"></div>'
       +'</div>';
     document.body.appendChild(host);
-
-    var dots=host.querySelector("#pinDots"), err=host.querySelector("#pinErr");
-    var title=host.querySelector("#pinTitle"), sub=host.querySelector("#pinSub");
-    var next=host.querySelector("#pinNext");
-    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    var body=host.querySelector("#pinBody");
+    var close=function(){ if(pad) pad.dispose(); if(host.parentNode) host.parentNode.removeChild(host); };
     host.querySelector("#pinX").onclick=close;
-    host.querySelector("#pinCancel").onclick=close;
 
-    function showErr(msg){
-      err.textContent=msg||"";
-      err.style.display=msg?"block":"none";
-      if(msg){
-        var sh=host.querySelector(".pin-sheet");
-        sh.classList.remove("shake"); void sh.offsetWidth; sh.classList.add("shake");
-      }
-    }
-    function drawDots(){
-      dots.innerHTML="";
-      var n=Math.max(4, entered.length);
-      for(var i=0;i<n;i++){
-        var s=document.createElement("span");
-        s.className="lk-dot"+(i<entered.length?" on":"");
-        dots.appendChild(s);
-      }
-      next.disabled = entered.length<4;
-      next.textContent = stage===1 ? "Next" : "Set PIN";
-    }
-    function press(k){
-      showErr("");
-      if(k==="⌫"){ entered=entered.slice(0,-1); drawDots(); return; }
-      if(entered.length>=12){ showErr("A PIN can be at most 12 digits."); return; }
-      entered+=k; drawDots();
-    }
-    var pad=host.querySelector("#pinPad");
-    ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
-      var b=document.createElement("button");
-      b.className="lk-key"+(k===""?" lk-blank":"");
-      b.textContent=k; if(k==="") b.disabled=true;
-      b.addEventListener("click", function(){ press(k); });
-      pad.appendChild(b);
-    });
-    host.addEventListener("keydown", function(e){
-      if(/^[0-9]$/.test(e.key)) press(e.key);
-      else if(e.key==="Backspace") press("⌫");
-      else if(e.key==="Enter" && entered.length>=4) next.click();
-    });
-    host.tabIndex=-1; setTimeout(function(){ try{ host.focus(); }catch(e){} },50);
-
-    next.onclick=function(){
-      if(entered.length<4){ showErr("A PIN needs at least 4 digits — you've entered "+entered.length+"."); return; }
-      if(stage===1){
-        first=entered; entered=""; stage=2;
-        title.textContent="Confirm your PIN";
-        sub.textContent="Type the same PIN again so we know it's what you meant.";
-        showErr(""); drawDots();
-        return;
-      }
-      if(entered!==first){
-        showErr("Those two didn't match. Starting again.");
-        first=""; entered=""; stage=1;
-        title.textContent="Choose a PIN";
-        sub.textContent="4 to 12 digits. There is no recovery.";
-        drawDots();
-        return;
-      }
-      next.disabled=true; next.textContent="Saving…";
-      setLockPin(first, function(){
-        close();
-        refreshSecUI();
-        flashSaved("app lock on");
-        // offer face unlock only if a camera is genuinely there
-        cameraCheck().then(function(c){
-          if(!c.ok) return;
-          appModal({title:"Add face unlock?",
-            message:"Unlock with your face instead of typing the PIN. Needs a one-time ~6MB model download, then it runs entirely on your device. Your PIN keeps working either way.",
-            confirmText:"Set it up", cancelText:"PIN only",
-            onConfirm:function(){ enrolFace(function(){ refreshSecUI(); }); }});
-        });
+    var first="", pad=null;
+    function stage1(){
+      if(pad){ pad.dispose(); body.innerHTML=""; }
+      pad=buildKeypad({
+        title:"Choose a PIN",
+        sub:"4 digits. There's no recovery \u2014 if you forget it you'd have to clear the app's data and restore a backup.",
+        len:4,
+        onCancel:close,
+        onDone:function(d){ first=d; stage2(); }
       });
-    };
-    drawDots();
+      body.appendChild(pad.el);
+    }
+    function stage2(){
+      pad.dispose(); body.innerHTML="";
+      pad=buildKeypad({
+        title:"Confirm your PIN",
+        sub:"Type the same four digits again.",
+        len:4,
+        wrongText:"Those didn't match \u2014 start again",
+        validate:function(d){ return d===first; },
+        onCancel:close,
+        onDone:function(){
+          pad.say("Saving\u2026");
+          setLockPin(first, function(){
+            close();
+            refreshSecUI();
+            flashSaved("app lock on");
+            // offer face unlock only where a camera genuinely exists
+            cameraCheck().then(function(c){
+              if(!c.ok) return;
+              appModal({title:"Add face unlock?",
+                message:"Unlock with your face instead of typing the PIN. Needs a one-time \u00b76MB model download, then it runs entirely on your device. Your PIN keeps working either way.",
+                confirmText:"Set it up", cancelText:"PIN only",
+                onConfirm:function(){ enrolFace(function(){ refreshSecUI(); }); }});
+            });
+          });
+        }
+      });
+      body.appendChild(pad.el);
+      // a wrong confirmation sends them back to step one
+      var origSay=pad.say;
+      pad.el.addEventListener("animationend", function(){}, {once:true});
+      setTimeout(function(){
+        var errEl=pad.el.querySelector(".kp-err");
+        var obs=new MutationObserver(function(){
+          if(/didn't match/.test(errEl.textContent)){
+            obs.disconnect();
+            setTimeout(function(){ first=""; stage1(); }, 900);
+          }
+        });
+        obs.observe(errEl,{childList:true,characterData:true,subtree:true});
+      },50);
+    }
+    stage1();
   }
 
   window.addEventListener("wllm-ready", function(){ wllmMarkReady(); });
