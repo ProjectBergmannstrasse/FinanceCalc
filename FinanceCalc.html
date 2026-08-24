@@ -1435,6 +1435,17 @@
     background:var(--card2);border:1px solid var(--bd2);color:var(--mut)}
   .live-badge.ok{background:rgba(61,220,132,.14);color:var(--up);border-color:rgba(61,220,132,.35)}
   .live-badge.bad{background:rgba(255,107,107,.14);color:var(--down);border-color:rgba(255,107,107,.35)}
+
+  .iv-shot{position:relative;margin:0;flex:none}
+  .iv-dl{position:absolute;right:5px;bottom:5px;width:26px;height:26px;border-radius:50%;
+    border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.62);color:#fff;
+    font-size:13px;font-weight:800;cursor:pointer;padding:0;line-height:1;
+    display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);
+    opacity:0;transition:opacity .15s ease,transform .1s ease}
+  .iv-shot:hover .iv-dl{opacity:1}
+  .iv-dl:active{transform:scale(.88)}
+  @media (hover:none){ .iv-dl{opacity:1} }
+  .iv-dlall{display:block;margin-top:8px}
 </style>
 </head>
 <body>
@@ -10465,9 +10476,14 @@ AI_TYPES.join(", "),
   }
 
   /* The review screen shown to the owner after they unlock. */
-  function showIntrusionReview(){
-    var list=unseenShots();
-    if(!list.length) return;
+  function showIntrusionReview(all){
+    // from the lock screen: only what's new. From Settings: the whole history.
+    var list = all ? loadShots() : unseenShots();
+    if(!list.length){
+      if(all) appModal({title:"Nothing recorded",
+        message:"No unrecognised attempts have been captured on this device.", confirmText:"OK"});
+      return;
+    }
     // attempts recorded without an image (capture off, or no camera) still belong here
     var shotTimes=list.map(function(s){ return s.at; });
     var textOnly=unseenAttempts().filter(function(a){
@@ -10477,7 +10493,7 @@ AI_TYPES.join(", "),
     host.className="ov in page-mode"; host.id="introOv";
     host.innerHTML=
        '<div class="sheet">'
-      +'  <div class="sheet-hd"><h3>\u26A0\uFE0F Unrecognised attempts</h3>'
+      +'  <div class="sheet-hd"><h3>\u26A0\uFE0F Foreign activity</h3>'
       +'    <button class="x-btn" id="ivX">\u2715</button></div>'
       +'  <div class="sheet-bd">'
       +'    <div class="rq-warn">Someone tried to open this app and wasn\u2019t recognised. '
@@ -10487,22 +10503,73 @@ AI_TYPES.join(", "),
                 +'<div class="iv-when">'+esc(fmtLogTime(s.at))+' \u00b7 '+esc(agoText(s.at))
                 +'<span class="iv-kind">'+esc(s.reason==="pin"?"wrong PIN":"face not recognised")+'</span></div>'
                 +'<div class="iv-shots">'
-                + (s.frames||[]).map(function(f){ return '<img src="'+f+'" alt="attempt">'; }).join("")
+                + (s.frames||[]).map(function(f,fi){
+                    return '<figure class="iv-shot">'
+                      +'<img src="'+f+'" alt="unrecognised person">'
+                      +'<button class="iv-dl" data-i="'+i+'" data-f="'+fi+'" title="Download this image">\u2193</button>'
+                      +'</figure>'; }).join("")
                 + ((s.frames&&s.frames.length)?'':'<div class="iv-none">no image captured</div>')
-                +'</div></div>';
+                +'</div>'
+                + ((s.frames&&s.frames.length>1)
+                    ? '<button class="kp-link iv-dlall" data-i="'+i+'">Download all '+s.frames.length+' images</button>'
+                    : '')
+                +'</div>';
             }).join("")
       +'    <div class="rc-secd" style="margin-top:14px">These images are stored on this device only. '
       +'      Delete them once you\u2019ve looked \u2014 keeping images of people has its own risks.</div>'
       +'  </div>'
       +'  <div class="sheet-ft">'
+      +'    <button class="btn ghost sm" id="ivDlAll">\u2193 Download all</button>'
       +'    <button class="btn ghost sm" id="ivKeep">Keep</button>'
-      +'    <button class="btn primary sm" id="ivDelete">Delete images</button></div>'
+      +'    <button class="btn primary sm" id="ivDelete">Delete</button></div>'
       +'</div>';
     document.body.appendChild(host);
+    function dlFrame(dataUrl, name){
+      try{
+        var a=document.createElement("a");
+        a.href=dataUrl; a.download=name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }catch(e){ flashSaved("couldn't download that image"); }
+    }
+    function stamp(ms){
+      var d2=new Date(ms);
+      return d2.getFullYear()+"-"+String(d2.getMonth()+1).padStart(2,"0")+"-"
+        +String(d2.getDate()).padStart(2,"0")+"_"+String(d2.getHours()).padStart(2,"0")
+        +String(d2.getMinutes()).padStart(2,"0");
+    }
+    host.querySelectorAll(".iv-dl").forEach(function(b){
+      b.addEventListener("click", function(e){
+        e.stopPropagation();
+        var rec=list[+b.getAttribute("data-i")], fi=+b.getAttribute("data-f");
+        if(rec && rec.frames && rec.frames[fi])
+          dlFrame(rec.frames[fi], "foreign-activity_"+stamp(rec.at)+"_"+(fi+1)+".jpg");
+      });
+    });
+    host.querySelectorAll(".iv-dlall").forEach(function(b){
+      b.addEventListener("click", function(){
+        var rec=list[+b.getAttribute("data-i")];
+        if(!rec||!rec.frames) return;
+        // stagger them, or the browser drops all but the first
+        rec.frames.forEach(function(f,fi){
+          setTimeout(function(){ dlFrame(f, "foreign-activity_"+stamp(rec.at)+"_"+(fi+1)+".jpg"); }, fi*350);
+        });
+        flashSaved("downloading "+rec.frames.length+" images");
+      });
+    });
     var close=function(){ markShotsSeen(); markAttemptsSeen();
       if(host.parentNode) host.parentNode.removeChild(host); };
     host.querySelector("#ivX").onclick=close;
     host.querySelector("#ivKeep").onclick=close;
+    host.querySelector("#ivDlAll").onclick=function(){
+      var n=0;
+      list.forEach(function(rec){
+        (rec.frames||[]).forEach(function(f,fi){
+          setTimeout(function(){ dlFrame(f,"foreign-activity_"+stamp(rec.at)+"_"+(fi+1)+".jpg"); }, n*350);
+          n++;
+        });
+      });
+      flashSaved(n?("downloading "+n+" image"+(n===1?"":"s")):"no images to download");
+    };
     host.querySelector("#ivDelete").onclick=function(){
       clearShots(); markAttemptsSeen();
       if(host.parentNode) host.parentNode.removeChild(host);
@@ -10552,6 +10619,13 @@ AI_TYPES.join(", "),
         flashSaved(afChk.checked?"auto unlock on":"auto unlock off");
       });
     }
+    var faNote=document.getElementById("faLogNote");
+    if(faNote){
+      var n=loadShots().length;
+      faNote.textContent = n
+        ? n+" attempt"+(n===1?"":"s")+" recorded with images. Review or download them any time."
+        : "Unrecognised attempts, with images. Nothing recorded yet.";
+    }
     var capChk=document.getElementById("capChk");
     if(capChk && !capChk._bound){
       capChk._bound=true;
@@ -10564,6 +10638,11 @@ AI_TYPES.join(", "),
           : "Off. Attempts are still logged with a timestamp, just without images.";
         flashSaved(capChk.checked?"attempt photos on":"attempt photos off");
       });
+    }
+    var faBtn=document.getElementById("faLogBtn");
+    if(faBtn && !faBtn._bound){
+      faBtn._bound=true;
+      faBtn.addEventListener("click", function(){ showIntrusionReview(true); });
     }
     var recBtn=document.getElementById("recBtn");
     if(recBtn) recBtn.addEventListener("click", function(){
@@ -14509,6 +14588,11 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Photograph failed attempts</div>
         <div class="si-d" id="capNote">Takes a few photos when someone isn't recognised, and shows them a notice while it does. Never silent.</div></div>
       <label class="sw"><input type="checkbox" id="capChk" checked><i></i></label>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Foreign activity</div>
+        <div class="si-d" id="faLogNote">Unrecognised attempts, with images. Review or download them any time.</div></div>
+      <button class="btn ghost sm" id="faLogBtn">Open</button>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Recovery question</div>
