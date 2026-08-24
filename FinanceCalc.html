@@ -971,6 +971,10 @@
 
   /* ── Ask AI chat ─────────────────────────────────────────────── */
   .chat-sheet{max-width:540px;height:min(84vh,660px);display:flex;flex-direction:column}
+  .ov.page-mode .chat-sheet{height:100%;max-width:100%}
+  .ov.page-mode .chat-body{max-width:560px;margin:0 auto;width:100%;padding:18px}
+  .ov.page-mode .chat-foot{max-width:560px;margin:0 auto;width:100%;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
   .chat-hd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd)}
   .chat-hd h3{font-size:15px;margin:0;flex:none}
   .chat-engine{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;
@@ -1243,9 +1247,24 @@
     padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);
     opacity:0;pointer-events:none;transition:opacity .18s ease}
   .ov.in{opacity:1;pointer-events:auto}
+  body.page-open{overflow:hidden}
+  /* A full-page view inside the app, not a sheet sliding up from the bottom.
+     Set-up flows are pages: they fill the screen, keep their own header with
+     an ✕, and scroll their own body. */
+  .ov.page-mode{padding:0;align-items:stretch;justify-content:stretch;background:var(--bg);backdrop-filter:none}
+  .ov.page-mode .sheet{max-width:100%;width:100%;height:100%;max-height:100%;
+    border-radius:0;border:0;box-shadow:none;animation:pageUp .22s cubic-bezier(.22,1,.36,1) backwards}
+  @keyframes pageUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .ov.page-mode .sheet-hd{padding:16px 18px;border-bottom:1px solid var(--bd);
+    position:sticky;top:0;background:var(--bg);z-index:2}
+  .ov.page-mode .sheet-hd h3{font-size:17px}
+  .ov.page-mode .sheet-bd{padding:22px 18px;max-width:520px;margin:0 auto;width:100%}
+  .ov.page-mode .sheet-ft{position:sticky;bottom:0;background:var(--bg);
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));
+    max-width:520px;margin:0 auto;width:100%}
   @media (max-width:520px){
-    .ov{align-items:flex-end;padding:0}
-    .ov .sheet{max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
+    .ov:not(.page-mode){align-items:flex-end;padding:0}
+    .ov:not(.page-mode) .sheet{max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
   }
 </style>
 </head>
@@ -6493,7 +6512,7 @@ AI_TYPES.join(", "),
     var host=document.getElementById("chatSheetHost");
     if(!host){ host=document.createElement("div"); host.id="chatSheetHost"; document.body.appendChild(host); }
     host.innerHTML=
-       '<div class="ov in" id="chatOv">'
+       '<div class="ov in page-mode" id="chatOv">'
       +'  <div class="sheet chat-sheet">'
       +'    <div class="chat-hd">'
       +'      <h3>Ask AI</h3>'
@@ -6767,7 +6786,7 @@ AI_TYPES.join(", "),
   /* ── camera sheet: retry, upload fallback, multiple faces ──────── */
   function openCameraSheet(opts){
     var host=document.createElement("div");
-    host.className="ov in"; host.id="faceOv";
+    host.className="ov in page-mode"; host.id="faceOv";
     host.innerHTML=
        '<div class="sheet face-sheet">'
       +'  <div class="sheet-hd"><h3>'+esc(opts.title||"Face")+'</h3>'
@@ -7017,7 +7036,7 @@ AI_TYPES.join(", "),
   function openPinSetup(){
     var stage=1, first="", entered="";
     var host=document.createElement("div");
-    host.className="ov in"; host.id="pinSetupOv";
+    host.className="ov in page-mode"; host.id="pinSetupOv";
     host.innerHTML=
        '<div class="sheet pin-sheet">'
       +'  <div class="sheet-hd"><h3 id="pinTitle">Choose a PIN</h3>'
@@ -7496,7 +7515,7 @@ AI_TYPES.join(", "),
       return;
     }
     var host=document.createElement("div");
-    host.className="ov in"; host.id="recSetupOv";
+    host.className="ov in page-mode"; host.id="recSetupOv";
     host.innerHTML=
        '<div class="sheet" style="max-width:400px">'
       +'  <div class="sheet-hd"><h3>Recovery question</h3>'
@@ -7733,7 +7752,7 @@ AI_TYPES.join(", "),
 
   function openRecoverySheet(){
     var host=document.createElement("div");
-    host.className="ov in"; host.id="recovOv";
+    host.className="ov in page-mode"; host.id="recovOv";
     host.innerHTML=
        '<div class="sheet" style="max-width:520px;height:min(86vh,680px)">'
       +'  <div class="sheet-hd"><h3>Recovery</h3>'
@@ -8053,7 +8072,7 @@ AI_TYPES.join(", "),
   function openGuidedEnrol(opts){
     opts=opts||{};
     var host=document.createElement("div");
-    host.className="ov in"; host.id="enrolOv";
+    host.className="ov in page-mode"; host.id="enrolOv";
     host.innerHTML=
        '<div class="sheet face-sheet">'
       +'  <div class="sheet-hd"><h3>Set up face unlock</h3>'
@@ -8736,7 +8755,7 @@ AI_TYPES.join(", "),
   /* ---- the deep check sheet ---- */
   function openDeepCheck(){
     var host=document.createElement("div");
-    host.className="ov in"; host.id="deepOv";
+    host.className="ov in page-mode"; host.id="deepOv";
     host.innerHTML=
        '<div class="sheet" style="max-width:480px">'
       +'  <div class="sheet-hd"><h3>Advanced check</h3>'
@@ -8844,6 +8863,20 @@ AI_TYPES.join(", "),
     refreshAgentPanel();
   }
 
+
+  /* A full-page overlay must stop the page behind it scrolling, or the
+     background drifts under your finger on a phone. Watching the DOM keeps
+     this in one place instead of every sheet remembering to do it. */
+  function watchPageOverlays(){
+    var sync=function(){
+      var any=document.querySelector(".ov.page-mode");
+      document.body.classList.toggle("page-open", !!any);
+    };
+    try{
+      new MutationObserver(sync).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+    }catch(e){}
+    sync();
+  }
   function bindSecurityPanel(){
     loadLock();
     loadFace();
@@ -12705,6 +12738,7 @@ AI_TYPES.join(", "),
     loadAgentCfg();
     loadAttempts();
     bindRecoveryEntry();
+    watchPageOverlays();
     bindAllDatePickers();
     /* Sheets are built at runtime, so watch for date inputs added later
        rather than hunting down every place that creates one. */
