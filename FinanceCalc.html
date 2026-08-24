@@ -451,7 +451,10 @@
   #aiBtn{display:none}
 
   /* In-app modal — replaces the browser's native prompt/confirm */
-  .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+  /* Confirmations are always a response to something already open, so they
+     must outrank every sheet. At z-index 200 they rendered UNDERNEATH the
+     newer sheets (300-9400) and looked like nothing had happened. */
+  .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:99000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
   .mdl{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;width:min(420px,100%);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;animation:mdlIn .16s ease-out}
   @keyframes mdlIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
   .mdl-hd{padding:18px 20px 0;font-size:16px;font-weight:700}
@@ -1136,6 +1139,7 @@
     border-radius:11px;margin-bottom:7px;background:var(--card);
     animation:rise .18s backwards}
   .rc-card.done{opacity:.5}
+  .hs-card.done{opacity:.45}
   .rc-ic{font-size:17px;flex:none}
   .rc-main{flex:1;min-width:0}
   .rc-t{font-size:13px;font-weight:600;line-height:1.4}
@@ -1231,6 +1235,18 @@
   .hs-empty .he-ic{font-size:30px;opacity:.4;margin-bottom:10px}
   .hs-empty .he-t{font-size:13px;color:var(--tx);font-weight:700;margin-bottom:5px}
   .hs-empty .he-d{font-size:11.5px;line-height:1.6}
+
+  /* The overlay behind every sheet. This had no rule at all — the sheets
+     were relying on a class that was never styled, so they rendered inline
+     in the page instead of floating above it. */
+  .ov{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
+    padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);
+    opacity:0;pointer-events:none;transition:opacity .18s ease}
+  .ov.in{opacity:1;pointer-events:auto}
+  @media (max-width:520px){
+    .ov{align-items:flex-end;padding:0}
+    .ov .sheet{max-width:100%;border-radius:20px 20px 0 0;max-height:92vh}
+  }
 </style>
 </head>
 <body>
@@ -4626,7 +4642,7 @@ AI_TYPES.join(", "),
     logAction(mass?"mass":"delete",
       label || (items.length+" entr"+(items.length===1?"y":"ies")+" deleted"),
       {type:"delete", items:items.map(function(t){ return clone(t); })});
-    if(mass) flashSaved(items.length+" deleted — kept in the hidden vault");
+    if(mass) flashSaved(items.length+" deleted — all recoverable from the vault");
   }
   function purgeTrash(){
     if(!Array.isArray(state.trash) || !state.trash.length) return 0;
@@ -7582,10 +7598,8 @@ AI_TYPES.join(", "),
      DEEP RECOVERY — tiered vault + action log
 
      Tier 1  Recently deleted   the normal 30-day bin
-     Tier 2  Deep vault         survives emptying tier 1
-     Tier 3  Hidden vault       reached by double-tapping the dashboard
-                                footer line; holds mass deletions
-     Tier 4+ Custom vaults      user-defined, each with its own phrase
+     Tier 2  Vault              survives emptying tier 1; large deletions
+                                are flagged so they stand out
 
      Nothing is destroyed by a delete: an item moves down the tiers.
      Only "Erase all data" and the age purge remove anything for good,
@@ -7593,7 +7607,7 @@ AI_TYPES.join(", "),
      ============================================================ */
   var VAULT_KEY="mymoney_vault_v1";
   var ACTIONLOG_KEY="mymoney_actions_v1";
-  var MASS_DELETE_THRESHOLD=5;      // this many at once counts as a mass delete
+  var MASS_DELETE_THRESHOLD=5;      // this many at once is worth flagging
   var ACTION_LOG_MAX=400;
 
   var vault={ deep:[], hidden:[], custom:{} };   // custom: {name:{phrase, items:[]}}
@@ -7627,22 +7641,15 @@ AI_TYPES.join(", "),
   function vaultStore(items, wasMass){
     var batch={ id:"v"+Date.now().toString(36), at:Date.now(),
                 items:items.map(function(t){ return clone(t); }), mass:!!wasMass };
-    if(wasMass){ vault.hidden.unshift(batch); }
-    else { vault.deep.unshift(batch); }
+    vault.deep.unshift(batch);
     // generous caps — this is the safety net, not a cache
-    if(vault.deep.length>200) vault.deep.length=200;
-    if(vault.hidden.length>100) vault.hidden.length=100;
+    if(vault.deep.length>250) vault.deep.length=250;
     saveVault();
     return batch;
   }
-  function vaultTier(tier){
-    if(tier==="deep") return vault.deep;
-    if(tier==="hidden") return vault.hidden;
-    var c=vault.custom[tier];
-    return c ? c.items : [];
-  }
+  function vaultTier(){ return vault.deep; }
   function vaultRestore(tier, batchId){
-    var list=vaultTier(tier);
+    var list=vaultTier();
     var idx=list.findIndex(function(b){ return b.id===batchId; });
     if(idx<0) return 0;
     var batch=list[idx];
@@ -7700,31 +7707,6 @@ AI_TYPES.join(", "),
   /* ---- hidden tiers unlocked by a phrase --------------------------
      Double-tapping the dashboard footer opens tier 3. Owners can add
      their own phrases for further tiers. */
-  var HIDDEN_TAPS=0, HIDDEN_TIMER=null;
-  function bindHiddenUnlock(){
-    var foot=document.querySelector("#pageDash .foot, .foot");
-    if(!foot || foot._vaultBound) return;
-    foot._vaultBound=true;
-    foot.style.cursor="default";
-    foot.addEventListener("click", function(){
-      HIDDEN_TAPS++;
-      clearTimeout(HIDDEN_TIMER);
-      HIDDEN_TIMER=setTimeout(function(){ HIDDEN_TAPS=0; }, 700);
-      if(HIDDEN_TAPS>=2){ HIDDEN_TAPS=0; openVaultSheet("hidden"); }
-    });
-  }
-  function addCustomVault(name, phrase){
-    vault.custom[name]={ phrase:String(phrase||"").toLowerCase().trim(), items:[] };
-    saveVault();
-  }
-  function findVaultByPhrase(text){
-    var t=String(text||"").toLowerCase().trim();
-    var hit=null;
-    Object.keys(vault.custom).forEach(function(k){
-      if(vault.custom[k].phrase && vault.custom[k].phrase===t) hit=k;
-    });
-    return hit;
-  }
 
   /* ---- recovery sheet: every action as a card you can revert ---- */
   var RECOVERY_WINDOWS=[5,10,30,60];
@@ -7759,7 +7741,7 @@ AI_TYPES.join(", "),
       +'    <button class="x-btn" id="rcX" title="Close">\u2715</button></div>'
       +'  <div class="rc-tabs" id="rcTabs">'
       +'    <button class="rc-tab on" data-v="log">Actions</button>'
-      +'    <button class="rc-tab" data-v="deep">Deep vault</button>'
+      +'    <button class="rc-tab" data-v="deep">Vault</button>'
       +'    <button class="rc-tab" data-v="time">Rollback</button>'
       +'  </div>'
       +'  <div class="sheet-bd" id="rcBody"></div>'
@@ -7814,36 +7796,56 @@ AI_TYPES.join(", "),
   }
   function drawActionLog(){
     if(!actionLog.length)
-      return '<div class="rc-empty">Nothing logged yet. Adds, edits and deletes appear here.</div>';
-    return actionLog.slice(0,80).map(function(a){
-      return '<div class="rc-card'+(a.reverted?" done":"")+'">'
-        +'<div class="rc-ic">'+(ACTION_ICON[a.kind]||"•")+'</div>'
-        +'<div class="rc-main"><div class="rc-t">'+esc(a.label)+'</div>'
-        +'<div class="rc-s">'+esc(fmtLogTime(a.at))+' · '+agoText(a.at)+'</div></div>'
+      return '<div class="hs-empty"><div class="he-ic">\u21BA</div>'
+        +'<div class="he-t">Nothing logged yet</div>'
+        +'<div class="he-d">Adds, edits and deletes appear here<br>with a one-tap undo.</div></div>';
+    var html="", lastDay="";
+    actionLog.slice(0,80).forEach(function(a,i){
+      var day=dayHeading(a.at);
+      if(day!==lastDay){ html+='<div class="hs-day">'+esc(day)+'</div>'; lastDay=day; }
+      var cls = a.kind==="delete"||a.kind==="mass" ? "del"
+              : a.kind==="add" ? "add"
+              : a.kind==="edit" ? "edit" : "";
+      html+='<div class="hs-card'+(a.reverted?" done":"")+'" style="animation-delay:'+Math.min(i*22,220)+'ms">'
+        +'<div class="hs-ic '+cls+'">'+(ACTION_ICON[a.kind]||"\u2022")+'</div>'
+        +'<div class="hs-main"><div class="hs-t">'+esc(a.label)+'</div>'
+        +'<div class="hs-sub"><span>'+esc(agoText(a.at))+'</span>'
+        +'<span class="hs-dot"></span><span>'+esc(fmtLogTime(a.at))+'</span></div></div>'
         +(a.reverted
-          ? '<span class="rc-done">reverted</span>'
-          : (a.undo?'<button class="btn ghost sm" data-revert="'+a.id+'">Undo</button>':''))
+          ? '<span class="hs-pill">reverted</span>'
+          : (a.undo?'<button class="hs-btn" data-revert="'+a.id+'">Undo</button>':''))
         +'</div>';
-    }).join("");
-  }
-  function drawVault(){
-    var out="";
-    [["deep","Deep vault","Deleted entries kept after the normal bin is emptied."],
-     ["hidden","Hidden vault","Mass deletions land here automatically."]].forEach(function(t){
-      var list=vaultTier(t[0]);
-      out+='<div class="rc-sec">'+esc(t[1])+' <span class="mut">· '+list.length+'</span></div>'
-         + '<div class="rc-secd">'+esc(t[2])+'</div>';
-      out+= list.length ? list.map(function(b){
-        return '<div class="rc-card">'
-          +'<div class="rc-ic">'+(b.mass?"⚠️":"🗑️")+'</div>'
-          +'<div class="rc-main"><div class="rc-t">'+b.items.length+' entr'+(b.items.length===1?"y":"ies")
-          + (b.mass?' <span class="rc-flag">mass delete</span>':'')+'</div>'
-          +'<div class="rc-s">'+esc(fmtLogTime(b.at))+' · '+agoText(b.at)+'</div></div>'
-          +'<button class="btn ghost sm" data-restore="'+b.id+'" data-tier="'+t[0]+'">Restore</button>'
-          +'</div>';
-      }).join("") : '<div class="rc-empty sm">Empty.</div>';
     });
-    return out;
+    return html;
+  }
+  /* One vault, shown with the same card as everything else in the app. */
+  function drawVault(){
+    var list=vaultTier();
+    if(!list.length)
+      return '<div class="hs-empty"><div class="he-ic">\uD83D\uDDC4\uFE0F</div>'
+        +'<div class="he-t">The vault is empty</div>'
+        +'<div class="he-d">Deleted entries are kept here even after<br>the normal bin is emptied.</div></div>';
+    var html='<div class="rc-secd" style="margin-bottom:10px">Kept even after the bin is emptied. '
+      +'Large deletions are marked, because those are the ones worth a second look.</div>';
+    var lastDay="";
+    list.forEach(function(b,i){
+      var day=dayHeading(b.at||Date.now());
+      if(day!==lastDay){ html+='<div class="hs-day">deleted '+esc(day)+'</div>'; lastDay=day; }
+      var sum=b.items.reduce(function(a,t){ return a+Math.abs(num(t.amount)); },0);
+      var names=b.items.slice(0,2).map(function(t){ return t.note||t.cat||"entry"; }).join(", ");
+      if(b.items.length>2) names+=" +"+(b.items.length-2)+" more";
+      html+='<div class="hs-card" style="animation-delay:'+Math.min(i*22,220)+'ms">'
+        +'<div class="hs-ic del">'+(b.mass?"\u26A0\uFE0F":"\uD83D\uDDD1\uFE0F")+'</div>'
+        +'<div class="hs-main"><div class="hs-t">'+esc(names)+'</div>'
+        +'<div class="hs-sub"><span>'+b.items.length+' entr'+(b.items.length===1?"y":"ies")+'</span>'
+        +'<span class="hs-dot"></span><span>'+esc(agoText(b.at))+'</span>'
+        +(b.mass?'<span class="hs-pill soon">large deletion</span>':'')
+        +'</div></div>'
+        +'<div class="hs-amt">'+fmt(sum,state.currency)+'</div>'
+        +'<button class="hs-btn" data-restore="'+b.id+'" data-tier="deep">Restore</button>'
+        +'</div>';
+    });
+    return html;
   }
   function drawRollback(){
     var cfg=recoveryCfg();
@@ -7919,8 +7921,7 @@ AI_TYPES.join(", "),
       },
       actionLog:actionLog.slice(0,200),
       vault:{
-        deep:vault.deep.map(function(b){ return {id:b.id, at:b.at, count:b.items.length, mass:b.mass}; }),
-        hidden:vault.hidden.map(function(b){ return {id:b.id, at:b.at, count:b.items.length, mass:b.mass}; })
+        deep:vault.deep.map(function(b){ return {id:b.id, at:b.at, count:b.items.length, mass:b.mass}; })
       },
       trash:(state.trash||[]).map(function(t){ return {at:t.at}; })
     };
@@ -12703,7 +12704,6 @@ AI_TYPES.join(", "),
     loadVault();
     loadAgentCfg();
     loadAttempts();
-    bindHiddenUnlock();
     bindRecoveryEntry();
     bindAllDatePickers();
     /* Sheets are built at runtime, so watch for date inputs added later
