@@ -454,7 +454,7 @@
   /* Confirmations are always a response to something already open, so they
      must outrank every sheet. At z-index 200 they rendered UNDERNEATH the
      newer sheets (300-9400) and looked like nothing had happened. */
-  .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:99000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+  .mdl-ov{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:100500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
   .mdl{background:var(--panel);border:1px solid var(--bd2);border-radius:16px;width:min(420px,100%);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;animation:mdlIn .16s ease-out}
   @keyframes mdlIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
   .mdl-hd{padding:18px 20px 0;font-size:16px;font-weight:700}
@@ -1256,6 +1256,10 @@
   /* The overlay behind every sheet. This had no rule at all — the sheets
      were relying on a class that was never styled, so they rendered inline
      in the page instead of floating above it. */
+  /* Above the lock screen (99999) — a camera sheet opened from the lock
+     screen used to render underneath it, so the unlock sat on
+     "Opening the camera…" with the sheet invisible behind. */
+  .ov.above-lock{z-index:100200}
   .ov{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;
     padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);
     opacity:0;pointer-events:none;transition:opacity .18s ease}
@@ -6235,6 +6239,7 @@ AI_TYPES.join(", "),
       +'  <div class="lk-dots" id="lkDots"></div>'
       +'  <div class="lk-pad" id="lkPad"></div>'
       +'  <button class="btn ghost sm" id="lkBio" style="display:none;margin-top:12px">👤 Use Face ID</button>'
+      +'  <button class="lk-forgot" id="lkForgot" style="display:none">Forgot your PIN?</button>'
       +'</div>';
     document.body.appendChild(ov);
     document.body.style.overflow="hidden";
@@ -6310,11 +6315,27 @@ AI_TYPES.join(", "),
       bb.textContent="\uD83D\uDE00 Use face unlock";
       bb.style.display="";
       bb.addEventListener("click", function(){
+        // the model is an external download; inside a frame it can never arrive
+        if(inFrame() && !window.faceapi){
+          sub.textContent="Face unlock needs the app open in its own tab \u2014 use your PIN";
+          return;
+        }
         sub.textContent="Opening the camera\u2026";
-        verifyFace(function(ok){
+        bb.disabled=true;
+        var answered=false;
+        var settle=function(ok){
+          if(answered) return; answered=true; bb.disabled=false;
           if(ok) unlock();
-          else { recordFailedAttempt("face"); sub.textContent="Face didn't match \u2014 use your PIN"; }
-        });
+          else { recordFailedAttempt("face"); sub.textContent="Face didn\u2019t match \u2014 use your PIN"; }
+        };
+        // never leave them staring at "Opening the camera…"
+        setTimeout(function(){
+          if(answered) return; answered=true; bb.disabled=false;
+          var sheet=document.getElementById("faceOv");
+          if(sheet && sheet.parentNode) sheet.parentNode.removeChild(sheet);
+          sub.textContent="Camera didn\u2019t start \u2014 use your PIN";
+        }, 15000);
+        verifyFace(settle);
       });
     }
   }
@@ -6846,7 +6867,7 @@ AI_TYPES.join(", "),
   /* ── camera sheet: retry, upload fallback, multiple faces ──────── */
   function openCameraSheet(opts){
     var host=document.createElement("div");
-    host.className="ov in page-mode"; host.id="faceOv";
+    host.className="ov in page-mode"+(opts.aboveLock?" above-lock":""); host.id="faceOv";
     host.innerHTML=
        '<div class="sheet face-sheet">'
       +'  <div class="sheet-hd"><h3>'+esc(opts.title||"Face")+'</h3>'
@@ -7078,7 +7099,7 @@ AI_TYPES.join(", "),
   }
   function verifyFace(cb){
     if(!faceCfg.on || !facePeople().length){ cb(false); return; }
-    openCameraSheet({ title:"Unlock with your face", action:"verify",
+    openCameraSheet({ title:"Unlock with your face", action:"verify", aboveLock:true,
       onResult:function(ok){ cb(!!ok); }, onCancel:function(){ cb(false); } });
   }
   function faceDisable(){ faceCfg.on=false; faceCfg.descriptor=null; faceCfg.people=[]; saveFace(); }
@@ -7093,10 +7114,11 @@ AI_TYPES.join(", "),
      you'd think the lock was on when it wasn't. This one never
      closes without saying why.
      ============================================================ */
+  function lockScreenOpen(){ return !!document.getElementById("lockScreen"); }
   function openPinSetup(){
     var stage=1, first="", entered="";
     var host=document.createElement("div");
-    host.className="ov in page-mode"; host.id="pinSetupOv";
+    host.className="ov in page-mode"+(lockScreenOpen()?" above-lock":""); host.id="pinSetupOv";
     host.innerHTML=
        '<div class="sheet pin-sheet">'
       +'  <div class="sheet-hd"><h3 id="pinTitle">Choose a PIN</h3>'
@@ -7659,7 +7681,7 @@ AI_TYPES.join(", "),
   function openRecoveryUnlock(onUnlocked){
     if(!recoveryOn()) return;
     var host=document.createElement("div");
-    host.className="ov in"; host.id="recUnlockOv";
+    host.className="ov in page-mode above-lock"; host.id="recUnlockOv";
     host.innerHTML=
        '<div class="sheet" style="max-width:380px">'
       +'  <div class="sheet-hd"><h3>Forgot your PIN</h3>'
