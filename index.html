@@ -106,6 +106,7 @@ footer a{color:var(--dim);border-bottom-color:var(--line)}
   <b>143 unique builds</b> from <b>v1.0</b> to <b>v38.4</b>, every one of them live and openable below.
   Deduplicated from an original archive of 217 files.</p>
   <div class="hlinks">
+    <a href="./FinanceCalc.html"><b>Open latest (v38.4)</b></a>
     <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">Repository</a>
     <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/commits/main">Commit history</a>
     <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/tree/evolution">Evolution branch (diffable)</a>
@@ -256,8 +257,8 @@ function render(){
       "<td class='num'><span class='sizebar' style='width:"+w+"px'></span><span"+spike+">"+fmtB(d.bytes)+"</span></td>"+
       "<td class='num'>"+fmtN(d.lines)+"</td>"+
       "<td class='num'>"+dTxt+"</td>"+
-      "<td><span class='acts'><a href='./"+enc(d.file)+"'>open</a>"+
-      "<a href='"+REPO+"/blob/main/"+enc(d.file)+"'>source</a><a href='./"+enc(d.file)+"' download>save</a>"+diff+"</span></td></tr>";
+      "<td><span class='acts'><a href='./versions/"+enc(d.file)+"'>open</a>"+
+      "<a href='"+REPO+"/blob/main/versions/"+enc(d.file)+"'>source</a><a href='./versions/"+enc(d.file)+"' download>save</a>"+diff+"</span></td></tr>";
   }).join("");
   rowsEl.innerHTML=html;
   cnt.textContent=list.length+" / "+V.length;
