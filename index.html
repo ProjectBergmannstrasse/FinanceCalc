@@ -18,7 +18,7 @@ a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line2);tran
 a:hover{border-color:var(--fg)}
 .wrap{max-width:1060px;margin:0 auto;padding:0 20px}
 
-header{padding:64px 0 40px;border-bottom:1px solid var(--line)}
+header{padding:64px 0 40px;border-bottom:1px solid var(--line);position:relative}
 .kicker{color:var(--faint);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
 h1{font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:-.01em}
 h1 span{color:var(--dim);font-weight:400}
@@ -94,12 +94,12 @@ footer a{color:var(--dim);border-bottom-color:var(--line)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
-</style>
+.topmail{position:absolute;top:22px;right:0;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line);text-decoration:none;transition:color .15s}.topmail:hover{color:var(--fg)}</style>
 </head>
 <body>
 <div class="wrap">
 
-<header>
+<header><a class="topmail" href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a>
   <div class="kicker">ProjectBergmannstrasse</div>
   <h1>FinanceCalc <span>/ My Money</span></h1>
   <p class="sub">The complete build history of a single-file, offline-first personal finance app —
@@ -111,6 +111,7 @@ footer a{color:var(--dim);border-bottom-color:var(--line)}
     <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/tree/evolution">Evolution branch (diffable)</a>
     <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/blob/main/README.md">README</a>
     <a href="./module/index.html"><b>Module library (1,834)</b></a>
+    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/archive/refs/heads/main.zip">Download everything (.zip)</a>
   </div>
 </header>
 
@@ -256,7 +257,7 @@ function render(){
       "<td class='num'>"+fmtN(d.lines)+"</td>"+
       "<td class='num'>"+dTxt+"</td>"+
       "<td><span class='acts'><a href='./"+enc(d.file)+"'>open</a>"+
-      "<a href='"+REPO+"/blob/main/"+enc(d.file)+"'>source</a>"+diff+"</span></td></tr>";
+      "<a href='"+REPO+"/blob/main/"+enc(d.file)+"'>source</a><a href='./"+enc(d.file)+"' download>save</a>"+diff+"</span></td></tr>";
   }).join("");
   rowsEl.innerHTML=html;
   cnt.textContent=list.length+" / "+V.length;
