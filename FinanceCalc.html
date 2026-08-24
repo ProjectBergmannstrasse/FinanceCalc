@@ -394,7 +394,12 @@
   .pf-switch-ic{flex:none;font-size:14px}
   .pf-switch-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pf-switch-ch{flex:none;color:var(--mut);font-size:11px}
-  .ai-launch{position:absolute;top:14px;right:16px;z-index:2;border:1px solid var(--bd2);border-radius:8px;
+  /* These were three separate absolutely-positioned buttons all pinned to
+     top:14px right:16px — so they stacked on top of each other. They live in
+     a row now, which also wraps instead of overflowing on a narrow screen. */
+  .ai-launch-row{position:absolute;top:12px;right:14px;z-index:2;
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 28px)}
+  .ai-launch{border:1px solid var(--bd2);border-radius:8px;
     background:var(--card2);color:var(--tx);font:inherit;font-size:11.5px;font-weight:700;
     padding:6px 10px;cursor:pointer;transition:border-color .13s,transform .1s;-webkit-tap-highlight-color:transparent}
   .ai-launch:hover{border-color:var(--amber)}
@@ -1450,9 +1455,11 @@
 <main id="pageLedger" class="page" style="display:none">
 <!-- Add entry -->
 <div class="panel">
-  <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill from an image</button>
-  <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan receipt</button>
-  <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
+  <div class="ai-launch-row">
+    <button type="button" id="aiBtn" class="ai-launch" title="AI auto-fill from images">🤖 Fill</button>
+    <button type="button" id="scanBtn" class="ai-launch" title="Scan a receipt — reads text locally, no AI needed">📷 Scan</button>
+    <button type="button" id="chatOpenBtn" class="ai-launch" title="Ask about your money — runs on your device">💬 Ask AI</button>
+  </div>
   <div class="p-head">
     <h2><span class="tick">＋</span> <span id="formTitle">Add an entry</span></h2>
     <button type="button" class="btn ghost sm" id="cancelEditBtn" style="display:none">Cancel edit</button>
@@ -6227,6 +6234,97 @@ AI_TYPES.join(", "),
   }
 
   /* ---- the lock screen ---- */
+
+  /* ============================================================
+     AUTO FACE UNLOCK
+
+     Once you've allowed the camera, the browser remembers that
+     permission for the site — so the lock screen can look for you
+     straight away instead of making you tap a button first.
+
+     Two rules kept deliberately tight:
+       · The camera is opened ONLY while the lock screen is showing,
+         and the track is stopped the moment it closes or you switch
+         away. It is never running in the background.
+       · It only ever compares against the faces YOU enrolled. An
+         unrecognised face simply doesn't unlock — nothing is
+         recorded or captured.
+     ============================================================ */
+  var AUTOFACE_KEY="mymoney_autoface";
+  function autoFaceOn(){
+    try{ return localStorage.getItem(AUTOFACE_KEY)!=="0"; }catch(e){ return true; }
+  }
+  function setAutoFace(on){
+    try{ on ? localStorage.removeItem(AUTOFACE_KEY) : localStorage.setItem(AUTOFACE_KEY,"0"); }catch(e){}
+  }
+  // has the browser already been granted the camera? avoids a prompt on launch
+  function cameraAlreadyGranted(){
+    try{
+      if(!navigator.permissions || !navigator.permissions.query) return Promise.resolve(false);
+      return navigator.permissions.query({name:"camera"})
+        .then(function(r){ return r.state==="granted"; })
+        .catch(function(){ return false; });
+    }catch(e){ return Promise.resolve(false); }
+  }
+
+  var _autoFace={stream:null, raf:null, stop:function(){
+    if(this.raf){ clearTimeout(this.raf); this.raf=null; }
+    if(this.stream){ this.stream.getTracks().forEach(function(t){ t.stop(); }); this.stream=null; }
+  }};
+
+  /* Runs only while the lock screen is up. Cleans itself up on unlock,
+     on tab-hide, and on any error. */
+  function startAutoFace(ovEl, onMatch, setStatus){
+    if(!autoFaceOn()) return;
+    if(!faceCfg.on || !facePeople().length) return;
+    if(cameraBlocked()) return;
+    if(inFrame() && !window.faceapi) return;      // model can't load in a frame
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+
+    cameraAlreadyGranted().then(function(granted){
+      // don't ambush someone with a permission prompt at launch — only run
+      // automatically once they've already allowed it for this site
+      if(!granted) return;
+      setStatus && setStatus("Looking for you\u2026");
+      var video=document.createElement("video");
+      video.autoplay=true; video.playsInline=true; video.muted=true;
+      video.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+      ovEl.appendChild(video);
+
+      navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:320,height:240}})
+        .then(function(stream){
+          _autoFace.stream=stream; video.srcObject=stream;
+          return loadFaceApi();
+        })
+        .then(function(){
+          var tries=0;
+          var tick=function(){
+            if(!_autoFace.stream || !document.getElementById("lockScreen")) { _autoFace.stop(); return; }
+            faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+              .withFaceLandmarks(true).withFaceDescriptor()
+              .then(function(det){
+                if(!_autoFace.stream) return;
+                if(det){
+                  var who=matchFace(Array.from(det.descriptor));
+                  if(who){
+                    _autoFace.stop();
+                    setStatus && setStatus("Welcome back, "+who.name);
+                    setTimeout(function(){ onMatch(who); }, 350);
+                    return;
+                  }
+                  // not a match — say nothing accusatory, just keep offering the PIN
+                  if(++tries===6) setStatus && setStatus("Not recognised \u2014 use your PIN");
+                }
+                if(tries<40) _autoFace.raf=setTimeout(tick, 500);
+                else { _autoFace.stop(); setStatus && setStatus("Enter your PIN"); }
+              })
+              .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
+          };
+          tick();
+        })
+        .catch(function(){ _autoFace.stop(); setStatus && setStatus("Enter your PIN"); });
+    });
+  }
   function showLockScreen(){
     if(!lockIsOn()) return;
     var ov=document.createElement("div");
@@ -6271,7 +6369,8 @@ AI_TYPES.join(", "),
       pad.appendChild(b);
     });
     function unlock(){
-      setTimeout(showAttemptBanner, 700);   // tell them what happened while they were away
+      _autoFace.stop();                     // camera off the instant we're in
+      setTimeout(showAttemptBanner, 700);
       ov.style.opacity="0";
       document.body.style.overflow="";
       setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },220);
@@ -6308,6 +6407,12 @@ AI_TYPES.join(", "),
         openRecoveryUnlock(function(){ unlock(); });
       });
     }
+
+    /* Look for the owner automatically — but only while this screen is
+       showing, and only if they've already granted the camera. */
+    startAutoFace(ov, function(){ unlock(); }, function(msg){ sub.textContent=msg; });
+    var onHide=function(){ if(document.hidden) _autoFace.stop(); };
+    document.addEventListener("visibilitychange", onHide);
 
     // Face unlock as the quick path when it's set up and a camera exists
     if(typeof faceCfg!=="undefined" && faceCfg.on && faceCfg.descriptor){
@@ -9178,6 +9283,19 @@ AI_TYPES.join(", "),
     });
 
     // separate control for face unlock, so it can be added or removed on its own
+    var afChk=document.getElementById("autoFaceChk");
+    if(afChk && !afChk._bound){
+      afChk._bound=true;
+      afChk.checked=autoFaceOn();
+      afChk.addEventListener("change", function(){
+        setAutoFace(afChk.checked);
+        var n=document.getElementById("autoFaceNote");
+        if(n) n.textContent = afChk.checked
+          ? "Look for your face as soon as the lock screen opens. The camera runs only on that screen."
+          : "You'll tap “Use face unlock” yourself. The camera stays off until you do.";
+        flashSaved(afChk.checked?"auto unlock on":"auto unlock off");
+      });
+    }
     var recBtn=document.getElementById("recBtn");
     if(recBtn) recBtn.addEventListener("click", function(){
       if(recoveryOn()){
@@ -13083,6 +13201,11 @@ AI_TYPES.join(", "),
       <div class="si-main"><div class="si-t">Face unlock</div>
         <div class="si-d" id="faceNote">Unlock with your face. Needs a camera.</div></div>
       <button class="btn ghost sm" id="faceBtn">Set up</button>
+    </div>
+    <div class="sec-item">
+      <div class="si-main"><div class="si-t">Unlock automatically</div>
+        <div class="si-d" id="autoFaceNote">Look for your face as soon as the lock screen opens, instead of tapping a button. The camera runs only on that screen.</div></div>
+      <label class="sw"><input type="checkbox" id="autoFaceChk" checked><i></i></label>
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Recovery question</div>
