@@ -1,0 +1,290 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openDatePicker — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openDatePicker<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openDatePicker(input){
+    if(!input) return;
+    var today=new Date();
+    var selected=dpParse(input.value) || new Date();
+    var viewY=selected.getFullYear(), viewM=selected.getMonth();
+    var minD=dpParse(input.getAttribute(&quot;min&quot;));
+    var maxD=dpParse(input.getAttribute(&quot;max&quot;));
+
+    var ov=document.createElement(&quot;div&quot;);
+    ov.className=&quot;ov in dp-ov&quot;;
+    ov.innerHTML=
+       &#x27;&lt;div class=&quot;dp-inner&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;dp-bar&quot;&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;dp-nav&quot; id=&quot;dpPrev&quot; title=&quot;Previous month&quot;&gt;\u2039&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;dp-title&quot; id=&quot;dpTitle&quot;&gt;&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;dp-nav&quot; id=&quot;dpNext&quot; title=&quot;Next month&quot;&gt;\u203a&lt;/button&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;dp-dow&quot;&gt;&#x27;+DP_DOW.map(function(d){ return &#x27;&lt;span&gt;&#x27;+d+&#x27;&lt;/span&gt;&#x27;; }).join(&quot;&quot;)+&#x27;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;dp-grid&quot; id=&quot;dpGrid&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;dp-yearwrap&quot; id=&quot;dpYearWrap&quot; style=&quot;display:none&quot;&gt;&lt;div class=&quot;dp-years&quot; id=&quot;dpYears&quot;&gt;&lt;/div&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;dp-foot&quot;&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn ghost sm&quot; id=&quot;dpToday&quot;&gt;Today&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn ghost sm&quot; id=&quot;dpCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn primary sm&quot; id=&quot;dpOk&quot;&gt;Choose&lt;/button&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+
+    var grid=ov.querySelector(&quot;#dpGrid&quot;);
+    var title=ov.querySelector(&quot;#dpTitle&quot;);
+    var yearWrap=ov.querySelector(&quot;#dpYearWrap&quot;);
+    var yearBox=ov.querySelector(&quot;#dpYears&quot;);
+    var showingYears=false;
+
+    function blocked(d){
+      if(minD &amp;&amp; d&lt;minD) return true;
+      if(maxD &amp;&amp; d&gt;maxD) return true;
+      return false;
+    }
+    function draw(){
+      title.textContent=DP_MONTHS[viewM]+&quot; &quot;+viewY;
+      grid.innerHTML=&quot;&quot;;
+      // Monday-first: getDay() is 0=Sun, so shift it
+      var first=new Date(viewY, viewM, 1);
+      var lead=(first.getDay()+6)%7;
+      var daysIn=new Date(viewY, viewM+1, 0).getDate();
+      var prevDays=new Date(viewY, viewM, 0).getDate();
+      for(var i=0;i&lt;lead;i++){
+        var pd=prevDays-lead+i+1;
+        grid.insertAdjacentHTML(&quot;beforeend&quot;,&#x27;&lt;button class=&quot;dp-day dp-out&quot; data-off=&quot;-1&quot; data-d=&quot;&#x27;+pd+&#x27;&quot;&gt;&#x27;+pd+&#x27;&lt;/button&gt;&#x27;);
+      }
+      for(var day=1; day&lt;=daysIn; day++){
+        var d=new Date(viewY, viewM, day);
+        var cls=&quot;dp-day&quot;;
+        if(dpSameDay(d, selected)) cls+=&quot; on&quot;;
+        if(dpSameDay(d, today))    cls+=&quot; today&quot;;
+        if(blocked(d))             cls+=&quot; off&quot;;
+        grid.insertAdjacentHTML(&quot;beforeend&quot;,
+          &#x27;&lt;button class=&quot;&#x27;+cls+&#x27;&quot; data-off=&quot;0&quot; data-d=&quot;&#x27;+day+&#x27;&quot;&#x27;+(blocked(d)?&quot; disabled&quot;:&quot;&quot;)+&#x27;&gt;&#x27;+day+&#x27;&lt;/button&gt;&#x27;);
+      }
+      var used=lead+daysIn, tail=(7-(used%7))%7;
+      for(var t=1;t&lt;=tail;t++)
+        grid.insertAdjacentHTML(&quot;beforeend&quot;,&#x27;&lt;button class=&quot;dp-day dp-out&quot; data-off=&quot;1&quot; data-d=&quot;&#x27;+t+&#x27;&quot;&gt;&#x27;+t+&#x27;&lt;/button&gt;&#x27;);
+
+      grid.querySelectorAll(&quot;.dp-day&quot;).forEach(function(b){
+        b.addEventListener(&quot;click&quot;, function(){
+          var off=+b.getAttribute(&quot;data-off&quot;), dd=+b.getAttribute(&quot;data-d&quot;);
+          var d=new Date(viewY, viewM+off, dd);
+          if(blocked(d)) return;
+          selected=d; viewY=d.getFullYear(); viewM=d.getMonth();
+          draw();
+        });
+      });
+    }
+    function drawYears(){
+      yearBox.innerHTML=&quot;&quot;;
+      var base=viewY-6;
+      for(var y=base; y&lt;base+16; y++){
+        yearBox.insertAdjacentHTML(&quot;beforeend&quot;,
+          &#x27;&lt;button class=&quot;dp-year&#x27;+(y===viewY?&quot; on&quot;:&quot;&quot;)+&#x27;&quot; data-y=&quot;&#x27;+y+&#x27;&quot;&gt;&#x27;+y+&#x27;&lt;/button&gt;&#x27;);
+      }
+      yearBox.querySelectorAll(&quot;.dp-year&quot;).forEach(function(b){
+        b.addEventListener(&quot;click&quot;, function(){
+          viewY=+b.getAttribute(&quot;data-y&quot;);
+          showingYears=false; yearWrap.style.display=&quot;none&quot;; grid.style.display=&quot;&quot;;
+          ov.querySelector(&quot;.dp-dow&quot;).style.display=&quot;&quot;;
+          draw();
+        });
+      });
+    }
+    title.addEventListener(&quot;click&quot;, function(){
+      showingYears=!showingYears;
+      yearWrap.style.display=showingYears?&quot;&quot;:&quot;none&quot;;
+      grid.style.display=showingYears?&quot;none&quot;:&quot;&quot;;
+      ov.querySelector(&quot;.dp-dow&quot;).style.display=showingYears?&quot;none&quot;:&quot;&quot;;
+      if(showingYears) drawYears();
+    });
+    ov.querySelector(&quot;#dpPrev&quot;).addEventListener(&quot;click&quot;, function(){
+      if(showingYears){ viewY-=16; drawYears(); return; }
+      viewM--; if(viewM&lt;0){ viewM=11; viewY--; } draw();
+    });
+    ov.querySelector(&quot;#dpNext&quot;).addEventListener(&quot;click&quot;, function(){
+      if(showingYears){ viewY+=16; drawYears(); return; }
+      viewM++; if(viewM&gt;11){ viewM=0; viewY++; } draw();
+    });
+    ov.querySelector(&quot;#dpToday&quot;).addEventListener(&quot;click&quot;, function(){
+      selected=new Date(); viewY=selected.getFullYear(); viewM=selected.getMonth(); draw();
+    });
+
+    function close(){
+      ov.classList.remove(&quot;in&quot;);
+      document.removeEventListener(&quot;keydown&quot;, onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },150);
+    }
+    function commit(){
+      input.value=dpFmt(selected);
+      // let the app&#x27;s own listeners run exactly as if it had been typed
+      input.dispatchEvent(new Event(&quot;input&quot;,{bubbles:true}));
+      input.dispatchEvent(new Event(&quot;change&quot;,{bubbles:true}));
+      close();
+    }
+    var onKey=function(e){
+      if(e.key===&quot;Escape&quot;){ e.preventDefault(); close(); }
+      else if(e.key===&quot;Enter&quot;){ e.preventDefault(); commit(); }
+      else if(e.key===&quot;ArrowLeft&quot;||e.key===&quot;ArrowRight&quot;||e.key===&quot;ArrowUp&quot;||e.key===&quot;ArrowDown&quot;){
+        e.preventDefault();
+        var step=e.key===&quot;ArrowLeft&quot;?-1:e.key===&quot;ArrowRight&quot;?1:e.key===&quot;ArrowUp&quot;?-7:7;
+        var n=new Date(selected); n.setDate(n.getDate()+step);
+        if(blocked(n)) return;
+        selected=n; viewY=n.getFullYear(); viewM=n.getMonth(); draw();
+      }
+    };
+    document.addEventListener(&quot;keydown&quot;, onKey);
+    ov.querySelector(&quot;#dpCancel&quot;).addEventListener(&quot;click&quot;, close);
+    ov.querySelector(&quot;#dpOk&quot;).addEventListener(&quot;click&quot;, commit);
+    ov.addEventListener(&quot;click&quot;, function(e){ if(e.target===ov) close(); });
+    draw();
+  }
+
+  /* Take over every date field, present and future. The input keeps
+     type=&quot;date&quot; so its value format and validation are untouched — we
+     just stop the native picker from appearing. */
+  function attachDatePicker(el){
+    if(!el || el._dpBound) return;
+    el._dpBound=true;
+    el.setAttribute(&quot;readonly&quot;,&quot;readonly&quot;);   // stops the OS keyboard/picker
+    el.classList.add(&quot;dp-input&quot;);
+    var open=function(e){ e.preventDefault(); e.stopPropagation(); openDatePicker(el); };
+    el.addEventListener(&quot;click&quot;, open);
+    el.addEventListener(&quot;focus&quot;, function(){ el.blur(); });
+    el.addEventListener(&quot;keydown&quot;, function(e){
+      if(e.key===&quot;Enter&quot;||e.key===&quot; &quot;){ e.preventDefault(); openDatePicker(el); }
+    });
+  }
+  function bindAllDatePickers(root){
+    (root||document).querySelectorAll(&#x27;input[type=&quot;date&quot;]&#x27;).forEach(attachDatePicker);
+  }
+
+  /* ============================================================
+     PIN RECOVERY — optional security questions
+
+     Without this, a forgotten PIN means clearing the app&#x27;s data and
+     restoring a backup. A recovery answer avoids that.
+
+     It is deliberately weaker than the PIN and the UI says so: an
+     answer like a birth year is guessable, so anyone who knows you
+     could get in. That&#x27;s the trade being offered — losing everything
+     to a forgotten PIN is the bigger risk for most people, but it
+     should be a choice, not a default. Off unless you turn it on.
+
+     The answer is stretched and hashed exactly like the PIN, never
+     stored in the clear.
+     ============================================================ */
+  var RECOVERY_QUESTIONS=[
+    &quot;What year were you born?&quot;,
+    &quot;What was the name of your first pet?&quot;,
+    &quot;What street did you grow up on?&quot;,
+    &quot;What was your first job?&quot;,
+    &quot;What city were you born in?&quot;,
+    &quot;What was your first car?&quot;
+  ];
+  function recoveryOn(){ return !!(lockCfg.recQ &amp;&amp; lockCfg.recHash); }
+  function normaliseAnswer(a){
+    // forgiving about case and spacing — nobody remembers &quot;  Rex &quot; exactly
+    return String(a||&quot;&quot;).trim().toLowerCase().replace(/\s+/g,&quot; &quot;);
+  }
+  function setRecovery(question, answer, cb){
+    var salt=randHex(16);
+    stretchPin(normaliseAnswer(answer), salt, lockCfg.rounds, function(h){
+      lockCfg.recQ=question; lockCfg.recSalt=salt; lockCfg.recHash=h;
+      saveLock(); cb&amp;&amp;cb(true);
+    });
+  }
+  function clearRecovery(){
+    delete lockCfg.recQ; delete lockCfg.recSalt; delete lockCfg.recHash;
+    saveLock();
+  }
+  function verifyRecovery(answer, cb, onProgress){
+    if(!recoveryOn()){ cb(false); return; }
+    stretchPin(normaliseAnswer(answer), lockCfg.recSalt, lockCfg.rounds, function(h){
+      cb(h===lockCfg.recHash);
+    }, onProgress);
+  }
+
+  /* Setting it up: pick a question, answer it, confirm the answer. Same
+     no-silent-failure rule as the PIN — every problem is stated. */
+  function openRecoverySetup(){
+    if(!lockIsOn()){
+      // don&#x27;t dead-end them — offer the step they actually need
+      appModal({title:&quot;Set a PIN first&quot;,
+        message:&quot;A recovery question is how you get back in if you forget your PIN \u2014 so there needs to be a PIN first. Set one now?&quot;,
+        confirmText:&quot;Set a PIN&quot;, cancelText:&quot;Not now&quot;,
+        onConfirm:function(){ openPinSetup(); }});
+      return;
+    }
+    var host=document.createElement(&quot;div&quot;);
+    host.className=&quot;ov in page-mode&quot;; host.id=&quot;recSetupOv&quot;;
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;sheet&quot; style=&quot;max-width:400px&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;Recovery question&lt;/h3&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;x-btn&quot; id=&quot;rqX&quot;&gt;\u2715&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pin-sub&quot;&gt;If you forget your PIN, answering this lets you set a new one &#x27;
+      +&#x27;      without wiping your data.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;rq-warn&quot;&gt;A birth year or a pet\u2019s name is easier to guess than a PIN. &#x27;
+      +&#x27;      Anyone who knows you well could use this to get in \u2014 pick something only you know.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Question&lt;/label&gt;&#x27;
+      +&#x27;      &lt;select class=&quot;inp&quot; id=&quot;rqQ&quot;&gt;&#x27;
+      +        RECOVERY_QUESTIONS.map(function(q){ return &#x27;&lt;option&gt;&#x27;+esc(q)+&#x27;&lt;/option&gt;&#x27;; }).join(&quot;&quot;)
+      +&#x27;      &lt;/select&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Your answer&lt;/label&gt;&#x27;
+      +&#x27;      &lt;input class=&quot;inp&quot; id=&quot;rqA&quot; autocomplete=&quot;off&quot; spellcheck=&quot;false&quot; placeholder=&quot;answer&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Type it again&lt;/label&gt;&#x27;
+      +&#x27;      &lt;input class=&quot;inp&quot; id=&quot;rqA2&quot; autocomplete=&quot;off&quot; spellcheck=&quot;false&quot; placeholder=&quot;repeat the answer&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pin-err&quot; id=&quot;rqErr&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-ft&quot;&gt;&lt;button class=&quot;btn ghost sm&quot; id=&quot;rqCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn primary sm&quot; id=&quot;rqSave&quot;&gt;Save&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(host);
+    var err=host.querySelector(&quot;#rqErr&quot;);
+    function showErr(m){
+      err.textContent=m||&quot;&quot;; err.style.display=m?&quot;block&quot;:&quot;none&quot;;
+      if(m){ var sh=host.querySelector(&quot;.sheet&quot;);
+        sh.classList.remove(&quot;shake&quot;); void sh.offsetWidth; sh.classList.add(&quot;shake&quot;); }
+    }
+    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector(&quot;#rqX&quot;).onclick=close;
+    host.querySelector(&quot;#rqCancel&quot;).onclick=close;
+    host.querySelector(&quot;#rqSave&quot;).onclick=function(){
+      var q=host.querySelector(&quot;#rqQ&quot;).value;
+      var a=host.querySelector(&quot;#rqA&quot;).value;
+      var a2=host.querySelector(&quot;#rqA2&quot;).value;
+      if(normaliseAnswer(a).length&lt;2){ showErr(&quot;Give an answer of at least 2 characters.&quot;); return; }
+      if(normaliseAnswer(a)!==normaliseAnswer(a2)){ showErr(&quot;Those two answers don\u2019t match.&quot;); return; }
+      var btn=host.querySelector(&quot;#rqSave&quot;);
+      btn.disabled=true; btn.textContent=&quot;Saving\u2026&quot;;
+      setRecovery(q, a, function(){
+        close(); refreshSecUI(); flashSaved(&quot;recovery question saved&quot;);
+      });
+    };
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openDatePicker(input){\n    if(!input) return;\n    var today=new Date();\n    var selected=dpParse(input.value) || new Date();\n    var viewY=selected.getFullYear(), viewM=selected.getMonth();\n    var minD=dpParse(input.getAttribute(\"min\"));\n    var maxD=dpParse(input.getAttribute(\"max\"));\n\n    var ov=document.createElement(\"div\");\n    ov.className=\"ov in dp-ov\";\n    ov.innerHTML=\n       '<div class=\"dp-inner\">'\n      +'  <div class=\"dp-bar\">'\n      +'    <button class=\"dp-nav\" id=\"dpPrev\" title=\"Previous month\">\\u2039</button>'\n      +'    <button class=\"dp-title\" id=\"dpTitle\"></button>'\n      +'    <button class=\"dp-nav\" id=\"dpNext\" title=\"Next month\">\\u203a</button>'\n      +'  </div>'\n      +'  <div class=\"dp-dow\">'+DP_DOW.map(function(d){ return '<span>'+d+'</span>'; }).join(\"\")+'</div>'\n      +'  <div class=\"dp-grid\" id=\"dpGrid\"></div>'\n      +'  <div class=\"dp-yearwrap\" id=\"dpYearWrap\" style=\"display:none\"><div class=\"dp-years\" id=\"dpYears\"></div></div>'\n      +'  <div class=\"dp-foot\">'\n      +'    <button class=\"btn ghost sm\" id=\"dpToday\">Today</button>'\n      +'    <button class=\"btn ghost sm\" id=\"dpCancel\">Cancel</button>'\n      +'    <button class=\"btn primary sm\" id=\"dpOk\">Choose</button>'\n      +'  </div>'\n      +'</div>';\n    document.body.appendChild(ov);\n\n    var grid=ov.querySelector(\"#dpGrid\");\n    var title=ov.querySelector(\"#dpTitle\");\n    var yearWrap=ov.querySelector(\"#dpYearWrap\");\n    var yearBox=ov.querySelector(\"#dpYears\");\n    var showingYears=false;\n\n    function blocked(d){\n      if(minD && d<minD) return true;\n      if(maxD && d>maxD) return true;\n      return false;\n    }\n    function draw(){\n      title.textContent=DP_MONTHS[viewM]+\" \"+viewY;\n      grid.innerHTML=\"\";\n      // Monday-first: getDay() is 0=Sun, so shift it\n      var first=new Date(viewY, viewM, 1);\n      var lead=(first.getDay()+6)%7;\n      var daysIn=new Date(viewY, viewM+1, 0).getDate();\n      var prevDays=new Date(viewY, viewM, 0).getDate();\n      for(var i=0;i<lead;i++){\n        var pd=prevDays-lead+i+1;\n        grid.insertAdjacentHTML(\"beforeend\",'<button class=\"dp-day dp-out\" data-off=\"-1\" data-d=\"'+pd+'\">'+pd+'</button>');\n      }\n      for(var day=1; day<=daysIn; day++){\n        var d=new Date(viewY, viewM, day);\n        var cls=\"dp-day\";\n        if(dpSameDay(d, selected)) cls+=\" on\";\n        if(dpSameDay(d, today))    cls+=\" today\";\n        if(blocked(d))             cls+=\" off\";\n        grid.insertAdjacentHTML(\"beforeend\",\n          '<button class=\"'+cls+'\" data-off=\"0\" data-d=\"'+day+'\"'+(blocked(d)?\" disabled\":\"\")+'>'+day+'</button>');\n      }\n      var used=lead+daysIn, tail=(7-(used%7))%7;\n      for(var t=1;t<=tail;t++)\n        grid.insertAdjacentHTML(\"beforeend\",'<button class=\"dp-day dp-out\" data-off=\"1\" data-d=\"'+t+'\">'+t+'</button>');\n\n      grid.querySelectorAll(\".dp-day\").forEach(function(b){\n        b.addEventListener(\"click\", function(){\n          var off=+b.getAttribute(\"data-off\"), dd=+b.getAttribute(\"data-d\");\n          var d=new Date(viewY, viewM+off, dd);\n          if(blocked(d)) return;\n          selected=d; viewY=d.getFullYear(); viewM=d.getMonth();\n          draw();\n        });\n      });\n    }\n    function drawYears(){\n      yearBox.innerHTML=\"\";\n      var base=viewY-6;\n      for(var y=base; y<base+16; y++){\n        yearBox.insertAdjacentHTML(\"beforeend\",\n          '<button class=\"dp-year'+(y===viewY?\" on\":\"\")+'\" data-y=\"'+y+'\">'+y+'</button>');\n      }\n      yearBox.querySelectorAll(\".dp-year\").forEach(function(b){\n        b.addEventListener(\"click\", function(){\n          viewY=+b.getAttribute(\"data-y\");\n          showingYears=false; yearWrap.style.display=\"none\"; grid.style.display=\"\";\n          ov.querySelector(\".dp-dow\").style.display=\"\";\n          draw();\n        });\n      });\n    }\n    title.addEventListener(\"click\", function(){\n      showingYears=!showingYears;\n      yearWrap.style.display=showingYears?\"\":\"none\";\n      grid.style.display=showingYears?\"none\":\"\";\n      ov.querySelector(\".dp-dow\").style.display=showingYears?\"none\":\"\";\n      if(showingYears) drawYears();\n    });\n    ov.querySelector(\"#dpPrev\").addEventListener(\"click\", function(){\n      if(showingYears){ viewY-=16; drawYears(); return; }\n      viewM--; if(viewM<0){ viewM=11; viewY--; } draw();\n    });\n    ov.querySelector(\"#dpNext\").addEventListener(\"click\", function(){\n      if(showingYears){ viewY+=16; drawYears(); return; }\n      viewM++; if(viewM>11){ viewM=0; viewY++; } draw();\n    });\n    ov.querySelector(\"#dpToday\").addEventListener(\"click\", function(){\n      selected=new Date(); viewY=selected.getFullYear(); viewM=selected.getMonth(); draw();\n    });\n\n    function close(){\n      ov.classList.remove(\"in\");\n      document.removeEventListener(\"keydown\", onKey);\n      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },150);\n    }\n    function commit(){\n      input.value=dpFmt(selected);\n      // let the app's own listeners run exactly as if it had been typed\n      input.dispatchEvent(new Event(\"input\",{bubbles:true}));\n      input.dispatchEvent(new Event(\"change\",{bubbles:true}));\n      close();\n    }\n    var onKey=function(e){\n      if(e.key===\"Escape\"){ e.preventDefault(); close(); }\n      else if(e.key===\"Enter\"){ e.preventDefault(); commit(); }\n      else if(e.key===\"ArrowLeft\"||e.key===\"ArrowRight\"||e.key===\"ArrowUp\"||e.key===\"ArrowDown\"){\n        e.preventDefault();\n        var step=e.key===\"ArrowLeft\"?-1:e.key===\"ArrowRight\"?1:e.key===\"ArrowUp\"?-7:7;\n        var n=new Date(selected); n.setDate(n.getDate()+step);\n        if(blocked(n)) return;\n        selected=n; viewY=n.getFullYear(); viewM=n.getMonth(); draw();\n      }\n    };\n    document.addEventListener(\"keydown\", onKey);\n    ov.querySelector(\"#dpCancel\").addEventListener(\"click\", close);\n    ov.querySelector(\"#dpOk\").addEventListener(\"click\", commit);\n    ov.addEventListener(\"click\", function(e){ if(e.target===ov) close(); });\n    draw();\n  }\n\n  /* Take over every date field, present and future. The input keeps\n     type=\"date\" so its value format and validation are untouched \u2014 we\n     just stop the native picker from appearing. */\n  function attachDatePicker(el){\n    if(!el || el._dpBound) return;\n    el._dpBound=true;\n    el.setAttribute(\"readonly\",\"readonly\");   // stops the OS keyboard/picker\n    el.classList.add(\"dp-input\");\n    var open=function(e){ e.preventDefault(); e.stopPropagation(); openDatePicker(el); };\n    el.addEventListener(\"click\", open);\n    el.addEventListener(\"focus\", function(){ el.blur(); });\n    el.addEventListener(\"keydown\", function(e){\n      if(e.key===\"Enter\"||e.key===\" \"){ e.preventDefault(); openDatePicker(el); }\n    });\n  }\n  function bindAllDatePickers(root){\n    (root||document).querySelectorAll('input[type=\"date\"]').forEach(attachDatePicker);\n  }\n\n  /* ============================================================\n     PIN RECOVERY \u2014 optional security questions\n\n     Without this, a forgotten PIN means clearing the app's data and\n     restoring a backup. A recovery answer avoids that.\n\n     It is deliberately weaker than the PIN and the UI says so: an\n     answer like a birth year is guessable, so anyone who knows you\n     could get in. That's the trade being offered \u2014 losing everything\n     to a forgotten PIN is the bigger risk for most people, but it\n     should be a choice, not a default. Off unless you turn it on.\n\n     The answer is stretched and hashed exactly like the PIN, never\n     stored in the clear.\n     ============================================================ */\n  var RECOVERY_QUESTIONS=[\n    \"What year were you born?\",\n    \"What was the name of your first pet?\",\n    \"What street did you grow up on?\",\n    \"What was your first job?\",\n    \"What city were you born in?\",\n    \"What was your first car?\"\n  ];\n  function recoveryOn(){ return !!(lockCfg.recQ && lockCfg.recHash); }\n  function normaliseAnswer(a){\n    // forgiving about case and spacing \u2014 nobody remembers \"  Rex \" exactly\n    return String(a||\"\").trim().toLowerCase().replace(/\\s+/g,\" \");\n  }\n  function setRecovery(question, answer, cb){\n    var salt=randHex(16);\n    stretchPin(normaliseAnswer(answer), salt, lockCfg.rounds, function(h){\n      lockCfg.recQ=question; lockCfg.recSalt=salt; lockCfg.recHash=h;\n      saveLock(); cb&&cb(true);\n    });\n  }\n  function clearRecovery(){\n    delete lockCfg.recQ; delete lockCfg.recSalt; delete lockCfg.recHash;\n    saveLock();\n  }\n  function verifyRecovery(answer, cb, onProgress){\n    if(!recoveryOn()){ cb(false); return; }\n    stretchPin(normaliseAnswer(answer), lockCfg.recSalt, lockCfg.rounds, function(h){\n      cb(h===lockCfg.recHash);\n    }, onProgress);\n  }\n\n  /* Setting it up: pick a question, answer it, confirm the answer. Same\n     no-silent-failure rule as the PIN \u2014 every problem is stated. */\n  function openRecoverySetup(){\n    if(!lockIsOn()){\n      // don't dead-end them \u2014 offer the step they actually need\n      appModal({title:\"Set a PIN first\",\n        message:\"A recovery question is how you get back in if you forget your PIN \\u2014 so there needs to be a PIN first. Set one now?\",\n        confirmText:\"Set a PIN\", cancelText:\"Not now\",\n        onConfirm:function(){ openPinSetup(); }});\n      return;\n    }\n    var host=document.createElement(\"div\");\n    host.className=\"ov in page-mode\"; host.id=\"recSetupOv\";\n    host.innerHTML=\n       '<div class=\"sheet\" style=\"max-width:400px\">'\n      +'  <div class=\"sheet-hd\"><h3>Recovery question</h3>'\n      +'    <button class=\"x-btn\" id=\"rqX\">\\u2715</button></div>'\n      +'  <div class=\"sheet-bd\">'\n      +'    <div class=\"pin-sub\">If you forget your PIN, answering this lets you set a new one '\n      +'      without wiping your data.</div>'\n      +'    <div class=\"rq-warn\">A birth year or a pet\\u2019s name is easier to guess than a PIN. '\n      +'      Anyone who knows you well could use this to get in \\u2014 pick something only you know.</div>'\n      +'    <div class=\"fld\"><label>Question</label>'\n      +'      <select class=\"inp\" id=\"rqQ\">'\n      +        RECOVERY_QUESTIONS.map(function(q){ return '<option>'+esc(q)+'</option>'; }).join(\"\")\n      +'      </select></div>'\n      +'    <div class=\"fld\"><label>Your answer</label>'\n      +'      <input class=\"inp\" id=\"rqA\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"answer\"></div>'\n      +'    <div class=\"fld\"><label>Type it again</label>'\n      +'      <input class=\"inp\" id=\"rqA2\" autocomplete=\"off\" spellcheck=\"false\" placeholder=\"repeat the answer\"></div>'\n      +'    <div class=\"pin-err\" id=\"rqErr\"></div>'\n      +'  </div>'\n      +'  <div class=\"sheet-ft\"><button class=\"btn ghost sm\" id=\"rqCancel\">Cancel</button>'\n      +'    <button class=\"btn primary sm\" id=\"rqSave\">Save</button></div>'\n      +'</div>';\n    document.body.appendChild(host);\n    var err=host.querySelector(\"#rqErr\");\n    function showErr(m){\n      err.textContent=m||\"\"; err.style.display=m?\"block\":\"none\";\n      if(m){ var sh=host.querySelector(\".sheet\");\n        sh.classList.remove(\"shake\"); void sh.offsetWidth; sh.classList.add(\"shake\"); }\n    }\n    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }\n    host.querySelector(\"#rqX\").onclick=close;\n    host.querySelector(\"#rqCancel\").onclick=close;\n    host.querySelector(\"#rqSave\").onclick=function(){\n      var q=host.querySelector(\"#rqQ\").value;\n      var a=host.querySelector(\"#rqA\").value;\n      var a2=host.querySelector(\"#rqA2\").value;\n      if(normaliseAnswer(a).length<2){ showErr(\"Give an answer of at least 2 characters.\"); return; }\n      if(normaliseAnswer(a)!==normaliseAnswer(a2)){ showErr(\"Those two answers don\\u2019t match.\"); return; }\n      var btn=host.querySelector(\"#rqSave\");\n      btn.disabled=true; btn.textContent=\"Saving\\u2026\";\n      setRecovery(q, a, function(){\n        close(); refreshSecUI(); flashSaved(\"recovery question saved\");\n      });\n    };\n  }",ARGS="input";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openDatePicker!==\"undefined\"?openDatePicker:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderForecast — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 02-ui-components</div>
+<h1>renderForecast<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v15.7 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderForecast(){
+    var card=document.getElementById(&quot;fcCard&quot;);
+    if(!card) return;
+    var f=forecast(fcDays), sym=state.currency;
+    // Nothing to project from: no rules and no spending history would just draw a
+    // flat line and pretend it meant something.
+    if(!f.events.length &amp;&amp; f.burn.perDay&lt;=0){ card.style.display=&quot;none&quot;; return; }
+    card.style.display=&quot;&quot;;
+    var endEl=document.getElementById(&quot;fcEnd&quot;);
+    endEl.textContent=fmt(f.end,sym);
+    endEl.className=&quot;fc-num mono &quot;+(f.end&gt;=0?&quot;up&quot;:&quot;down&quot;);
+    document.getElementById(&quot;fcCap&quot;).textContent=&quot;projected in &quot;+fcDays+&quot; days · &quot;+fmt(f.start,sym)+&quot; today&quot;;
+    document.getElementById(&quot;fcChart&quot;).innerHTML=fcChartSvg(f);
+
+    var warn=document.getElementById(&quot;fcWarn&quot;);
+    if(f.zeroOn){
+      var daysOut=Math.round((new Date(f.zeroOn)-new Date(todayStr()))/86400000);
+      warn.innerHTML=&#x27;&lt;div class=&quot;fc-alert bad&quot;&gt;&lt;span&gt;⚠️&lt;/span&gt;&lt;span&gt;On this path you run out around &lt;b&gt;&#x27;+esc(fcShortDate(f.zeroOn))+&#x27;&lt;/b&gt; — about &lt;b&gt;&#x27;+daysOut+&#x27; days&lt;/b&gt; away.&lt;/span&gt;&lt;/div&gt;&#x27;;
+    } else if(f.low.bal &lt; f.start*0.25 &amp;&amp; f.low.bal&gt;=0){
+      warn.innerHTML=&#x27;&lt;div class=&quot;fc-alert warn&quot;&gt;&lt;span&gt;⚡&lt;/span&gt;&lt;span&gt;Tightest point is &lt;b&gt;&#x27;+fmt(f.low.bal,sym)+&#x27;&lt;/b&gt; around &lt;b&gt;&#x27;+esc(fcShortDate(f.low.date))+&#x27;&lt;/b&gt;.&lt;/span&gt;&lt;/div&gt;&#x27;;
+    } else warn.innerHTML=&quot;&quot;;
+
+    var up=f.events.slice(0,5);
+    document.getElementById(&quot;fcUpNext&quot;).style.display=up.length?&quot;&quot;:&quot;none&quot;;
+    document.getElementById(&quot;fcEvents&quot;).innerHTML=up.map(function(e){
+      return &#x27;&lt;div class=&quot;fc-ev&quot;&gt;&lt;span class=&quot;fc-ev-d&quot;&gt;&#x27;+esc(fcShortDate(e.date))+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;fc-ev-n&quot;&gt;&#x27;+esc(e.label)+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;fc-ev-a &#x27;+(e.amount&gt;=0?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+(e.amount&gt;=0?&quot;+&quot;:&quot;&quot;)+fmt(e.amount,sym)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+    }).join(&quot;&quot;);
+
+    var bits=[];
+    if(f.burn.perDay&gt;0) bits.push(&quot;everyday spending of about &lt;b&gt;&quot;+fmt(f.burn.perDay,sym)+&quot;/day&lt;/b&gt; (from your last &quot;+f.burn.days+&quot; days)&quot;);
+    if(f.events.length) bits.push(&quot;&lt;b&gt;&quot;+f.events.length+&quot;&lt;/b&gt; scheduled item&quot;+(f.events.length===1?&quot;&quot;:&quot;s&quot;));
+    document.getElementById(&quot;fcBasis&quot;).innerHTML=&quot;Based on &quot;+bits.join(&quot; and &quot;)+&quot;. It&#x27;s a projection from your own numbers, not a prediction — one unusual month changes it.&quot;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderForecast(){\n    var card=document.getElementById(\"fcCard\");\n    if(!card) return;\n    var f=forecast(fcDays), sym=state.currency;\n    // Nothing to project from: no rules and no spending history would just draw a\n    // flat line and pretend it meant something.\n    if(!f.events.length && f.burn.perDay<=0){ card.style.display=\"none\"; return; }\n    card.style.display=\"\";\n    var endEl=document.getElementById(\"fcEnd\");\n    endEl.textContent=fmt(f.end,sym);\n    endEl.className=\"fc-num mono \"+(f.end>=0?\"up\":\"down\");\n    document.getElementById(\"fcCap\").textContent=\"projected in \"+fcDays+\" days \u00b7 \"+fmt(f.start,sym)+\" today\";\n    document.getElementById(\"fcChart\").innerHTML=fcChartSvg(f);\n\n    var warn=document.getElementById(\"fcWarn\");\n    if(f.zeroOn){\n      var daysOut=Math.round((new Date(f.zeroOn)-new Date(todayStr()))/86400000);\n      warn.innerHTML='<div class=\"fc-alert bad\"><span>\u26a0\ufe0f</span><span>On this path you run out around <b>'+esc(fcShortDate(f.zeroOn))+'</b> \u2014 about <b>'+daysOut+' days</b> away.</span></div>';\n    } else if(f.low.bal < f.start*0.25 && f.low.bal>=0){\n      warn.innerHTML='<div class=\"fc-alert warn\"><span>\u26a1</span><span>Tightest point is <b>'+fmt(f.low.bal,sym)+'</b> around <b>'+esc(fcShortDate(f.low.date))+'</b>.</span></div>';\n    } else warn.innerHTML=\"\";\n\n    var up=f.events.slice(0,5);\n    document.getElementById(\"fcUpNext\").style.display=up.length?\"\":\"none\";\n    document.getElementById(\"fcEvents\").innerHTML=up.map(function(e){\n      return '<div class=\"fc-ev\"><span class=\"fc-ev-d\">'+esc(fcShortDate(e.date))+'</span>'\n        +'<span class=\"fc-ev-n\">'+esc(e.label)+'</span>'\n        +'<span class=\"fc-ev-a '+(e.amount>=0?\"up\":\"down\")+'\">'+(e.amount>=0?\"+\":\"\")+fmt(e.amount,sym)+'</span></div>';\n    }).join(\"\");\n\n    var bits=[];\n    if(f.burn.perDay>0) bits.push(\"everyday spending of about <b>\"+fmt(f.burn.perDay,sym)+\"/day</b> (from your last \"+f.burn.days+\" days)\");\n    if(f.events.length) bits.push(\"<b>\"+f.events.length+\"</b> scheduled item\"+(f.events.length===1?\"\":\"s\"));\n    document.getElementById(\"fcBasis\").innerHTML=\"Based on \"+bits.join(\" and \")+\". It's a projection from your own numbers, not a prediction \u2014 one unusual month changes it.\";\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderForecast!==\"undefined\"?renderForecast:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

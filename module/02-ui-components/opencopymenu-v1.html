@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openCopyMenu — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 02-ui-components</div>
+<h1>openCopyMenu<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openCopyMenu(t, anchor){
+    var hasPhoto=photosOf(t).length&gt;0;
+    var ov=document.createElement(&quot;div&quot;);
+    ov.className=&quot;xsel-ov copy-ov&quot;;
+    ov.innerHTML=&#x27;&lt;div class=&quot;copy-menu&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;copy-mh&quot;&gt;Copy transaction&lt;/div&gt;&#x27;
+      +&#x27;&lt;button type=&quot;button&quot; class=&quot;copy-opt&quot; data-k=&quot;text&quot;&gt;Copy as text&#x27;
+        +&#x27;&lt;span class=&quot;copy-sub&quot;&gt;note + amount&lt;/span&gt;&lt;/button&gt;&#x27;
+      +&#x27;&lt;button type=&quot;button&quot; class=&quot;copy-opt&quot; data-k=&quot;img&quot;&gt;Copy as image&#x27;
+        +&#x27;&lt;span class=&quot;copy-sub&quot;&gt;the card, exactly as shown&lt;/span&gt;&lt;/button&gt;&#x27;
+      +(hasPhoto?&#x27;&lt;button type=&quot;button&quot; class=&quot;copy-opt&quot; data-k=&quot;imgphoto&quot;&gt;Copy as image + photo&#x27;
+        +&#x27;&lt;span class=&quot;copy-sub&quot;&gt;card with the receipt below&lt;/span&gt;&lt;/button&gt;&#x27;:&#x27;&#x27;)
+      +&#x27;&lt;button type=&quot;button&quot; class=&quot;copy-opt copy-cancel&quot; data-k=&quot;cancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add(&quot;in&quot;); });
+    var close=function(){ ov.classList.remove(&quot;in&quot;);
+      document.removeEventListener(&quot;keydown&quot;,onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140); };
+    var onKey=function(e){ if(e.key===&quot;Escape&quot;){ e.preventDefault(); close(); } };
+    document.addEventListener(&quot;keydown&quot;,onKey);
+    ov.addEventListener(&quot;click&quot;,function(e){ if(e.target===ov) close(); });
+    ov.querySelectorAll(&quot;.copy-opt&quot;).forEach(function(b){
+      b.addEventListener(&quot;click&quot;, function(){
+        var k=b.getAttribute(&quot;data-k&quot;);
+        if(k===&quot;text&quot;){ copyText(txAsText(t), &quot;text copied&quot;); close(); }
+        else if(k===&quot;img&quot;){ flashSaved(&quot;rendering…&quot;); renderTxImage(t,false,function(blob){ copyImageBlob(blob); close(); }); }
+        else if(k===&quot;imgphoto&quot;){ flashSaved(&quot;rendering…&quot;); renderTxImage(t,true,function(blob){ copyImageBlob(blob); close(); }); }
+        else close();
+      });
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openCopyMenu(t, anchor){\n    var hasPhoto=photosOf(t).length>0;\n    var ov=document.createElement(\"div\");\n    ov.className=\"xsel-ov copy-ov\";\n    ov.innerHTML='<div class=\"copy-menu\">'\n      +'<div class=\"copy-mh\">Copy transaction</div>'\n      +'<button type=\"button\" class=\"copy-opt\" data-k=\"text\">Copy as text'\n        +'<span class=\"copy-sub\">note + amount</span></button>'\n      +'<button type=\"button\" class=\"copy-opt\" data-k=\"img\">Copy as image'\n        +'<span class=\"copy-sub\">the card, exactly as shown</span></button>'\n      +(hasPhoto?'<button type=\"button\" class=\"copy-opt\" data-k=\"imgphoto\">Copy as image + photo'\n        +'<span class=\"copy-sub\">card with the receipt below</span></button>':'')\n      +'<button type=\"button\" class=\"copy-opt copy-cancel\" data-k=\"cancel\">Cancel</button>'\n      +'</div>';\n    document.body.appendChild(ov);\n    requestAnimationFrame(function(){ ov.classList.add(\"in\"); });\n    var close=function(){ ov.classList.remove(\"in\");\n      document.removeEventListener(\"keydown\",onKey);\n      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140); };\n    var onKey=function(e){ if(e.key===\"Escape\"){ e.preventDefault(); close(); } };\n    document.addEventListener(\"keydown\",onKey);\n    ov.addEventListener(\"click\",function(e){ if(e.target===ov) close(); });\n    ov.querySelectorAll(\".copy-opt\").forEach(function(b){\n      b.addEventListener(\"click\", function(){\n        var k=b.getAttribute(\"data-k\");\n        if(k===\"text\"){ copyText(txAsText(t), \"text copied\"); close(); }\n        else if(k===\"img\"){ flashSaved(\"rendering\u2026\"); renderTxImage(t,false,function(blob){ copyImageBlob(blob); close(); }); }\n        else if(k===\"imgphoto\"){ flashSaved(\"rendering\u2026\"); renderTxImage(t,true,function(blob){ copyImageBlob(blob); close(); }); }\n        else close();\n      });\n    });\n  }",ARGS="t, anchor";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openCopyMenu!==\"undefined\"?openCopyMenu:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderSubBudgetRow — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderSubBudgetRow<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderSubBudgetRow(cat, sym, thisM){
+    var cap=budgetFor(cat), spent=spentInCat(cat,null,thisM);
+    var subs=subCatsFor(cat);
+    var pct=cap&gt;0?Math.min(100,spent/cap*100):0;
+    var over=cap&gt;0&amp;&amp;spent&gt;cap;
+    var subRows=subs.map(function(sub){
+      var ss=state.transactions.filter(function(tx){ return tx.subcat===sub&amp;&amp;balDelta(tx)&lt;0&amp;&amp;monthKey(tx.date||&quot;&quot;)===thisM; })
+        .reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);
+      if(!ss) return &quot;&quot;;
+      return &#x27;&lt;div class=&quot;sub-bud-row&quot;&gt;&lt;span class=&quot;sub-bud-name mut&quot;&gt;↳ &#x27;+esc(sub)+&#x27;&lt;/span&gt;&lt;span class=&quot;sub-bud-amt mut&quot;&gt;&#x27;+sym+ss.toFixed(2)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+    }).join(&quot;&quot;);
+    return &#x27;&lt;div class=&quot;bud-row&#x27;+(over?&quot; bud-over&quot;:&quot;&quot;)+&#x27;&quot;&gt;&#x27;+
+      &#x27;&lt;div class=&quot;bud-row-hd&quot;&gt;&lt;span&gt;&#x27;+esc(cat)+(cap?&#x27;&lt;span class=&quot;bud-cap&quot;&gt; / &#x27;+sym+cap.toFixed(0)+&#x27;&lt;/span&gt;&#x27;:&quot;&quot;)+&#x27;&lt;/span&gt;&#x27;+
+      &#x27;&lt;span class=&quot;bud-amt&#x27;+(over?&quot; bud-over-t&quot;:&quot;&quot;)+&#x27;&quot;&gt;&#x27;+sym+spent.toFixed(2)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;+
+      (cap?&#x27;&lt;div class=&quot;bud-bar&quot;&gt;&lt;div class=&quot;bud-fill&#x27;+(over?&quot; bud-fill-over&quot;:&quot;&quot;)
+        +&#x27;&quot; style=&quot;width:&#x27;+pct+&#x27;%&quot;&gt;&lt;/div&gt;&lt;/div&gt;&#x27;:&quot;&quot;)
+      +subRows+&#x27;&lt;/div&gt;&#x27;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderSubBudgetRow(cat, sym, thisM){\n    var cap=budgetFor(cat), spent=spentInCat(cat,null,thisM);\n    var subs=subCatsFor(cat);\n    var pct=cap>0?Math.min(100,spent/cap*100):0;\n    var over=cap>0&&spent>cap;\n    var subRows=subs.map(function(sub){\n      var ss=state.transactions.filter(function(tx){ return tx.subcat===sub&&balDelta(tx)<0&&monthKey(tx.date||\"\")===thisM; })\n        .reduce(function(a,tx){ return a+Math.abs(balDelta(tx)); },0);\n      if(!ss) return \"\";\n      return '<div class=\"sub-bud-row\"><span class=\"sub-bud-name mut\">\u21b3 '+esc(sub)+'</span><span class=\"sub-bud-amt mut\">'+sym+ss.toFixed(2)+'</span></div>';\n    }).join(\"\");\n    return '<div class=\"bud-row'+(over?\" bud-over\":\"\")+'\">'+\n      '<div class=\"bud-row-hd\"><span>'+esc(cat)+(cap?'<span class=\"bud-cap\"> / '+sym+cap.toFixed(0)+'</span>':\"\")+'</span>'+\n      '<span class=\"bud-amt'+(over?\" bud-over-t\":\"\")+'\">'+sym+spent.toFixed(2)+'</span></div>'+\n      (cap?'<div class=\"bud-bar\"><div class=\"bud-fill'+(over?\" bud-fill-over\":\"\")\n        +'\" style=\"width:'+pct+'%\"></div></div>':\"\")\n      +subRows+'</div>';\n  }",ARGS="cat, sym, thisM";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderSubBudgetRow!==\"undefined\"?renderSubBudgetRow:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

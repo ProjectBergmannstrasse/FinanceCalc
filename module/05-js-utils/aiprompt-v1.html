@@ -1,0 +1,77 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aiPrompt — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>aiPrompt<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function aiPrompt(opts){
+    var cats=aiCats().join(&quot;, &quot;);
+    var p=[
+&quot;You are reading images of receipts, bank/trading screenshots or handwritten notes, and turning them into ledger entries.&quot;,
+&quot;&quot;,
+&quot;Return ONLY a JSON object. No prose, no markdown, no code fences. Exact shape:&quot;,
+&#x27;{&quot;transactions&quot;:[{&quot;date&quot;:&quot;YYYY-MM-DD&quot;,&quot;type&quot;:&quot;&lt;type&gt;&quot;,&quot;amount&quot;:&lt;positive number&gt;,&quot;cat&quot;:&quot;&lt;category or empty&gt;&quot;,&quot;note&quot;:&quot;&lt;short note&gt;&quot;,&quot;confidence&quot;:&lt;0..1&gt;}]}&#x27;,
+&quot;&quot;,
+&quot;Allowed type values (use EXACTLY one of these):&quot;,
+AI_TYPES.join(&quot;, &quot;),
+&quot;&quot;,
+&quot;What each type means:&quot;,
+&quot;- income: money received (not an allowance)&quot;,
+&quot;- spend: money spent on something&quot;,
+&quot;- trade_win / trade_loss: profit or loss on a trade&quot;,
+&quot;- pay_debt_balance: paying down debt out of your own money&quot;,
+&quot;- borrow: debt went up&quot;,
+&quot;- save / withdraw: moving money into / out of savings&quot;,
+&quot;- tax_set: money parked aside for tax&quot;,
+&quot;- tax_pay: paying a tax bill out of money already set aside&quot;,
+&quot;- adjust: a correction; only this type may be negative&quot;,
+&quot;&quot;,
+&quot;Rules:&quot;,
+&quot;- amount is ALWAYS a positive number, except for &#x27;adjust&#x27; which may be negative.&quot;,
+&quot;- Never include a currency symbol or thousands separators in amount. 1,234.50 -&gt; 1234.50&quot;,
+&quot;- date must be YYYY-MM-DD. If the image shows no year, assume &quot;+todayStr().slice(0,4)+&quot;. If no date at all, use &quot;+todayStr()+&quot;.&quot;,
+&quot;- cat only applies to &#x27;spend&#x27;. Choose from: &quot;+cats+&quot;. Otherwise use an empty string.&quot;,
+&quot;- note: short and factual (merchant, instrument, what it was). No invented detail.&quot;,
+&quot;- confidence: your honest 0..1 read of how sure you are of THIS entry.&quot;,
+&quot;- Read every image. One image may hold several transactions, or none.&quot;,
+&quot;- If an image contains nothing financial, contribute no entries for it.&quot;,
+&quot;- Do not merge separate transactions, and do not split one transaction into several.&quot;
+    ];
+    if(opts.expected&gt;0){
+      p.push(&quot;- The user states there are EXACTLY &quot;+opts.expected+&quot; transactions across these images. Return exactly &quot;+opts.expected+&quot;. If you can only find fewer, still return &quot;+opts.expected+&quot; and mark the uncertain ones with low confidence.&quot;);
+    }
+    if(opts.conflict){
+      p.push(&quot;&quot;,
+&quot;IMPORTANT — CROSS-CHECK CONTEXT:&quot;,
+&quot;A second, independent AI was given these exact images and the exact same instructions, and returned a DIFFERENT answer. That means at least one of you misread something. This is attempt &quot;+opts.attempt+&quot;.&quot;,
+&quot;&quot;,
+&quot;Your previous answer:&quot;, opts.mine,
+&quot;&quot;,
+&quot;The other model&#x27;s answer:&quot;, opts.theirs,
+&quot;&quot;,
+&quot;Re-examine the images from scratch. Do not simply repeat your previous answer, and do not simply defer to the other model — either of you may be wrong. Look specifically at the fields that differ (dates, amounts, and types). Return your best, carefully re-checked answer in the same JSON format.&quot;);
+    }
+    return p.join(&quot;\n&quot;);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function aiPrompt(opts){\n    var cats=aiCats().join(\", \");\n    var p=[\n\"You are reading images of receipts, bank/trading screenshots or handwritten notes, and turning them into ledger entries.\",\n\"\",\n\"Return ONLY a JSON object. No prose, no markdown, no code fences. Exact shape:\",\n'{\"transactions\":[{\"date\":\"YYYY-MM-DD\",\"type\":\"<type>\",\"amount\":<positive number>,\"cat\":\"<category or empty>\",\"note\":\"<short note>\",\"confidence\":<0..1>}]}',\n\"\",\n\"Allowed type values (use EXACTLY one of these):\",\nAI_TYPES.join(\", \"),\n\"\",\n\"What each type means:\",\n\"- income: money received (not an allowance)\",\n\"- spend: money spent on something\",\n\"- trade_win / trade_loss: profit or loss on a trade\",\n\"- pay_debt_balance: paying down debt out of your own money\",\n\"- borrow: debt went up\",\n\"- save / withdraw: moving money into / out of savings\",\n\"- tax_set: money parked aside for tax\",\n\"- tax_pay: paying a tax bill out of money already set aside\",\n\"- adjust: a correction; only this type may be negative\",\n\"\",\n\"Rules:\",\n\"- amount is ALWAYS a positive number, except for 'adjust' which may be negative.\",\n\"- Never include a currency symbol or thousands separators in amount. 1,234.50 -> 1234.50\",\n\"- date must be YYYY-MM-DD. If the image shows no year, assume \"+todayStr().slice(0,4)+\". If no date at all, use \"+todayStr()+\".\",\n\"- cat only applies to 'spend'. Choose from: \"+cats+\". Otherwise use an empty string.\",\n\"- note: short and factual (merchant, instrument, what it was). No invented detail.\",\n\"- confidence: your honest 0..1 read of how sure you are of THIS entry.\",\n\"- Read every image. One image may hold several transactions, or none.\",\n\"- If an image contains nothing financial, contribute no entries for it.\",\n\"- Do not merge separate transactions, and do not split one transaction into several.\"\n    ];\n    if(opts.expected>0){\n      p.push(\"- The user states there are EXACTLY \"+opts.expected+\" transactions across these images. Return exactly \"+opts.expected+\". If you can only find fewer, still return \"+opts.expected+\" and mark the uncertain ones with low confidence.\");\n    }\n    if(opts.conflict){\n      p.push(\"\",\n\"IMPORTANT \u2014 CROSS-CHECK CONTEXT:\",\n\"A second, independent AI was given these exact images and the exact same instructions, and returned a DIFFERENT answer. That means at least one of you misread something. This is attempt \"+opts.attempt+\".\",\n\"\",\n\"Your previous answer:\", opts.mine,\n\"\",\n\"The other model's answer:\", opts.theirs,\n\"\",\n\"Re-examine the images from scratch. Do not simply repeat your previous answer, and do not simply defer to the other model \u2014 either of you may be wrong. Look specifically at the fields that differ (dates, amounts, and types). Return your best, carefully re-checked answer in the same JSON format.\");\n    }\n    return p.join(\"\\n\");\n  }",ARGS="opts";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof aiPrompt!==\"undefined\"?aiPrompt:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,173 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTxImage — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTxImage<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v20.2 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTxImage(t, withPhoto, cb){
+    var C=themeColors(), sym=state.currency, DPR=2;
+    var meta=TYPE_META[t.type]||{label:t.type};
+    var d=String(t.date||&quot;&quot;).split(&quot;-&quot;);
+    var dateStr=(MONTHS[(+d[1])-1]||&quot;&quot;)+&quot; &quot;+(+d[2])+&quot;, &quot;+d[0];
+    var W=440, pad=22;
+
+    // gather the pot-move rows as {label, text, colorKey}
+    var moves=[];
+    var addMove=function(label,v,key){ if(Math.abs(v)&lt;0.005) return;
+      moves.push({label:label, text:(v&gt;0?&quot;+&quot;:&quot;\u2212&quot;)+fmt(Math.abs(v),sym), key:key}); };
+    addMove(L(&quot;trading&quot;)||&quot;Money&quot;, balDelta(t), balDelta(t)&gt;0?&quot;up&quot;:&quot;down&quot;);
+    addMove(L(&quot;debt&quot;), debtDelta(t), debtDelta(t)&gt;0?&quot;up&quot;:&quot;down&quot;);
+    addMove(L(&quot;savings&quot;), savDelta(t), savDelta(t)&gt;0?&quot;up&quot;:&quot;down&quot;);
+    addMove(&quot;Tax set aside&quot;, taxDelta(t), &quot;cool&quot;);
+    if(sepTrading()) addMove(&quot;Trading pot&quot;, tradingDelta(t), tradingDelta(t)&gt;0?&quot;up&quot;:&quot;down&quot;);
+    if(!moves.length) moves.push({label:&quot;Nothing moved&quot;, text:&quot;\u2014&quot;, key:&quot;mut&quot;});
+
+    var details=[];
+    if(t.cat) details.push([&quot;Category&quot;, t.cat]);
+    if(t.inst) details.push([&quot;Instrument&quot;, t.inst]);
+    var note=(t.note||&quot;&quot;).trim();
+
+    var loadImg=function(next){
+      if(!withPhoto){ next(null); return; }
+      var ps=photosOf(t); if(!ps.length){ next(null); return; }
+      loadPhoto(ps[0], function(url){
+        if(!url){ next(null); return; }
+        var im=new Image(); im.onload=function(){ next(im); }; im.onerror=function(){ next(null); };
+        im.src=url;
+      });
+    };
+
+    loadImg(function(photoImg){
+      // ---- measure height ----
+      var y=pad;
+      y+=34;                       // badge
+      y+=54;                       // big amount
+      y+=26;                       // date
+      y+=18;                       // divider gap
+      y+=22+moves.length*26+10;    // &quot;what it moved&quot;
+      if(details.length) y+=22+details.length*26+10;
+      var noteLines=[];
+      if(note){
+        // wrap note at ~46 chars
+        var words=note.split(/\s+/), line=&quot;&quot;;
+        words.forEach(function(w){
+          if((line+&quot; &quot;+w).trim().length&gt;46){ noteLines.push(line.trim()); line=w; }
+          else line+=&quot; &quot;+w;
+        });
+        if(line.trim()) noteLines.push(line.trim());
+        y+=22+noteLines.length*22+14;
+      }
+      var photoH=0;
+      if(photoImg){
+        var iw=W-pad*2, ih=Math.min(240, iw*photoImg.height/photoImg.width);
+        photoH=ih; y+=22+ih+10;
+      }
+      var H=y+pad;
+
+      var cv=document.createElement(&quot;canvas&quot;);
+      cv.width=W*DPR; cv.height=H*DPR;
+      var x=cv.getContext(&quot;2d&quot;); x.scale(DPR,DPR);
+      var mono=&#x27;-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,sans-serif&#x27;;
+
+      // bg
+      x.fillStyle=C.bg; x.fillRect(0,0,W,H);
+      var cy=pad;
+
+      // badge (centered pill)
+      var badge=meta.label;
+      x.font=&quot;700 12px &quot;+mono;
+      var bw=x.measureText(badge).width+24;
+      x.fillStyle=C.card2;
+      roundRect(x,(W-bw)/2,cy,bw,26,13); x.fill();
+      x.fillStyle=C.mut; x.textAlign=&quot;center&quot;; x.textBaseline=&quot;middle&quot;;
+      x.fillText(badge, W/2, cy+13);
+      cy+=44;
+
+      // big amount
+      var bd=balDelta(t);
+      var amtColor = bd&lt;0 ? C.down : (bd&gt;0 ? C.up : C.tx);
+      if(Math.abs(bd)&lt;0.005) amtColor=C.tx;
+      x.font=&quot;800 44px &quot;+mono; x.fillStyle=amtColor; x.textAlign=&quot;center&quot;;
+      var amtStr=(bd&lt;0?&quot;\u2212&quot;:&quot;&quot;)+sym+Math.abs(num(t.amount)).toFixed(2);
+      x.fillText(amtStr, W/2, cy+22);
+      cy+=58;
+
+      // date
+      x.font=&quot;500 15px &quot;+mono; x.fillStyle=C.mut;
+      x.fillText(dateStr, W/2, cy);
+      cy+=28;
+
+      var divider=function(){ x.strokeStyle=C.bd; x.lineWidth=1;
+        x.beginPath(); x.moveTo(pad,cy); x.lineTo(W-pad,cy); x.stroke(); cy+=18; };
+      var section=function(title){
+        x.font=&quot;700 11px &quot;+mono; x.fillStyle=C.mut; x.textAlign=&quot;left&quot;;
+        x.fillText(title.toUpperCase(), pad, cy); cy+=22;
+      };
+      var rowLR=function(label,val,color){
+        x.font=&quot;500 15px &quot;+mono; x.textAlign=&quot;left&quot;; x.fillStyle=C.tx;
+        x.fillText(label, pad, cy);
+        x.font=&quot;700 15px &quot;+mono; x.textAlign=&quot;right&quot;; x.fillStyle=color||C.tx;
+        x.fillText(val, W-pad, cy);
+        cy+=26;
+      };
+
+      divider();
+      section(&quot;What it moved&quot;);
+      moves.forEach(function(m){
+        var col = m.key===&quot;up&quot;?C.up : m.key===&quot;down&quot;?C.down : m.key===&quot;cool&quot;?C.cool : m.key===&quot;mut&quot;?C.mut : C.tx;
+        rowLR(m.label, m.text, col);
+      });
+      cy+=10;
+
+      if(details.length){
+        divider(); section(&quot;Details&quot;);
+        details.forEach(function(dd){ rowLR(dd[0], dd[1], C.tx); });
+        cy+=10;
+      }
+
+      if(noteLines.length){
+        divider(); section(&quot;Note&quot;);
+        // note in a rounded box
+        var boxTop=cy-4, boxH=noteLines.length*22+16;
+        x.fillStyle=C.card2; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.fill();
+        x.strokeStyle=C.bd; x.lineWidth=1; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.stroke();
+        x.font=&quot;500 15px &quot;+mono; x.fillStyle=C.tx; x.textAlign=&quot;left&quot;;
+        cy=boxTop+20;
+        noteLines.forEach(function(ln){ x.fillText(ln, pad+14, cy); cy+=22; });
+        cy=boxTop+boxH+14;
+      }
+
+      if(photoImg){
+        divider(); section(&quot;Photo&quot;);
+        var iw2=W-pad*2, ih2=photoH;
+        roundRectClip(x, pad, cy-4, iw2, ih2, 10, function(){
+          x.drawImage(photoImg, pad, cy-4, iw2, ih2);
+        });
+        cy+=ih2+10;
+      }
+
+      cv.toBlob(function(blob){ cb(blob, cv.toDataURL(&quot;image/png&quot;)); }, &quot;image/png&quot;);
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTxImage(t, withPhoto, cb){\n    var C=themeColors(), sym=state.currency, DPR=2;\n    var meta=TYPE_META[t.type]||{label:t.type};\n    var d=String(t.date||\"\").split(\"-\");\n    var dateStr=(MONTHS[(+d[1])-1]||\"\")+\" \"+(+d[2])+\", \"+d[0];\n    var W=440, pad=22;\n\n    // gather the pot-move rows as {label, text, colorKey}\n    var moves=[];\n    var addMove=function(label,v,key){ if(Math.abs(v)<0.005) return;\n      moves.push({label:label, text:(v>0?\"+\":\"\\u2212\")+fmt(Math.abs(v),sym), key:key}); };\n    addMove(L(\"trading\")||\"Money\", balDelta(t), balDelta(t)>0?\"up\":\"down\");\n    addMove(L(\"debt\"), debtDelta(t), debtDelta(t)>0?\"up\":\"down\");\n    addMove(L(\"savings\"), savDelta(t), savDelta(t)>0?\"up\":\"down\");\n    addMove(\"Tax set aside\", taxDelta(t), \"cool\");\n    if(sepTrading()) addMove(\"Trading pot\", tradingDelta(t), tradingDelta(t)>0?\"up\":\"down\");\n    if(!moves.length) moves.push({label:\"Nothing moved\", text:\"\\u2014\", key:\"mut\"});\n\n    var details=[];\n    if(t.cat) details.push([\"Category\", t.cat]);\n    if(t.inst) details.push([\"Instrument\", t.inst]);\n    var note=(t.note||\"\").trim();\n\n    var loadImg=function(next){\n      if(!withPhoto){ next(null); return; }\n      var ps=photosOf(t); if(!ps.length){ next(null); return; }\n      loadPhoto(ps[0], function(url){\n        if(!url){ next(null); return; }\n        var im=new Image(); im.onload=function(){ next(im); }; im.onerror=function(){ next(null); };\n        im.src=url;\n      });\n    };\n\n    loadImg(function(photoImg){\n      // ---- measure height ----\n      var y=pad;\n      y+=34;                       // badge\n      y+=54;                       // big amount\n      y+=26;                       // date\n      y+=18;                       // divider gap\n      y+=22+moves.length*26+10;    // \"what it moved\"\n      if(details.length) y+=22+details.length*26+10;\n      var noteLines=[];\n      if(note){\n        // wrap note at ~46 chars\n        var words=note.split(/\\s+/), line=\"\";\n        words.forEach(function(w){\n          if((line+\" \"+w).trim().length>46){ noteLines.push(line.trim()); line=w; }\n          else line+=\" \"+w;\n        });\n        if(line.trim()) noteLines.push(line.trim());\n        y+=22+noteLines.length*22+14;\n      }\n      var photoH=0;\n      if(photoImg){\n        var iw=W-pad*2, ih=Math.min(240, iw*photoImg.height/photoImg.width);\n        photoH=ih; y+=22+ih+10;\n      }\n      var H=y+pad;\n\n      var cv=document.createElement(\"canvas\");\n      cv.width=W*DPR; cv.height=H*DPR;\n      var x=cv.getContext(\"2d\"); x.scale(DPR,DPR);\n      var mono='-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif';\n\n      // bg\n      x.fillStyle=C.bg; x.fillRect(0,0,W,H);\n      var cy=pad;\n\n      // badge (centered pill)\n      var badge=meta.label;\n      x.font=\"700 12px \"+mono;\n      var bw=x.measureText(badge).width+24;\n      x.fillStyle=C.card2;\n      roundRect(x,(W-bw)/2,cy,bw,26,13); x.fill();\n      x.fillStyle=C.mut; x.textAlign=\"center\"; x.textBaseline=\"middle\";\n      x.fillText(badge, W/2, cy+13);\n      cy+=44;\n\n      // big amount\n      var bd=balDelta(t);\n      var amtColor = bd<0 ? C.down : (bd>0 ? C.up : C.tx);\n      if(Math.abs(bd)<0.005) amtColor=C.tx;\n      x.font=\"800 44px \"+mono; x.fillStyle=amtColor; x.textAlign=\"center\";\n      var amtStr=(bd<0?\"\\u2212\":\"\")+sym+Math.abs(num(t.amount)).toFixed(2);\n      x.fillText(amtStr, W/2, cy+22);\n      cy+=58;\n\n      // date\n      x.font=\"500 15px \"+mono; x.fillStyle=C.mut;\n      x.fillText(dateStr, W/2, cy);\n      cy+=28;\n\n      var divider=function(){ x.strokeStyle=C.bd; x.lineWidth=1;\n        x.beginPath(); x.moveTo(pad,cy); x.lineTo(W-pad,cy); x.stroke(); cy+=18; };\n      var section=function(title){\n        x.font=\"700 11px \"+mono; x.fillStyle=C.mut; x.textAlign=\"left\";\n        x.fillText(title.toUpperCase(), pad, cy); cy+=22;\n      };\n      var rowLR=function(label,val,color){\n        x.font=\"500 15px \"+mono; x.textAlign=\"left\"; x.fillStyle=C.tx;\n        x.fillText(label, pad, cy);\n        x.font=\"700 15px \"+mono; x.textAlign=\"right\"; x.fillStyle=color||C.tx;\n        x.fillText(val, W-pad, cy);\n        cy+=26;\n      };\n\n      divider();\n      section(\"What it moved\");\n      moves.forEach(function(m){\n        var col = m.key===\"up\"?C.up : m.key===\"down\"?C.down : m.key===\"cool\"?C.cool : m.key===\"mut\"?C.mut : C.tx;\n        rowLR(m.label, m.text, col);\n      });\n      cy+=10;\n\n      if(details.length){\n        divider(); section(\"Details\");\n        details.forEach(function(dd){ rowLR(dd[0], dd[1], C.tx); });\n        cy+=10;\n      }\n\n      if(noteLines.length){\n        divider(); section(\"Note\");\n        // note in a rounded box\n        var boxTop=cy-4, boxH=noteLines.length*22+16;\n        x.fillStyle=C.card2; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.fill();\n        x.strokeStyle=C.bd; x.lineWidth=1; roundRect(x,pad,boxTop,W-pad*2,boxH,10); x.stroke();\n        x.font=\"500 15px \"+mono; x.fillStyle=C.tx; x.textAlign=\"left\";\n        cy=boxTop+20;\n        noteLines.forEach(function(ln){ x.fillText(ln, pad+14, cy); cy+=22; });\n        cy=boxTop+boxH+14;\n      }\n\n      if(photoImg){\n        divider(); section(\"Photo\");\n        var iw2=W-pad*2, ih2=photoH;\n        roundRectClip(x, pad, cy-4, iw2, ih2, 10, function(){\n          x.drawImage(photoImg, pad, cy-4, iw2, ih2);\n        });\n        cy+=ih2+10;\n      }\n\n      cv.toBlob(function(blob){ cb(blob, cv.toDataURL(\"image/png\")); }, \"image/png\");\n    });\n  }",ARGS="t, withPhoto, cb";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTxImage!==\"undefined\"?renderTxImage:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

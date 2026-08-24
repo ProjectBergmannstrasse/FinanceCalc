@@ -1,0 +1,262 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>startEdit — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>startEdit<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v23.0 · variant 3</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function startEdit(id){
+    var tx=state.transactions.filter(function(t){ return t.id===id; })[0];
+    if(!tx || tx.auto) return;
+    editingId=id;
+    document.getElementById(&quot;fDate&quot;).value=tx.date;
+    document.getElementById(&quot;fType&quot;).value=tx.type;
+    typeUI();
+    if(tx.type===&quot;spend&quot;) document.getElementById(&quot;fCat&quot;).value=tx.cat||&quot;Other&quot;;
+    refreshSelects();   // programmatic .value changes don&#x27;t fire change
+    document.getElementById(&quot;fInst&quot;).value=tx.inst||&quot;&quot;;
+    document.getElementById(&quot;fAmt&quot;).value=tx.amount;
+    document.getElementById(&quot;fSplit&quot;).value=&quot;1&quot;;
+    var splitHintEl0=document.getElementById(&quot;splitHint&quot;); if(splitHintEl0) splitHintEl0.style.display=&quot;none&quot;;
+    document.getElementById(&quot;fNote&quot;).value=tx.note||&quot;&quot;;
+    // Picking a new photo used to REPLACE the old one. Now they add, and each existing
+    // one has its own × — which is the only way &quot;attach another&quot; can mean what it says.
+    pendingPhotos=[]; keepPhotos=photosOf(tx).slice(); photoCleared=false;
+    renderPhotoStrip();
+    var titleEl=document.getElementById(&quot;formTitle&quot;); if(titleEl) titleEl.textContent=&quot;Editing entry&quot;;
+    var submitBtn=document.getElementById(&quot;entrySubmitBtn&quot;); if(submitBtn) submitBtn.textContent=&quot;Save changes&quot;;
+    var cancelBtn=document.getElementById(&quot;cancelEditBtn&quot;); if(cancelBtn) cancelBtn.style.display=&quot;inline-block&quot;;
+    var form=document.getElementById(&quot;entryForm&quot;);
+    if(form &amp;&amp; form.scrollIntoView) form.scrollIntoView({behavior:&quot;smooth&quot;, block:&quot;center&quot;});
+  }
+  function cancelEdit(){
+    editingId=null;
+    var form=document.getElementById(&quot;entryForm&quot;);
+    if(form &amp;&amp; form.reset) form.reset();
+    document.getElementById(&quot;fDate&quot;).value=todayStr();
+    document.getElementById(&quot;fType&quot;).value=&quot;income&quot;;
+    typeUI();
+    clearPhotoPick();
+    var titleEl=document.getElementById(&quot;formTitle&quot;); if(titleEl) titleEl.textContent=&quot;Add an entry&quot;;
+    var submitBtn=document.getElementById(&quot;entrySubmitBtn&quot;); if(submitBtn) submitBtn.textContent=&quot;Add entry&quot;;
+    var cancelBtn=document.getElementById(&quot;cancelEditBtn&quot;); if(cancelBtn) cancelBtn.style.display=&quot;none&quot;;
+  }
+
+  /* ---------------- delete with a 5-second undo ---------------- */
+  var pendingDelete=null; // {tx, timer}
+  function deleteWithUndo(id){
+    var idx=-1;
+    (function(){ var t=state.transactions.filter(function(x){ return x.id===id; })[0];
+      if(t) recordAction(&quot;Deleted &quot;+(TYPE_META[t.type]||{label:t.type}).label.toLowerCase()+&quot; &quot;
+        +fmt(Math.abs(num(t.amount)), state.currency)); })();
+    for(var i=0;i&lt;state.transactions.length;i++){ if(state.transactions[i].id===id){ idx=i; break; } }
+    if(idx&lt;0) return;
+    var tx=state.transactions[idx];
+    if(pendingDelete) finalizePendingDelete(); // only one undo slot — finalize whatever was already pending
+    state.transactions.splice(idx,1);
+    delete selectedIds[id];
+    persist(); render();
+    pendingDelete={ tx:tx };
+    pendingDelete.timer=setTimeout(finalizePendingDelete, 5000);
+    showUndoToast(tx);
+  }
+  function finalizePendingDelete(){
+    if(!pendingDelete) return;
+    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
+    // the 5s toast expiring means &quot;they didn&#x27;t undo&quot;, not &quot;destroy it&quot; — it goes to the
+    // bin, photo intact, and only leaves for good after TRASH_DAYS
+    toTrash(pendingDelete.tx);
+    pendingDelete=null;
+    persistNow();
+    hideUndoToast();
+  }
+  function undoDelete(){
+    if(!pendingDelete) return;
+    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
+    state.transactions.push(pendingDelete.tx);
+    pendingDelete=null;
+    persist(); render();
+    hideUndoToast();
+  }
+  function showUndoToast(tx){
+    var el=document.getElementById(&quot;undoToast&quot;);
+    if(!el) return;
+    document.getElementById(&quot;undoToastMsg&quot;).textContent=&quot;Entry deleted&quot;;
+    el.style.display=&quot;flex&quot;;
+  }
+  function hideUndoToast(){
+    var el=document.getElementById(&quot;undoToast&quot;);
+    if(el) el.style.display=&quot;none&quot;;
+  }
+
+  /* ---------------- select-specific-entries export (separate from the full backup) ---------------- */
+  function currentVisibleIds(){
+    var allSel=isAllSelected(), activeSet={};
+    activeMonths().forEach(function(k){ activeSet[k]=1; });
+    return sortedTx().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) &amp;&amp; matchesSearch(t); }).map(function(t){ return t.id; });
+  }
+  function selectedCount(){ var n=0; for(var k in selectedIds){ if(selectedIds[k]) n++; } return n; }
+
+  /* ---- ledger search: matches note, category, and the type&#x27;s display label ---- */
+  var searchQuery=&quot;&quot;;
+  var sortMode=&quot;latest&quot;;
+  /* Words for things that aren&#x27;t written anywhere on the entry.
+     &quot;untagged&quot; is the obvious one: the app SAYS &quot;— untagged —&quot; on the Trading page, so
+     it&#x27;s the natural thing to search — but an untagged trade has no instrument, so
+     there&#x27;s literally no text to match. Same for &quot;trade&quot;: you&#x27;d have to know the type
+     label happens to read &quot;TRADE +&quot;.
+     These match IN ADDITION to the normal text search, so a note that genuinely says
+     &quot;trade&quot; still comes back. And they&#x27;re whole-word, or &quot;tagged&quot; would match
+     &quot;untagged&quot; by substring and mean the opposite of what you asked. */
+  var SEARCH_WORDS={
+    trade:      function(t){ return isTradeTx(t); },
+    trades:     function(t){ return isTradeTx(t); },
+    untagged:   function(t){ return isTradeTx(t) &amp;&amp; !t.inst; },
+    tagged:     function(t){ return isTradeTx(t) &amp;&amp; !!t.inst; },
+    win:        function(t){ return t.type===&quot;trade_win&quot;; },
+    wins:       function(t){ return t.type===&quot;trade_win&quot;; },
+    loss:       function(t){ return t.type===&quot;trade_loss&quot;; },
+    losses:     function(t){ return t.type===&quot;trade_loss&quot;; },
+    photo:      function(t){ return photosOf(t).length&gt;0; },
+    note:       function(t){ return !!(t.note &amp;&amp; t.note.trim()); }
+  };
+  function isTradeTx(t){ return t.type===&quot;trade_win&quot; || t.type===&quot;trade_loss&quot;; }
+  function matchesSearch(t){
+    if(!searchQuery) return true;
+    var q=searchQuery.trim();
+    if(SEARCH_WORDS[q] &amp;&amp; SEARCH_WORDS[q](t)) return true;
+    var meta=TYPE_META[t.type]||{label:t.type};
+    var hay=((t.note||&quot;&quot;)+&quot; &quot;+(t.cat||&quot;&quot;)+&quot; &quot;+(t.inst||&quot;&quot;)+&quot; &quot;+(meta.label||&quot;&quot;)+&quot; &quot;+(t.date||&quot;&quot;)).toLowerCase();
+    return hay.indexOf(searchQuery)&gt;=0;
+  }
+  // Profit/loss here means effect on your balance — money in is profit, money out is a
+  // loss. Debt- and savings-only entries don&#x27;t move the balance, so they sort as 0 and
+  // settle at the boundary between the two rather than being dropped.
+  function applySort(list){
+    var l=list.slice();
+    if(sortMode===&quot;latest&quot;) return l; // already newest-first from the caller
+    if(sortMode===&quot;oldest&quot;) return l.reverse();
+    function pl(t){ return balDelta(t); }
+    function amt(t){ var d=balDelta(t); return d!==0 ? Math.abs(d) : Math.max(Math.abs(debtDelta(t)), Math.abs(savDelta(t))); }
+    if(sortMode===&quot;profit&quot;) l.sort(function(a,b){ return pl(b)-pl(a); });
+    else if(sortMode===&quot;loss&quot;) l.sort(function(a,b){ return pl(a)-pl(b); });
+    else if(sortMode===&quot;biggest&quot;) l.sort(function(a,b){ return amt(b)-amt(a); });
+    else if(sortMode===&quot;smallest&quot;) l.sort(function(a,b){ return amt(a)-amt(b); });
+    return l;
+  }
+  function updateExportBtn(){
+    var btn=document.getElementById(&quot;exportSelBtn&quot;), chk=document.getElementById(&quot;selAllChk&quot;);
+    var cpy=document.getElementById(&quot;copySelBtn&quot;);
+    if(!btn||!chk) return;
+    var n=selectedCount();
+    // both buttons only exist once something is selected — an action you can&#x27;t take
+    // shouldn&#x27;t sit there greyed out taking up the bar
+    btn.style.display = n&gt;0 ? &quot;&quot; : &quot;none&quot;;
+    btn.textContent = &quot;Export (&quot;+n+&quot;)&quot;;
+    if(cpy){ cpy.style.display = n&gt;0 ? &quot;&quot; : &quot;none&quot;; cpy.textContent = &quot;📋 Copy (&quot;+n+&quot;)&quot;; }
+    var visible=currentVisibleIds();
+    if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }
+    chk.disabled=false;
+    var checkedVisible=visible.filter(function(id){ return !!selectedIds[id]; }).length;
+    chk.checked = checkedVisible===visible.length;
+    chk.indeterminate = checkedVisible&gt;0 &amp;&amp; checkedVisible&lt;visible.length;
+  }
+  // Single place that owns &quot;is this row selected&quot;, so the row tap, the checkbox and the
+  // greyed style can never disagree about the answer.
+  function toggleSelect(id, on){
+    if(on) selectedIds[id]=true; else delete selectedIds[id];
+    var row=document.querySelector(&#x27;.lrow[data-id=&quot;&#x27;+id+&#x27;&quot;]&#x27;);
+    if(row){
+      row.classList.toggle(&quot;lrow-sel&quot;, !!on);
+      var cb=row.querySelector(&quot;.lchk&quot;);
+      if(cb) cb.checked=!!on;
+    }
+    updateExportBtn();
+  }
+  function toggleSelectAll(checked){
+    currentVisibleIds().forEach(function(id){ if(checked) selectedIds[id]=true; else delete selectedIds[id]; });
+    renderLedger();
+  }
+  // bundles a chosen list of transactions (plus any photos they reference) into one JSON payload
+  function exportTxList(list, cb){
+    var ids=[]; list.forEach(function(t){ photosOf(t).forEach(function(p){ ids.push(p); }); });
+    var photos={}, i=0;
+    (function next(){
+      if(i&gt;=ids.length){
+        var payload={__mymoneyExport:1, exportedAt:new Date().toISOString(), count:list.length, currency:state.currency, transactions:list, photos:photos};
+        cb(JSON.stringify(payload,null,2), list.length);
+        return;
+      }
+      var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+    })();
+  }
+  function exportSelectedClick(){
+    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+    if(!ids.length) return;
+    var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)&gt;=0; });
+    flashSaved(&quot;preparing…&quot;);
+    exportTxList(list, function(json, count){
+      try{
+        var blob=new Blob([json],{type:&quot;application/json&quot;});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement(&quot;a&quot;);
+        var am=activeMonths();
+        var scopeName = isAllSelected() ? &quot;selected&quot;
+          : am.length===1 ? am[0]
+          : am.length&lt;=3 ? am.slice().sort().join(&quot;_&quot;)
+          : am.length+&quot;-months&quot;;
+        a.href=url; a.download=&quot;my-money-&quot;+scopeName+&quot;-&quot;+count+(count===1?&quot;-entry&quot;:&quot;-entries&quot;)+&quot;.json&quot;;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+        selectedIds={};
+        renderLedger();
+        flashSaved(&quot;exported&quot;);
+      }catch(e){ appModal({title:&quot;Couldn&#x27;t download&quot;, message:&quot;Your browser blocked the download. Try again, or use Copy backup.&quot;, confirmText:&quot;OK&quot;, cancelText:&quot;Close&quot;}); }
+    });
+  }
+
+  /* ---------------- image viewer ---------------- */
+  var viewingId=null;
+  /* ================= RECENT ACTIONS =================
+     A snapshot of the whole portfolio taken BEFORE each change, so any of them can be
+     put back. Snapshots rather than inverse operations: an inverse has to be written
+     per action type and is wrong exactly when it matters, whereas a snapshot restores
+     whatever was actually there.
+
+     In memory only, and deliberately: persisting a dozen copies of the ledger risks the
+     storage quota that holds the real data. Undo covers this session — the trash bin and
+     the automatic backups cover the rest.
+
+     Undoing an older change necessarily undoes the newer ones too, because state goes
+     back to how it was before it. The confirm says so rather than surprising anyone. */
+  var ACTIONS=[], ACTIONS_MAX=12;
+  function recordAction(label){
+    try{
+      var __a={ label:label, at:Date.now(), snap:JSON.stringify(state) };
+      ACTIONS.unshift(__a);
+      actArchiveSave(__a);   // v2.03: light copy (label+time) into the sandboxed archive
+      if(ACTIONS.length&gt;ACTIONS_MAX) ACTIONS.pop();
+    }catch(e){ return; }   // a snapshot that can&#x27;t be taken must never block the action
+    renderActions();
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function startEdit(id){\n    var tx=state.transactions.filter(function(t){ return t.id===id; })[0];\n    if(!tx || tx.auto) return;\n    editingId=id;\n    document.getElementById(\"fDate\").value=tx.date;\n    document.getElementById(\"fType\").value=tx.type;\n    typeUI();\n    if(tx.type===\"spend\") document.getElementById(\"fCat\").value=tx.cat||\"Other\";\n    refreshSelects();   // programmatic .value changes don't fire change\n    document.getElementById(\"fInst\").value=tx.inst||\"\";\n    document.getElementById(\"fAmt\").value=tx.amount;\n    document.getElementById(\"fSplit\").value=\"1\";\n    var splitHintEl0=document.getElementById(\"splitHint\"); if(splitHintEl0) splitHintEl0.style.display=\"none\";\n    document.getElementById(\"fNote\").value=tx.note||\"\";\n    // Picking a new photo used to REPLACE the old one. Now they add, and each existing\n    // one has its own \u00d7 \u2014 which is the only way \"attach another\" can mean what it says.\n    pendingPhotos=[]; keepPhotos=photosOf(tx).slice(); photoCleared=false;\n    renderPhotoStrip();\n    var titleEl=document.getElementById(\"formTitle\"); if(titleEl) titleEl.textContent=\"Editing entry\";\n    var submitBtn=document.getElementById(\"entrySubmitBtn\"); if(submitBtn) submitBtn.textContent=\"Save changes\";\n    var cancelBtn=document.getElementById(\"cancelEditBtn\"); if(cancelBtn) cancelBtn.style.display=\"inline-block\";\n    var form=document.getElementById(\"entryForm\");\n    if(form && form.scrollIntoView) form.scrollIntoView({behavior:\"smooth\", block:\"center\"});\n  }\n  function cancelEdit(){\n    editingId=null;\n    var form=document.getElementById(\"entryForm\");\n    if(form && form.reset) form.reset();\n    document.getElementById(\"fDate\").value=todayStr();\n    document.getElementById(\"fType\").value=\"income\";\n    typeUI();\n    clearPhotoPick();\n    var titleEl=document.getElementById(\"formTitle\"); if(titleEl) titleEl.textContent=\"Add an entry\";\n    var submitBtn=document.getElementById(\"entrySubmitBtn\"); if(submitBtn) submitBtn.textContent=\"Add entry\";\n    var cancelBtn=document.getElementById(\"cancelEditBtn\"); if(cancelBtn) cancelBtn.style.display=\"none\";\n  }\n\n  /* ---------------- delete with a 5-second undo ---------------- */\n  var pendingDelete=null; // {tx, timer}\n  function deleteWithUndo(id){\n    var idx=-1;\n    (function(){ var t=state.transactions.filter(function(x){ return x.id===id; })[0];\n      if(t) recordAction(\"Deleted \"+(TYPE_META[t.type]||{label:t.type}).label.toLowerCase()+\" \"\n        +fmt(Math.abs(num(t.amount)), state.currency)); })();\n    for(var i=0;i<state.transactions.length;i++){ if(state.transactions[i].id===id){ idx=i; break; } }\n    if(idx<0) return;\n    var tx=state.transactions[idx];\n    if(pendingDelete) finalizePendingDelete(); // only one undo slot \u2014 finalize whatever was already pending\n    state.transactions.splice(idx,1);\n    delete selectedIds[id];\n    persist(); render();\n    pendingDelete={ tx:tx };\n    pendingDelete.timer=setTimeout(finalizePendingDelete, 5000);\n    showUndoToast(tx);\n  }\n  function finalizePendingDelete(){\n    if(!pendingDelete) return;\n    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);\n    // the 5s toast expiring means \"they didn't undo\", not \"destroy it\" \u2014 it goes to the\n    // bin, photo intact, and only leaves for good after TRASH_DAYS\n    toTrash(pendingDelete.tx);\n    pendingDelete=null;\n    persistNow();\n    hideUndoToast();\n  }\n  function undoDelete(){\n    if(!pendingDelete) return;\n    if(pendingDelete.timer) clearTimeout(pendingDelete.timer);\n    state.transactions.push(pendingDelete.tx);\n    pendingDelete=null;\n    persist(); render();\n    hideUndoToast();\n  }\n  function showUndoToast(tx){\n    var el=document.getElementById(\"undoToast\");\n    if(!el) return;\n    document.getElementById(\"undoToastMsg\").textContent=\"Entry deleted\";\n    el.style.display=\"flex\";\n  }\n  function hideUndoToast(){\n    var el=document.getElementById(\"undoToast\");\n    if(el) el.style.display=\"none\";\n  }\n\n  /* ---------------- select-specific-entries export (separate from the full backup) ---------------- */\n  function currentVisibleIds(){\n    var allSel=isAllSelected(), activeSet={};\n    activeMonths().forEach(function(k){ activeSet[k]=1; });\n    return sortedTx().filter(function(t){ return (allSel || activeSet[monthKey(t.date)]) && matchesSearch(t); }).map(function(t){ return t.id; });\n  }\n  function selectedCount(){ var n=0; for(var k in selectedIds){ if(selectedIds[k]) n++; } return n; }\n\n  /* ---- ledger search: matches note, category, and the type's display label ---- */\n  var searchQuery=\"\";\n  var sortMode=\"latest\";\n  /* Words for things that aren't written anywhere on the entry.\n     \"untagged\" is the obvious one: the app SAYS \"\u2014 untagged \u2014\" on the Trading page, so\n     it's the natural thing to search \u2014 but an untagged trade has no instrument, so\n     there's literally no text to match. Same for \"trade\": you'd have to know the type\n     label happens to read \"TRADE +\".\n     These match IN ADDITION to the normal text search, so a note that genuinely says\n     \"trade\" still comes back. And they're whole-word, or \"tagged\" would match\n     \"untagged\" by substring and mean the opposite of what you asked. */\n  var SEARCH_WORDS={\n    trade:      function(t){ return isTradeTx(t); },\n    trades:     function(t){ return isTradeTx(t); },\n    untagged:   function(t){ return isTradeTx(t) && !t.inst; },\n    tagged:     function(t){ return isTradeTx(t) && !!t.inst; },\n    win:        function(t){ return t.type===\"trade_win\"; },\n    wins:       function(t){ return t.type===\"trade_win\"; },\n    loss:       function(t){ return t.type===\"trade_loss\"; },\n    losses:     function(t){ return t.type===\"trade_loss\"; },\n    photo:      function(t){ return photosOf(t).length>0; },\n    note:       function(t){ return !!(t.note && t.note.trim()); }\n  };\n  function isTradeTx(t){ return t.type===\"trade_win\" || t.type===\"trade_loss\"; }\n  function matchesSearch(t){\n    if(!searchQuery) return true;\n    var q=searchQuery.trim();\n    if(SEARCH_WORDS[q] && SEARCH_WORDS[q](t)) return true;\n    var meta=TYPE_META[t.type]||{label:t.type};\n    var hay=((t.note||\"\")+\" \"+(t.cat||\"\")+\" \"+(t.inst||\"\")+\" \"+(meta.label||\"\")+\" \"+(t.date||\"\")).toLowerCase();\n    return hay.indexOf(searchQuery)>=0;\n  }\n  // Profit/loss here means effect on your balance \u2014 money in is profit, money out is a\n  // loss. Debt- and savings-only entries don't move the balance, so they sort as 0 and\n  // settle at the boundary between the two rather than being dropped.\n  function applySort(list){\n    var l=list.slice();\n    if(sortMode===\"latest\") return l; // already newest-first from the caller\n    if(sortMode===\"oldest\") return l.reverse();\n    function pl(t){ return balDelta(t); }\n    function amt(t){ var d=balDelta(t); return d!==0 ? Math.abs(d) : Math.max(Math.abs(debtDelta(t)), Math.abs(savDelta(t))); }\n    if(sortMode===\"profit\") l.sort(function(a,b){ return pl(b)-pl(a); });\n    else if(sortMode===\"loss\") l.sort(function(a,b){ return pl(a)-pl(b); });\n    else if(sortMode===\"biggest\") l.sort(function(a,b){ return amt(b)-amt(a); });\n    else if(sortMode===\"smallest\") l.sort(function(a,b){ return amt(a)-amt(b); });\n    return l;\n  }\n  function updateExportBtn(){\n    var btn=document.getElementById(\"exportSelBtn\"), chk=document.getElementById(\"selAllChk\");\n    var cpy=document.getElementById(\"copySelBtn\");\n    if(!btn||!chk) return;\n    var n=selectedCount();\n    // both buttons only exist once something is selected \u2014 an action you can't take\n    // shouldn't sit there greyed out taking up the bar\n    btn.style.display = n>0 ? \"\" : \"none\";\n    btn.textContent = \"Export (\"+n+\")\";\n    if(cpy){ cpy.style.display = n>0 ? \"\" : \"none\"; cpy.textContent = \"\ud83d\udccb Copy (\"+n+\")\"; }\n    var visible=currentVisibleIds();\n    if(!visible.length){ chk.checked=false; chk.indeterminate=false; chk.disabled=true; return; }\n    chk.disabled=false;\n    var checkedVisible=visible.filter(function(id){ return !!selectedIds[id]; }).length;\n    chk.checked = checkedVisible===visible.length;\n    chk.indeterminate = checkedVisible>0 && checkedVisible<visible.length;\n  }\n  // Single place that owns \"is this row selected\", so the row tap, the checkbox and the\n  // greyed style can never disagree about the answer.\n  function toggleSelect(id, on){\n    if(on) selectedIds[id]=true; else delete selectedIds[id];\n    var row=document.querySelector('.lrow[data-id=\"'+id+'\"]');\n    if(row){\n      row.classList.toggle(\"lrow-sel\", !!on);\n      var cb=row.querySelector(\".lchk\");\n      if(cb) cb.checked=!!on;\n    }\n    updateExportBtn();\n  }\n  function toggleSelectAll(checked){\n    currentVisibleIds().forEach(function(id){ if(checked) selectedIds[id]=true; else delete selectedIds[id]; });\n    renderLedger();\n  }\n  // bundles a chosen list of transactions (plus any photos they reference) into one JSON payload\n  function exportTxList(list, cb){\n    var ids=[]; list.forEach(function(t){ photosOf(t).forEach(function(p){ ids.push(p); }); });\n    var photos={}, i=0;\n    (function next(){\n      if(i>=ids.length){\n        var payload={__mymoneyExport:1, exportedAt:new Date().toISOString(), count:list.length, currency:state.currency, transactions:list, photos:photos};\n        cb(JSON.stringify(payload,null,2), list.length);\n        return;\n      }\n      var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });\n    })();\n  }\n  function exportSelectedClick(){\n    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);\n    if(!ids.length) return;\n    var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });\n    flashSaved(\"preparing\u2026\");\n    exportTxList(list, function(json, count){\n      try{\n        var blob=new Blob([json],{type:\"application/json\"});\n        var url=URL.createObjectURL(blob);\n        var a=document.createElement(\"a\");\n        var am=activeMonths();\n        var scopeName = isAllSelected() ? \"selected\"\n          : am.length===1 ? am[0]\n          : am.length<=3 ? am.slice().sort().join(\"_\")\n          : am.length+\"-months\";\n        a.href=url; a.download=\"my-money-\"+scopeName+\"-\"+count+(count===1?\"-entry\":\"-entries\")+\".json\";\n        document.body.appendChild(a); a.click(); document.body.removeChild(a);\n        setTimeout(function(){ URL.revokeObjectURL(url); },1000);\n        selectedIds={};\n        renderLedger();\n        flashSaved(\"exported\");\n      }catch(e){ appModal({title:\"Couldn't download\", message:\"Your browser blocked the download. Try again, or use Copy backup.\", confirmText:\"OK\", cancelText:\"Close\"}); }\n    });\n  }\n\n  /* ---------------- image viewer ---------------- */\n  var viewingId=null;\n  /* ================= RECENT ACTIONS =================\n     A snapshot of the whole portfolio taken BEFORE each change, so any of them can be\n     put back. Snapshots rather than inverse operations: an inverse has to be written\n     per action type and is wrong exactly when it matters, whereas a snapshot restores\n     whatever was actually there.\n\n     In memory only, and deliberately: persisting a dozen copies of the ledger risks the\n     storage quota that holds the real data. Undo covers this session \u2014 the trash bin and\n     the automatic backups cover the rest.\n\n     Undoing an older change necessarily undoes the newer ones too, because state goes\n     back to how it was before it. The confirm says so rather than surprising anyone. */\n  var ACTIONS=[], ACTIONS_MAX=12;\n  function recordAction(label){\n    try{\n      var __a={ label:label, at:Date.now(), snap:JSON.stringify(state) };\n      ACTIONS.unshift(__a);\n      actArchiveSave(__a);   // v2.03: light copy (label+time) into the sandboxed archive\n      if(ACTIONS.length>ACTIONS_MAX) ACTIONS.pop();\n    }catch(e){ return; }   // a snapshot that can't be taken must never block the action\n    renderActions();\n  }",ARGS="id";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof startEdit!==\"undefined\"?startEdit:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

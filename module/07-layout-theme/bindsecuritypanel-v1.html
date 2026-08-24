@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bindSecurityPanel — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 07-layout-theme</div>
+<h1>bindSecurityPanel<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function bindSecurityPanel(){
+    loadLock();
+    loadFace();
+    // The panel now lives inside a settings &lt;details&gt; box, so it has no collapse
+    // header of its own — a second layer of clicking looked broken when the
+    // outer box was shut. Refresh when the box it sits in is opened instead.
+    var body=document.getElementById(&quot;secBody&quot;);
+    if(!body) return;
+    var outer=body.closest(&quot;details.sect&quot;);
+    if(outer) outer.addEventListener(&quot;toggle&quot;, function(){
+      if(outer.open){ refreshSecUI(); }
+    });
+
+    // biometric
+    /* App lock: PIN first (works anywhere), Face ID as an optional extra
+       where the page is on https and a sensor exists. */
+    var bioBtn=document.getElementById(&quot;bioBtn&quot;);
+    if(bioBtn) bioBtn.addEventListener(&quot;click&quot;, function(){
+      if(lockIsOn()){
+        appModal({title:&quot;Turn off the app lock?&quot;,
+          message:&quot;The app will open without asking for your PIN&quot;+(faceCfg.on?&quot; or your face&quot;:&quot;&quot;)+&quot;.&quot;,
+          confirmText:&quot;Turn off&quot;, cancelText:&quot;Keep it on&quot;,
+          onConfirm:function(){ clearLock(); faceDisable(); refreshSecUI(); flashSaved(&quot;app lock off&quot;); }});
+        return;
+      }
+      openPinSetup();      // proper keypad, and it always says what went wrong
+    });
+
+    // separate control for face unlock, so it can be added or removed on its own
+    var afChk=document.getElementById(&quot;autoFaceChk&quot;);
+    if(afChk &amp;&amp; !afChk._bound){
+      afChk._bound=true;
+      afChk.checked=autoFaceOn();
+      afChk.addEventListener(&quot;change&quot;, function(){
+        setAutoFace(afChk.checked);
+        var n=document.getElementById(&quot;autoFaceNote&quot;);
+        if(n) n.textContent = afChk.checked
+          ? &quot;Look for your face as soon as the lock screen opens. The camera runs only on that screen.&quot;
+          : &quot;You&#x27;ll tap “Use face unlock” yourself. The camera stays off until you do.&quot;;
+        flashSaved(afChk.checked?&quot;auto unlock on&quot;:&quot;auto unlock off&quot;);
+      });
+    }
+    var faNote=document.getElementById(&quot;faLogNote&quot;);
+    if(faNote){
+      var n=loadShots().length;
+      faNote.textContent = n
+        ? n+&quot; attempt&quot;+(n===1?&quot;&quot;:&quot;s&quot;)+&quot; recorded with images. Review or download them any time.&quot;
+        : &quot;Unrecognised attempts, with images. Nothing recorded yet.&quot;;
+    }
+    var capChk=document.getElementById(&quot;capChk&quot;);
+    if(capChk &amp;&amp; !capChk._bound){
+      capChk._bound=true;
+      capChk.checked=captureOn();
+      capChk.addEventListener(&quot;change&quot;, function(){
+        setCaptureOn(capChk.checked);
+        var n=document.getElementById(&quot;capNote&quot;);
+        if(n) n.textContent = capChk.checked
+          ? &quot;Takes a few photos when someone isn&#x27;t recognised, and shows them a notice while it does. Never silent.&quot;
+          : &quot;Off. Attempts are still logged with a timestamp, just without images.&quot;;
+        flashSaved(capChk.checked?&quot;attempt photos on&quot;:&quot;attempt photos off&quot;);
+      });
+    }
+    var faBtn=document.getElementById(&quot;faLogBtn&quot;);
+    if(faBtn &amp;&amp; !faBtn._bound){
+      faBtn._bound=true;
+      faBtn.addEventListener(&quot;click&quot;, function(){ showIntrusionReview(true); });
+    }
+    var recBtn=document.getElementById(&quot;recBtn&quot;);
+    if(recBtn) recBtn.addEventListener(&quot;click&quot;, function(){
+      if(recoveryOn()){
+        appModal({title:&quot;Remove the recovery question?&quot;,
+          message:&quot;A forgotten PIN would then mean clearing the app&#x27;s data and restoring a backup.&quot;,
+          confirmText:&quot;Remove&quot;, cancelText:&quot;Keep&quot;,
+          onConfirm:function(){ clearRecovery(); refreshSecUI(); flashSaved(&quot;recovery removed&quot;); }});
+        return;
+      }
+      openRecoverySetup();
+    });
+
+    var faceBtn=document.getElementById(&quot;faceBtn&quot;);
+    if(faceBtn) faceBtn.addEventListener(&quot;click&quot;, function(){
+      if(!lockIsOn()){
+        appModal({title:&quot;Set a PIN first&quot;,
+          message:&quot;Face unlock sits on top of the PIN — the PIN is the fallback whenever your face can&#x27;t be read.&quot;,
+          confirmText:&quot;OK&quot;});
+        return;
+      }
+      if(faceCfg.on){
+        appModal({title:&quot;Remove face unlock?&quot;, message:&quot;You&#x27;ll unlock with your PIN only.&quot;,
+          confirmText:&quot;Remove&quot;, cancelText:&quot;Keep&quot;,
+          onConfirm:function(){ faceDisable(); refreshSecUI(); flashSaved(&quot;face unlock removed&quot;); }});
+        return;
+      }
+      enrolFace(function(){ refreshSecUI(); });
+    });
+
+    // PWA install
+    var pwaBtn=document.getElementById(&quot;pwaInstallBtn&quot;);
+    if(pwaBtn) pwaBtn.addEventListener(&quot;click&quot;, triggerInstall);
+
+    // role
+    var adChk=document.getElementById(&quot;autoDetectChk&quot;);
+    if(adChk){
+      adChk.checked=!(state.settings&amp;&amp;state.settings.autoDetect===false);
+      adChk.addEventListener(&quot;change&quot;,function(){
+        if(!state.settings) state.settings={};
+        state.settings.autoDetect=adChk.checked; persistNow();
+        flashSaved(adChk.checked?&quot;auto-detect on&quot;:&quot;auto-detect off&quot;);
+      });
+    }
+    refreshSecUI();
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function bindSecurityPanel(){\n    loadLock();\n    loadFace();\n    // The panel now lives inside a settings <details> box, so it has no collapse\n    // header of its own \u2014 a second layer of clicking looked broken when the\n    // outer box was shut. Refresh when the box it sits in is opened instead.\n    var body=document.getElementById(\"secBody\");\n    if(!body) return;\n    var outer=body.closest(\"details.sect\");\n    if(outer) outer.addEventListener(\"toggle\", function(){\n      if(outer.open){ refreshSecUI(); }\n    });\n\n    // biometric\n    /* App lock: PIN first (works anywhere), Face ID as an optional extra\n       where the page is on https and a sensor exists. */\n    var bioBtn=document.getElementById(\"bioBtn\");\n    if(bioBtn) bioBtn.addEventListener(\"click\", function(){\n      if(lockIsOn()){\n        appModal({title:\"Turn off the app lock?\",\n          message:\"The app will open without asking for your PIN\"+(faceCfg.on?\" or your face\":\"\")+\".\",\n          confirmText:\"Turn off\", cancelText:\"Keep it on\",\n          onConfirm:function(){ clearLock(); faceDisable(); refreshSecUI(); flashSaved(\"app lock off\"); }});\n        return;\n      }\n      openPinSetup();      // proper keypad, and it always says what went wrong\n    });\n\n    // separate control for face unlock, so it can be added or removed on its own\n    var afChk=document.getElementById(\"autoFaceChk\");\n    if(afChk && !afChk._bound){\n      afChk._bound=true;\n      afChk.checked=autoFaceOn();\n      afChk.addEventListener(\"change\", function(){\n        setAutoFace(afChk.checked);\n        var n=document.getElementById(\"autoFaceNote\");\n        if(n) n.textContent = afChk.checked\n          ? \"Look for your face as soon as the lock screen opens. The camera runs only on that screen.\"\n          : \"You'll tap \u201cUse face unlock\u201d yourself. The camera stays off until you do.\";\n        flashSaved(afChk.checked?\"auto unlock on\":\"auto unlock off\");\n      });\n    }\n    var faNote=document.getElementById(\"faLogNote\");\n    if(faNote){\n      var n=loadShots().length;\n      faNote.textContent = n\n        ? n+\" attempt\"+(n===1?\"\":\"s\")+\" recorded with images. Review or download them any time.\"\n        : \"Unrecognised attempts, with images. Nothing recorded yet.\";\n    }\n    var capChk=document.getElementById(\"capChk\");\n    if(capChk && !capChk._bound){\n      capChk._bound=true;\n      capChk.checked=captureOn();\n      capChk.addEventListener(\"change\", function(){\n        setCaptureOn(capChk.checked);\n        var n=document.getElementById(\"capNote\");\n        if(n) n.textContent = capChk.checked\n          ? \"Takes a few photos when someone isn't recognised, and shows them a notice while it does. Never silent.\"\n          : \"Off. Attempts are still logged with a timestamp, just without images.\";\n        flashSaved(capChk.checked?\"attempt photos on\":\"attempt photos off\");\n      });\n    }\n    var faBtn=document.getElementById(\"faLogBtn\");\n    if(faBtn && !faBtn._bound){\n      faBtn._bound=true;\n      faBtn.addEventListener(\"click\", function(){ showIntrusionReview(true); });\n    }\n    var recBtn=document.getElementById(\"recBtn\");\n    if(recBtn) recBtn.addEventListener(\"click\", function(){\n      if(recoveryOn()){\n        appModal({title:\"Remove the recovery question?\",\n          message:\"A forgotten PIN would then mean clearing the app's data and restoring a backup.\",\n          confirmText:\"Remove\", cancelText:\"Keep\",\n          onConfirm:function(){ clearRecovery(); refreshSecUI(); flashSaved(\"recovery removed\"); }});\n        return;\n      }\n      openRecoverySetup();\n    });\n\n    var faceBtn=document.getElementById(\"faceBtn\");\n    if(faceBtn) faceBtn.addEventListener(\"click\", function(){\n      if(!lockIsOn()){\n        appModal({title:\"Set a PIN first\",\n          message:\"Face unlock sits on top of the PIN \u2014 the PIN is the fallback whenever your face can't be read.\",\n          confirmText:\"OK\"});\n        return;\n      }\n      if(faceCfg.on){\n        appModal({title:\"Remove face unlock?\", message:\"You'll unlock with your PIN only.\",\n          confirmText:\"Remove\", cancelText:\"Keep\",\n          onConfirm:function(){ faceDisable(); refreshSecUI(); flashSaved(\"face unlock removed\"); }});\n        return;\n      }\n      enrolFace(function(){ refreshSecUI(); });\n    });\n\n    // PWA install\n    var pwaBtn=document.getElementById(\"pwaInstallBtn\");\n    if(pwaBtn) pwaBtn.addEventListener(\"click\", triggerInstall);\n\n    // role\n    var adChk=document.getElementById(\"autoDetectChk\");\n    if(adChk){\n      adChk.checked=!(state.settings&&state.settings.autoDetect===false);\n      adChk.addEventListener(\"change\",function(){\n        if(!state.settings) state.settings={};\n        state.settings.autoDetect=adChk.checked; persistNow();\n        flashSaved(adChk.checked?\"auto-detect on\":\"auto-detect off\");\n      });\n    }\n    refreshSecUI();\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof bindSecurityPanel!==\"undefined\"?bindSecurityPanel:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

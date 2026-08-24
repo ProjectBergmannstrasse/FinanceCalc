@@ -1,0 +1,138 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bindAiUI — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>bindAiUI<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function bindAiUI(){
+    document.getElementById(&quot;aiBtn&quot;).addEventListener(&quot;click&quot;, openAiPanel);
+    document.getElementById(&quot;aiPanelClose&quot;).addEventListener(&quot;click&quot;, closeAiPanel);
+    var scanBtn=document.getElementById(&quot;scanBtn&quot;); if(scanBtn) scanBtn.addEventListener(&quot;click&quot;, tapScanReceipt);
+    initReceiptScanner();
+    document.getElementById(&quot;aiPanelOverlay&quot;).addEventListener(&quot;click&quot;, closeAiPanel);
+    document.getElementById(&quot;aiHelpBtn&quot;).addEventListener(&quot;click&quot;, aiHelpModal);
+
+    [&quot;aiProvA&quot;,&quot;aiProvB&quot;,&quot;aiKeyA&quot;,&quot;aiKeyB&quot;,&quot;aiModelA&quot;,&quot;aiModelB&quot;].forEach(function(id){
+      // &quot;input&quot; not &quot;change&quot;: change only fires on blur, so a key typed and immediately
+      // tested could still be unsaved when the request goes out
+      document.getElementById(id).addEventListener(&quot;input&quot;, function(){
+        var prevA=aiCfg.provA, prevB=aiCfg.provB;
+        aiCfg.provA=document.getElementById(&quot;aiProvA&quot;).value;
+        aiCfg.provB=document.getElementById(&quot;aiProvB&quot;).value;
+        aiCfg.keyA=aiCleanKey(document.getElementById(&quot;aiKeyA&quot;).value);
+        aiCfg.keyB=aiCleanKey(document.getElementById(&quot;aiKeyB&quot;).value);
+        aiCfg.modelA=document.getElementById(&quot;aiModelA&quot;).value.trim();
+        aiCfg.modelB=document.getElementById(&quot;aiModelB&quot;).value.trim();
+        // a model name is meaningless against a different provider — drop it on switch
+        if(prevA!==aiCfg.provA){ aiCfg.modelA=&quot;&quot;; aiCfg.verA=&quot;&quot;; document.getElementById(&quot;aiModelA&quot;).value=&quot;&quot;; }
+        if(prevB!==aiCfg.provB){ aiCfg.modelB=&quot;&quot;; aiCfg.verB=&quot;&quot;; document.getElementById(&quot;aiModelB&quot;).value=&quot;&quot;; }
+        saveAiCfg(); refreshAiVisibility();
+      });
+    });
+    document.getElementById(&quot;aiFindA&quot;).addEventListener(&quot;click&quot;, function(){ aiPickModels(&quot;A&quot;); });
+    document.getElementById(&quot;aiFindB&quot;).addEventListener(&quot;click&quot;, function(){ aiPickModels(&quot;B&quot;); });
+    document.getElementById(&quot;aiClearBtn&quot;).addEventListener(&quot;click&quot;, function(){
+      appModal({title:&quot;Forget API keys?&quot;, message:&quot;Both keys are removed from this device. Your entries aren&#x27;t affected.&quot;, confirmText:&quot;Forget&quot;, danger:true, onConfirm:function(){
+        aiCfg={provA:&quot;gemini&quot;, keyA:&quot;&quot;, modelA:&quot;&quot;, verA:&quot;&quot;, provB:&quot;&quot;, keyB:&quot;&quot;, modelB:&quot;&quot;, verB:&quot;&quot;};
+        saveAiCfg(); fillProviderSelects(); refreshAiVisibility();
+        document.getElementById(&quot;aiTestOut&quot;).textContent=&quot;&quot;;
+        flashSaved(&quot;keys forgotten&quot;);
+      }});
+    });
+    document.getElementById(&quot;aiTestBtn&quot;).addEventListener(&quot;click&quot;, async function(){
+      var out=document.getElementById(&quot;aiTestOut&quot;);
+      out.style.color=&quot;var(--mut)&quot;; out.textContent=&quot;Testing…&quot;;
+      var probe=&quot;Reply with exactly this JSON and nothing else: {\&quot;transactions\&quot;:[]}&quot;;
+      var msgs=[];
+      var slots=[[&quot;A&quot;,aiCfg.provA,aiCfg.keyA,aiCfg.modelA,aiCfg.verA],[&quot;B&quot;,aiCfg.provB,aiCfg.keyB,aiCfg.modelB,aiCfg.verB]];
+      for(var si=0; si&lt;slots.length; si++){
+        var slot=slots[si], name=slot[0], pk=slot[1], key=slot[2];
+        if(!pk||!key){ msgs.push(&quot;Engine &quot;+name+&quot;: not set&quot;); continue; }
+        var prov=AI_PROVIDERS[pk], tag=&quot;Engine &quot;+name+&quot; (&quot;+prov.label+&quot;)&quot;;
+        var mm=keyMismatch(pk, key);
+        if(mm){ msgs.push(tag+&quot;: ❌ &quot;+mm); continue; }
+        // Step 1 proves the KEY. Step 2 proves the MODEL. Collapsing them is why a dead
+        // model name reads as &quot;my key never works&quot;.
+        var keyOk=false;
+        if(prov.canList){
+          try{ await prov.listModels(key); keyOk=true; msgs.push(tag+&quot;: ✅ key accepted&quot;); }
+          catch(e){ msgs.push(tag+&quot;: ❌ key problem — &quot;+e.message); continue; }
+        }
+        try{
+          await prov.run(key, probe, [], slot[3], slot[4]);
+          msgs.push(tag+&quot;: ✅ model “&quot;+(slot[3]||prov.model)+&quot;” works&quot;);
+        }catch(e2){
+          msgs.push(tag+&quot;: &quot;+(keyOk?&quot;⚠️ key is fine, but the model failed&quot;:&quot;❌&quot;)+&quot; — &quot;+e2.message);
+        }
+      }
+      out.style.color=&quot;var(--mut)&quot;;
+      out.innerHTML=msgs.map(esc).join(&quot;&lt;br&gt;&quot;);
+    });
+
+    document.getElementById(&quot;aiAddImgs&quot;).addEventListener(&quot;click&quot;, function(){ document.getElementById(&quot;aiFiles&quot;).click(); });
+    document.getElementById(&quot;aiClearImgs&quot;).addEventListener(&quot;click&quot;, function(){ aiImages=[]; renderAiThumbs(); });
+    document.getElementById(&quot;aiFiles&quot;).addEventListener(&quot;change&quot;, function(e){
+      var files=Array.prototype.slice.call(e.target.files||[]);
+      var left=files.length;
+      if(!left) return;
+      files.forEach(function(f){
+        var r=new FileReader();
+        r.onload=function(){
+          var url=r.result;
+          var comma=url.indexOf(&quot;,&quot;);
+          aiImages.push({mime:f.type||&quot;image/jpeg&quot;, b64:url.slice(comma+1), url:url});
+          if(--left&lt;=0) renderAiThumbs();
+        };
+        r.onerror=function(){ if(--left&lt;=0) renderAiThumbs(); };
+        r.readAsDataURL(f);
+      });
+      e.target.value=&quot;&quot;; // so picking the same file twice still fires
+    });
+
+    document.getElementById(&quot;aiRunBtn&quot;).addEventListener(&quot;click&quot;, async function(){
+      if(aiBusy || !aiImages.length) return;
+      aiBusy=true;
+      var btn=this; btn.disabled=true; btn.textContent=&quot;Reading…&quot;;
+      var log=document.getElementById(&quot;aiLog&quot;); log.innerHTML=&quot;&quot;; log.style.display=&quot;block&quot;;
+      document.getElementById(&quot;aiResults&quot;).style.display=&quot;none&quot;;
+      var expected=parseInt(document.getElementById(&quot;aiExpected&quot;).value,10);
+      if(!isFinite(expected) || expected&lt;1) expected=0;
+      try{
+        var res=await aiExtract(aiImages, expected, aiLogLine);
+        if(expected&gt;0 &amp;&amp; res.list.length!==expected){
+          aiLogLine(&quot;You said &quot;+expected+&quot; but &quot;+res.list.length+&quot; came back — check the list.&quot;,&quot;warn&quot;);
+        }
+        renderAiResults(res);
+      }catch(e){
+        aiLogLine(e.message,&quot;err&quot;);
+        document.getElementById(&quot;aiResults&quot;).style.display=&quot;block&quot;;
+        document.getElementById(&quot;aiResults&quot;).innerHTML=&#x27;&lt;div class=&quot;ai-banner bad&quot;&gt;&lt;b&gt;Couldn\&#x27;t read the images.&lt;/b&gt;&lt;br&gt;&#x27;+esc(e.message)+&#x27;&lt;/div&gt;&#x27;;
+      }
+      aiBusy=false; renderAiThumbs();
+    });
+
+    window.addEventListener(&quot;online&quot;, refreshAiVisibility);
+    window.addEventListener(&quot;offline&quot;, refreshAiVisibility);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function bindAiUI(){\n    document.getElementById(\"aiBtn\").addEventListener(\"click\", openAiPanel);\n    document.getElementById(\"aiPanelClose\").addEventListener(\"click\", closeAiPanel);\n    var scanBtn=document.getElementById(\"scanBtn\"); if(scanBtn) scanBtn.addEventListener(\"click\", tapScanReceipt);\n    initReceiptScanner();\n    document.getElementById(\"aiPanelOverlay\").addEventListener(\"click\", closeAiPanel);\n    document.getElementById(\"aiHelpBtn\").addEventListener(\"click\", aiHelpModal);\n\n    [\"aiProvA\",\"aiProvB\",\"aiKeyA\",\"aiKeyB\",\"aiModelA\",\"aiModelB\"].forEach(function(id){\n      // \"input\" not \"change\": change only fires on blur, so a key typed and immediately\n      // tested could still be unsaved when the request goes out\n      document.getElementById(id).addEventListener(\"input\", function(){\n        var prevA=aiCfg.provA, prevB=aiCfg.provB;\n        aiCfg.provA=document.getElementById(\"aiProvA\").value;\n        aiCfg.provB=document.getElementById(\"aiProvB\").value;\n        aiCfg.keyA=aiCleanKey(document.getElementById(\"aiKeyA\").value);\n        aiCfg.keyB=aiCleanKey(document.getElementById(\"aiKeyB\").value);\n        aiCfg.modelA=document.getElementById(\"aiModelA\").value.trim();\n        aiCfg.modelB=document.getElementById(\"aiModelB\").value.trim();\n        // a model name is meaningless against a different provider \u2014 drop it on switch\n        if(prevA!==aiCfg.provA){ aiCfg.modelA=\"\"; aiCfg.verA=\"\"; document.getElementById(\"aiModelA\").value=\"\"; }\n        if(prevB!==aiCfg.provB){ aiCfg.modelB=\"\"; aiCfg.verB=\"\"; document.getElementById(\"aiModelB\").value=\"\"; }\n        saveAiCfg(); refreshAiVisibility();\n      });\n    });\n    document.getElementById(\"aiFindA\").addEventListener(\"click\", function(){ aiPickModels(\"A\"); });\n    document.getElementById(\"aiFindB\").addEventListener(\"click\", function(){ aiPickModels(\"B\"); });\n    document.getElementById(\"aiClearBtn\").addEventListener(\"click\", function(){\n      appModal({title:\"Forget API keys?\", message:\"Both keys are removed from this device. Your entries aren't affected.\", confirmText:\"Forget\", danger:true, onConfirm:function(){\n        aiCfg={provA:\"gemini\", keyA:\"\", modelA:\"\", verA:\"\", provB:\"\", keyB:\"\", modelB:\"\", verB:\"\"};\n        saveAiCfg(); fillProviderSelects(); refreshAiVisibility();\n        document.getElementById(\"aiTestOut\").textContent=\"\";\n        flashSaved(\"keys forgotten\");\n      }});\n    });\n    document.getElementById(\"aiTestBtn\").addEventListener(\"click\", async function(){\n      var out=document.getElementById(\"aiTestOut\");\n      out.style.color=\"var(--mut)\"; out.textContent=\"Testing\u2026\";\n      var probe=\"Reply with exactly this JSON and nothing else: {\\\"transactions\\\":[]}\";\n      var msgs=[];\n      var slots=[[\"A\",aiCfg.provA,aiCfg.keyA,aiCfg.modelA,aiCfg.verA],[\"B\",aiCfg.provB,aiCfg.keyB,aiCfg.modelB,aiCfg.verB]];\n      for(var si=0; si<slots.length; si++){\n        var slot=slots[si], name=slot[0], pk=slot[1], key=slot[2];\n        if(!pk||!key){ msgs.push(\"Engine \"+name+\": not set\"); continue; }\n        var prov=AI_PROVIDERS[pk], tag=\"Engine \"+name+\" (\"+prov.label+\")\";\n        var mm=keyMismatch(pk, key);\n        if(mm){ msgs.push(tag+\": \u274c \"+mm); continue; }\n        // Step 1 proves the KEY. Step 2 proves the MODEL. Collapsing them is why a dead\n        // model name reads as \"my key never works\".\n        var keyOk=false;\n        if(prov.canList){\n          try{ await prov.listModels(key); keyOk=true; msgs.push(tag+\": \u2705 key accepted\"); }\n          catch(e){ msgs.push(tag+\": \u274c key problem \u2014 \"+e.message); continue; }\n        }\n        try{\n          await prov.run(key, probe, [], slot[3], slot[4]);\n          msgs.push(tag+\": \u2705 model \u201c\"+(slot[3]||prov.model)+\"\u201d works\");\n        }catch(e2){\n          msgs.push(tag+\": \"+(keyOk?\"\u26a0\ufe0f key is fine, but the model failed\":\"\u274c\")+\" \u2014 \"+e2.message);\n        }\n      }\n      out.style.color=\"var(--mut)\";\n      out.innerHTML=msgs.map(esc).join(\"<br>\");\n    });\n\n    document.getElementById(\"aiAddImgs\").addEventListener(\"click\", function(){ document.getElementById(\"aiFiles\").click(); });\n    document.getElementById(\"aiClearImgs\").addEventListener(\"click\", function(){ aiImages=[]; renderAiThumbs(); });\n    document.getElementById(\"aiFiles\").addEventListener(\"change\", function(e){\n      var files=Array.prototype.slice.call(e.target.files||[]);\n      var left=files.length;\n      if(!left) return;\n      files.forEach(function(f){\n        var r=new FileReader();\n        r.onload=function(){\n          var url=r.result;\n          var comma=url.indexOf(\",\");\n          aiImages.push({mime:f.type||\"image/jpeg\", b64:url.slice(comma+1), url:url});\n          if(--left<=0) renderAiThumbs();\n        };\n        r.onerror=function(){ if(--left<=0) renderAiThumbs(); };\n        r.readAsDataURL(f);\n      });\n      e.target.value=\"\"; // so picking the same file twice still fires\n    });\n\n    document.getElementById(\"aiRunBtn\").addEventListener(\"click\", async function(){\n      if(aiBusy || !aiImages.length) return;\n      aiBusy=true;\n      var btn=this; btn.disabled=true; btn.textContent=\"Reading\u2026\";\n      var log=document.getElementById(\"aiLog\"); log.innerHTML=\"\"; log.style.display=\"block\";\n      document.getElementById(\"aiResults\").style.display=\"none\";\n      var expected=parseInt(document.getElementById(\"aiExpected\").value,10);\n      if(!isFinite(expected) || expected<1) expected=0;\n      try{\n        var res=await aiExtract(aiImages, expected, aiLogLine);\n        if(expected>0 && res.list.length!==expected){\n          aiLogLine(\"You said \"+expected+\" but \"+res.list.length+\" came back \u2014 check the list.\",\"warn\");\n        }\n        renderAiResults(res);\n      }catch(e){\n        aiLogLine(e.message,\"err\");\n        document.getElementById(\"aiResults\").style.display=\"block\";\n        document.getElementById(\"aiResults\").innerHTML='<div class=\"ai-banner bad\"><b>Couldn\\'t read the images.</b><br>'+esc(e.message)+'</div>';\n      }\n      aiBusy=false; renderAiThumbs();\n    });\n\n    window.addEventListener(\"online\", refreshAiVisibility);\n    window.addEventListener(\"offline\", refreshAiVisibility);\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof bindAiUI!==\"undefined\"?bindAiUI:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

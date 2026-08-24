@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>showLockScreen — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · modules</div>
+<h1>showLockScreen<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v35.9 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function showLockScreen(){
+    if(!lockIsOn()) return;
+    var ov=document.createElement(&quot;div&quot;);
+    ov.id=&quot;lockScreen&quot;;
+    ov.innerHTML=&#x27;&lt;div class=&quot;lk-box&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lk-icon&quot;&gt;\uD83D\uDD12&lt;/div&gt;&#x27;
+      +&#x27;&lt;div id=&quot;lkPadHost&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+    document.body.style.overflow=&quot;hidden&quot;;
+
+    function unlock(){
+      _autoFace.stop();
+      if(pad) pad.dispose();
+      setTimeout(showAttemptBanner, 700);
+      ov.style.opacity=&quot;0&quot;;
+      document.body.style.overflow=&quot;&quot;;
+      document.removeEventListener(&quot;visibilitychange&quot;, onHide);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 220);
+    }
+
+    // extras below the pad: face unlock and the recovery route
+    var extra=&quot;&quot;;
+    if(faceCfg.on &amp;&amp; facePeople().length)
+      extra+=&#x27;&lt;button class=&quot;btn ghost sm&quot; id=&quot;lkBio&quot;&gt;\uD83D\uDE00 Use face unlock&lt;/button&gt;&#x27;;
+    if(recoveryOn())
+      extra+=&#x27;&lt;button class=&quot;kp-link&quot; id=&quot;lkForgot&quot;&gt;Forgot your PIN?&lt;/button&gt;&#x27;;
+
+    var pad=buildKeypad({
+      title:&quot;My Money&quot;,
+      sub:&quot;Enter your PIN&quot;,
+      len:4, max:12,
+      wrongText:&quot;Wrong PIN \u2014 try again&quot;,
+      extra:extra,
+      validate:function(d, prog){
+        var cd=lockCooldownLeft();
+        if(cd&gt;0) return Promise.resolve(false);
+        return new Promise(function(res){
+          verifyPin(d, function(ok){
+            if(!ok){
+              recordFailedAttempt(&quot;pin&quot;);
+              var left=lockCooldownLeft();
+              if(left&gt;0) setTimeout(function(){ pad.say(&quot;Too many tries \u2014 wait &quot;+left+&quot;s&quot;); }, 460);
+            }
+            res(ok);
+          }, prog);
+        });
+      },
+      onDone:unlock
+    });
+    document.getElementById(&quot;lkPadHost&quot;).appendChild(pad.el);
+
+    var bio=pad.el.querySelector(&quot;#lkBio&quot;);
+    if(bio) bio.addEventListener(&quot;click&quot;, function(){
+      if(inFrame() &amp;&amp; !window.faceapi){
+        pad.say(&quot;Face unlock needs the app in its own tab&quot;); return;
+      }
+      pad.say(&quot;Opening the camera\u2026&quot;);
+      bio.disabled=true;
+      var answered=false;
+      var settle=function(ok){
+        if(answered) return; answered=true; bio.disabled=false;
+        if(ok) unlock();
+        else { recordFailedAttempt(&quot;face&quot;); pad.say(&quot;Face didn\u2019t match \u2014 use your PIN&quot;); }
+      };
+      setTimeout(function(){
+        if(answered) return; answered=true; bio.disabled=false;
+        var sh=document.getElementById(&quot;faceOv&quot;);
+        if(sh &amp;&amp; sh.parentNode) sh.parentNode.removeChild(sh);
+        pad.say(&quot;Camera didn\u2019t start \u2014 use your PIN&quot;);
+      }, 15000);
+      verifyFace(settle);
+    });
+    var fg=pad.el.querySelector(&quot;#lkForgot&quot;);
+    if(fg) fg.addEventListener(&quot;click&quot;, function(){ openRecoveryUnlock(function(){ unlock(); }); });
+
+    // look for the owner automatically, only while this screen is up
+    startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?&quot;ok&quot;:&quot;&quot;); });
+    var onHide=function(){ if(document.hidden) _autoFace.stop(); };
+    document.addEventListener(&quot;visibilitychange&quot;, onHide);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function showLockScreen(){\n    if(!lockIsOn()) return;\n    var ov=document.createElement(\"div\");\n    ov.id=\"lockScreen\";\n    ov.innerHTML='<div class=\"lk-box\">'\n      +'<div class=\"lk-icon\">\\uD83D\\uDD12</div>'\n      +'<div id=\"lkPadHost\"></div>'\n      +'</div>';\n    document.body.appendChild(ov);\n    document.body.style.overflow=\"hidden\";\n\n    function unlock(){\n      _autoFace.stop();\n      if(pad) pad.dispose();\n      setTimeout(showAttemptBanner, 700);\n      ov.style.opacity=\"0\";\n      document.body.style.overflow=\"\";\n      document.removeEventListener(\"visibilitychange\", onHide);\n      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 220);\n    }\n\n    // extras below the pad: face unlock and the recovery route\n    var extra=\"\";\n    if(faceCfg.on && facePeople().length)\n      extra+='<button class=\"btn ghost sm\" id=\"lkBio\">\\uD83D\\uDE00 Use face unlock</button>';\n    if(recoveryOn())\n      extra+='<button class=\"kp-link\" id=\"lkForgot\">Forgot your PIN?</button>';\n\n    var pad=buildKeypad({\n      title:\"My Money\",\n      sub:\"Enter your PIN\",\n      len:4, max:12,\n      wrongText:\"Wrong PIN \\u2014 try again\",\n      extra:extra,\n      validate:function(d, prog){\n        var cd=lockCooldownLeft();\n        if(cd>0) return Promise.resolve(false);\n        return new Promise(function(res){\n          verifyPin(d, function(ok){\n            if(!ok){\n              recordFailedAttempt(\"pin\");\n              var left=lockCooldownLeft();\n              if(left>0) setTimeout(function(){ pad.say(\"Too many tries \\u2014 wait \"+left+\"s\"); }, 460);\n            }\n            res(ok);\n          }, prog);\n        });\n      },\n      onDone:unlock\n    });\n    document.getElementById(\"lkPadHost\").appendChild(pad.el);\n\n    var bio=pad.el.querySelector(\"#lkBio\");\n    if(bio) bio.addEventListener(\"click\", function(){\n      if(inFrame() && !window.faceapi){\n        pad.say(\"Face unlock needs the app in its own tab\"); return;\n      }\n      pad.say(\"Opening the camera\\u2026\");\n      bio.disabled=true;\n      var answered=false;\n      var settle=function(ok){\n        if(answered) return; answered=true; bio.disabled=false;\n        if(ok) unlock();\n        else { recordFailedAttempt(\"face\"); pad.say(\"Face didn\\u2019t match \\u2014 use your PIN\"); }\n      };\n      setTimeout(function(){\n        if(answered) return; answered=true; bio.disabled=false;\n        var sh=document.getElementById(\"faceOv\");\n        if(sh && sh.parentNode) sh.parentNode.removeChild(sh);\n        pad.say(\"Camera didn\\u2019t start \\u2014 use your PIN\");\n      }, 15000);\n      verifyFace(settle);\n    });\n    var fg=pad.el.querySelector(\"#lkForgot\");\n    if(fg) fg.addEventListener(\"click\", function(){ openRecoveryUnlock(function(){ unlock(); }); });\n\n    // look for the owner automatically, only while this screen is up\n    startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?\"ok\":\"\"); });\n    var onHide=function(){ if(document.hidden) _autoFace.stop(); };\n    document.addEventListener(\"visibilitychange\", onHide);\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof showLockScreen!==\"undefined\"?showLockScreen:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

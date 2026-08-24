@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openPinSetup — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 04-typography-fonts</div>
+<h1>openPinSetup<span class="badge ok">tested · runs clean</span></h1>
+<div class="meta">JS function · extracted from build v32.1 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openPinSetup(){
+    var stage=1, first=&quot;&quot;, entered=&quot;&quot;;
+    var host=document.createElement(&quot;div&quot;);
+    host.className=&quot;ov in&quot;; host.id=&quot;pinSetupOv&quot;;
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;sheet pin-sheet&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3 id=&quot;pinTitle&quot;&gt;Choose a PIN&lt;/h3&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;x-btn&quot; id=&quot;pinX&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-bd&quot; style=&quot;text-align:center&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pin-sub&quot; id=&quot;pinSub&quot;&gt;4 to 12 digits. There is no recovery — if you forget it you\u2019d have to clear the app\u2019s data and restore a backup.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;lk-dots&quot; id=&quot;pinDots&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pin-err&quot; id=&quot;pinErr&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;lk-pad&quot; id=&quot;pinPad&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-ft&quot;&gt;&lt;button class=&quot;btn ghost sm&quot; id=&quot;pinCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn solid sm&quot; id=&quot;pinNext&quot; disabled&gt;Next&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(host);
+
+    var dots=host.querySelector(&quot;#pinDots&quot;), err=host.querySelector(&quot;#pinErr&quot;);
+    var title=host.querySelector(&quot;#pinTitle&quot;), sub=host.querySelector(&quot;#pinSub&quot;);
+    var next=host.querySelector(&quot;#pinNext&quot;);
+    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }
+    host.querySelector(&quot;#pinX&quot;).onclick=close;
+    host.querySelector(&quot;#pinCancel&quot;).onclick=close;
+
+    function showErr(msg){
+      err.textContent=msg||&quot;&quot;;
+      err.style.display=msg?&quot;block&quot;:&quot;none&quot;;
+      if(msg){
+        var sh=host.querySelector(&quot;.pin-sheet&quot;);
+        sh.classList.remove(&quot;shake&quot;); void sh.offsetWidth; sh.classList.add(&quot;shake&quot;);
+      }
+    }
+    function drawDots(){
+      dots.innerHTML=&quot;&quot;;
+      var n=Math.max(4, entered.length);
+      for(var i=0;i&lt;n;i++){
+        var s=document.createElement(&quot;span&quot;);
+        s.className=&quot;lk-dot&quot;+(i&lt;entered.length?&quot; on&quot;:&quot;&quot;);
+        dots.appendChild(s);
+      }
+      next.disabled = entered.length&lt;4;
+      next.textContent = stage===1 ? &quot;Next&quot; : &quot;Set PIN&quot;;
+    }
+    function press(k){
+      showErr(&quot;&quot;);
+      if(k===&quot;⌫&quot;){ entered=entered.slice(0,-1); drawDots(); return; }
+      if(entered.length&gt;=12){ showErr(&quot;A PIN can be at most 12 digits.&quot;); return; }
+      entered+=k; drawDots();
+    }
+    var pad=host.querySelector(&quot;#pinPad&quot;);
+    [&quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;,&quot;7&quot;,&quot;8&quot;,&quot;9&quot;,&quot;&quot;,&quot;0&quot;,&quot;⌫&quot;].forEach(function(k){
+      var b=document.createElement(&quot;button&quot;);
+      b.className=&quot;lk-key&quot;+(k===&quot;&quot;?&quot; lk-blank&quot;:&quot;&quot;);
+      b.textContent=k; if(k===&quot;&quot;) b.disabled=true;
+      b.addEventListener(&quot;click&quot;, function(){ press(k); });
+      pad.appendChild(b);
+    });
+    host.addEventListener(&quot;keydown&quot;, function(e){
+      if(/^[0-9]$/.test(e.key)) press(e.key);
+      else if(e.key===&quot;Backspace&quot;) press(&quot;⌫&quot;);
+      else if(e.key===&quot;Enter&quot; &amp;&amp; entered.length&gt;=4) next.click();
+    });
+    host.tabIndex=-1; setTimeout(function(){ try{ host.focus(); }catch(e){} },50);
+
+    next.onclick=function(){
+      if(entered.length&lt;4){ showErr(&quot;A PIN needs at least 4 digits — you&#x27;ve entered &quot;+entered.length+&quot;.&quot;); return; }
+      if(stage===1){
+        first=entered; entered=&quot;&quot;; stage=2;
+        title.textContent=&quot;Confirm your PIN&quot;;
+        sub.textContent=&quot;Type the same PIN again so we know it&#x27;s what you meant.&quot;;
+        showErr(&quot;&quot;); drawDots();
+        return;
+      }
+      if(entered!==first){
+        showErr(&quot;Those two didn&#x27;t match. Starting again.&quot;);
+        first=&quot;&quot;; entered=&quot;&quot;; stage=1;
+        title.textContent=&quot;Choose a PIN&quot;;
+        sub.textContent=&quot;4 to 12 digits. There is no recovery.&quot;;
+        drawDots();
+        return;
+      }
+      next.disabled=true; next.textContent=&quot;Saving…&quot;;
+      setLockPin(first, function(){
+        close();
+        refreshSecUI();
+        flashSaved(&quot;app lock on&quot;);
+        // offer face unlock only if a camera is genuinely there
+        cameraCheck().then(function(c){
+          if(!c.ok) return;
+          appModal({title:&quot;Add face unlock?&quot;,
+            message:&quot;Unlock with your face instead of typing the PIN. Needs a one-time ~6MB model download, then it runs entirely on your device. Your PIN keeps working either way.&quot;,
+            confirmText:&quot;Set it up&quot;, cancelText:&quot;PIN only&quot;,
+            onConfirm:function(){ enrolFace(function(){ refreshSecUI(); }); }});
+        });
+      });
+    };
+    drawDots();
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openPinSetup(){\n    var stage=1, first=\"\", entered=\"\";\n    var host=document.createElement(\"div\");\n    host.className=\"ov in\"; host.id=\"pinSetupOv\";\n    host.innerHTML=\n       '<div class=\"sheet pin-sheet\">'\n      +'  <div class=\"sheet-hd\"><h3 id=\"pinTitle\">Choose a PIN</h3>'\n      +'    <button class=\"x-btn\" id=\"pinX\">\u2715</button></div>'\n      +'  <div class=\"sheet-bd\" style=\"text-align:center\">'\n      +'    <div class=\"pin-sub\" id=\"pinSub\">4 to 12 digits. There is no recovery \u2014 if you forget it you\\u2019d have to clear the app\\u2019s data and restore a backup.</div>'\n      +'    <div class=\"lk-dots\" id=\"pinDots\"></div>'\n      +'    <div class=\"pin-err\" id=\"pinErr\"></div>'\n      +'    <div class=\"lk-pad\" id=\"pinPad\"></div>'\n      +'  </div>'\n      +'  <div class=\"sheet-ft\"><button class=\"btn ghost sm\" id=\"pinCancel\">Cancel</button>'\n      +'    <button class=\"btn solid sm\" id=\"pinNext\" disabled>Next</button></div>'\n      +'</div>';\n    document.body.appendChild(host);\n\n    var dots=host.querySelector(\"#pinDots\"), err=host.querySelector(\"#pinErr\");\n    var title=host.querySelector(\"#pinTitle\"), sub=host.querySelector(\"#pinSub\");\n    var next=host.querySelector(\"#pinNext\");\n    function close(){ if(host.parentNode) host.parentNode.removeChild(host); }\n    host.querySelector(\"#pinX\").onclick=close;\n    host.querySelector(\"#pinCancel\").onclick=close;\n\n    function showErr(msg){\n      err.textContent=msg||\"\";\n      err.style.display=msg?\"block\":\"none\";\n      if(msg){\n        var sh=host.querySelector(\".pin-sheet\");\n        sh.classList.remove(\"shake\"); void sh.offsetWidth; sh.classList.add(\"shake\");\n      }\n    }\n    function drawDots(){\n      dots.innerHTML=\"\";\n      var n=Math.max(4, entered.length);\n      for(var i=0;i<n;i++){\n        var s=document.createElement(\"span\");\n        s.className=\"lk-dot\"+(i<entered.length?\" on\":\"\");\n        dots.appendChild(s);\n      }\n      next.disabled = entered.length<4;\n      next.textContent = stage===1 ? \"Next\" : \"Set PIN\";\n    }\n    function press(k){\n      showErr(\"\");\n      if(k===\"\u232b\"){ entered=entered.slice(0,-1); drawDots(); return; }\n      if(entered.length>=12){ showErr(\"A PIN can be at most 12 digits.\"); return; }\n      entered+=k; drawDots();\n    }\n    var pad=host.querySelector(\"#pinPad\");\n    [\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"\",\"0\",\"\u232b\"].forEach(function(k){\n      var b=document.createElement(\"button\");\n      b.className=\"lk-key\"+(k===\"\"?\" lk-blank\":\"\");\n      b.textContent=k; if(k===\"\") b.disabled=true;\n      b.addEventListener(\"click\", function(){ press(k); });\n      pad.appendChild(b);\n    });\n    host.addEventListener(\"keydown\", function(e){\n      if(/^[0-9]$/.test(e.key)) press(e.key);\n      else if(e.key===\"Backspace\") press(\"\u232b\");\n      else if(e.key===\"Enter\" && entered.length>=4) next.click();\n    });\n    host.tabIndex=-1; setTimeout(function(){ try{ host.focus(); }catch(e){} },50);\n\n    next.onclick=function(){\n      if(entered.length<4){ showErr(\"A PIN needs at least 4 digits \u2014 you've entered \"+entered.length+\".\"); return; }\n      if(stage===1){\n        first=entered; entered=\"\"; stage=2;\n        title.textContent=\"Confirm your PIN\";\n        sub.textContent=\"Type the same PIN again so we know it's what you meant.\";\n        showErr(\"\"); drawDots();\n        return;\n      }\n      if(entered!==first){\n        showErr(\"Those two didn't match. Starting again.\");\n        first=\"\"; entered=\"\"; stage=1;\n        title.textContent=\"Choose a PIN\";\n        sub.textContent=\"4 to 12 digits. There is no recovery.\";\n        drawDots();\n        return;\n      }\n      next.disabled=true; next.textContent=\"Saving\u2026\";\n      setLockPin(first, function(){\n        close();\n        refreshSecUI();\n        flashSaved(\"app lock on\");\n        // offer face unlock only if a camera is genuinely there\n        cameraCheck().then(function(c){\n          if(!c.ok) return;\n          appModal({title:\"Add face unlock?\",\n            message:\"Unlock with your face instead of typing the PIN. Needs a one-time ~6MB model download, then it runs entirely on your device. Your PIN keeps working either way.\",\n            confirmText:\"Set it up\", cancelText:\"PIN only\",\n            onConfirm:function(){ enrolFace(function(){ refreshSecUI(); }); }});\n        });\n      });\n    };\n    drawDots();\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openPinSetup!==\"undefined\"?openPinSetup:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

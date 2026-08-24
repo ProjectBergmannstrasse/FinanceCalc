@@ -1,0 +1,111 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tradeInsights — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>tradeInsights<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function tradeInsights(list, sym){
+    var out=[], s=tradeStats(list), n=list.length;
+    function add(kind, text){ out.push({kind:kind, text:text}); }
+
+    if(n&lt;20) add(&quot;info&quot;,&quot;Only &lt;b&gt;&quot;+n+&quot; trade&quot;+(n===1?&quot;&quot;:&quot;s&quot;)+&quot;&lt;/b&gt; in this period. Below ~20 the numbers below swing wildly on one result — treat them as rough.&quot;);
+
+    // break-even win rate implied by the actual R:R
+    if(s.avgWin&gt;0 &amp;&amp; s.avgLoss&gt;0){
+      var rr=s.avgWin/s.avgLoss;
+      var be=1/(1+rr)*100;
+      var gap=(s.winRate*100)-be;
+      var line=&quot;Your average win is &lt;b&gt;&quot;+fmt(s.avgWin,sym)+&quot;&lt;/b&gt; against an average loss of &lt;b&gt;&quot;+fmt(s.avgLoss,sym)+&quot;&lt;/b&gt; — a reward:risk of &lt;b&gt;&quot;+rr.toFixed(2)+&quot;&lt;/b&gt;. &quot;
+        +&quot;At that ratio you need &lt;b&gt;&quot;+be.toFixed(1)+&quot;%&lt;/b&gt; to break even and you&#x27;re at &lt;b&gt;&quot;+(s.winRate*100).toFixed(1)+&quot;%&lt;/b&gt;&quot;;
+      if(gap&gt;=0) add(&quot;good&quot;, line+&quot;, so you&#x27;re &lt;b&gt;&quot;+gap.toFixed(1)+&quot; points clear&lt;/b&gt;.&quot;);
+      else add(&quot;bad&quot;, line+&quot; — &lt;b&gt;&quot;+Math.abs(gap).toFixed(1)+&quot; points short&lt;/b&gt;. Either the win rate rises or the winners get bigger relative to the losers; nothing else closes that gap.&quot;);
+    }
+    // the classic trap
+    if(s.winRate&gt;=0.5 &amp;&amp; s.expectancy&lt;0)
+      add(&quot;bad&quot;,&quot;You win &lt;b&gt;&quot;+(s.winRate*100).toFixed(1)+&quot;%&lt;/b&gt; of the time and still lose money: expectancy is &lt;b&gt;&quot;+fmt(s.expectancy,sym)+&quot;&lt;/b&gt; per trade. The win rate is flattering this.&quot;);
+    if(s.winRate&lt;0.5 &amp;&amp; s.expectancy&gt;0)
+      add(&quot;good&quot;,&quot;You lose more often than you win, but expectancy is &lt;b&gt;+&quot;+fmt(s.expectancy,sym).replace(/^./,&quot;&quot;)+&quot;&lt;/b&gt; per trade — the winners are carrying it. That&#x27;s a working edge.&quot;);
+
+    // concentration: is one trade doing all the work?
+    if(n&gt;=5 &amp;&amp; s.grossWin&gt;0){
+      var biggest=s.best/s.grossWin;
+      if(biggest&gt;0.4) add(&quot;warn&quot;,&quot;Your single best trade (&lt;b&gt;&quot;+fmt(s.best,sym)+&quot;&lt;/b&gt;) is &lt;b&gt;&quot;+(biggest*100).toFixed(0)+&quot;%&lt;/b&gt; of all your winnings. Strip it out and the picture changes — this record leans on one result.&quot;);
+    }
+    if(n&gt;=5 &amp;&amp; s.grossLoss&gt;0){
+      var worst=s.worst/s.grossLoss;
+      if(worst&gt;0.4) add(&quot;warn&quot;,&quot;One loss (&lt;b&gt;&quot;+fmt(s.worst,sym)+&quot;&lt;/b&gt;) is &lt;b&gt;&quot;+(worst*100).toFixed(0)+&quot;%&lt;/b&gt; of everything you&#x27;ve lost. Your damage is concentrated in single events, not slow bleed.&quot;);
+    }
+    // drawdown vs typical win
+    if(s.maxDD&gt;0 &amp;&amp; s.avgWin&gt;0){
+      var back=s.maxDD/Math.max(s.expectancy&gt;0?s.expectancy:s.avgWin,0.0001);
+      if(s.expectancy&gt;0 &amp;&amp; back&gt;=10) add(&quot;warn&quot;,&quot;Worst drawdown was &lt;b&gt;&quot;+fmt(s.maxDD,sym)+&quot;&lt;/b&gt;. At &lt;b&gt;&quot;+fmt(s.expectancy,sym)+&quot;&lt;/b&gt;/trade that takes about &lt;b&gt;&quot;+Math.ceil(back)+&quot; trades&lt;/b&gt; to climb back.&quot;);
+    }
+    // streaks — a real one, not folklore
+    if(s.bestLossStreak&gt;=4) add(&quot;info&quot;,&quot;Longest losing run: &lt;b&gt;&quot;+s.bestLossStreak+&quot; trades&lt;/b&gt;. Worth knowing before it happens again — it will.&quot;);
+
+    // after a loss, do you do worse? (revenge-trading, measured not assumed)
+    if(n&gt;=12){
+      var after=[], rest=[];
+      for(var i=1;i&lt;list.length;i++){
+        (list[i-1].type===&quot;trade_loss&quot;?after:rest).push(balDelta(list[i]));
+      }
+      if(after.length&gt;=5 &amp;&amp; rest.length&gt;=5){
+        var avgA=after.reduce(function(a,b){return a+b;},0)/after.length;
+        var avgR=rest.reduce(function(a,b){return a+b;},0)/rest.length;
+        if(avgA&lt;avgR-Math.abs(avgR*0.25)&amp;&amp;avgA&lt;0)
+          add(&quot;bad&quot;,&quot;Trades taken straight after a loss average &lt;b&gt;&quot;+fmt(avgA,sym)+&quot;&lt;/b&gt;, versus &lt;b&gt;&quot;+fmt(avgR,sym)+&quot;&lt;/b&gt; otherwise (&lt;b&gt;&quot;+after.length+&quot;&lt;/b&gt; vs &lt;b&gt;&quot;+rest.length+&quot;&lt;/b&gt; trades). Your worst trades cluster right after your losses.&quot;);
+        else if(avgA&gt;avgR)
+          add(&quot;good&quot;,&quot;Trades right after a loss average &lt;b&gt;&quot;+fmt(avgA,sym)+&quot;&lt;/b&gt; vs &lt;b&gt;&quot;+fmt(avgR,sym)+&quot;&lt;/b&gt; otherwise — no sign of tilt in the data.&quot;);
+      }
+    }
+    // stake discipline
+    var sizes=list.map(function(t){ return Math.abs(num(t.amount)); }).filter(function(x){ return x&gt;0; });
+    if(sizes.length&gt;=8){
+      var mean=sizes.reduce(function(a,b){return a+b;},0)/sizes.length;
+      var sd=Math.sqrt(sizes.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/sizes.length);
+      var cv=sd/mean;
+      if(cv&gt;1) add(&quot;warn&quot;,&quot;Your trade sizes are all over the place — average &lt;b&gt;&quot;+fmt(mean,sym)+&quot;&lt;/b&gt;, swing of &lt;b&gt;&quot;+fmt(sd,sym)+&quot;&lt;/b&gt;. When size is inconsistent, one oversized trade decides your month rather than your edge.&quot;);
+      else if(cv&lt;0.35) add(&quot;good&quot;,&quot;Trade sizing is consistent (average &lt;b&gt;&quot;+fmt(mean,sym)+&quot;&lt;/b&gt;, swing &lt;b&gt;&quot;+fmt(sd,sym)+&quot;&lt;/b&gt;) — results reflect your edge rather than your bet size.&quot;);
+    }
+    // instruments: best vs worst, only when each has a real sample
+    var byI=tradeByInstrument(list).filter(function(r){ return r.stats.n&gt;=5 &amp;&amp; r.inst!==&quot;— untagged —&quot;; });
+    if(byI.length&gt;=2){
+      var best=byI[0], worst=byI[byI.length-1];
+      if(best.stats.net&gt;0 &amp;&amp; worst.stats.net&lt;0)
+        add(&quot;info&quot;,&quot;&lt;b&gt;&quot;+esc(best.inst)+&quot;&lt;/b&gt; is your earner (&lt;b&gt;&quot;+fmt(best.stats.net,sym)+&quot;&lt;/b&gt; over &quot;+best.stats.n+&quot; trades). &lt;b&gt;&quot;+esc(worst.inst)+&quot;&lt;/b&gt; is where it goes (&lt;b&gt;&quot;+fmt(worst.stats.net,sym)+&quot;&lt;/b&gt; over &quot;+worst.stats.n+&quot;). Same you, different results.&quot;);
+    }
+    // recent form vs the whole record
+    if(trPeriod===&quot;all&quot; &amp;&amp; tradeList().length&gt;=25){
+      var all=tradeList(), recent=all.slice(-10), older=all.slice(0,-10);
+      if(older.length&gt;=10){
+        var rs=tradeStats(recent), os=tradeStats(older);
+        var d=(rs.winRate-os.winRate)*100;
+        if(Math.abs(d)&gt;=15)
+          add(d&gt;0?&quot;good&quot;:&quot;warn&quot;,&quot;Last 10 trades: &lt;b&gt;&quot;+(rs.winRate*100).toFixed(0)+&quot;%&lt;/b&gt; win rate against &lt;b&gt;&quot;+(os.winRate*100).toFixed(0)+&quot;%&lt;/b&gt; before that — &quot;+(d&gt;0?&quot;improving&quot;:&quot;a real drop&quot;)+&quot; of &lt;b&gt;&quot;+Math.abs(d).toFixed(0)+&quot; points&lt;/b&gt;.&quot;);
+      }
+    }
+    if(!out.length) add(&quot;info&quot;,&quot;Nothing stands out in this period — no lopsided ratios, no concentration, no tilt pattern. That&#x27;s usually a good sign.&quot;);
+    return out;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function tradeInsights(list, sym){\n    var out=[], s=tradeStats(list), n=list.length;\n    function add(kind, text){ out.push({kind:kind, text:text}); }\n\n    if(n<20) add(\"info\",\"Only <b>\"+n+\" trade\"+(n===1?\"\":\"s\")+\"</b> in this period. Below ~20 the numbers below swing wildly on one result \u2014 treat them as rough.\");\n\n    // break-even win rate implied by the actual R:R\n    if(s.avgWin>0 && s.avgLoss>0){\n      var rr=s.avgWin/s.avgLoss;\n      var be=1/(1+rr)*100;\n      var gap=(s.winRate*100)-be;\n      var line=\"Your average win is <b>\"+fmt(s.avgWin,sym)+\"</b> against an average loss of <b>\"+fmt(s.avgLoss,sym)+\"</b> \u2014 a reward:risk of <b>\"+rr.toFixed(2)+\"</b>. \"\n        +\"At that ratio you need <b>\"+be.toFixed(1)+\"%</b> to break even and you're at <b>\"+(s.winRate*100).toFixed(1)+\"%</b>\";\n      if(gap>=0) add(\"good\", line+\", so you're <b>\"+gap.toFixed(1)+\" points clear</b>.\");\n      else add(\"bad\", line+\" \u2014 <b>\"+Math.abs(gap).toFixed(1)+\" points short</b>. Either the win rate rises or the winners get bigger relative to the losers; nothing else closes that gap.\");\n    }\n    // the classic trap\n    if(s.winRate>=0.5 && s.expectancy<0)\n      add(\"bad\",\"You win <b>\"+(s.winRate*100).toFixed(1)+\"%</b> of the time and still lose money: expectancy is <b>\"+fmt(s.expectancy,sym)+\"</b> per trade. The win rate is flattering this.\");\n    if(s.winRate<0.5 && s.expectancy>0)\n      add(\"good\",\"You lose more often than you win, but expectancy is <b>+\"+fmt(s.expectancy,sym).replace(/^./,\"\")+\"</b> per trade \u2014 the winners are carrying it. That's a working edge.\");\n\n    // concentration: is one trade doing all the work?\n    if(n>=5 && s.grossWin>0){\n      var biggest=s.best/s.grossWin;\n      if(biggest>0.4) add(\"warn\",\"Your single best trade (<b>\"+fmt(s.best,sym)+\"</b>) is <b>\"+(biggest*100).toFixed(0)+\"%</b> of all your winnings. Strip it out and the picture changes \u2014 this record leans on one result.\");\n    }\n    if(n>=5 && s.grossLoss>0){\n      var worst=s.worst/s.grossLoss;\n      if(worst>0.4) add(\"warn\",\"One loss (<b>\"+fmt(s.worst,sym)+\"</b>) is <b>\"+(worst*100).toFixed(0)+\"%</b> of everything you've lost. Your damage is concentrated in single events, not slow bleed.\");\n    }\n    // drawdown vs typical win\n    if(s.maxDD>0 && s.avgWin>0){\n      var back=s.maxDD/Math.max(s.expectancy>0?s.expectancy:s.avgWin,0.0001);\n      if(s.expectancy>0 && back>=10) add(\"warn\",\"Worst drawdown was <b>\"+fmt(s.maxDD,sym)+\"</b>. At <b>\"+fmt(s.expectancy,sym)+\"</b>/trade that takes about <b>\"+Math.ceil(back)+\" trades</b> to climb back.\");\n    }\n    // streaks \u2014 a real one, not folklore\n    if(s.bestLossStreak>=4) add(\"info\",\"Longest losing run: <b>\"+s.bestLossStreak+\" trades</b>. Worth knowing before it happens again \u2014 it will.\");\n\n    // after a loss, do you do worse? (revenge-trading, measured not assumed)\n    if(n>=12){\n      var after=[], rest=[];\n      for(var i=1;i<list.length;i++){\n        (list[i-1].type===\"trade_loss\"?after:rest).push(balDelta(list[i]));\n      }\n      if(after.length>=5 && rest.length>=5){\n        var avgA=after.reduce(function(a,b){return a+b;},0)/after.length;\n        var avgR=rest.reduce(function(a,b){return a+b;},0)/rest.length;\n        if(avgA<avgR-Math.abs(avgR*0.25)&&avgA<0)\n          add(\"bad\",\"Trades taken straight after a loss average <b>\"+fmt(avgA,sym)+\"</b>, versus <b>\"+fmt(avgR,sym)+\"</b> otherwise (<b>\"+after.length+\"</b> vs <b>\"+rest.length+\"</b> trades). Your worst trades cluster right after your losses.\");\n        else if(avgA>avgR)\n          add(\"good\",\"Trades right after a loss average <b>\"+fmt(avgA,sym)+\"</b> vs <b>\"+fmt(avgR,sym)+\"</b> otherwise \u2014 no sign of tilt in the data.\");\n      }\n    }\n    // stake discipline\n    var sizes=list.map(function(t){ return Math.abs(num(t.amount)); }).filter(function(x){ return x>0; });\n    if(sizes.length>=8){\n      var mean=sizes.reduce(function(a,b){return a+b;},0)/sizes.length;\n      var sd=Math.sqrt(sizes.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/sizes.length);\n      var cv=sd/mean;\n      if(cv>1) add(\"warn\",\"Your trade sizes are all over the place \u2014 average <b>\"+fmt(mean,sym)+\"</b>, swing of <b>\"+fmt(sd,sym)+\"</b>. When size is inconsistent, one oversized trade decides your month rather than your edge.\");\n      else if(cv<0.35) add(\"good\",\"Trade sizing is consistent (average <b>\"+fmt(mean,sym)+\"</b>, swing <b>\"+fmt(sd,sym)+\"</b>) \u2014 results reflect your edge rather than your bet size.\");\n    }\n    // instruments: best vs worst, only when each has a real sample\n    var byI=tradeByInstrument(list).filter(function(r){ return r.stats.n>=5 && r.inst!==\"\u2014 untagged \u2014\"; });\n    if(byI.length>=2){\n      var best=byI[0], worst=byI[byI.length-1];\n      if(best.stats.net>0 && worst.stats.net<0)\n        add(\"info\",\"<b>\"+esc(best.inst)+\"</b> is your earner (<b>\"+fmt(best.stats.net,sym)+\"</b> over \"+best.stats.n+\" trades). <b>\"+esc(worst.inst)+\"</b> is where it goes (<b>\"+fmt(worst.stats.net,sym)+\"</b> over \"+worst.stats.n+\"). Same you, different results.\");\n    }\n    // recent form vs the whole record\n    if(trPeriod===\"all\" && tradeList().length>=25){\n      var all=tradeList(), recent=all.slice(-10), older=all.slice(0,-10);\n      if(older.length>=10){\n        var rs=tradeStats(recent), os=tradeStats(older);\n        var d=(rs.winRate-os.winRate)*100;\n        if(Math.abs(d)>=15)\n          add(d>0?\"good\":\"warn\",\"Last 10 trades: <b>\"+(rs.winRate*100).toFixed(0)+\"%</b> win rate against <b>\"+(os.winRate*100).toFixed(0)+\"%</b> before that \u2014 \"+(d>0?\"improving\":\"a real drop\")+\" of <b>\"+Math.abs(d).toFixed(0)+\" points</b>.\");\n      }\n    }\n    if(!out.length) add(\"info\",\"Nothing stands out in this period \u2014 no lopsided ratios, no concentration, no tilt pattern. That's usually a good sign.\");\n    return out;\n  }",ARGS="list, sym";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof tradeInsights!==\"undefined\"?tradeInsights:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

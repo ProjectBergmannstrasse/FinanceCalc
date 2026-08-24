@@ -1,0 +1,182 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>checkBillNotifs — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>checkBillNotifs<span class="badge ok">tested · runs clean</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function checkBillNotifs(daysAhead){
+    daysAhead = daysAhead || 3;
+    if(typeof Notification===&quot;undefined&quot;) return;   // browser doesn&#x27;t support it
+    loadNotifSent();
+    var todayS = todayStr(), today = new Date(todayS);
+    // build the window of dates to check
+    var window_dates = [];
+    for(var d=0; d&lt;=daysAhead; d++){
+      var dt = new Date(today); dt.setDate(dt.getDate()+d);
+      window_dates.push(dt.getFullYear()+&quot;-&quot;+String(dt.getMonth()+1).padStart(2,&quot;0&quot;)+&quot;-&quot;+String(dt.getDate()).padStart(2,&quot;0&quot;));
+    }
+    // which rules have something due in that window?
+    var upcoming = [];
+    recurList().forEach(function(r){
+      if(r.paused) return;
+      window_dates.forEach(function(ds){
+        var dts = dueDates(r, ds);
+        if(dts.indexOf(ds)&gt;=0){
+          var daysUntil = window_dates.indexOf(ds);
+          upcoming.push({rule:r, date:ds, daysUntil:daysUntil});
+        }
+      });
+    });
+    if(!upcoming.length) return;
+    // reset sent-list daily
+    if((_notifSent.date||&quot;&quot;) !== todayS){ _notifSent={date:todayS,ids:[]}; }
+    // fire one notification per rule not yet fired today
+    upcoming.forEach(function(item){
+      var key = item.rule.id+&quot;_&quot;+item.date;
+      if(_notifSent.ids.indexOf(key)&gt;=0) return;   // already sent
+      var label = item.rule.note || item.rule.cat || &quot;Bill&quot;;
+      var amt = item.rule.amount ? &quot; — &quot;+fmt(item.rule.amount, state.currency) : &quot;&quot;;
+      var when = item.daysUntil===0 ? &quot;due today&quot; : &quot;due in &quot;+item.daysUntil+&quot; day&quot;+(item.daysUntil===1?&quot;&quot;:&quot;s&quot;);
+      try{
+        new Notification(&quot;💳 &quot;+label+amt, {
+          body: when.charAt(0).toUpperCase()+when.slice(1),
+          icon: &quot;&quot;,
+          tag: key,
+          renotify: false
+        });
+        _notifSent.ids.push(key);
+        saveNotifSent();
+      }catch(e){}
+    });
+  }
+
+  function requestBillNotifs(cb){
+    if(typeof Notification===&quot;undefined&quot;){ if(cb) cb(false); return; }
+    if(Notification.permission===&quot;granted&quot;){ checkBillNotifs(); if(cb) cb(true); return; }
+    if(Notification.permission===&quot;denied&quot;){ if(cb) cb(false); return; }
+    Notification.requestPermission(function(perm){
+      if(perm===&quot;granted&quot;){ checkBillNotifs(); }
+      if(cb) cb(perm===&quot;granted&quot;);
+    });
+  }
+
+  // Call this on boot — quietly if permission already granted, else waits for a tap
+
+  /* ============================================================
+     RECEIPT SCANNER — one-tap: pick/snap → AI reads → form fills
+     Thin wrapper around the existing AI pipeline. The camera
+     input opens the device camera directly on mobile; desktop
+     falls back to the file picker.
+     ============================================================ */
+  /* ============================================================
+     LOCAL RECEIPT SCANNER — no AI, no network, no API keys
+     Pipeline:
+       1. User picks/snaps a photo
+       2. Draw to canvas; boost contrast so OCR has a fighting chance
+       3. TextDetector API reads text blocks (Chrome/Android, native)
+          → Fallback: show the image + a manual form side-by-side
+       4. Parse the raw text: find the largest currency amount
+          (the total), any date, and a merchant guess (top of receipt)
+       5. Show a confirmation sheet — user adjusts and taps &quot;Add entry&quot;
+     All processing runs in the browser, completely offline.
+     ============================================================ */
+
+  function initReceiptScanner(){
+    var camInput=document.getElementById(&quot;scanCamInput&quot;);
+    if(!camInput) return;
+    camInput.addEventListener(&quot;change&quot;, function(e){
+      var f=e.target.files&amp;&amp;e.target.files[0]; if(!f) return;
+      e.target.value=&quot;&quot;;
+      var reader=new FileReader();
+      reader.onload=function(){ openScanSheet(f, reader.result); };
+      reader.readAsDataURL(f);
+    });
+  }
+  function tapScanReceipt(){
+    var cam=document.getElementById(&quot;scanCamInput&quot;); if(cam) cam.click();
+  }
+
+  // ---- preprocessing: boost contrast, greyscale → helps OCR ----
+  function preprocessReceiptCanvas(src, maxW){
+    maxW=maxW||1200;
+    var cv=document.createElement(&quot;canvas&quot;);
+    var scale=Math.min(1,maxW/(src.naturalWidth||src.width||maxW));
+    cv.width =(src.naturalWidth||src.width)*scale;
+    cv.height=(src.naturalHeight||src.height)*scale;
+    var ctx=cv.getContext(&quot;2d&quot;); ctx.drawImage(src,0,0,cv.width,cv.height);
+    // greyscale + contrast boost
+    var id=ctx.getImageData(0,0,cv.width,cv.height), d=id.data;
+    for(var i=0;i&lt;d.length;i+=4){
+      var g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+      // S-curve contrast: push mid-tones apart
+      var c=(g/255-0.5)*1.6+0.5;
+      var v=Math.min(255,Math.max(0,c*255));
+      d[i]=d[i+1]=d[i+2]=v;
+    }
+    ctx.putImageData(id,0,0);
+    return cv;
+  }
+
+  // ---- receipt text parser ----
+  function parseReceiptText(lines){
+    var text=lines.join(&quot;\n&quot;);
+    // currency amounts: $123.45, 12.50, etc.
+    var amounts=[];
+    var amtRe=/[\$£€]?\s*(\d{1,6}[,.]\d{2})\b/g, m;
+    while((m=amtRe.exec(text))!==null){
+      var v=parseFloat(m[1].replace(&quot;,&quot;,&quot;.&quot;));
+      if(isFinite(v)&amp;&amp;v&gt;0&amp;&amp;v&lt;99999) amounts.push(v);
+    }
+    // best guess at the total: the LARGEST amount (receipts put total last)
+    amounts.sort(function(a,b){return b-a;});
+    var total=amounts.length?amounts[0]:null;
+    // date: ISO first (unambiguous), then DD/MM or MM/DD auto-detect
+    var date=null;
+    var isoM=text.match(/\b(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\b/);
+    if(isoM){
+      var iy=+isoM[1],im=+isoM[2],idd=+isoM[3];
+      if(im&gt;=1&amp;&amp;im&lt;=12&amp;&amp;idd&gt;=1&amp;&amp;idd&lt;=31) date=iy+&quot;-&quot;+(im&lt;10?&quot;0&quot;:&quot;&quot;)+im+&quot;-&quot;+(idd&lt;10?&quot;0&quot;:&quot;&quot;)+idd;
+    }
+    if(!date){
+      var dmyM=text.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/);
+      if(dmyM){
+        var da=+dmyM[1],db=+dmyM[2],dyr=+dmyM[3]; if(dyr&lt;100)dyr+=2000;
+        var rdd,rmm;
+        if(da&gt;12&amp;&amp;db&lt;=12){rdd=da;rmm=db;}else if(db&gt;12&amp;&amp;da&lt;=12){rdd=db;rmm=da;}else{rdd=da;rmm=db;}
+        if(rmm&gt;=1&amp;&amp;rmm&lt;=12&amp;&amp;rdd&gt;=1&amp;&amp;rdd&lt;=31) date=dyr+&quot;-&quot;+(rmm&lt;10?&quot;0&quot;:&quot;&quot;)+rmm+&quot;-&quot;+(rdd&lt;10?&quot;0&quot;:&quot;&quot;)+rdd;
+      }
+    }
+    // merchant: first non-blank line that isn&#x27;t all numbers/punctuation
+    var merchant=&quot;&quot;;
+    for(var i=0;i&lt;lines.length;i++){
+      var ln=lines[i].trim();
+      if(ln.length&gt;2&amp;&amp;!/^[\d\s\.\-\$£€*#:\/\\,]+$/.test(ln)){
+        merchant=ln.slice(0,50); break;
+      }
+    }
+    // note: build a clean one-liner
+    var note=(merchant?&quot; &quot;+merchant:&quot;&quot;)+(date?&quot; &quot;+date:&quot;&quot;);
+    return {total:total, date:date, merchant:merchant, note:note.trim(), amounts:amounts, raw:text};
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function checkBillNotifs(daysAhead){\n    daysAhead = daysAhead || 3;\n    if(typeof Notification===\"undefined\") return;   // browser doesn't support it\n    loadNotifSent();\n    var todayS = todayStr(), today = new Date(todayS);\n    // build the window of dates to check\n    var window_dates = [];\n    for(var d=0; d<=daysAhead; d++){\n      var dt = new Date(today); dt.setDate(dt.getDate()+d);\n      window_dates.push(dt.getFullYear()+\"-\"+String(dt.getMonth()+1).padStart(2,\"0\")+\"-\"+String(dt.getDate()).padStart(2,\"0\"));\n    }\n    // which rules have something due in that window?\n    var upcoming = [];\n    recurList().forEach(function(r){\n      if(r.paused) return;\n      window_dates.forEach(function(ds){\n        var dts = dueDates(r, ds);\n        if(dts.indexOf(ds)>=0){\n          var daysUntil = window_dates.indexOf(ds);\n          upcoming.push({rule:r, date:ds, daysUntil:daysUntil});\n        }\n      });\n    });\n    if(!upcoming.length) return;\n    // reset sent-list daily\n    if((_notifSent.date||\"\") !== todayS){ _notifSent={date:todayS,ids:[]}; }\n    // fire one notification per rule not yet fired today\n    upcoming.forEach(function(item){\n      var key = item.rule.id+\"_\"+item.date;\n      if(_notifSent.ids.indexOf(key)>=0) return;   // already sent\n      var label = item.rule.note || item.rule.cat || \"Bill\";\n      var amt = item.rule.amount ? \" \u2014 \"+fmt(item.rule.amount, state.currency) : \"\";\n      var when = item.daysUntil===0 ? \"due today\" : \"due in \"+item.daysUntil+\" day\"+(item.daysUntil===1?\"\":\"s\");\n      try{\n        new Notification(\"\ud83d\udcb3 \"+label+amt, {\n          body: when.charAt(0).toUpperCase()+when.slice(1),\n          icon: \"\",\n          tag: key,\n          renotify: false\n        });\n        _notifSent.ids.push(key);\n        saveNotifSent();\n      }catch(e){}\n    });\n  }\n\n  function requestBillNotifs(cb){\n    if(typeof Notification===\"undefined\"){ if(cb) cb(false); return; }\n    if(Notification.permission===\"granted\"){ checkBillNotifs(); if(cb) cb(true); return; }\n    if(Notification.permission===\"denied\"){ if(cb) cb(false); return; }\n    Notification.requestPermission(function(perm){\n      if(perm===\"granted\"){ checkBillNotifs(); }\n      if(cb) cb(perm===\"granted\");\n    });\n  }\n\n  // Call this on boot \u2014 quietly if permission already granted, else waits for a tap\n\n  /* ============================================================\n     RECEIPT SCANNER \u2014 one-tap: pick/snap \u2192 AI reads \u2192 form fills\n     Thin wrapper around the existing AI pipeline. The camera\n     input opens the device camera directly on mobile; desktop\n     falls back to the file picker.\n     ============================================================ */\n  /* ============================================================\n     LOCAL RECEIPT SCANNER \u2014 no AI, no network, no API keys\n     Pipeline:\n       1. User picks/snaps a photo\n       2. Draw to canvas; boost contrast so OCR has a fighting chance\n       3. TextDetector API reads text blocks (Chrome/Android, native)\n          \u2192 Fallback: show the image + a manual form side-by-side\n       4. Parse the raw text: find the largest currency amount\n          (the total), any date, and a merchant guess (top of receipt)\n       5. Show a confirmation sheet \u2014 user adjusts and taps \"Add entry\"\n     All processing runs in the browser, completely offline.\n     ============================================================ */\n\n  function initReceiptScanner(){\n    var camInput=document.getElementById(\"scanCamInput\");\n    if(!camInput) return;\n    camInput.addEventListener(\"change\", function(e){\n      var f=e.target.files&&e.target.files[0]; if(!f) return;\n      e.target.value=\"\";\n      var reader=new FileReader();\n      reader.onload=function(){ openScanSheet(f, reader.result); };\n      reader.readAsDataURL(f);\n    });\n  }\n  function tapScanReceipt(){\n    var cam=document.getElementById(\"scanCamInput\"); if(cam) cam.click();\n  }\n\n  // ---- preprocessing: boost contrast, greyscale \u2192 helps OCR ----\n  function preprocessReceiptCanvas(src, maxW){\n    maxW=maxW||1200;\n    var cv=document.createElement(\"canvas\");\n    var scale=Math.min(1,maxW/(src.naturalWidth||src.width||maxW));\n    cv.width =(src.naturalWidth||src.width)*scale;\n    cv.height=(src.naturalHeight||src.height)*scale;\n    var ctx=cv.getContext(\"2d\"); ctx.drawImage(src,0,0,cv.width,cv.height);\n    // greyscale + contrast boost\n    var id=ctx.getImageData(0,0,cv.width,cv.height), d=id.data;\n    for(var i=0;i<d.length;i+=4){\n      var g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];\n      // S-curve contrast: push mid-tones apart\n      var c=(g/255-0.5)*1.6+0.5;\n      var v=Math.min(255,Math.max(0,c*255));\n      d[i]=d[i+1]=d[i+2]=v;\n    }\n    ctx.putImageData(id,0,0);\n    return cv;\n  }\n\n  // ---- receipt text parser ----\n  function parseReceiptText(lines){\n    var text=lines.join(\"\\n\");\n    // currency amounts: $123.45, 12.50, etc.\n    var amounts=[];\n    var amtRe=/[\\$\u00a3\u20ac]?\\s*(\\d{1,6}[,.]\\d{2})\\b/g, m;\n    while((m=amtRe.exec(text))!==null){\n      var v=parseFloat(m[1].replace(\",\",\".\"));\n      if(isFinite(v)&&v>0&&v<99999) amounts.push(v);\n    }\n    // best guess at the total: the LARGEST amount (receipts put total last)\n    amounts.sort(function(a,b){return b-a;});\n    var total=amounts.length?amounts[0]:null;\n    // date: ISO first (unambiguous), then DD/MM or MM/DD auto-detect\n    var date=null;\n    var isoM=text.match(/\\b(\\d{4})[\\/\\-\\.](\\d{1,2})[\\/\\-\\.](\\d{1,2})\\b/);\n    if(isoM){\n      var iy=+isoM[1],im=+isoM[2],idd=+isoM[3];\n      if(im>=1&&im<=12&&idd>=1&&idd<=31) date=iy+\"-\"+(im<10?\"0\":\"\")+im+\"-\"+(idd<10?\"0\":\"\")+idd;\n    }\n    if(!date){\n      var dmyM=text.match(/\\b(\\d{1,2})[\\/\\-\\.](\\d{1,2})[\\/\\-\\.](\\d{2,4})\\b/);\n      if(dmyM){\n        var da=+dmyM[1],db=+dmyM[2],dyr=+dmyM[3]; if(dyr<100)dyr+=2000;\n        var rdd,rmm;\n        if(da>12&&db<=12){rdd=da;rmm=db;}else if(db>12&&da<=12){rdd=db;rmm=da;}else{rdd=da;rmm=db;}\n        if(rmm>=1&&rmm<=12&&rdd>=1&&rdd<=31) date=dyr+\"-\"+(rmm<10?\"0\":\"\")+rmm+\"-\"+(rdd<10?\"0\":\"\")+rdd;\n      }\n    }\n    // merchant: first non-blank line that isn't all numbers/punctuation\n    var merchant=\"\";\n    for(var i=0;i<lines.length;i++){\n      var ln=lines[i].trim();\n      if(ln.length>2&&!/^[\\d\\s\\.\\-\\$\u00a3\u20ac*#:\\/\\\\,]+$/.test(ln)){\n        merchant=ln.slice(0,50); break;\n      }\n    }\n    // note: build a clean one-liner\n    var note=(merchant?\" \"+merchant:\"\")+(date?\" \"+date:\"\");\n    return {total:total, date:date, merchant:merchant, note:note.trim(), amounts:amounts, raw:text};\n  }",ARGS="daysAhead";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof checkBillNotifs!==\"undefined\"?checkBillNotifs:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

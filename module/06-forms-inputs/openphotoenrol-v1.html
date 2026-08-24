@@ -1,0 +1,141 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openPhotoEnrol — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openPhotoEnrol<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openPhotoEnrol(opts){
+    opts=opts||{};
+    var captured={};    // slot key -&gt; {descriptor, thumb}
+    var host=document.createElement(&quot;div&quot;);
+    host.className=&quot;ov in page-mode&quot;; host.id=&quot;photoEnrolOv&quot;;
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;sheet&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;Set up from photos&lt;/h3&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;x-btn&quot; id=&quot;peX&quot; title=&quot;Cancel&quot;&gt;\u2715&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pe-intro&quot;&gt;Add a photo for each angle below. Tested on real faces, one &#x27;
+      +&#x27;      straight-on photo &lt;b&gt;stops matching&lt;/b&gt; when you tilt your head \u2014 several angles is &#x27;
+      +&#x27;      what makes it reliable. Straight ahead is required; the rest each make it better.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pe-grid&quot; id=&quot;peGrid&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;pe-tips&quot;&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;pe-tip&quot;&gt;\u2600\ufe0f Even light on your face \u2014 no strong backlight&lt;/div&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;pe-tip&quot;&gt;\uD83D\uDC53 Same glasses you normally wear&lt;/div&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;pe-tip&quot;&gt;\uD83D\uDC64 One face per photo, filling most of the frame&lt;/div&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;pe-tip&quot;&gt;\uD83D\uDCF7 Photos of a screen work poorly \u2014 use originals&lt;/div&gt;&#x27;
+      +&#x27;    &lt;/div&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-ft&quot;&gt;&lt;button class=&quot;btn ghost sm&quot; id=&quot;peCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn primary sm&quot; id=&quot;peSave&quot; disabled&gt;Save face&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;input type=&quot;file&quot; id=&quot;peFile&quot; accept=&quot;image/*&quot; style=&quot;display:none&quot;&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(host);
+
+    var grid=host.querySelector(&quot;#peGrid&quot;);
+    var saveBtn=host.querySelector(&quot;#peSave&quot;);
+    var fileInput=host.querySelector(&quot;#peFile&quot;);
+    var pendingSlot=null;
+
+    function draw(){
+      grid.innerHTML=PHOTO_SLOTS.map(function(s){
+        var got=captured[s.k];
+        return &#x27;&lt;button class=&quot;ps-card&#x27;+(got?&quot; done&quot;:&quot;&quot;)+&#x27;&quot; data-k=&quot;&#x27;+s.k+&#x27;&quot;&gt;&#x27;
+          +&#x27;&lt;div class=&quot;ps-thumb&quot;&gt;&#x27;
+          + (got ? &#x27;&lt;img src=&quot;&#x27;+got.thumb+&#x27;&quot; alt=&quot;&quot;&gt;&#x27; : slotArt(s.art))
+          + (got ? &#x27;&lt;span class=&quot;ps-tick&quot;&gt;\u2713&lt;/span&gt;&#x27; : &#x27;&#x27;)
+          +&#x27;&lt;/div&gt;&#x27;
+          +&#x27;&lt;div class=&quot;ps-l&quot;&gt;&#x27;+esc(s.label)+(s.k===&quot;center&quot;?&#x27; &lt;span class=&quot;ps-req&quot;&gt;required&lt;/span&gt;&#x27;:&#x27;&#x27;)+&#x27;&lt;/div&gt;&#x27;
+          +&#x27;&lt;div class=&quot;ps-h&quot;&gt;&#x27;+esc(got?&quot;Tap to replace&quot;:s.hint)+&#x27;&lt;/div&gt;&#x27;
+          +&#x27;&lt;/button&gt;&#x27;;
+      }).join(&quot;&quot;);
+      grid.querySelectorAll(&quot;.ps-card&quot;).forEach(function(b){
+        b.addEventListener(&quot;click&quot;, function(){
+          pendingSlot=b.getAttribute(&quot;data-k&quot;);
+          fileInput.click();
+        });
+      });
+      var n=Object.keys(captured).length;
+      saveBtn.disabled=!captured.center;
+      saveBtn.textContent = n ? &quot;Save face (&quot;+n+&quot; angle&quot;+(n===1?&quot;&quot;:&quot;s&quot;)+&quot;)&quot; : &quot;Save face&quot;;
+    }
+    draw();
+
+    fileInput.onchange=function(e){
+      var f=e.target.files&amp;&amp;e.target.files[0]; if(!f||!pendingSlot) return;
+      e.target.value=&quot;&quot;;
+      var slot=pendingSlot;
+      var card=grid.querySelector(&#x27;.ps-card[data-k=&quot;&#x27;+slot+&#x27;&quot;]&#x27;);
+      if(card) card.classList.add(&quot;busy&quot;);
+      var r=new FileReader();
+      r.onload=function(){
+        var img=new Image();
+        img.onload=function(){
+          loadFaceApi().then(function(){
+            return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+              .withFaceLandmarks(true).withFaceDescriptor();
+          }).then(function(det){
+            if(card) card.classList.remove(&quot;busy&quot;);
+            if(!det){ flashSaved(&quot;No face found in that photo \u2014 try a clearer one&quot;); return; }
+            // check the angle roughly matches the slot, and say so if not
+            var pose=poseFromLandmarks(det.landmarks);
+            var want=ENROL_STEPS.filter(function(s){ return s.k===slot; })[0];
+            var offAngle = want &amp;&amp; pose &amp;&amp; !poseMatches(want, pose);
+            captured[slot]={descriptor:Array.from(det.descriptor), thumb:shrinkThumb(img)};
+            draw();
+            flashSaved(offAngle
+              ? &quot;Saved \u2014 though that looks more front-on than &quot;+slot
+              : &quot;angle captured&quot;);
+          }).catch(function(err){
+            if(card) card.classList.remove(&quot;busy&quot;);
+            appModal({title:&quot;Couldn&#x27;t read that photo&quot;,
+              message:String(err&amp;&amp;err.message||err).slice(0,200), confirmText:&quot;OK&quot;});
+          });
+        };
+        img.onerror=function(){ if(card) card.classList.remove(&quot;busy&quot;); flashSaved(&quot;couldn&#x27;t open that image&quot;); };
+        img.src=r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    function shrinkThumb(img){
+      try{
+        var c=document.createElement(&quot;canvas&quot;); c.width=c.height=96;
+        var x=c.getContext(&quot;2d&quot;);
+        var side=Math.min(img.width, img.height);
+        x.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,96,96);
+        return c.toDataURL(&quot;image/jpeg&quot;,0.7);
+      }catch(e){ return &quot;&quot;; }
+    }
+
+    var close=function(){ if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector(&quot;#peX&quot;).onclick=function(){ close(); opts.onCancel&amp;&amp;opts.onCancel(); };
+    host.querySelector(&quot;#peCancel&quot;).onclick=function(){ close(); opts.onCancel&amp;&amp;opts.onCancel(); };
+    saveBtn.onclick=function(){
+      var angles=PHOTO_SLOTS.filter(function(s){ return captured[s.k]; })
+        .map(function(s){ return {pose:s.k, descriptor:captured[s.k].descriptor}; });
+      if(!angles.length) return;
+      close();
+      opts.onResult&amp;&amp;opts.onResult(angles, angles.length&lt;3);
+    };
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openPhotoEnrol(opts){\n    opts=opts||{};\n    var captured={};    // slot key -> {descriptor, thumb}\n    var host=document.createElement(\"div\");\n    host.className=\"ov in page-mode\"; host.id=\"photoEnrolOv\";\n    host.innerHTML=\n       '<div class=\"sheet\">'\n      +'  <div class=\"sheet-hd\"><h3>Set up from photos</h3>'\n      +'    <button class=\"x-btn\" id=\"peX\" title=\"Cancel\">\\u2715</button></div>'\n      +'  <div class=\"sheet-bd\">'\n      +'    <div class=\"pe-intro\">Add a photo for each angle below. Tested on real faces, one '\n      +'      straight-on photo <b>stops matching</b> when you tilt your head \\u2014 several angles is '\n      +'      what makes it reliable. Straight ahead is required; the rest each make it better.</div>'\n      +'    <div class=\"pe-grid\" id=\"peGrid\"></div>'\n      +'    <div class=\"pe-tips\">'\n      +'      <div class=\"pe-tip\">\\u2600\\ufe0f Even light on your face \\u2014 no strong backlight</div>'\n      +'      <div class=\"pe-tip\">\\uD83D\\uDC53 Same glasses you normally wear</div>'\n      +'      <div class=\"pe-tip\">\\uD83D\\uDC64 One face per photo, filling most of the frame</div>'\n      +'      <div class=\"pe-tip\">\\uD83D\\uDCF7 Photos of a screen work poorly \\u2014 use originals</div>'\n      +'    </div>'\n      +'  </div>'\n      +'  <div class=\"sheet-ft\"><button class=\"btn ghost sm\" id=\"peCancel\">Cancel</button>'\n      +'    <button class=\"btn primary sm\" id=\"peSave\" disabled>Save face</button></div>'\n      +'  <input type=\"file\" id=\"peFile\" accept=\"image/*\" style=\"display:none\">'\n      +'</div>';\n    document.body.appendChild(host);\n\n    var grid=host.querySelector(\"#peGrid\");\n    var saveBtn=host.querySelector(\"#peSave\");\n    var fileInput=host.querySelector(\"#peFile\");\n    var pendingSlot=null;\n\n    function draw(){\n      grid.innerHTML=PHOTO_SLOTS.map(function(s){\n        var got=captured[s.k];\n        return '<button class=\"ps-card'+(got?\" done\":\"\")+'\" data-k=\"'+s.k+'\">'\n          +'<div class=\"ps-thumb\">'\n          + (got ? '<img src=\"'+got.thumb+'\" alt=\"\">' : slotArt(s.art))\n          + (got ? '<span class=\"ps-tick\">\\u2713</span>' : '')\n          +'</div>'\n          +'<div class=\"ps-l\">'+esc(s.label)+(s.k===\"center\"?' <span class=\"ps-req\">required</span>':'')+'</div>'\n          +'<div class=\"ps-h\">'+esc(got?\"Tap to replace\":s.hint)+'</div>'\n          +'</button>';\n      }).join(\"\");\n      grid.querySelectorAll(\".ps-card\").forEach(function(b){\n        b.addEventListener(\"click\", function(){\n          pendingSlot=b.getAttribute(\"data-k\");\n          fileInput.click();\n        });\n      });\n      var n=Object.keys(captured).length;\n      saveBtn.disabled=!captured.center;\n      saveBtn.textContent = n ? \"Save face (\"+n+\" angle\"+(n===1?\"\":\"s\")+\")\" : \"Save face\";\n    }\n    draw();\n\n    fileInput.onchange=function(e){\n      var f=e.target.files&&e.target.files[0]; if(!f||!pendingSlot) return;\n      e.target.value=\"\";\n      var slot=pendingSlot;\n      var card=grid.querySelector('.ps-card[data-k=\"'+slot+'\"]');\n      if(card) card.classList.add(\"busy\");\n      var r=new FileReader();\n      r.onload=function(){\n        var img=new Image();\n        img.onload=function(){\n          loadFaceApi().then(function(){\n            return faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())\n              .withFaceLandmarks(true).withFaceDescriptor();\n          }).then(function(det){\n            if(card) card.classList.remove(\"busy\");\n            if(!det){ flashSaved(\"No face found in that photo \\u2014 try a clearer one\"); return; }\n            // check the angle roughly matches the slot, and say so if not\n            var pose=poseFromLandmarks(det.landmarks);\n            var want=ENROL_STEPS.filter(function(s){ return s.k===slot; })[0];\n            var offAngle = want && pose && !poseMatches(want, pose);\n            captured[slot]={descriptor:Array.from(det.descriptor), thumb:shrinkThumb(img)};\n            draw();\n            flashSaved(offAngle\n              ? \"Saved \\u2014 though that looks more front-on than \"+slot\n              : \"angle captured\");\n          }).catch(function(err){\n            if(card) card.classList.remove(\"busy\");\n            appModal({title:\"Couldn't read that photo\",\n              message:String(err&&err.message||err).slice(0,200), confirmText:\"OK\"});\n          });\n        };\n        img.onerror=function(){ if(card) card.classList.remove(\"busy\"); flashSaved(\"couldn't open that image\"); };\n        img.src=r.result;\n      };\n      r.readAsDataURL(f);\n    };\n    function shrinkThumb(img){\n      try{\n        var c=document.createElement(\"canvas\"); c.width=c.height=96;\n        var x=c.getContext(\"2d\");\n        var side=Math.min(img.width, img.height);\n        x.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,96,96);\n        return c.toDataURL(\"image/jpeg\",0.7);\n      }catch(e){ return \"\"; }\n    }\n\n    var close=function(){ if(host.parentNode) host.parentNode.removeChild(host); };\n    host.querySelector(\"#peX\").onclick=function(){ close(); opts.onCancel&&opts.onCancel(); };\n    host.querySelector(\"#peCancel\").onclick=function(){ close(); opts.onCancel&&opts.onCancel(); };\n    saveBtn.onclick=function(){\n      var angles=PHOTO_SLOTS.filter(function(s){ return captured[s.k]; })\n        .map(function(s){ return {pose:s.k, descriptor:captured[s.k].descriptor}; });\n      if(!angles.length) return;\n      close();\n      opts.onResult&&opts.onResult(angles, angles.length<3);\n    };\n  }",ARGS="opts";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openPhotoEnrol!==\"undefined\"?openPhotoEnrol:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,90 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>drawForecast — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>drawForecast<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function drawForecast(){
+    var box=document.getElementById(&quot;fcBody&quot;); if(!box) return;
+    var f=liquidityForecast(12);
+    var sym=state.currency;
+    if(!f.ok){
+      box.innerHTML=&#x27;&lt;div class=&quot;hs-empty&quot;&gt;&lt;div class=&quot;he-ic&quot;&gt;\uD83D\uDCC8&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;he-t&quot;&gt;Not enough history yet&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;he-d&quot;&gt;A forecast needs about 6 months of entries \u2014 you have &#x27;
+        +f.months+&#x27;.&lt;br&gt;Yearly patterns need around 24.&lt;/div&gt;&lt;/div&gt;&#x27;;
+      return;
+    }
+    var MONTHS_S=[&quot;Jan&quot;,&quot;Feb&quot;,&quot;Mar&quot;,&quot;Apr&quot;,&quot;May&quot;,&quot;Jun&quot;,&quot;Jul&quot;,&quot;Aug&quot;,&quot;Sep&quot;,&quot;Oct&quot;,&quot;Nov&quot;,&quot;Dec&quot;];
+    var now=new Date();
+    var nameAt=function(h){ var d=new Date(now.getFullYear(), now.getMonth()+h, 1);
+      return MONTHS_S[d.getMonth()]+&quot; &quot;+String(d.getFullYear()).slice(2); };
+
+    var html=&quot;&quot;;
+    // headline verdict
+    var dry=f.dryMonth, dryW=f.dryWorst;
+    var level = dry&amp;&amp;dry&lt;=3 ? &quot;bad&quot; : dry&amp;&amp;dry&lt;=6 ? &quot;warn&quot; : dryW&amp;&amp;dryW&lt;=6 ? &quot;warn&quot; : &quot;good&quot;;
+    html+=&#x27;&lt;div class=&quot;dura-card &#x27;+level+&#x27;&quot; style=&quot;margin-bottom:16px&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;dura-h&quot;&gt;&#x27;+(dry
+          ? &quot;\u26A0\uFE0F Money runs out around &quot;+nameAt(dry)
+          : dryW ? &quot;\u26A0\uFE0F Tight if things go badly \u2014 &quot;+nameAt(dryW)
+                 : &quot;\u2713 Cash flow looks sustainable for the next year&quot;)+&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;dura-d&quot;&gt;&#x27;
+      + (dry ? &quot;On current trends, spending overtakes what you hold in about &quot;+dry+&quot; month&quot;+(dry===1?&quot;&quot;:&quot;s&quot;)+&quot;.&quot;
+             : dryW ? &quot;The central forecast holds up, but a run of low income and high spending would empty it by &quot;+nameAt(dryW)+&quot;.&quot;
+                    : &quot;Both the expected path and a pessimistic one stay positive across 12 months.&quot;)
+      +&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;;
+
+    // the fan chart
+    html+=&#x27;&lt;div class=&quot;fc-chart&quot; id=&quot;fcChart&quot;&gt;&lt;/div&gt;&#x27;;
+    html+=&#x27;&lt;div class=&quot;fc-legend&quot;&gt;&lt;span&gt;&lt;i class=&quot;l-mid&quot;&gt;&lt;/i&gt;expected&lt;/span&gt;&#x27;
+       +&#x27;&lt;span&gt;&lt;i class=&quot;l-band&quot;&gt;&lt;/i&gt;if things go badly&lt;/span&gt;&#x27;
+       +&#x27;&lt;span&gt;&lt;i class=&quot;l-zero&quot;&gt;&lt;/i&gt;empty&lt;/span&gt;&lt;/div&gt;&#x27;;
+
+    // seasonal findings
+    if(f.outModel.n&gt;=12){
+      html+=&#x27;&lt;div class=&quot;rc-sec&quot;&gt;Seasonal pattern&lt;/div&gt;&#x27;;
+      html+=&#x27;&lt;div class=&quot;fc-row&quot;&gt;&lt;span&gt;Most expensive month&lt;/span&gt;&lt;b&gt;&#x27;
+        +MONTHS_S[f.peakIdx]+&#x27; \u00b7 +&#x27;+fmt(Math.abs(f.peakAmt),sym)+&#x27; above normal&lt;/b&gt;&lt;/div&gt;&#x27;;
+      html+=&#x27;&lt;div class=&quot;fc-row&quot;&gt;&lt;span&gt;Cheapest month&lt;/span&gt;&lt;b&gt;&#x27;
+        +MONTHS_S[f.troughIdx]+&#x27; \u00b7 \u2212&#x27;+fmt(Math.abs(f.troughAmt),sym)+&#x27; below normal&lt;/b&gt;&lt;/div&gt;&#x27;;
+    }
+
+    // month-by-month
+    html+=&#x27;&lt;div class=&quot;rc-sec&quot;&gt;Next 12 months&lt;/div&gt;&lt;div class=&quot;fc-list&quot;&gt;&#x27;;
+    f.path.forEach(function(p,i){
+      var w=f.worstPath[i];
+      var cls=p.bal&lt;0?&quot;bad&quot;:w.bal&lt;0?&quot;warn&quot;:&quot;&quot;;
+      html+=&#x27;&lt;div class=&quot;fc-item &#x27;+cls+&#x27;&quot;&gt;&lt;span class=&quot;fc-m&quot;&gt;&#x27;+nameAt(p.h)+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;fc-n &#x27;+(p.net&gt;=0?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+(p.net&gt;=0?&quot;+&quot;:&quot;\u2212&quot;)+fmt(Math.abs(p.net),sym)+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;fc-b&quot;&gt;&#x27;+fmt(p.bal,sym)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+    });
+    html+=&#x27;&lt;/div&gt;&#x27;;
+    html+=&#x27;&lt;div class=&quot;rc-secd&quot; style=&quot;margin-top:14px&quot;&gt;Built from &#x27;+f.series.months.length
+      +&#x27; months of your own entries \u2014 trend, repeating seasonal pattern, and the spread of past &#x27;
+      +&#x27;variation. Further out is less certain, which is why the band widens. Not financial advice.&lt;/div&gt;&#x27;;
+    box.innerHTML=html;
+    drawFanChart(f);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function drawForecast(){\n    var box=document.getElementById(\"fcBody\"); if(!box) return;\n    var f=liquidityForecast(12);\n    var sym=state.currency;\n    if(!f.ok){\n      box.innerHTML='<div class=\"hs-empty\"><div class=\"he-ic\">\\uD83D\\uDCC8</div>'\n        +'<div class=\"he-t\">Not enough history yet</div>'\n        +'<div class=\"he-d\">A forecast needs about 6 months of entries \\u2014 you have '\n        +f.months+'.<br>Yearly patterns need around 24.</div></div>';\n      return;\n    }\n    var MONTHS_S=[\"Jan\",\"Feb\",\"Mar\",\"Apr\",\"May\",\"Jun\",\"Jul\",\"Aug\",\"Sep\",\"Oct\",\"Nov\",\"Dec\"];\n    var now=new Date();\n    var nameAt=function(h){ var d=new Date(now.getFullYear(), now.getMonth()+h, 1);\n      return MONTHS_S[d.getMonth()]+\" \"+String(d.getFullYear()).slice(2); };\n\n    var html=\"\";\n    // headline verdict\n    var dry=f.dryMonth, dryW=f.dryWorst;\n    var level = dry&&dry<=3 ? \"bad\" : dry&&dry<=6 ? \"warn\" : dryW&&dryW<=6 ? \"warn\" : \"good\";\n    html+='<div class=\"dura-card '+level+'\" style=\"margin-bottom:16px\">'\n      +'<div class=\"dura-h\">'+(dry\n          ? \"\\u26A0\\uFE0F Money runs out around \"+nameAt(dry)\n          : dryW ? \"\\u26A0\\uFE0F Tight if things go badly \\u2014 \"+nameAt(dryW)\n                 : \"\\u2713 Cash flow looks sustainable for the next year\")+'</div>'\n      +'<div class=\"dura-d\">'\n      + (dry ? \"On current trends, spending overtakes what you hold in about \"+dry+\" month\"+(dry===1?\"\":\"s\")+\".\"\n             : dryW ? \"The central forecast holds up, but a run of low income and high spending would empty it by \"+nameAt(dryW)+\".\"\n                    : \"Both the expected path and a pessimistic one stay positive across 12 months.\")\n      +'</div></div>';\n\n    // the fan chart\n    html+='<div class=\"fc-chart\" id=\"fcChart\"></div>';\n    html+='<div class=\"fc-legend\"><span><i class=\"l-mid\"></i>expected</span>'\n       +'<span><i class=\"l-band\"></i>if things go badly</span>'\n       +'<span><i class=\"l-zero\"></i>empty</span></div>';\n\n    // seasonal findings\n    if(f.outModel.n>=12){\n      html+='<div class=\"rc-sec\">Seasonal pattern</div>';\n      html+='<div class=\"fc-row\"><span>Most expensive month</span><b>'\n        +MONTHS_S[f.peakIdx]+' \\u00b7 +'+fmt(Math.abs(f.peakAmt),sym)+' above normal</b></div>';\n      html+='<div class=\"fc-row\"><span>Cheapest month</span><b>'\n        +MONTHS_S[f.troughIdx]+' \\u00b7 \\u2212'+fmt(Math.abs(f.troughAmt),sym)+' below normal</b></div>';\n    }\n\n    // month-by-month\n    html+='<div class=\"rc-sec\">Next 12 months</div><div class=\"fc-list\">';\n    f.path.forEach(function(p,i){\n      var w=f.worstPath[i];\n      var cls=p.bal<0?\"bad\":w.bal<0?\"warn\":\"\";\n      html+='<div class=\"fc-item '+cls+'\"><span class=\"fc-m\">'+nameAt(p.h)+'</span>'\n        +'<span class=\"fc-n '+(p.net>=0?\"up\":\"down\")+'\">'+(p.net>=0?\"+\":\"\\u2212\")+fmt(Math.abs(p.net),sym)+'</span>'\n        +'<span class=\"fc-b\">'+fmt(p.bal,sym)+'</span></div>';\n    });\n    html+='</div>';\n    html+='<div class=\"rc-secd\" style=\"margin-top:14px\">Built from '+f.series.months.length\n      +' months of your own entries \\u2014 trend, repeating seasonal pattern, and the spread of past '\n      +'variation. Further out is less certain, which is why the band widens. Not financial advice.</div>';\n    box.innerHTML=html;\n    drawFanChart(f);\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof drawForecast!==\"undefined\"?drawForecast:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

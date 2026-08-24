@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>liquidityForecast — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · modules</div>
+<h1>liquidityForecast<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function liquidityForecast(ahead){
+    var s=monthlySeries();
+    if(s.months.length&lt;4) return {ok:false, months:s.months.length};
+    var inM=fitSeries(s.inflow, 12), outM=fitSeries(s.outflow, 12);
+    if(!inM||!outM) return {ok:false, months:s.months.length};
+    var fin=forecastSeries(inM, ahead), fout=forecastSeries(outM, ahead);
+    var t=totals();
+    var bal=t.balance+t.savings;
+    var path=[], worst=bal, worstPath=[], dryMonth=null, dryWorst=null;
+    var wbal=bal;
+    for(var i=0;i&lt;ahead;i++){
+      var net=fin[i].mid-fout[i].mid;
+      bal+=net; path.push({h:i+1, bal:bal, net:net});
+      // pessimistic: low income, high spending
+      wbal += (fin[i].lo - fout[i].hi);
+      worstPath.push({h:i+1, bal:wbal});
+      if(dryMonth===null &amp;&amp; bal&lt;0) dryMonth=i+1;
+      if(dryWorst===null &amp;&amp; wbal&lt;0) dryWorst=i+1;
+    }
+    // seasonal months worth flagging
+    var peak=0, trough=0;
+    outM.seasonal.forEach(function(v,idx){
+      if(v&gt;outM.seasonal[peak]) peak=idx;
+      if(v&lt;outM.seasonal[trough]) trough=idx;
+    });
+    return {ok:true, path:path, worstPath:worstPath, start:t.balance+t.savings,
+            dryMonth:dryMonth, dryWorst:dryWorst,
+            inModel:inM, outModel:outM, series:s,
+            peakIdx:peak, troughIdx:trough,
+            peakAmt:outM.seasonal[peak], troughAmt:outM.seasonal[trough],
+            fin:fin, fout:fout};
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function liquidityForecast(ahead){\n    var s=monthlySeries();\n    if(s.months.length<4) return {ok:false, months:s.months.length};\n    var inM=fitSeries(s.inflow, 12), outM=fitSeries(s.outflow, 12);\n    if(!inM||!outM) return {ok:false, months:s.months.length};\n    var fin=forecastSeries(inM, ahead), fout=forecastSeries(outM, ahead);\n    var t=totals();\n    var bal=t.balance+t.savings;\n    var path=[], worst=bal, worstPath=[], dryMonth=null, dryWorst=null;\n    var wbal=bal;\n    for(var i=0;i<ahead;i++){\n      var net=fin[i].mid-fout[i].mid;\n      bal+=net; path.push({h:i+1, bal:bal, net:net});\n      // pessimistic: low income, high spending\n      wbal += (fin[i].lo - fout[i].hi);\n      worstPath.push({h:i+1, bal:wbal});\n      if(dryMonth===null && bal<0) dryMonth=i+1;\n      if(dryWorst===null && wbal<0) dryWorst=i+1;\n    }\n    // seasonal months worth flagging\n    var peak=0, trough=0;\n    outM.seasonal.forEach(function(v,idx){\n      if(v>outM.seasonal[peak]) peak=idx;\n      if(v<outM.seasonal[trough]) trough=idx;\n    });\n    return {ok:true, path:path, worstPath:worstPath, start:t.balance+t.savings,\n            dryMonth:dryMonth, dryWorst:dryWorst,\n            inModel:inM, outModel:outM, series:s,\n            peakIdx:peak, troughIdx:trough,\n            peakAmt:outM.seasonal[peak], troughAmt:outM.seasonal[trough],\n            fin:fin, fout:fout};\n  }",ARGS="ahead";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof liquidityForecast!==\"undefined\"?liquidityForecast:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

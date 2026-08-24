@@ -1,0 +1,69 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bindRecurring — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>bindRecurring<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function bindRecurring(){
+    var add=document.getElementById(&quot;recAddBtn&quot;);
+    if(!add) return;
+    add.addEventListener(&quot;click&quot;, function(){
+      document.getElementById(&quot;recForm&quot;).style.display=&quot;block&quot;;
+      document.getElementById(&quot;recStart&quot;).value=todayStr();
+      document.getElementById(&quot;recDay&quot;).value=String(+todayStr().slice(8,10));
+      document.getElementById(&quot;recAmt&quot;).value=&quot;&quot;;
+      document.getElementById(&quot;recNote&quot;).value=&quot;&quot;;
+      recurFormUI();
+    });
+    document.getElementById(&quot;recType&quot;).addEventListener(&quot;change&quot;, recurFormUI);
+    document.getElementById(&quot;recFreq&quot;).addEventListener(&quot;change&quot;, recurFormUI);
+    document.getElementById(&quot;recCancelBtn&quot;).addEventListener(&quot;click&quot;, function(){
+      document.getElementById(&quot;recForm&quot;).style.display=&quot;none&quot;;
+    });
+    document.getElementById(&quot;recSaveBtn&quot;).addEventListener(&quot;click&quot;, function(){
+      var amt=parseFloat(document.getElementById(&quot;recAmt&quot;).value);
+      if(!isFinite(amt) || amt&lt;=0 || !sane(amt)){ shake(document.getElementById(&quot;recAmt&quot;)); return; }
+      var start=document.getElementById(&quot;recStart&quot;).value || todayStr();
+      var freq=document.getElementById(&quot;recFreq&quot;).value;
+      var r={ id:&quot;r&quot;+Date.now()+Math.floor(Math.random()*1000),
+        type:document.getElementById(&quot;recType&quot;).value, amount:amt,
+        note:document.getElementById(&quot;recNote&quot;).value.trim(), freq:freq,
+        day: freq===&quot;weekly&quot; ? +start.slice(8,10) : Math.max(1,Math.min(31,parseInt(document.getElementById(&quot;recDay&quot;).value,10)||1)),
+        startDate:start, lastRun:null, paused:false,
+        auto:document.getElementById(&#x27;recAuto&#x27;).checked };
+      if(r.type===&quot;spend&quot;) r.cat=document.getElementById(&quot;recCat&quot;).value;
+      if(!Array.isArray(state.recurring)) state.recurring=[];
+      state.recurring.push(r);
+      persistNow();
+      document.getElementById(&quot;recForm&quot;).style.display=&quot;none&quot;;
+      renderRecurList(); checkRecurPrompt(); flashSaved(&quot;saved&quot;);
+    });
+    var a2=document.getElementById(&quot;recPromptAdd&quot;), n2=document.getElementById(&quot;recPromptLater&quot;);
+    if(a2) a2.addEventListener(&quot;click&quot;, function(){
+      var pend=pendingRecur().filter(function(x){ return !x.rule.auto; });
+      if(pend.length) applyRecur(pend, function(n){ flashSaved(&quot;added &quot;+n); checkRecurPrompt(); });
+    });
+    if(n2) n2.addEventListener(&quot;click&quot;, function(){ document.getElementById(&quot;recPrompt&quot;).style.display=&quot;none&quot;; });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function bindRecurring(){\n    var add=document.getElementById(\"recAddBtn\");\n    if(!add) return;\n    add.addEventListener(\"click\", function(){\n      document.getElementById(\"recForm\").style.display=\"block\";\n      document.getElementById(\"recStart\").value=todayStr();\n      document.getElementById(\"recDay\").value=String(+todayStr().slice(8,10));\n      document.getElementById(\"recAmt\").value=\"\";\n      document.getElementById(\"recNote\").value=\"\";\n      recurFormUI();\n    });\n    document.getElementById(\"recType\").addEventListener(\"change\", recurFormUI);\n    document.getElementById(\"recFreq\").addEventListener(\"change\", recurFormUI);\n    document.getElementById(\"recCancelBtn\").addEventListener(\"click\", function(){\n      document.getElementById(\"recForm\").style.display=\"none\";\n    });\n    document.getElementById(\"recSaveBtn\").addEventListener(\"click\", function(){\n      var amt=parseFloat(document.getElementById(\"recAmt\").value);\n      if(!isFinite(amt) || amt<=0 || !sane(amt)){ shake(document.getElementById(\"recAmt\")); return; }\n      var start=document.getElementById(\"recStart\").value || todayStr();\n      var freq=document.getElementById(\"recFreq\").value;\n      var r={ id:\"r\"+Date.now()+Math.floor(Math.random()*1000),\n        type:document.getElementById(\"recType\").value, amount:amt,\n        note:document.getElementById(\"recNote\").value.trim(), freq:freq,\n        day: freq===\"weekly\" ? +start.slice(8,10) : Math.max(1,Math.min(31,parseInt(document.getElementById(\"recDay\").value,10)||1)),\n        startDate:start, lastRun:null, paused:false,\n        auto:document.getElementById('recAuto').checked };\n      if(r.type===\"spend\") r.cat=document.getElementById(\"recCat\").value;\n      if(!Array.isArray(state.recurring)) state.recurring=[];\n      state.recurring.push(r);\n      persistNow();\n      document.getElementById(\"recForm\").style.display=\"none\";\n      renderRecurList(); checkRecurPrompt(); flashSaved(\"saved\");\n    });\n    var a2=document.getElementById(\"recPromptAdd\"), n2=document.getElementById(\"recPromptLater\");\n    if(a2) a2.addEventListener(\"click\", function(){\n      var pend=pendingRecur().filter(function(x){ return !x.rule.auto; });\n      if(pend.length) applyRecur(pend, function(n){ flashSaved(\"added \"+n); checkRecurPrompt(); });\n    });\n    if(n2) n2.addEventListener(\"click\", function(){ document.getElementById(\"recPrompt\").style.display=\"none\"; });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof bindRecurring!==\"undefined\"?bindRecurring:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

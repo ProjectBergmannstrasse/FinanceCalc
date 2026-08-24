@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>run — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 03-charts-viz</div>
+<h1>run<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>var run=function(){
+        try{
+          var cv=preprocessReceiptCanvas(img);
+          var detector=new window.TextDetector();
+          detector.detect(cv).then(function(blocks){
+            var lines=blocks.map(function(b){ return b.rawValue; })
+              .sort(function(a,b){
+                // sort roughly top-to-bottom by bounding box Y
+                return (a._y||0)-(b._y||0);
+              });
+            // preserve vertical order via blocks directly
+            var sorted=blocks.slice().sort(function(a,b){
+              return (a.boundingBox.top)-(b.boundingBox.top);
+            });
+            var sortedLines=sorted.map(function(b){ return b.rawValue; });
+            var parsed=parseReceiptSmart(sortedLines.length?sortedLines:lines);
+            parsed.merchant=parsed.merchant||&quot;&quot;;
+            // fill in whatever we found
+            if(parsed.total){
+              document.getElementById(&quot;scAmt&quot;).value=parsed.total.toFixed(2);
+            }
+            if(parsed.date){
+              document.getElementById(&quot;scDate&quot;).value=parsed.date;
+            }
+            if(parsed.merchant){ document.getElementById(&quot;scNote&quot;).value=parsed.merchant; }
+            // the parser also identifies the category and the tax line
+            if(parsed.category){
+              var cs=document.getElementById(&quot;scCat&quot;);
+              if(cs){ var opt=Array.prototype.filter.call(cs.options,function(o){ return o.value===parsed.category; })[0];
+                if(opt) cs.value=parsed.category; }
+            }
+            var found=[];
+            if(parsed.total) found.push(sym+parsed.total.toFixed(2));
+            if(parsed.tax) found.push(&quot;tax &quot;+sym+parsed.tax.toFixed(2)+(parsed.taxRate?&quot; (&quot;+parsed.taxRate+&quot;%)&quot;:&quot;&quot;));
+            if(parsed.category) found.push(parsed.category);
+            if(parsed.date)  found.push(parsed.date);
+            if(parsed.merchant) found.push(&#x27;&quot;&#x27;+parsed.merchant+&#x27;&quot;&#x27;);
+            status.textContent=found.length
+              ? &quot;Found: &quot;+found.join(&quot; · &quot;)+&quot; — check and adjust if needed.&quot;
+              : &quot;Couldn&#x27;t read any amounts — fill in manually.&quot;;
+            status.style.color=found.length?&quot;var(--up)&quot;:&quot;var(--amber)&quot;;
+          }).catch(function(err){
+            status.textContent=&quot;OCR error — fill in manually. (&quot;+String(err).slice(0,60)+&quot;)&quot;;
+            status.style.color=&quot;var(--amber)&quot;;
+          });
+        }catch(err){
+          status.textContent=&quot;Couldn&#x27;t run OCR — fill in manually.&quot;;
+          status.style.color=&quot;var(--amber)&quot;;
+        }
+      };</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="var run=function(){\n        try{\n          var cv=preprocessReceiptCanvas(img);\n          var detector=new window.TextDetector();\n          detector.detect(cv).then(function(blocks){\n            var lines=blocks.map(function(b){ return b.rawValue; })\n              .sort(function(a,b){\n                // sort roughly top-to-bottom by bounding box Y\n                return (a._y||0)-(b._y||0);\n              });\n            // preserve vertical order via blocks directly\n            var sorted=blocks.slice().sort(function(a,b){\n              return (a.boundingBox.top)-(b.boundingBox.top);\n            });\n            var sortedLines=sorted.map(function(b){ return b.rawValue; });\n            var parsed=parseReceiptSmart(sortedLines.length?sortedLines:lines);\n            parsed.merchant=parsed.merchant||\"\";\n            // fill in whatever we found\n            if(parsed.total){\n              document.getElementById(\"scAmt\").value=parsed.total.toFixed(2);\n            }\n            if(parsed.date){\n              document.getElementById(\"scDate\").value=parsed.date;\n            }\n            if(parsed.merchant){ document.getElementById(\"scNote\").value=parsed.merchant; }\n            // the parser also identifies the category and the tax line\n            if(parsed.category){\n              var cs=document.getElementById(\"scCat\");\n              if(cs){ var opt=Array.prototype.filter.call(cs.options,function(o){ return o.value===parsed.category; })[0];\n                if(opt) cs.value=parsed.category; }\n            }\n            var found=[];\n            if(parsed.total) found.push(sym+parsed.total.toFixed(2));\n            if(parsed.tax) found.push(\"tax \"+sym+parsed.tax.toFixed(2)+(parsed.taxRate?\" (\"+parsed.taxRate+\"%)\":\"\"));\n            if(parsed.category) found.push(parsed.category);\n            if(parsed.date)  found.push(parsed.date);\n            if(parsed.merchant) found.push('\"'+parsed.merchant+'\"');\n            status.textContent=found.length\n              ? \"Found: \"+found.join(\" \u00b7 \")+\" \u2014 check and adjust if needed.\"\n              : \"Couldn't read any amounts \u2014 fill in manually.\";\n            status.style.color=found.length?\"var(--up)\":\"var(--amber)\";\n          }).catch(function(err){\n            status.textContent=\"OCR error \u2014 fill in manually. (\"+String(err).slice(0,60)+\")\";\n            status.style.color=\"var(--amber)\";\n          });\n        }catch(err){\n          status.textContent=\"Couldn't run OCR \u2014 fill in manually.\";\n          status.style.color=\"var(--amber)\";\n        }\n      };",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof run!==\"undefined\"?run:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

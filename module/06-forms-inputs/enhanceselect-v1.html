@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>enhanceSelect — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>enhanceSelect<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function enhanceSelect(sel){
+    if(!sel || sel._xs) return;
+    sel._xs=true;
+    var wrap=document.createElement(&quot;div&quot;);
+    wrap.className=&quot;xsel&quot;;
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add(&quot;xsel-native&quot;);
+    var btn=document.createElement(&quot;button&quot;);
+    btn.type=&quot;button&quot;; btn.className=&quot;xsel-btn&quot;;
+    btn.innerHTML=&#x27;&lt;span class=&quot;xsel-val&quot;&gt;&lt;/span&gt;&lt;span class=&quot;xsel-car&quot;&gt;▾&lt;/span&gt;&#x27;;
+    wrap.appendChild(btn);
+    function sync(){
+      var o=sel.options[sel.selectedIndex];
+      var vis=xselVisible(sel);
+      // an empty picker is a dead button — say so rather than render a lone caret
+      btn.querySelector(&quot;.xsel-val&quot;).textContent = o ? o.textContent : (vis.length ? &quot;&quot; : &quot;—&quot;);
+      btn.disabled = sel.disabled || !vis.length;
+      btn.classList.toggle(&quot;placeholder&quot;, !o || o.value===&quot;&quot;);
+    }
+    sel._xsync=sync;
+    sync();
+    sel.addEventListener(&quot;change&quot;, sync);
+    /* Several selects start empty and are filled later — the copy/mirror pickers from the
+       portfolio list, the CSV column pickers from the uploaded file&#x27;s headers. Hunting
+       down every rebuild site by hand doesn&#x27;t work (I missed three), so watch the select
+       itself: any change to its options or its hidden/disabled state re-syncs the button.
+       MutationObserver fires on a microtask, i.e. after the rebuild AND the .value= that
+       follows it, which is exactly the moment the label needs re-reading. */
+    if(typeof MutationObserver!==&quot;undefined&quot;){
+      new MutationObserver(sync).observe(sel, {
+        childList:true, subtree:true, characterData:true,
+        attributes:true, attributeFilter:[&quot;hidden&quot;,&quot;disabled&quot;,&quot;value&quot;,&quot;selected&quot;]
+      });
+    }
+    btn.addEventListener(&quot;click&quot;, function(e){ e.preventDefault(); openXsel(sel, btn); });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function enhanceSelect(sel){\n    if(!sel || sel._xs) return;\n    sel._xs=true;\n    var wrap=document.createElement(\"div\");\n    wrap.className=\"xsel\";\n    sel.parentNode.insertBefore(wrap, sel);\n    wrap.appendChild(sel);\n    sel.classList.add(\"xsel-native\");\n    var btn=document.createElement(\"button\");\n    btn.type=\"button\"; btn.className=\"xsel-btn\";\n    btn.innerHTML='<span class=\"xsel-val\"></span><span class=\"xsel-car\">\u25be</span>';\n    wrap.appendChild(btn);\n    function sync(){\n      var o=sel.options[sel.selectedIndex];\n      var vis=xselVisible(sel);\n      // an empty picker is a dead button \u2014 say so rather than render a lone caret\n      btn.querySelector(\".xsel-val\").textContent = o ? o.textContent : (vis.length ? \"\" : \"\u2014\");\n      btn.disabled = sel.disabled || !vis.length;\n      btn.classList.toggle(\"placeholder\", !o || o.value===\"\");\n    }\n    sel._xsync=sync;\n    sync();\n    sel.addEventListener(\"change\", sync);\n    /* Several selects start empty and are filled later \u2014 the copy/mirror pickers from the\n       portfolio list, the CSV column pickers from the uploaded file's headers. Hunting\n       down every rebuild site by hand doesn't work (I missed three), so watch the select\n       itself: any change to its options or its hidden/disabled state re-syncs the button.\n       MutationObserver fires on a microtask, i.e. after the rebuild AND the .value= that\n       follows it, which is exactly the moment the label needs re-reading. */\n    if(typeof MutationObserver!==\"undefined\"){\n      new MutationObserver(sync).observe(sel, {\n        childList:true, subtree:true, characterData:true,\n        attributes:true, attributeFilter:[\"hidden\",\"disabled\",\"value\",\"selected\"]\n      });\n    }\n    btn.addEventListener(\"click\", function(e){ e.preventDefault(); openXsel(sel, btn); });\n  }",ARGS="sel";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof enhanceSelect!==\"undefined\"?enhanceSelect:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

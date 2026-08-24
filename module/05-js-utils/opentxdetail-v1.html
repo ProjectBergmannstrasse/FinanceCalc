@@ -1,0 +1,122 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openTxDetail — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>openTxDetail<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openTxDetail(id){
+    var t=state.transactions.filter(function(x){ return x.id===id; })[0];
+    if(!t) return;
+    var sym=state.currency, meta=TYPE_META[t.type]||{label:t.type};
+    var d=String(t.date||&quot;&quot;).split(&quot;-&quot;);
+    var full=(MONTHS[(+d[1])-1]||&quot;&quot;)+&quot; &quot;+(+d[2])+&quot;, &quot;+d[0];
+    var ov=document.createElement(&quot;div&quot;);
+    ov.className=&quot;xsel-ov td-ov&quot;;
+    var bits=&quot;&quot;;
+    if(t.cat) bits+=&#x27;&lt;div class=&quot;td-row&quot;&gt;&lt;span&gt;Category&lt;/span&gt;&lt;b&gt;&#x27;+esc(t.cat)+&#x27;&lt;/b&gt;&lt;/div&gt;&#x27;;
+    if(t.inst) bits+=&#x27;&lt;div class=&quot;td-row&quot;&gt;&lt;span&gt;Instrument&lt;/span&gt;&lt;b&gt;&#x27;+esc(t.inst)+&#x27;&lt;/b&gt;&lt;/div&gt;&#x27;;
+    else if(t.type===&quot;trade_win&quot;||t.type===&quot;trade_loss&quot;)
+      bits+=&#x27;&lt;div class=&quot;td-row&quot;&gt;&lt;span&gt;Instrument&lt;/span&gt;&lt;b class=&quot;mut&quot;&gt;\u2014 untagged \u2014&lt;/b&gt;&lt;/div&gt;&#x27;;
+    if(t.auto) bits+=&#x27;&lt;div class=&quot;td-row&quot;&gt;&lt;span&gt;Added by&lt;/span&gt;&lt;b class=&quot;mut&quot;&gt;Automatically&lt;/b&gt;&lt;/div&gt;&#x27;;
+    ov.innerHTML=&#x27;&lt;div class=&quot;xsel-sheet td-sheet&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;td-head&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;td-badge&quot;&gt;&#x27;+esc(meta.label)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;td-amt mono&quot;&gt;&#x27;+fmt(Math.abs(num(t.amount)),sym)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;td-date&quot;&gt;&#x27;+esc(full)+&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;td-body&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;td-sec&quot;&gt;What it moved&lt;/div&gt;&#x27;+txPotMoves(t,sym)
+        +(bits?&#x27;&lt;div class=&quot;td-sec&quot;&gt;Details&lt;/div&gt;&#x27;+bits:&quot;&quot;)
+        +(t.note?&#x27;&lt;div class=&quot;td-sec&quot;&gt;Note&lt;/div&gt;&lt;div class=&quot;td-note&quot;&gt;&#x27;+esc(t.note)+&#x27;&lt;/div&gt;&#x27;:&quot;&quot;)
+        +(photosOf(t).length?&#x27;&lt;div class=&quot;td-sec&quot;&gt;&#x27;+(photosOf(t).length&gt;1?photosOf(t).length+&quot; files&quot;:&quot;File&quot;)
+            +&#x27;&lt;/div&gt;&lt;div class=&quot;td-photo&quot; id=&quot;tdPhoto&quot;&gt;loading\u2026&lt;/div&gt;&#x27;:&quot;&quot;)
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;td-foot&quot;&gt;&#x27;
+        +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm td-copy&quot; id=&quot;tdCopy&quot; title=&quot;Copy transaction&quot;&gt;📋 Copy&lt;/button&gt;&#x27;
+        +(t.auto?&#x27;&lt;div class=&quot;hint&quot; style=&quot;margin:0;flex:1&quot;&gt;Managed by the allowance tools \u2014 edit it there.&lt;/div&gt;&#x27;
+                :&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm&quot; id=&quot;tdDel&quot;&gt;Delete&lt;/button&gt;&#x27;
+                 +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn sm&quot; id=&quot;tdEdit&quot;&gt;Edit&lt;/button&gt;&#x27;)
+        +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm&quot; id=&quot;tdClose&quot;&gt;Close&lt;/button&gt;&#x27;
+      +&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add(&quot;in&quot;); });
+    var close=function(){
+      ov.classList.remove(&quot;in&quot;);
+      document.removeEventListener(&quot;keydown&quot;, onKey);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140);
+    };
+    var onKey=function(e){ if(e.key===&quot;Escape&quot;){ e.preventDefault(); close(); } };
+    document.addEventListener(&quot;keydown&quot;, onKey);
+    ov.addEventListener(&quot;click&quot;, function(e){ if(e.target===ov) close(); });
+    ov.querySelector(&quot;#tdClose&quot;).addEventListener(&quot;click&quot;, close);
+    var cp=ov.querySelector(&quot;#tdCopy&quot;);
+    if(cp) cp.addEventListener(&quot;click&quot;, function(){ openCopyMenu(t); });
+    var ed=ov.querySelector(&quot;#tdEdit&quot;);
+    if(ed) ed.addEventListener(&quot;click&quot;, function(){ close(); startEdit(t.id); });
+    var dl=ov.querySelector(&quot;#tdDel&quot;);
+    if(dl) dl.addEventListener(&quot;click&quot;, function(){
+      close();
+      if(editingId===t.id) cancelEdit();   // don&#x27;t leave a deleted entry loaded in the form
+      deleteWithUndo(t.id);                // same path as the row&#x27;s bin icon, undo included
+    });
+    var pics=photosOf(t);
+    if(pics.length){
+      var box=ov.querySelector(&quot;#tdPhoto&quot;);
+      if(box){
+        box.innerHTML=&quot;&quot;;
+        box.classList.toggle(&quot;td-photo-many&quot;, pics.length&gt;1);
+        pics.forEach(function(pid,i){
+          var cell=document.createElement(&quot;div&quot;);
+          cell.className=&quot;td-pcell&quot;;
+          box.appendChild(cell);
+          loadPhoto(pid, function(url){
+            if(!url){ cell.innerHTML=&#x27;&lt;div style=&quot;color:var(--mut);padding:8px;font-size:11px&quot;&gt;file missing — re-attach&lt;/div&gt;&#x27;; return; }
+            var nm=attNames[pid]||&quot;&quot;, kind=attKind(nm,url);
+            if(kind===&quot;image&quot;){
+              cell.innerHTML=&#x27;&lt;img src=&quot;&#x27;+url+&#x27;&quot; alt=&quot;Attachment &#x27;+(i+1)+&#x27;&quot;&gt;&#x27;;
+              cell.querySelector(&quot;img&quot;).addEventListener(&quot;click&quot;, function(){ close(); openViewer(t.id); });
+            } else if(kind===&quot;audio&quot;){
+              cell.classList.add(&quot;td-media&quot;);
+              cell.innerHTML=&#x27;&lt;div class=&quot;td-fname&quot;&gt;&#x27;+attIcon(nm,url)+&#x27; &#x27;+esc(nm||&quot;audio file&quot;)+&#x27;&lt;/div&gt;&lt;audio src=&quot;&#x27;+url+&#x27;&quot; controls&gt;&lt;/audio&gt;&#x27;;
+            } else if(kind===&quot;video&quot;){
+              cell.classList.add(&quot;td-media&quot;);
+              cell.innerHTML=&#x27;&lt;div class=&quot;td-fname&quot;&gt;&#x27;+attIcon(nm,url)+&#x27; &#x27;+esc(nm||&quot;video file&quot;)+&#x27;&lt;/div&gt;&lt;video src=&quot;&#x27;+url+&#x27;&quot; controls playsinline&gt;&lt;/video&gt;&#x27;;
+            } else if(kind===&quot;pdf&quot;){
+              cell.classList.add(&quot;td-media&quot;);
+              cell.innerHTML=&#x27;&lt;embed type=&quot;application/pdf&quot; src=&quot;&#x27;+url+&#x27;&quot; class=&quot;td-pdf&quot;&gt;&#x27;
+                +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm td-open&quot;&gt;Open &#x27;+esc(nm||&quot;PDF&quot;)+&#x27;&lt;/button&gt;&#x27;;
+              cell.querySelector(&quot;.td-open&quot;).addEventListener(&quot;click&quot;, function(){ attDownload(url,nm||&quot;file.pdf&quot;); });
+            } else {
+              cell.classList.add(&quot;td-file&quot;);
+              cell.innerHTML=&#x27;&lt;span class=&quot;td-fic&quot;&gt;&#x27;+attIcon(nm,url)+&#x27;&lt;/span&gt;&#x27;
+                +&#x27;&lt;span class=&quot;td-fnm&quot;&gt;&#x27;+esc(nm||&quot;file&quot;)+&#x27;&lt;/span&gt;&#x27;
+                +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm td-open&quot;&gt;Download&lt;/button&gt;&#x27;;
+              cell.querySelector(&quot;.td-open&quot;).addEventListener(&quot;click&quot;, function(){ attDownload(url,nm||&quot;file&quot;); });
+            }
+          });
+        });
+      }
+    }
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openTxDetail(id){\n    var t=state.transactions.filter(function(x){ return x.id===id; })[0];\n    if(!t) return;\n    var sym=state.currency, meta=TYPE_META[t.type]||{label:t.type};\n    var d=String(t.date||\"\").split(\"-\");\n    var full=(MONTHS[(+d[1])-1]||\"\")+\" \"+(+d[2])+\", \"+d[0];\n    var ov=document.createElement(\"div\");\n    ov.className=\"xsel-ov td-ov\";\n    var bits=\"\";\n    if(t.cat) bits+='<div class=\"td-row\"><span>Category</span><b>'+esc(t.cat)+'</b></div>';\n    if(t.inst) bits+='<div class=\"td-row\"><span>Instrument</span><b>'+esc(t.inst)+'</b></div>';\n    else if(t.type===\"trade_win\"||t.type===\"trade_loss\")\n      bits+='<div class=\"td-row\"><span>Instrument</span><b class=\"mut\">\\u2014 untagged \\u2014</b></div>';\n    if(t.auto) bits+='<div class=\"td-row\"><span>Added by</span><b class=\"mut\">Automatically</b></div>';\n    ov.innerHTML='<div class=\"xsel-sheet td-sheet\">'\n      +'<div class=\"td-head\">'\n        +'<div class=\"td-badge\">'+esc(meta.label)+'</div>'\n        +'<div class=\"td-amt mono\">'+fmt(Math.abs(num(t.amount)),sym)+'</div>'\n        +'<div class=\"td-date\">'+esc(full)+'</div>'\n      +'</div>'\n      +'<div class=\"td-body\">'\n        +'<div class=\"td-sec\">What it moved</div>'+txPotMoves(t,sym)\n        +(bits?'<div class=\"td-sec\">Details</div>'+bits:\"\")\n        +(t.note?'<div class=\"td-sec\">Note</div><div class=\"td-note\">'+esc(t.note)+'</div>':\"\")\n        +(photosOf(t).length?'<div class=\"td-sec\">'+(photosOf(t).length>1?photosOf(t).length+\" files\":\"File\")\n            +'</div><div class=\"td-photo\" id=\"tdPhoto\">loading\\u2026</div>':\"\")\n      +'</div>'\n      +'<div class=\"td-foot\">'\n        +'<button type=\"button\" class=\"btn ghost sm td-copy\" id=\"tdCopy\" title=\"Copy transaction\">\ud83d\udccb Copy</button>'\n        +(t.auto?'<div class=\"hint\" style=\"margin:0;flex:1\">Managed by the allowance tools \\u2014 edit it there.</div>'\n                :'<button type=\"button\" class=\"btn ghost sm\" id=\"tdDel\">Delete</button>'\n                 +'<button type=\"button\" class=\"btn sm\" id=\"tdEdit\">Edit</button>')\n        +'<button type=\"button\" class=\"btn ghost sm\" id=\"tdClose\">Close</button>'\n      +'</div></div>';\n    document.body.appendChild(ov);\n    requestAnimationFrame(function(){ ov.classList.add(\"in\"); });\n    var close=function(){\n      ov.classList.remove(\"in\");\n      document.removeEventListener(\"keydown\", onKey);\n      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); },140);\n    };\n    var onKey=function(e){ if(e.key===\"Escape\"){ e.preventDefault(); close(); } };\n    document.addEventListener(\"keydown\", onKey);\n    ov.addEventListener(\"click\", function(e){ if(e.target===ov) close(); });\n    ov.querySelector(\"#tdClose\").addEventListener(\"click\", close);\n    var cp=ov.querySelector(\"#tdCopy\");\n    if(cp) cp.addEventListener(\"click\", function(){ openCopyMenu(t); });\n    var ed=ov.querySelector(\"#tdEdit\");\n    if(ed) ed.addEventListener(\"click\", function(){ close(); startEdit(t.id); });\n    var dl=ov.querySelector(\"#tdDel\");\n    if(dl) dl.addEventListener(\"click\", function(){\n      close();\n      if(editingId===t.id) cancelEdit();   // don't leave a deleted entry loaded in the form\n      deleteWithUndo(t.id);                // same path as the row's bin icon, undo included\n    });\n    var pics=photosOf(t);\n    if(pics.length){\n      var box=ov.querySelector(\"#tdPhoto\");\n      if(box){\n        box.innerHTML=\"\";\n        box.classList.toggle(\"td-photo-many\", pics.length>1);\n        pics.forEach(function(pid,i){\n          var cell=document.createElement(\"div\");\n          cell.className=\"td-pcell\";\n          box.appendChild(cell);\n          loadPhoto(pid, function(url){\n            if(!url){ cell.innerHTML='<div style=\"color:var(--mut);padding:8px;font-size:11px\">file missing \u2014 re-attach</div>'; return; }\n            var nm=attNames[pid]||\"\", kind=attKind(nm,url);\n            if(kind===\"image\"){\n              cell.innerHTML='<img src=\"'+url+'\" alt=\"Attachment '+(i+1)+'\">';\n              cell.querySelector(\"img\").addEventListener(\"click\", function(){ close(); openViewer(t.id); });\n            } else if(kind===\"audio\"){\n              cell.classList.add(\"td-media\");\n              cell.innerHTML='<div class=\"td-fname\">'+attIcon(nm,url)+' '+esc(nm||\"audio file\")+'</div><audio src=\"'+url+'\" controls></audio>';\n            } else if(kind===\"video\"){\n              cell.classList.add(\"td-media\");\n              cell.innerHTML='<div class=\"td-fname\">'+attIcon(nm,url)+' '+esc(nm||\"video file\")+'</div><video src=\"'+url+'\" controls playsinline></video>';\n            } else if(kind===\"pdf\"){\n              cell.classList.add(\"td-media\");\n              cell.innerHTML='<embed type=\"application/pdf\" src=\"'+url+'\" class=\"td-pdf\">'\n                +'<button type=\"button\" class=\"btn ghost sm td-open\">Open '+esc(nm||\"PDF\")+'</button>';\n              cell.querySelector(\".td-open\").addEventListener(\"click\", function(){ attDownload(url,nm||\"file.pdf\"); });\n            } else {\n              cell.classList.add(\"td-file\");\n              cell.innerHTML='<span class=\"td-fic\">'+attIcon(nm,url)+'</span>'\n                +'<span class=\"td-fnm\">'+esc(nm||\"file\")+'</span>'\n                +'<button type=\"button\" class=\"btn ghost sm td-open\">Download</button>';\n              cell.querySelector(\".td-open\").addEventListener(\"click\", function(){ attDownload(url,nm||\"file\"); });\n            }\n          });\n        });\n      }\n    }\n  }",ARGS="id";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openTxDetail!==\"undefined\"?openTxDetail:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openChatSheet — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 02-ui-components</div>
+<h1>openChatSheet<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v32.1 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openChatSheet(){
+    var host=document.getElementById(&quot;chatSheetHost&quot;);
+    if(!host){ host=document.createElement(&quot;div&quot;); host.id=&quot;chatSheetHost&quot;; document.body.appendChild(host); }
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;ov in&quot; id=&quot;chatOv&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet chat-sheet&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;chat-hd&quot;&gt;&#x27;
+      +&#x27;      &lt;h3&gt;Ask AI&lt;/h3&gt;&#x27;
+      +&#x27;      &lt;span class=&quot;chat-engine&quot; id=&quot;chatEngine&quot;&gt;checking…&lt;/span&gt;&#x27;
+      +&#x27;      &lt;span style=&quot;flex:1&quot;&gt;&lt;/span&gt;&#x27;
+      +&#x27;      &lt;button class=&quot;x-btn&quot; id=&quot;chatClear&quot; title=&quot;Clear this conversation&quot;&gt;\u21bb&lt;/button&gt;&#x27;
+      +&#x27;      &lt;button class=&quot;x-btn&quot; id=&quot;chatSheetX&quot; title=&quot;Close&quot;&gt;\u2715&lt;/button&gt;&#x27;
+      +&#x27;    &lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;chat-body&quot; id=&quot;chatLog&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;chat-foot&quot;&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;chat-pending&quot; id=&quot;chatFileStrip&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;chat-input-row&quot;&gt;&#x27;
+      +&#x27;        &lt;button class=&quot;chat-icon-btn&quot; id=&quot;chatAttachBtn&quot; title=&quot;Attach a file&quot;&gt;\uD83D\uDCCE&lt;/button&gt;&#x27;
+      +&#x27;        &lt;textarea id=&quot;chatInput&quot; class=&quot;inp&quot; rows=&quot;1&quot; placeholder=&quot;Ask about your money\u2026&quot;&gt;&lt;/textarea&gt;&#x27;
+      +&#x27;        &lt;button class=&quot;chat-icon-btn chat-send&quot; id=&quot;chatSend&quot; title=&quot;Send&quot; disabled&gt;\u2191&lt;/button&gt;&#x27;
+      +&#x27;      &lt;/div&gt;&#x27;
+      +&#x27;      &lt;div class=&quot;chat-hint&quot;&gt;Runs on your device \u00b7 Enter to send, Shift+Enter for a new line&lt;/div&gt;&#x27;
+      +&#x27;    &lt;/div&gt;&#x27;
+      +&#x27;    &lt;input type=&quot;file&quot; id=&quot;chatFileInput&quot; multiple style=&quot;display:none&quot;&#x27;
+      +&#x27;      accept=&quot;.pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*&quot;&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&lt;/div&gt;&#x27;;
+    bindChat();
+    renderChatLog(); renderChatFiles();
+
+    var close=function(){ host.innerHTML=&quot;&quot;; document.removeEventListener(&quot;keydown&quot;, onEsc); };
+    var onEsc=function(e){ if(e.key===&quot;Escape&quot;) close(); };
+    document.getElementById(&quot;chatSheetX&quot;).onclick=close;
+    document.getElementById(&quot;chatOv&quot;).addEventListener(&quot;click&quot;, function(e){
+      if(e.target.id===&quot;chatOv&quot;) close();
+    });
+    document.addEventListener(&quot;keydown&quot;, onEsc);
+
+    // grow the box as they type, up to a limit
+    var ta=document.getElementById(&quot;chatInput&quot;);
+    var send=document.getElementById(&quot;chatSend&quot;);
+    var sync=function(){
+      ta.style.height=&quot;auto&quot;;
+      ta.style.height=Math.min(130, ta.scrollHeight)+&quot;px&quot;;
+      send.disabled = !ta.value.trim() &amp;&amp; !chatFiles.length;
+    };
+    ta.addEventListener(&quot;input&quot;, sync);
+    setTimeout(function(){ try{ ta.focus(); }catch(e){} sync(); },120);
+    window._chatSync=sync;
+
+    refreshChatEngine();
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openChatSheet(){\n    var host=document.getElementById(\"chatSheetHost\");\n    if(!host){ host=document.createElement(\"div\"); host.id=\"chatSheetHost\"; document.body.appendChild(host); }\n    host.innerHTML=\n       '<div class=\"ov in\" id=\"chatOv\">'\n      +'  <div class=\"sheet chat-sheet\">'\n      +'    <div class=\"chat-hd\">'\n      +'      <h3>Ask AI</h3>'\n      +'      <span class=\"chat-engine\" id=\"chatEngine\">checking\u2026</span>'\n      +'      <span style=\"flex:1\"></span>'\n      +'      <button class=\"x-btn\" id=\"chatClear\" title=\"Clear this conversation\">\\u21bb</button>'\n      +'      <button class=\"x-btn\" id=\"chatSheetX\" title=\"Close\">\\u2715</button>'\n      +'    </div>'\n      +'    <div class=\"chat-body\" id=\"chatLog\"></div>'\n      +'    <div class=\"chat-foot\">'\n      +'      <div class=\"chat-pending\" id=\"chatFileStrip\"></div>'\n      +'      <div class=\"chat-input-row\">'\n      +'        <button class=\"chat-icon-btn\" id=\"chatAttachBtn\" title=\"Attach a file\">\\uD83D\\uDCCE</button>'\n      +'        <textarea id=\"chatInput\" class=\"inp\" rows=\"1\" placeholder=\"Ask about your money\\u2026\"></textarea>'\n      +'        <button class=\"chat-icon-btn chat-send\" id=\"chatSend\" title=\"Send\" disabled>\\u2191</button>'\n      +'      </div>'\n      +'      <div class=\"chat-hint\">Runs on your device \\u00b7 Enter to send, Shift+Enter for a new line</div>'\n      +'    </div>'\n      +'    <input type=\"file\" id=\"chatFileInput\" multiple style=\"display:none\"'\n      +'      accept=\".pdf,.docx,.txt,.csv,.xlsx,.json,.html,.css,.js,.md,.log,.xml,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov,.zip,image/*,text/*\">'\n      +'  </div></div>';\n    bindChat();\n    renderChatLog(); renderChatFiles();\n\n    var close=function(){ host.innerHTML=\"\"; document.removeEventListener(\"keydown\", onEsc); };\n    var onEsc=function(e){ if(e.key===\"Escape\") close(); };\n    document.getElementById(\"chatSheetX\").onclick=close;\n    document.getElementById(\"chatOv\").addEventListener(\"click\", function(e){\n      if(e.target.id===\"chatOv\") close();\n    });\n    document.addEventListener(\"keydown\", onEsc);\n\n    // grow the box as they type, up to a limit\n    var ta=document.getElementById(\"chatInput\");\n    var send=document.getElementById(\"chatSend\");\n    var sync=function(){\n      ta.style.height=\"auto\";\n      ta.style.height=Math.min(130, ta.scrollHeight)+\"px\";\n      send.disabled = !ta.value.trim() && !chatFiles.length;\n    };\n    ta.addEventListener(\"input\", sync);\n    setTimeout(function(){ try{ ta.focus(); }catch(e){} sync(); },120);\n    window._chatSync=sync;\n\n    refreshChatEngine();\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openChatSheet!==\"undefined\"?openChatSheet:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

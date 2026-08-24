@@ -1,0 +1,82 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderPlan — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 02-ui-components</div>
+<h1>renderPlan<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderPlan(list, sym){
+    var card=document.getElementById(&quot;planCard&quot;);
+    if(!card) return;
+    var plan=tradingPlan(list);
+    if(plan.thin){
+      if(!list.length){ card.style.display=&quot;none&quot;; return; }
+      card.style.display=&quot;&quot;;
+      document.getElementById(&quot;planSub&quot;).textContent=&quot;&quot;;
+      document.getElementById(&quot;planToday&quot;).innerHTML=&quot;&quot;;
+      document.getElementById(&quot;planRules&quot;).innerHTML=&#x27;&lt;div class=&quot;fc-alert warn&quot;&gt;&lt;span&gt;◔&lt;/span&gt;&lt;span&gt;A plan built on &lt;b&gt;&#x27;+plan.n+&#x27;&lt;/b&gt; trade&#x27;+(plan.n===1?&quot;&quot;:&quot;s&quot;)+&#x27; would just be a plan built on luck. At &lt;b&gt;&#x27;+PLAN_MIN_TRADES+&#x27;&lt;/b&gt; this fills in with rules from your own record.&lt;/span&gt;&lt;/div&gt;&#x27;;
+      document.getElementById(&quot;planFoot&quot;).textContent=&quot;&quot;;
+      return;
+    }
+    card.style.display=&quot;&quot;;
+    document.getElementById(&quot;planSub&quot;).textContent=&quot;from your &quot;+plan.n+&quot; trades&quot;;
+
+    // today first — it&#x27;s the only part that&#x27;s actionable right now
+    var st=planStatus(list, plan);
+    var box=document.getElementById(&quot;planToday&quot;);
+    if(st){
+      var worst = [st.trades,st.loss,st.streak].reduce(function(a,m){
+        return (m.state===&quot;over&quot;) ? &quot;over&quot; : (m.state===&quot;near&quot; &amp;&amp; a!==&quot;over&quot;) ? &quot;near&quot; : a; },&quot;ok&quot;);
+      var msg = worst===&quot;over&quot; ? &quot;You are past a limit you set from your own record.&quot;
+              : worst===&quot;near&quot; ? &quot;Getting close to a limit.&quot;
+              : &quot;Inside your plan.&quot;;
+      box.className=&quot;pl-today &quot;+worst;
+      box.innerHTML=&#x27;&lt;div class=&quot;pl-th&quot;&gt;Today · &#x27;+esc(msg)+&#x27;&lt;/div&gt;&#x27;
+        +planMeter(&quot;Trades&quot;, st.trades, sym, false)
+        +planMeter(&quot;Lost today&quot;, st.loss, sym, true)
+        +planMeter(&quot;Losses in a row&quot;, st.streak, sym, false);
+    } else box.innerHTML=&quot;&quot;;
+
+    var rules=[];
+    rules.push({ic:&quot;◇&quot;, t:&quot;Risk no more than &lt;b&gt;&quot;+fmt(plan.riskCap,sym)+&quot;&lt;/b&gt; on one trade&quot;,
+      w:&quot;Your average loss is &lt;b&gt;&quot;+fmt(plan.stats.avgLoss,sym)+&quot;&lt;/b&gt;. Your worst was &lt;b&gt;&quot;+fmt(plan.worstLoss,sym)+&quot;&lt;/b&gt; — &quot;+Math.round((plan.worstLoss/(plan.stats.grossLoss||1))*100)+&quot;% of everything you&#x27;ve lost, in one trade.&quot;});
+    rules.push({ic:&quot;◇&quot;, t:&quot;Stop for the day at &lt;b&gt;&quot;+fmt(plan.dailyStop,sym)+&quot;&lt;/b&gt; down&quot;,
+      w:&quot;Two average losses. Your worst single day was &lt;b&gt;&quot;+fmt(plan.worstDay,sym)+&quot;&lt;/b&gt;.&quot;});
+    if(plan.stopAfter&gt;=2 &amp;&amp; plan.stopSaves&gt;0){
+      rules.push({ic:&quot;◇&quot;, t:&quot;After &lt;b&gt;&quot;+plan.stopAfter+&quot;&lt;/b&gt; losses in a row, stop for the day&quot;,
+        w:&quot;Replayed on your record this skips &lt;b&gt;&quot;+plan.stopBlocked+&quot;&lt;/b&gt; trades and saves &lt;b&gt;&quot;+fmt(plan.stopSaves,sym)+&quot;&lt;/b&gt; — missed wins already subtracted.&quot;});
+    }
+    rules.push({ic:&quot;◇&quot;, t:&quot;Around &lt;b&gt;&quot;+plan.maxPerDay+&quot;&lt;/b&gt; trade&quot;+(plan.maxPerDay===1?&quot;&quot;:&quot;s&quot;)+&quot; a day&quot;,
+      w:&quot;That&#x27;s your median. Your busiest day was &lt;b&gt;&quot;+plan.busiest+&quot;&lt;/b&gt;.&quot;});
+    if(plan.focus) rules.push({ic:&quot;◆&quot;, t:&quot;&lt;b&gt;&quot;+esc(plan.focus.inst)+&quot;&lt;/b&gt; is where your edge is&quot;,
+      w:&quot;&lt;b&gt;&quot;+fmt(plan.focus.stats.expectancy,sym)+&quot;&lt;/b&gt; per trade over &quot;+plan.focus.stats.n+&quot; trades.&quot;});
+    if(plan.avoid) rules.push({ic:&quot;◆&quot;, t:&quot;&lt;b&gt;&quot;+esc(plan.avoid.inst)+&quot;&lt;/b&gt; is where it leaks&quot;,
+      w:&quot;&lt;b&gt;&quot;+fmt(plan.avoid.stats.expectancy,sym)+&quot;&lt;/b&gt; per trade over &quot;+plan.avoid.stats.n+&quot; trades.&quot;});
+
+    document.getElementById(&quot;planRules&quot;).innerHTML=rules.map(function(r){
+      return &#x27;&lt;div class=&quot;pl-rule&quot;&gt;&lt;span class=&quot;pl-ic&quot;&gt;&#x27;+r.ic+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;pl-body&quot;&gt;&lt;span class=&quot;pl-t&quot;&gt;&#x27;+r.t+&#x27;&lt;/span&gt;&lt;span class=&quot;pl-w&quot;&gt;&#x27;+r.w+&#x27;&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;&#x27;;
+    }).join(&quot;&quot;);
+    document.getElementById(&quot;planFoot&quot;).textContent=&quot;Every rule is your own record played back — the numbers are shown so you can argue with them. It sets limits on how much and how often; it never says what to trade.&quot;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderPlan(list, sym){\n    var card=document.getElementById(\"planCard\");\n    if(!card) return;\n    var plan=tradingPlan(list);\n    if(plan.thin){\n      if(!list.length){ card.style.display=\"none\"; return; }\n      card.style.display=\"\";\n      document.getElementById(\"planSub\").textContent=\"\";\n      document.getElementById(\"planToday\").innerHTML=\"\";\n      document.getElementById(\"planRules\").innerHTML='<div class=\"fc-alert warn\"><span>\u25d4</span><span>A plan built on <b>'+plan.n+'</b> trade'+(plan.n===1?\"\":\"s\")+' would just be a plan built on luck. At <b>'+PLAN_MIN_TRADES+'</b> this fills in with rules from your own record.</span></div>';\n      document.getElementById(\"planFoot\").textContent=\"\";\n      return;\n    }\n    card.style.display=\"\";\n    document.getElementById(\"planSub\").textContent=\"from your \"+plan.n+\" trades\";\n\n    // today first \u2014 it's the only part that's actionable right now\n    var st=planStatus(list, plan);\n    var box=document.getElementById(\"planToday\");\n    if(st){\n      var worst = [st.trades,st.loss,st.streak].reduce(function(a,m){\n        return (m.state===\"over\") ? \"over\" : (m.state===\"near\" && a!==\"over\") ? \"near\" : a; },\"ok\");\n      var msg = worst===\"over\" ? \"You are past a limit you set from your own record.\"\n              : worst===\"near\" ? \"Getting close to a limit.\"\n              : \"Inside your plan.\";\n      box.className=\"pl-today \"+worst;\n      box.innerHTML='<div class=\"pl-th\">Today \u00b7 '+esc(msg)+'</div>'\n        +planMeter(\"Trades\", st.trades, sym, false)\n        +planMeter(\"Lost today\", st.loss, sym, true)\n        +planMeter(\"Losses in a row\", st.streak, sym, false);\n    } else box.innerHTML=\"\";\n\n    var rules=[];\n    rules.push({ic:\"\u25c7\", t:\"Risk no more than <b>\"+fmt(plan.riskCap,sym)+\"</b> on one trade\",\n      w:\"Your average loss is <b>\"+fmt(plan.stats.avgLoss,sym)+\"</b>. Your worst was <b>\"+fmt(plan.worstLoss,sym)+\"</b> \u2014 \"+Math.round((plan.worstLoss/(plan.stats.grossLoss||1))*100)+\"% of everything you've lost, in one trade.\"});\n    rules.push({ic:\"\u25c7\", t:\"Stop for the day at <b>\"+fmt(plan.dailyStop,sym)+\"</b> down\",\n      w:\"Two average losses. Your worst single day was <b>\"+fmt(plan.worstDay,sym)+\"</b>.\"});\n    if(plan.stopAfter>=2 && plan.stopSaves>0){\n      rules.push({ic:\"\u25c7\", t:\"After <b>\"+plan.stopAfter+\"</b> losses in a row, stop for the day\",\n        w:\"Replayed on your record this skips <b>\"+plan.stopBlocked+\"</b> trades and saves <b>\"+fmt(plan.stopSaves,sym)+\"</b> \u2014 missed wins already subtracted.\"});\n    }\n    rules.push({ic:\"\u25c7\", t:\"Around <b>\"+plan.maxPerDay+\"</b> trade\"+(plan.maxPerDay===1?\"\":\"s\")+\" a day\",\n      w:\"That's your median. Your busiest day was <b>\"+plan.busiest+\"</b>.\"});\n    if(plan.focus) rules.push({ic:\"\u25c6\", t:\"<b>\"+esc(plan.focus.inst)+\"</b> is where your edge is\",\n      w:\"<b>\"+fmt(plan.focus.stats.expectancy,sym)+\"</b> per trade over \"+plan.focus.stats.n+\" trades.\"});\n    if(plan.avoid) rules.push({ic:\"\u25c6\", t:\"<b>\"+esc(plan.avoid.inst)+\"</b> is where it leaks\",\n      w:\"<b>\"+fmt(plan.avoid.stats.expectancy,sym)+\"</b> per trade over \"+plan.avoid.stats.n+\" trades.\"});\n\n    document.getElementById(\"planRules\").innerHTML=rules.map(function(r){\n      return '<div class=\"pl-rule\"><span class=\"pl-ic\">'+r.ic+'</span>'\n        +'<span class=\"pl-body\"><span class=\"pl-t\">'+r.t+'</span><span class=\"pl-w\">'+r.w+'</span></span></div>';\n    }).join(\"\");\n    document.getElementById(\"planFoot\").textContent=\"Every rule is your own record played back \u2014 the numbers are shown so you can argue with them. It sets limits on how much and how often; it never says what to trade.\";\n  }",ARGS="list, sym";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderPlan!==\"undefined\"?renderPlan:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

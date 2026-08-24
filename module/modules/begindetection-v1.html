@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>beginDetection — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · modules</div>
+<h1>beginDetection<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function beginDetection(){
+        var tries=0, told=false, loggedFace=false, blankFrames=0;
+        var live=makeLivenessTracker();
+        var tick=function(){
+          if(!_autoFace.stream || !document.getElementById(&quot;lockScreen&quot;)){ _autoFace.stop(); return; }
+          faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks(true).withFaceDescriptor()
+            .then(function(det){
+              if(!_autoFace.stream) return;
+              if(!det){ blankFrames++; }
+              if(!det &amp;&amp; blankFrames===25){
+                // 25 frames with nothing at all usually means no picture,
+                // not a shy user — stop implying it&#x27;s still looking
+                setStatus &amp;&amp; setStatus(&quot;Can\u2019t see anything \u2014 enter your PIN&quot;);
+              }
+              if(!det &amp;&amp; blankFrames&gt;=70){
+                _autoFace.stop();
+                setStatus &amp;&amp; setStatus(&quot;No face seen \u2014 enter your PIN&quot;);
+                return;
+              }
+              if(det){
+                blankFrames=0;
+                live.feed(det, video);
+                var who=matchFace(Array.from(det.descriptor));
+                if(who){
+                  /* A matching descriptor is NOT enough. A printed photo or a
+                     phone screen produces the same descriptor as the real
+                     person — liveness is what separates them. */
+                  var v=live.verdict();
+                  if(v.state===&quot;live&quot;){
+                    _autoFace.stop();
+                    setStatus &amp;&amp; setStatus(&quot;Welcome back, &quot;+who.name);
+                    setTimeout(function(){ onMatch(who); }, 350);
+                    return;
+                  }
+                  if(v.state===&quot;spoof&quot;){
+                    if(!loggedFace){
+                      loggedFace=true;
+                      recordFailedAttempt(&quot;spoof&quot;);
+                      captureAttempt(video, &quot;spoof&quot;);
+                    }
+                    setStatus &amp;&amp; setStatus(v.why);
+                    _autoFace.raf=setTimeout(tick, 700);
+                    return;
+                  }
+                  // the randomised prompt, shown so they know what to do
+                  setStatus &amp;&amp; setStatus(v.state===&quot;challenge&quot;
+                    ? (live.prompt() || &quot;Blink or turn your head slightly&quot;)
+                    : &quot;Checking it\u2019s really you\u2026&quot;);
+                  _autoFace.raf=setTimeout(tick, 220);
+                  return;
+                }
+                /* An unrecognised face IS the signal worth recording. Give it a
+                   few frames first — a bad angle or poor light shouldn&#x27;t count as
+                   someone else — then log it once per lock screen, not per frame. */
+                tries++;
+                if(tries===8 &amp;&amp; !told){ told=true; setStatus &amp;&amp; setStatus(&quot;Not recognised \u2014 enter your PIN&quot;); }
+                if(tries===12 &amp;&amp; !loggedFace){
+                  loggedFace=true;
+                  recordFailedAttempt(&quot;face&quot;);
+                  captureAttempt(video, &quot;face&quot;);
+                }
+              }
+              // no timeout: keep watching for as long as this screen is open
+              _autoFace.raf=setTimeout(tick, 450);
+            })
+            .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
+        };
+        tick();
+    }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function beginDetection(){\n        var tries=0, told=false, loggedFace=false, blankFrames=0;\n        var live=makeLivenessTracker();\n        var tick=function(){\n          if(!_autoFace.stream || !document.getElementById(\"lockScreen\")){ _autoFace.stop(); return; }\n          faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())\n            .withFaceLandmarks(true).withFaceDescriptor()\n            .then(function(det){\n              if(!_autoFace.stream) return;\n              if(!det){ blankFrames++; }\n              if(!det && blankFrames===25){\n                // 25 frames with nothing at all usually means no picture,\n                // not a shy user \u2014 stop implying it's still looking\n                setStatus && setStatus(\"Can\\u2019t see anything \\u2014 enter your PIN\");\n              }\n              if(!det && blankFrames>=70){\n                _autoFace.stop();\n                setStatus && setStatus(\"No face seen \\u2014 enter your PIN\");\n                return;\n              }\n              if(det){\n                blankFrames=0;\n                live.feed(det, video);\n                var who=matchFace(Array.from(det.descriptor));\n                if(who){\n                  /* A matching descriptor is NOT enough. A printed photo or a\n                     phone screen produces the same descriptor as the real\n                     person \u2014 liveness is what separates them. */\n                  var v=live.verdict();\n                  if(v.state===\"live\"){\n                    _autoFace.stop();\n                    setStatus && setStatus(\"Welcome back, \"+who.name);\n                    setTimeout(function(){ onMatch(who); }, 350);\n                    return;\n                  }\n                  if(v.state===\"spoof\"){\n                    if(!loggedFace){\n                      loggedFace=true;\n                      recordFailedAttempt(\"spoof\");\n                      captureAttempt(video, \"spoof\");\n                    }\n                    setStatus && setStatus(v.why);\n                    _autoFace.raf=setTimeout(tick, 700);\n                    return;\n                  }\n                  // the randomised prompt, shown so they know what to do\n                  setStatus && setStatus(v.state===\"challenge\"\n                    ? (live.prompt() || \"Blink or turn your head slightly\")\n                    : \"Checking it\\u2019s really you\\u2026\");\n                  _autoFace.raf=setTimeout(tick, 220);\n                  return;\n                }\n                /* An unrecognised face IS the signal worth recording. Give it a\n                   few frames first \u2014 a bad angle or poor light shouldn't count as\n                   someone else \u2014 then log it once per lock screen, not per frame. */\n                tries++;\n                if(tries===8 && !told){ told=true; setStatus && setStatus(\"Not recognised \\u2014 enter your PIN\"); }\n                if(tries===12 && !loggedFace){\n                  loggedFace=true;\n                  recordFailedAttempt(\"face\");\n                  captureAttempt(video, \"face\");\n                }\n              }\n              // no timeout: keep watching for as long as this screen is open\n              _autoFace.raf=setTimeout(tick, 450);\n            })\n            .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });\n        };\n        tick();\n    }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof beginDetection!==\"undefined\"?beginDetection:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

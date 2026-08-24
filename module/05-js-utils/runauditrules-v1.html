@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>runAuditRules — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>runAuditRules<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function runAuditRules(){
+    var txs=sortedTx(), t=totals(), sym=state.currency;
+    var now=new Date(), nowM=monthKey(todayStr());
+    var findings=[];
+
+    function add(level, icon, title, body){
+      findings.push({level:level, icon:icon, title:title, body:body});
+    }
+    function fmtA(v){ return sym+Math.abs(v).toFixed(2); }
+
+    // ── 1. Net worth health ────────────────────────────────────
+    if(t.net&lt;0) add(&quot;flag&quot;,&quot;🚨&quot;,&quot;Negative net worth&quot;,
+      &quot;Your net worth is &quot;+fmtA(t.net)+&quot; in the red. Debt (&quot;+fmtA(t.debt)+&quot;) exceeds your assets.&quot;);
+    else if(t.net&gt;0) add(&quot;ok&quot;,&quot;✅&quot;,&quot;Net worth positive&quot;,
+      &quot;Net worth &quot;+fmtA(t.net)+&quot;. Balance &quot;+fmtA(t.balance)+&quot; · savings &quot;+fmtA(t.savings)+(t.debt&gt;0?&quot; · debt &quot;+fmtA(t.debt):&quot;&quot;)+&quot;.&quot;);
+
+    // ── 2. Duplicate detection (same amount same day) ──────────
+    var seen={};
+    txs.forEach(function(tx){ var k=tx.date+&quot;_&quot;+num(tx.amount).toFixed(2)+&quot;_&quot;+(tx.type||&quot;&quot;);
+      seen[k]=(seen[k]||0)+1; });
+    var dupes=Object.entries(seen).filter(function(e){ return e[1]&gt;1; });
+    if(dupes.length) add(&quot;warn&quot;,&quot;⚠️&quot;,&quot;Possible duplicate entries&quot;,
+      dupes.length+&quot; set&quot;+(dupes.length&gt;1?&quot;s&quot;:&quot;&quot;)+&quot; of transactions share the same date and amount. &quot;
+      +&quot;Check: &quot;+dupes.map(function(d){ var p=d[0].split(&quot;_&quot;); return sym+p[1]+&quot; on &quot;+p[0]; }).slice(0,3).join(&quot;, &quot;)+&quot;.&quot;);
+
+    // ── 3. Spending velocity (this month vs prior 3-month avg) ─
+    var byMonth={};
+    txs.forEach(function(tx){
+      if(balDelta(tx)&gt;=0) return;  // only outflows
+      var m=tx.date?tx.date.slice(0,7):&quot;&quot;; if(!m) return;
+      byMonth[m]=(byMonth[m]||0)+Math.abs(balDelta(tx));
+    });
+    var months=Object.keys(byMonth).sort();
+    var thisMSpend=byMonth[nowM]||0;
+    var priorMonths=months.filter(function(m){ return m&lt;nowM; }).slice(-3);
+    if(priorMonths.length&gt;=2){
+      var avg=priorMonths.reduce(function(a,m){ return a+(byMonth[m]||0); },0)/priorMonths.length;
+      if(avg&gt;0&amp;&amp;thisMSpend&gt;avg*1.4) add(&quot;warn&quot;,&quot;📈&quot;,&quot;Spending spike this month&quot;,
+        &quot;You&#x27;ve spent &quot;+fmtA(thisMSpend)+&quot; so far this month, &quot;
+        +Math.round((thisMSpend/avg-1)*100)+&quot;% above your recent average of &quot;+fmtA(avg)+&quot;/mo.&quot;);
+      else if(avg&gt;0&amp;&amp;thisMSpend&lt;avg*0.6&amp;&amp;new Date().getDate()&gt;15) add(&quot;info&quot;,&quot;💡&quot;,&quot;Spending well below average&quot;,
+        &quot;Only &quot;+fmtA(thisMSpend)+&quot; spent this month vs an average of &quot;+fmtA(avg)+&quot;.&quot;);
+    }
+
+    // ── 4. Category concentration ──────────────────────────────
+    var byCat={};
+    txs.filter(function(tx){ return tx.cat&amp;&amp;balDelta(tx)&lt;0; }).forEach(function(tx){
+      byCat[tx.cat]=(byCat[tx.cat]||0)+Math.abs(balDelta(tx)); });
+    var catArr=Object.entries(byCat).sort(function(a,b){ return b[1]-a[1]; });
+    var totalSpend=catArr.reduce(function(a,e){ return a+e[1]; },0);
+    if(catArr.length&amp;&amp;totalSpend&gt;0){
+      var top=catArr[0], pct=Math.round(top[1]/totalSpend*100);
+      if(pct&gt;=40) add(&quot;warn&quot;,&quot;🏷️&quot;,&quot;One category dominates spending&quot;,
+        top[0]+&quot; is &quot;+pct+&quot;% of all categorised spending (&quot;+fmtA(top[1])+&quot;). &quot;
+        +(pct&gt;=60?&quot;Consider whether that&#x27;s intentional.&quot;:&quot;Worth watching.&quot;));
+      add(&quot;info&quot;,&quot;📊&quot;,&quot;Top spending categories&quot;,
+        catArr.slice(0,4).map(function(e){
+          return e[0]+&quot;: &quot;+fmtA(e[1])+&quot; (&quot;+Math.round(e[1]/totalSpend*100)+&quot;%)&quot;;
+        }).join(&quot;  ·  &quot;));
+    }
+
+    // ── 5. Debt age — has any debt been sitting a long time? ───
+    if(t.debt&gt;0){
+      var debtTxs=txs.filter(function(tx){ return debtDelta(tx)&gt;0; });
+      if(debtTxs.length){
+        var oldest=debtTxs[0].date;
+        var daysOld=Math.floor((now-new Date(oldest))/864e5);
+        if(daysOld&gt;60) add(&quot;warn&quot;,&quot;💳&quot;,&quot;Debt outstanding &quot;+daysOld+&quot; days&quot;,
+          &quot;Oldest unpaid debt entry is from &quot;+oldest+&quot;. Current debt balance: &quot;+fmtA(t.debt)+&quot;.&quot;);
+      }
+    }
+
+    // ── 6. Savings rate ────────────────────────────────────────
+    var totalIn=txs.reduce(function(a,tx){ return a+(balDelta(tx)&gt;0?balDelta(tx):0); },0);
+    var totalSaved=txs.reduce(function(a,tx){ return a+(savDelta(tx)&gt;0?savDelta(tx):0); },0);
+    if(totalIn&gt;0){
+      var sRate=Math.round(totalSaved/totalIn*100);
+      var level=sRate&gt;=20?&quot;ok&quot;:sRate&gt;=10?&quot;info&quot;:&quot;warn&quot;;
+      add(level, sRate&gt;=20?&quot;🏦&quot;:sRate&gt;=10?&quot;💰&quot;:&quot;💸&quot;, &quot;Savings rate: &quot;+sRate+&quot;%&quot;,
+        &quot;You&#x27;ve saved &quot;+fmtA(totalSaved)+&quot; out of &quot;+fmtA(totalIn)+&quot; income — a &quot;+sRate+&quot;% rate. &quot;
+        +(sRate&gt;=20?&quot;Strong. Keep it up.&quot;:sRate&gt;=10?&quot;Decent. Aim for 20%+.&quot;:&quot;Low. Try automating a recurring save.&quot;));
+    }
+
+    // ── 7. Round-number test (fraud / estimation signal) ───────
+    var rounds=txs.filter(function(tx){ return num(tx.amount)&gt;0&amp;&amp;num(tx.amount)%50===0; });
+    if(rounds.length&gt;txs.length*0.4&amp;&amp;txs.length&gt;10)
+      add(&quot;info&quot;,&quot;🔢&quot;,&quot;Many round-number transactions&quot;,
+        rounds.length+&quot; of &quot;+txs.length+&quot; entries are multiples of 50. &quot;
+        +&quot;This can indicate estimated rather than exact figures.&quot;);
+
+    // ── 8. Large single outflow ────────────────────────────────
+    var outflows=txs.filter(function(tx){ return balDelta(tx)&lt;0; })
+      .sort(function(a,b){ return balDelta(a)-balDelta(b); });
+    if(outflows.length){
+      var big=outflows[0], bigAmt=Math.abs(balDelta(big));
+      var avgOut=outflows.reduce(function(a,t){ return a+Math.abs(balDelta(t)); },0)/outflows.length;
+      if(bigAmt&gt;avgOut*5) add(&quot;info&quot;,&quot;🔎&quot;,&quot;Largest single outflow&quot;,
+        fmtA(bigAmt)+&quot; on &quot;+big.date+(big.note?&quot; (&quot;+big.note+&quot;)&quot;:&quot;&quot;)
+        +&quot; — &quot;+Math.round(bigAmt/avgOut)+&quot;× your average transaction.&quot;);
+    }
+
+    // ── 9. Positive cash-flow check ────────────────────────────
+    var netFlow=txs.reduce(function(a,tx){ return a+balDelta(tx); },0);
+    if(netFlow&lt;0) add(&quot;flag&quot;,&quot;⬇️&quot;,&quot;Negative cash flow overall&quot;,
+      &quot;Total outflows exceed inflows by &quot;+fmtA(Math.abs(netFlow))+&quot;. &quot;
+      +&quot;Your recorded spending has consumed more than your income.&quot;);
+    else if(netFlow&gt;0&amp;&amp;txs.length&gt;3) add(&quot;ok&quot;,&quot;⬆️&quot;,&quot;Positive cash flow&quot;,
+      &quot;Net cash flow is +&quot;+fmtA(netFlow)+&quot; across all recorded entries. Income exceeds spending.&quot;);
+
+    if(!findings.length) add(&quot;ok&quot;,&quot;✅&quot;,&quot;Nothing flagged&quot;,&quot;Your financial data looks clean. Add more transactions for deeper analysis.&quot;);
+    return findings;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function runAuditRules(){\n    var txs=sortedTx(), t=totals(), sym=state.currency;\n    var now=new Date(), nowM=monthKey(todayStr());\n    var findings=[];\n\n    function add(level, icon, title, body){\n      findings.push({level:level, icon:icon, title:title, body:body});\n    }\n    function fmtA(v){ return sym+Math.abs(v).toFixed(2); }\n\n    // \u2500\u2500 1. Net worth health \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    if(t.net<0) add(\"flag\",\"\ud83d\udea8\",\"Negative net worth\",\n      \"Your net worth is \"+fmtA(t.net)+\" in the red. Debt (\"+fmtA(t.debt)+\") exceeds your assets.\");\n    else if(t.net>0) add(\"ok\",\"\u2705\",\"Net worth positive\",\n      \"Net worth \"+fmtA(t.net)+\". Balance \"+fmtA(t.balance)+\" \u00b7 savings \"+fmtA(t.savings)+(t.debt>0?\" \u00b7 debt \"+fmtA(t.debt):\"\")+\".\");\n\n    // \u2500\u2500 2. Duplicate detection (same amount same day) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var seen={};\n    txs.forEach(function(tx){ var k=tx.date+\"_\"+num(tx.amount).toFixed(2)+\"_\"+(tx.type||\"\");\n      seen[k]=(seen[k]||0)+1; });\n    var dupes=Object.entries(seen).filter(function(e){ return e[1]>1; });\n    if(dupes.length) add(\"warn\",\"\u26a0\ufe0f\",\"Possible duplicate entries\",\n      dupes.length+\" set\"+(dupes.length>1?\"s\":\"\")+\" of transactions share the same date and amount. \"\n      +\"Check: \"+dupes.map(function(d){ var p=d[0].split(\"_\"); return sym+p[1]+\" on \"+p[0]; }).slice(0,3).join(\", \")+\".\");\n\n    // \u2500\u2500 3. Spending velocity (this month vs prior 3-month avg) \u2500\n    var byMonth={};\n    txs.forEach(function(tx){\n      if(balDelta(tx)>=0) return;  // only outflows\n      var m=tx.date?tx.date.slice(0,7):\"\"; if(!m) return;\n      byMonth[m]=(byMonth[m]||0)+Math.abs(balDelta(tx));\n    });\n    var months=Object.keys(byMonth).sort();\n    var thisMSpend=byMonth[nowM]||0;\n    var priorMonths=months.filter(function(m){ return m<nowM; }).slice(-3);\n    if(priorMonths.length>=2){\n      var avg=priorMonths.reduce(function(a,m){ return a+(byMonth[m]||0); },0)/priorMonths.length;\n      if(avg>0&&thisMSpend>avg*1.4) add(\"warn\",\"\ud83d\udcc8\",\"Spending spike this month\",\n        \"You've spent \"+fmtA(thisMSpend)+\" so far this month, \"\n        +Math.round((thisMSpend/avg-1)*100)+\"% above your recent average of \"+fmtA(avg)+\"/mo.\");\n      else if(avg>0&&thisMSpend<avg*0.6&&new Date().getDate()>15) add(\"info\",\"\ud83d\udca1\",\"Spending well below average\",\n        \"Only \"+fmtA(thisMSpend)+\" spent this month vs an average of \"+fmtA(avg)+\".\");\n    }\n\n    // \u2500\u2500 4. Category concentration \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var byCat={};\n    txs.filter(function(tx){ return tx.cat&&balDelta(tx)<0; }).forEach(function(tx){\n      byCat[tx.cat]=(byCat[tx.cat]||0)+Math.abs(balDelta(tx)); });\n    var catArr=Object.entries(byCat).sort(function(a,b){ return b[1]-a[1]; });\n    var totalSpend=catArr.reduce(function(a,e){ return a+e[1]; },0);\n    if(catArr.length&&totalSpend>0){\n      var top=catArr[0], pct=Math.round(top[1]/totalSpend*100);\n      if(pct>=40) add(\"warn\",\"\ud83c\udff7\ufe0f\",\"One category dominates spending\",\n        top[0]+\" is \"+pct+\"% of all categorised spending (\"+fmtA(top[1])+\"). \"\n        +(pct>=60?\"Consider whether that's intentional.\":\"Worth watching.\"));\n      add(\"info\",\"\ud83d\udcca\",\"Top spending categories\",\n        catArr.slice(0,4).map(function(e){\n          return e[0]+\": \"+fmtA(e[1])+\" (\"+Math.round(e[1]/totalSpend*100)+\"%)\";\n        }).join(\"  \u00b7  \"));\n    }\n\n    // \u2500\u2500 5. Debt age \u2014 has any debt been sitting a long time? \u2500\u2500\u2500\n    if(t.debt>0){\n      var debtTxs=txs.filter(function(tx){ return debtDelta(tx)>0; });\n      if(debtTxs.length){\n        var oldest=debtTxs[0].date;\n        var daysOld=Math.floor((now-new Date(oldest))/864e5);\n        if(daysOld>60) add(\"warn\",\"\ud83d\udcb3\",\"Debt outstanding \"+daysOld+\" days\",\n          \"Oldest unpaid debt entry is from \"+oldest+\". Current debt balance: \"+fmtA(t.debt)+\".\");\n      }\n    }\n\n    // \u2500\u2500 6. Savings rate \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var totalIn=txs.reduce(function(a,tx){ return a+(balDelta(tx)>0?balDelta(tx):0); },0);\n    var totalSaved=txs.reduce(function(a,tx){ return a+(savDelta(tx)>0?savDelta(tx):0); },0);\n    if(totalIn>0){\n      var sRate=Math.round(totalSaved/totalIn*100);\n      var level=sRate>=20?\"ok\":sRate>=10?\"info\":\"warn\";\n      add(level, sRate>=20?\"\ud83c\udfe6\":sRate>=10?\"\ud83d\udcb0\":\"\ud83d\udcb8\", \"Savings rate: \"+sRate+\"%\",\n        \"You've saved \"+fmtA(totalSaved)+\" out of \"+fmtA(totalIn)+\" income \u2014 a \"+sRate+\"% rate. \"\n        +(sRate>=20?\"Strong. Keep it up.\":sRate>=10?\"Decent. Aim for 20%+.\":\"Low. Try automating a recurring save.\"));\n    }\n\n    // \u2500\u2500 7. Round-number test (fraud / estimation signal) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var rounds=txs.filter(function(tx){ return num(tx.amount)>0&&num(tx.amount)%50===0; });\n    if(rounds.length>txs.length*0.4&&txs.length>10)\n      add(\"info\",\"\ud83d\udd22\",\"Many round-number transactions\",\n        rounds.length+\" of \"+txs.length+\" entries are multiples of 50. \"\n        +\"This can indicate estimated rather than exact figures.\");\n\n    // \u2500\u2500 8. Large single outflow \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var outflows=txs.filter(function(tx){ return balDelta(tx)<0; })\n      .sort(function(a,b){ return balDelta(a)-balDelta(b); });\n    if(outflows.length){\n      var big=outflows[0], bigAmt=Math.abs(balDelta(big));\n      var avgOut=outflows.reduce(function(a,t){ return a+Math.abs(balDelta(t)); },0)/outflows.length;\n      if(bigAmt>avgOut*5) add(\"info\",\"\ud83d\udd0e\",\"Largest single outflow\",\n        fmtA(bigAmt)+\" on \"+big.date+(big.note?\" (\"+big.note+\")\":\"\")\n        +\" \u2014 \"+Math.round(bigAmt/avgOut)+\"\u00d7 your average transaction.\");\n    }\n\n    // \u2500\u2500 9. Positive cash-flow check \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    var netFlow=txs.reduce(function(a,tx){ return a+balDelta(tx); },0);\n    if(netFlow<0) add(\"flag\",\"\u2b07\ufe0f\",\"Negative cash flow overall\",\n      \"Total outflows exceed inflows by \"+fmtA(Math.abs(netFlow))+\". \"\n      +\"Your recorded spending has consumed more than your income.\");\n    else if(netFlow>0&&txs.length>3) add(\"ok\",\"\u2b06\ufe0f\",\"Positive cash flow\",\n      \"Net cash flow is +\"+fmtA(netFlow)+\" across all recorded entries. Income exceeds spending.\");\n\n    if(!findings.length) add(\"ok\",\"\u2705\",\"Nothing flagged\",\"Your financial data looks clean. Add more transactions for deeper analysis.\");\n    return findings;\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof runAuditRules!==\"undefined\"?runAuditRules:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,143 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>persEnsure — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 04-typography-fonts</div>
+<h1>persEnsure<span class="badge ok">tested · runs clean</span></h1>
+<div class="meta">JS function · extracted from build v23.0 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function persEnsure(){
+    if(document.getElementById(&quot;persOv&quot;)) return;
+    var ov=document.createElement(&quot;div&quot;);
+    ov.className=&quot;pers-ov&quot;; ov.id=&quot;persOv&quot;;
+    ov.innerHTML=
+      &#x27;&lt;div class=&quot;pers-hd&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;pers-back&quot; id=&quot;persClose&quot; aria-label=&quot;Close&quot;&gt;←&lt;/button&gt;&lt;h2&gt;Personalize&lt;/h2&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;pers-pages&quot; id=&quot;persPages&quot;&gt;&#x27;
+
+      +&#x27;&lt;div class=&quot;pers-page&quot; data-pg=&quot;app&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;pers-card&quot;&gt;&lt;div class=&quot;pers-themes&quot; id=&quot;persThemes&quot;&gt;&#x27;
+          +PERS_THEME_KEYS.map(function(t){return &#x27;&lt;button type=&quot;button&quot; class=&quot;pers-th&quot; data-th=&quot;&#x27;+t[0]+&#x27;&quot;&gt;&lt;div class=&quot;sw2&quot; style=&quot;background:&#x27;+t[1]+&#x27;&quot;&gt;&lt;/div&gt;&lt;div class=&quot;nm&quot;&gt;&#x27;+t[0]+&#x27;&lt;/div&gt;&lt;/button&gt;&#x27;;}).join(&#x27;&#x27;)
+        +&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+
+      +&#x27;&lt;div class=&quot;pers-page&quot; data-pg=&quot;trade&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;pers-card&quot;&gt;&#x27;
+          +persSw(&#x27;persTrader&#x27;,&#x27;Trader mode&#x27;,&#x27;Unlocks the Trading page, instruments and trade entry types.&#x27;)
+          +persSeg(&#x27;persMtOcr&#x27;,&#x27;Statement reading&#x27;,&#x27;Photos of MT4/MT5 statements read on this device — nothing uploaded.&#x27;,[[&quot;off&quot;,&quot;Off&quot;],[&quot;auto&quot;,&quot;Auto&quot;],[&quot;silent&quot;,&quot;Silent&quot;]])
+          +persSw(&#x27;persNoSplits&#x27;,&#x27;No splits for trades&#x27;,&#x27;Hides the split field on trade entries. Existing entries never change.&#x27;)
+        +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+
+      +&#x27;&lt;div class=&quot;pers-page&quot; data-pg=&quot;behav&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;pers-card&quot;&gt;&#x27;
+          +persSw(&#x27;persDraft&#x27;,&#x27;Draft safety&#x27;,&#x27;If the app closes mid-entry, what you typed is offered back next time.&#x27;)
+        +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+
+      +&#x27;&lt;div class=&quot;pers-page&quot; data-pg=&quot;device&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;pers-card&quot;&gt;&#x27;
+          +persSeg(&#x27;persDevType&#x27;,&#x27;Device type&#x27;,&#x27;Touch shows tap-arrows on the chart stepper.&#x27;,[[&quot;auto&quot;,&quot;Auto&quot;],[&quot;touch&quot;,&quot;Touch&quot;],[&quot;desktop&quot;,&quot;Desktop&quot;]])
+        +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+
+      +&#x27;&lt;div class=&quot;pers-page&quot; data-pg=&quot;priv&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;pers-card&quot;&gt;&#x27;
+          +persSeg(&#x27;persConsent&#x27;,&#x27;Share flagged images&#x27;,&#x27;Helps improve statement reading. Items only ever wait in a local outbox on this device — this version never transmits.&#x27;,[[&quot;never&quot;,&quot;Never&quot;],[&quot;wifi&quot;,&quot;Wi-Fi&quot;],[&quot;any&quot;,&quot;Wi-Fi+data&quot;]])
+          +&#x27;&lt;div class=&quot;pers-row&quot;&gt;&lt;div&gt;&lt;div class=&quot;lab&quot;&gt;Terms &amp;amp; privacy&lt;/div&gt;&lt;div class=&quot;sub&quot;&gt;Plain-language, on-device-only policy.&lt;/div&gt;&lt;/div&gt;&#x27;
+          +&#x27;&lt;button type=&quot;button&quot; class=&quot;btn ghost sm&quot; id=&quot;persTos&quot;&gt;Read&lt;/button&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;pers-bar2&quot; id=&quot;persBar&quot; role=&quot;tablist&quot;&gt;&lt;div class=&quot;pill&quot; id=&quot;persPill&quot;&gt;&lt;/div&gt;&#x27;
+        +PERS_TABS.map(function(t,i){return &#x27;&lt;button type=&quot;button&quot; class=&quot;pers-tab&#x27;+(i===0?&#x27; on&#x27;:&#x27;&#x27;)+&#x27;&quot; role=&quot;tab&quot; aria-selected=&quot;&#x27;+(i===0)+&#x27;&quot; data-pg=&quot;&#x27;+t[0]+&#x27;&quot;&gt;&lt;span class=&quot;ic&quot;&gt;&#x27;+t[1]+&#x27;&lt;/span&gt;&lt;span class=&quot;lb&quot;&gt;&#x27;+t[2]+&#x27;&lt;/span&gt;&lt;/button&gt;&#x27;;}).join(&#x27;&#x27;)
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+
+    // tab bar: sliding pill + page switch with retriggered fade/rise
+    function persAlignPill(){
+      var on=ov.querySelector(&#x27;.pers-tab.on&#x27;), pill=document.getElementById(&#x27;persPill&#x27;);
+      if(!on||!pill) return;
+      pill.style.left=on.offsetLeft+&#x27;px&#x27;; pill.style.width=on.offsetWidth+&#x27;px&#x27;;
+    }
+    function persGo(pg){
+      Array.prototype.forEach.call(ov.querySelectorAll(&#x27;.pers-tab&#x27;),function(t){
+        var on=t.getAttribute(&#x27;data-pg&#x27;)===pg;
+        t.classList.toggle(&#x27;on&#x27;,on); t.setAttribute(&#x27;aria-selected&#x27;,on?&#x27;true&#x27;:&#x27;false&#x27;);
+      });
+      Array.prototype.forEach.call(ov.querySelectorAll(&#x27;.pers-page&#x27;),function(p){
+        var on=p.getAttribute(&#x27;data-pg&#x27;)===pg;
+        if(on){p.classList.remove(&#x27;on&#x27;);void p.offsetWidth;p.classList.add(&#x27;on&#x27;);}
+        else p.classList.remove(&#x27;on&#x27;);
+      });
+      persAlignPill();
+    }
+    Array.prototype.forEach.call(ov.querySelectorAll(&#x27;.pers-tab&#x27;),function(t){
+      t.addEventListener(&#x27;click&#x27;,function(){persGo(t.getAttribute(&#x27;data-pg&#x27;));});
+    });
+    window.addEventListener(&#x27;resize&#x27;,persAlignPill);
+    ov.__go=persGo; ov.__align=persAlignPill;
+
+    // theme grid
+    Array.prototype.forEach.call(ov.querySelectorAll(&#x27;.pers-th&#x27;),function(b){
+      b.addEventListener(&#x27;click&#x27;,function(){
+        var k=b.getAttribute(&#x27;data-th&#x27;);
+        Array.prototype.forEach.call(ov.querySelectorAll(&#x27;.pers-th&#x27;),function(x){x.classList.toggle(&#x27;on&#x27;,x===b);});
+        var real=document.querySelector(&#x27;.theme-opt[data-theme-key=&quot;&#x27;+k+&#x27;&quot;]&#x27;);
+        if(real) real.click();
+        else{document.documentElement.setAttribute(&#x27;data-theme&#x27;,k===&#x27;dark&#x27;?&#x27;&#x27;:k);try{localStorage.setItem(&#x27;mymoney_theme&#x27;,k);}catch(e){}}
+        flashSaved(&#x27;theme applied&#x27;);
+      });
+    });
+
+    // live-apply wiring
+    persSwBind(&#x27;persTrader&#x27;,function(on){
+      var c=document.getElementById(&#x27;sIsTrader&#x27;);
+      if(c){c.checked=on;c.dispatchEvent(new Event(&#x27;change&#x27;));}
+    });
+    persSegBind(&#x27;persMtOcr&#x27;,function(v){
+      if(!state.settings)state.settings={};
+      state.settings.mtOcr=v;persistNow();mtOcrUI();flashSaved(&#x27;saved&#x27;);
+    });
+    persSwBind(&#x27;persNoSplits&#x27;,function(on){
+      if(!state.settings)state.settings={};
+      state.settings.noSplits=on;persistNow();applyNoSplits();flashSaved(&#x27;saved&#x27;);
+    });
+    persSwBind(&#x27;persDraft&#x27;,function(on){
+      if(!state.settings)state.settings={};
+      state.settings.draftSafety=on;persistNow();flashSaved(&#x27;saved&#x27;);
+    });
+    persSegBind(&#x27;persDevType&#x27;,function(v){
+      if(!state.settings)state.settings={};
+      state.settings.deviceType=v;persistNow();applyDeviceType();flashSaved(&#x27;saved&#x27;);
+    });
+    persSegBind(&#x27;persConsent&#x27;,function(v){
+      if(!state.settings)state.settings={};
+      state.settings.shareConsent=v;persistNow();flashSaved(&#x27;saved&#x27;);
+    });
+    document.getElementById(&#x27;persTos&#x27;).addEventListener(&#x27;click&#x27;,showTosModal);
+    document.getElementById(&#x27;persClose&#x27;).addEventListener(&#x27;click&#x27;,function(){
+      ov.classList.remove(&#x27;vis&#x27;);
+      setTimeout(function(){ov.classList.remove(&#x27;on&#x27;);},220);
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function persEnsure(){\n    if(document.getElementById(\"persOv\")) return;\n    var ov=document.createElement(\"div\");\n    ov.className=\"pers-ov\"; ov.id=\"persOv\";\n    ov.innerHTML=\n      '<div class=\"pers-hd\"><button type=\"button\" class=\"pers-back\" id=\"persClose\" aria-label=\"Close\">\u2190</button><h2>Personalize</h2></div>'\n      +'<div class=\"pers-pages\" id=\"persPages\">'\n\n      +'<div class=\"pers-page\" data-pg=\"app\">'\n        +'<div class=\"pers-card\"><div class=\"pers-themes\" id=\"persThemes\">'\n          +PERS_THEME_KEYS.map(function(t){return '<button type=\"button\" class=\"pers-th\" data-th=\"'+t[0]+'\"><div class=\"sw2\" style=\"background:'+t[1]+'\"></div><div class=\"nm\">'+t[0]+'</div></button>';}).join('')\n        +'</div></div>'\n      +'</div>'\n\n      +'<div class=\"pers-page\" data-pg=\"trade\">'\n        +'<div class=\"pers-card\">'\n          +persSw('persTrader','Trader mode','Unlocks the Trading page, instruments and trade entry types.')\n          +persSeg('persMtOcr','Statement reading','Photos of MT4/MT5 statements read on this device \u2014 nothing uploaded.',[[\"off\",\"Off\"],[\"auto\",\"Auto\"],[\"silent\",\"Silent\"]])\n          +persSw('persNoSplits','No splits for trades','Hides the split field on trade entries. Existing entries never change.')\n        +'</div>'\n      +'</div>'\n\n      +'<div class=\"pers-page\" data-pg=\"behav\">'\n        +'<div class=\"pers-card\">'\n          +persSw('persDraft','Draft safety','If the app closes mid-entry, what you typed is offered back next time.')\n        +'</div>'\n      +'</div>'\n\n      +'<div class=\"pers-page\" data-pg=\"device\">'\n        +'<div class=\"pers-card\">'\n          +persSeg('persDevType','Device type','Touch shows tap-arrows on the chart stepper.',[[\"auto\",\"Auto\"],[\"touch\",\"Touch\"],[\"desktop\",\"Desktop\"]])\n        +'</div>'\n      +'</div>'\n\n      +'<div class=\"pers-page\" data-pg=\"priv\">'\n        +'<div class=\"pers-card\">'\n          +persSeg('persConsent','Share flagged images','Helps improve statement reading. Items only ever wait in a local outbox on this device \u2014 this version never transmits.',[[\"never\",\"Never\"],[\"wifi\",\"Wi-Fi\"],[\"any\",\"Wi-Fi+data\"]])\n          +'<div class=\"pers-row\"><div><div class=\"lab\">Terms &amp; privacy</div><div class=\"sub\">Plain-language, on-device-only policy.</div></div>'\n          +'<button type=\"button\" class=\"btn ghost sm\" id=\"persTos\">Read</button></div>'\n        +'</div>'\n      +'</div>'\n\n      +'</div>'\n      +'<div class=\"pers-bar2\" id=\"persBar\" role=\"tablist\"><div class=\"pill\" id=\"persPill\"></div>'\n        +PERS_TABS.map(function(t,i){return '<button type=\"button\" class=\"pers-tab'+(i===0?' on':'')+'\" role=\"tab\" aria-selected=\"'+(i===0)+'\" data-pg=\"'+t[0]+'\"><span class=\"ic\">'+t[1]+'</span><span class=\"lb\">'+t[2]+'</span></button>';}).join('')\n      +'</div>';\n    document.body.appendChild(ov);\n\n    // tab bar: sliding pill + page switch with retriggered fade/rise\n    function persAlignPill(){\n      var on=ov.querySelector('.pers-tab.on'), pill=document.getElementById('persPill');\n      if(!on||!pill) return;\n      pill.style.left=on.offsetLeft+'px'; pill.style.width=on.offsetWidth+'px';\n    }\n    function persGo(pg){\n      Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){\n        var on=t.getAttribute('data-pg')===pg;\n        t.classList.toggle('on',on); t.setAttribute('aria-selected',on?'true':'false');\n      });\n      Array.prototype.forEach.call(ov.querySelectorAll('.pers-page'),function(p){\n        var on=p.getAttribute('data-pg')===pg;\n        if(on){p.classList.remove('on');void p.offsetWidth;p.classList.add('on');}\n        else p.classList.remove('on');\n      });\n      persAlignPill();\n    }\n    Array.prototype.forEach.call(ov.querySelectorAll('.pers-tab'),function(t){\n      t.addEventListener('click',function(){persGo(t.getAttribute('data-pg'));});\n    });\n    window.addEventListener('resize',persAlignPill);\n    ov.__go=persGo; ov.__align=persAlignPill;\n\n    // theme grid\n    Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(b){\n      b.addEventListener('click',function(){\n        var k=b.getAttribute('data-th');\n        Array.prototype.forEach.call(ov.querySelectorAll('.pers-th'),function(x){x.classList.toggle('on',x===b);});\n        var real=document.querySelector('.theme-opt[data-theme-key=\"'+k+'\"]');\n        if(real) real.click();\n        else{document.documentElement.setAttribute('data-theme',k==='dark'?'':k);try{localStorage.setItem('mymoney_theme',k);}catch(e){}}\n        flashSaved('theme applied');\n      });\n    });\n\n    // live-apply wiring\n    persSwBind('persTrader',function(on){\n      var c=document.getElementById('sIsTrader');\n      if(c){c.checked=on;c.dispatchEvent(new Event('change'));}\n    });\n    persSegBind('persMtOcr',function(v){\n      if(!state.settings)state.settings={};\n      state.settings.mtOcr=v;persistNow();mtOcrUI();flashSaved('saved');\n    });\n    persSwBind('persNoSplits',function(on){\n      if(!state.settings)state.settings={};\n      state.settings.noSplits=on;persistNow();applyNoSplits();flashSaved('saved');\n    });\n    persSwBind('persDraft',function(on){\n      if(!state.settings)state.settings={};\n      state.settings.draftSafety=on;persistNow();flashSaved('saved');\n    });\n    persSegBind('persDevType',function(v){\n      if(!state.settings)state.settings={};\n      state.settings.deviceType=v;persistNow();applyDeviceType();flashSaved('saved');\n    });\n    persSegBind('persConsent',function(v){\n      if(!state.settings)state.settings={};\n      state.settings.shareConsent=v;persistNow();flashSaved('saved');\n    });\n    document.getElementById('persTos').addEventListener('click',showTosModal);\n    document.getElementById('persClose').addEventListener('click',function(){\n      ov.classList.remove('vis');\n      setTimeout(function(){ov.classList.remove('on');},220);\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof persEnsure!==\"undefined\"?persEnsure:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

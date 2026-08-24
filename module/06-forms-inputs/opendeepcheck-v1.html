@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openDeepCheck — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openDeepCheck<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openDeepCheck(){
+    var host=document.createElement(&quot;div&quot;);
+    host.className=&quot;ov in page-mode&quot;; host.id=&quot;deepOv&quot;;
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;sheet&quot; style=&quot;max-width:480px&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;Advanced check&lt;/h3&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;x-btn&quot; id=&quot;dpX&quot;&gt;\u2715&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-intro&quot;&gt;Each agent takes one question and works through your whole history.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-list&quot; id=&quot;agList&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-meter&quot;&gt;&lt;div class=&quot;ag-meter-bar&quot; id=&quot;agBar&quot;&gt;&lt;/div&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-now&quot; id=&quot;agNow&quot;&gt;Ready.&lt;/div&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-ft&quot;&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn ghost sm&quot; id=&quot;dpStop&quot; style=&quot;display:none&quot;&gt;Stop&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn ghost sm&quot; id=&quot;dpClose&quot;&gt;Close&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn primary sm&quot; id=&quot;dpGo&quot;&gt;Start&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(host);
+    var listEl=host.querySelector(&quot;#agList&quot;);
+    function drawList(activeId, doneIds){
+      doneIds=doneIds||[];
+      listEl.innerHTML=AGENTS.map(function(a){
+        var st = doneIds.indexOf(a.id)&gt;=0 ? &quot;done&quot; : (a.id===activeId ? &quot;on&quot; : &quot;&quot;);
+        return &#x27;&lt;div class=&quot;ag-row &#x27;+st+&#x27;&quot;&gt;&lt;span class=&quot;ag-ic&quot;&gt;&#x27;+a.icon+&#x27;&lt;/span&gt;&#x27;
+          +&#x27;&lt;span class=&quot;ag-nm&quot;&gt;&#x27;+esc(a.name)
+          +&#x27;&lt;span class=&quot;ag-brief&quot;&gt;&#x27;+esc(a.brief)+&#x27;&lt;/span&gt;&lt;/span&gt;&#x27;
+          +&#x27;&lt;span class=&quot;ag-st&quot;&gt;&#x27;+(st===&quot;done&quot;?&quot;\u2713&quot;:st===&quot;on&quot;?&#x27;&lt;i class=&quot;ag-spin&quot;&gt;&lt;/i&gt;&#x27;:&quot;\u00b7&quot;)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+      }).join(&quot;&quot;);
+    }
+    drawList();
+    var close=function(){ cancelAgents(); if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector(&quot;#dpX&quot;).onclick=close;
+    host.querySelector(&quot;#dpClose&quot;).onclick=close;
+    host.querySelector(&quot;#dpStop&quot;).onclick=function(){
+      cancelAgents();
+      host.querySelector(&quot;#agNow&quot;).textContent=&quot;Stopped.&quot;;
+      host.querySelector(&quot;#dpStop&quot;).style.display=&quot;none&quot;;
+      host.querySelector(&quot;#dpGo&quot;).style.display=&quot;&quot;;
+    };
+    host.querySelector(&quot;#dpGo&quot;).onclick=function(){
+      var go=host.querySelector(&quot;#dpGo&quot;), stop=host.querySelector(&quot;#dpStop&quot;);
+      go.style.display=&quot;none&quot;; stop.style.display=&quot;&quot;;
+      var done=[];
+      var ids=AGENTS.map(function(a){ return a.id; });
+      host.querySelector(&quot;#agNow&quot;).textContent=&quot;Starting &quot;+agentConcurrency()+&quot; agent&quot;
+        +(agentConcurrency()===1?&quot;&quot;:&quot;s&quot;)+&quot; at &quot;+agentCfg.intensity+&quot;% intensity\u2026&quot;;
+      runAgents(ids, function(a,i,total){
+        if(i&gt;1) done.push(AGENTS[i-2].id);
+        drawList(a.id, done);
+        host.querySelector(&quot;#agBar&quot;).style.width=Math.round((i-1)/total*100)+&quot;%&quot;;
+        host.querySelector(&quot;#agNow&quot;).textContent=a.icon+&quot;  &quot;+a.name+&quot; \u2014 &quot;+a.brief;
+      }).then(function(findings){
+        drawList(null, ids);
+        host.querySelector(&quot;#agBar&quot;).style.width=&quot;100%&quot;;
+        stop.style.display=&quot;none&quot;; go.style.display=&quot;&quot;; go.textContent=&quot;Run again&quot;;
+        agentCfg.lastDeep=Date.now(); saveAgentCfg();
+        host.querySelector(&quot;#agNow&quot;).textContent=findings.length
+          ? findings.length+&quot; finding&quot;+(findings.length===1?&quot;&quot;:&quot;s&quot;)+&quot;.&quot;
+          : &quot;Nothing found \u2014 your records look clean.&quot;;
+        if(findings.length){ setTimeout(function(){ close(); showAgentPopup(findings,false); },600); }
+      });
+    };
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openDeepCheck(){\n    var host=document.createElement(\"div\");\n    host.className=\"ov in page-mode\"; host.id=\"deepOv\";\n    host.innerHTML=\n       '<div class=\"sheet\" style=\"max-width:480px\">'\n      +'  <div class=\"sheet-hd\"><h3>Advanced check</h3>'\n      +'    <button class=\"x-btn\" id=\"dpX\">\\u2715</button></div>'\n      +'  <div class=\"sheet-bd\">'\n      +'    <div class=\"ag-intro\">Each agent takes one question and works through your whole history.</div>'\n      +'    <div class=\"ag-list\" id=\"agList\"></div>'\n      +'    <div class=\"ag-meter\"><div class=\"ag-meter-bar\" id=\"agBar\"></div></div>'\n      +'    <div class=\"ag-now\" id=\"agNow\">Ready.</div>'\n      +'  </div>'\n      +'  <div class=\"sheet-ft\">'\n      +'    <button class=\"btn ghost sm\" id=\"dpStop\" style=\"display:none\">Stop</button>'\n      +'    <button class=\"btn ghost sm\" id=\"dpClose\">Close</button>'\n      +'    <button class=\"btn primary sm\" id=\"dpGo\">Start</button></div>'\n      +'</div>';\n    document.body.appendChild(host);\n    var listEl=host.querySelector(\"#agList\");\n    function drawList(activeId, doneIds){\n      doneIds=doneIds||[];\n      listEl.innerHTML=AGENTS.map(function(a){\n        var st = doneIds.indexOf(a.id)>=0 ? \"done\" : (a.id===activeId ? \"on\" : \"\");\n        return '<div class=\"ag-row '+st+'\"><span class=\"ag-ic\">'+a.icon+'</span>'\n          +'<span class=\"ag-nm\">'+esc(a.name)\n          +'<span class=\"ag-brief\">'+esc(a.brief)+'</span></span>'\n          +'<span class=\"ag-st\">'+(st===\"done\"?\"\\u2713\":st===\"on\"?'<i class=\"ag-spin\"></i>':\"\\u00b7\")+'</span></div>';\n      }).join(\"\");\n    }\n    drawList();\n    var close=function(){ cancelAgents(); if(host.parentNode) host.parentNode.removeChild(host); };\n    host.querySelector(\"#dpX\").onclick=close;\n    host.querySelector(\"#dpClose\").onclick=close;\n    host.querySelector(\"#dpStop\").onclick=function(){\n      cancelAgents();\n      host.querySelector(\"#agNow\").textContent=\"Stopped.\";\n      host.querySelector(\"#dpStop\").style.display=\"none\";\n      host.querySelector(\"#dpGo\").style.display=\"\";\n    };\n    host.querySelector(\"#dpGo\").onclick=function(){\n      var go=host.querySelector(\"#dpGo\"), stop=host.querySelector(\"#dpStop\");\n      go.style.display=\"none\"; stop.style.display=\"\";\n      var done=[];\n      var ids=AGENTS.map(function(a){ return a.id; });\n      host.querySelector(\"#agNow\").textContent=\"Starting \"+agentConcurrency()+\" agent\"\n        +(agentConcurrency()===1?\"\":\"s\")+\" at \"+agentCfg.intensity+\"% intensity\\u2026\";\n      runAgents(ids, function(a,i,total){\n        if(i>1) done.push(AGENTS[i-2].id);\n        drawList(a.id, done);\n        host.querySelector(\"#agBar\").style.width=Math.round((i-1)/total*100)+\"%\";\n        host.querySelector(\"#agNow\").textContent=a.icon+\"  \"+a.name+\" \\u2014 \"+a.brief;\n      }).then(function(findings){\n        drawList(null, ids);\n        host.querySelector(\"#agBar\").style.width=\"100%\";\n        stop.style.display=\"none\"; go.style.display=\"\"; go.textContent=\"Run again\";\n        agentCfg.lastDeep=Date.now(); saveAgentCfg();\n        host.querySelector(\"#agNow\").textContent=findings.length\n          ? findings.length+\" finding\"+(findings.length===1?\"\":\"s\")+\".\"\n          : \"Nothing found \\u2014 your records look clean.\";\n        if(findings.length){ setTimeout(function(){ close(); showAgentPopup(findings,false); },600); }\n      });\n    };\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openDeepCheck!==\"undefined\"?openDeepCheck:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

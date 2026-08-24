@@ -1,0 +1,74 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderPhotoStrip — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 04-typography-fonts</div>
+<h1>renderPhotoStrip<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderPhotoStrip(){
+    var strip=document.getElementById(&quot;fPhotoStrip&quot;);
+    if(!strip) return;
+    var total=keepPhotos.length+pendingPhotos.length;
+    var nm=document.getElementById(&quot;fPhotoName&quot;);
+    if(nm) nm.textContent = total ? total+&quot; file&quot;+(total===1?&quot;&quot;:&quot;s&quot;)
+      +(total&gt;=PHOTO_MAX?&quot; (max)&quot;:&quot;&quot;) : &quot;&quot;;
+    var clr=document.getElementById(&quot;fPhotoClear&quot;);
+    if(clr) clr.style.display = total ? &quot;inline-block&quot; : &quot;none&quot;;
+    var btn=document.getElementById(&quot;fPhotoBtn&quot;);
+    if(btn) btn.disabled = total&gt;=PHOTO_MAX;
+    strip.innerHTML=&quot;&quot;;
+    keepPhotos.forEach(function(id,i){
+      var c=document.createElement(&quot;div&quot;); c.className=&quot;ph-thumb&quot;; c.setAttribute(&quot;data-keep&quot;,id);
+      var nm=(attNames[id]||&quot;&quot;);
+      c.innerHTML=&#x27;&lt;button type=&quot;button&quot; class=&quot;ph-x&quot; title=&quot;Remove&quot;&gt;×&lt;/button&gt;&#x27;;
+      strip.appendChild(c);
+      loadPhoto(id, function(url){
+        if(!url) return;
+        if(attIsImage(nm,url)){ var im=new Image(); im.alt=&quot;Attachment &quot;+(i+1); im.src=url; c.insertBefore(im,c.firstChild); }
+        else { var d=document.createElement(&quot;div&quot;); d.className=&quot;ph-doc&quot;;
+          d.innerHTML=&#x27;&lt;span class=&quot;ph-ic&quot;&gt;&#x27;+attIcon(nm,url)+&#x27;&lt;/span&gt;&#x27;; c.insertBefore(d,c.firstChild); }
+      });
+      c.querySelector(&quot;.ph-x&quot;).addEventListener(&quot;click&quot;, function(){
+        keepPhotos=keepPhotos.filter(function(x){ return x!==id; });
+        photoCleared=true; renderPhotoStrip();
+      });
+    });
+    pendingPhotos.forEach(function(pp,i){
+      var c=document.createElement(&quot;div&quot;); c.className=&quot;ph-thumb ph-new&quot;;
+      var note=&quot;&quot;;
+      if(pp.wasBytes &amp;&amp; pp.nowBytes &amp;&amp; pp.nowBytes &lt; pp.wasBytes*0.9)
+        note=kbTxt(pp.wasBytes)+&quot; → &quot;+kbTxt(pp.nowBytes);
+      else if(pp.nowBytes||pp.wasBytes) note=kbTxt(pp.nowBytes||pp.wasBytes);
+      c.title=(pp.name||&quot;photo&quot;)+(note?&quot; · &quot;+note:&quot;&quot;);
+      var inner = attIsImage(pp.name,pp.dataUrl)
+        ? &#x27;&lt;img src=&quot;&#x27;+pp.dataUrl+&#x27;&quot; alt=&quot;New attachment &#x27;+(i+1)+&#x27;&quot;&gt;&#x27;
+        : &#x27;&lt;div class=&quot;ph-doc&quot;&gt;&lt;span class=&quot;ph-ic&quot;&gt;&#x27;+attIcon(pp.name,pp.dataUrl)+&#x27;&lt;/span&gt;&lt;span class=&quot;ph-nm&quot;&gt;&#x27;+esc((pp.name||&quot;file&quot;).slice(0,14))+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+      c.innerHTML=inner+&#x27;&lt;button type=&quot;button&quot; class=&quot;ph-x&quot; title=&quot;Remove&quot;&gt;×&lt;/button&gt;&#x27;
+        +(note?&#x27;&lt;span class=&quot;ph-kb&quot;&gt;&#x27;+esc(note)+&#x27;&lt;/span&gt;&#x27;:&#x27;&#x27;);
+      strip.appendChild(c);
+      c.querySelector(&quot;.ph-x&quot;).addEventListener(&quot;click&quot;, function(){
+        pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip();
+      });
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderPhotoStrip(){\n    var strip=document.getElementById(\"fPhotoStrip\");\n    if(!strip) return;\n    var total=keepPhotos.length+pendingPhotos.length;\n    var nm=document.getElementById(\"fPhotoName\");\n    if(nm) nm.textContent = total ? total+\" file\"+(total===1?\"\":\"s\")\n      +(total>=PHOTO_MAX?\" (max)\":\"\") : \"\";\n    var clr=document.getElementById(\"fPhotoClear\");\n    if(clr) clr.style.display = total ? \"inline-block\" : \"none\";\n    var btn=document.getElementById(\"fPhotoBtn\");\n    if(btn) btn.disabled = total>=PHOTO_MAX;\n    strip.innerHTML=\"\";\n    keepPhotos.forEach(function(id,i){\n      var c=document.createElement(\"div\"); c.className=\"ph-thumb\"; c.setAttribute(\"data-keep\",id);\n      var nm=(attNames[id]||\"\");\n      c.innerHTML='<button type=\"button\" class=\"ph-x\" title=\"Remove\">\u00d7</button>';\n      strip.appendChild(c);\n      loadPhoto(id, function(url){\n        if(!url) return;\n        if(attIsImage(nm,url)){ var im=new Image(); im.alt=\"Attachment \"+(i+1); im.src=url; c.insertBefore(im,c.firstChild); }\n        else { var d=document.createElement(\"div\"); d.className=\"ph-doc\";\n          d.innerHTML='<span class=\"ph-ic\">'+attIcon(nm,url)+'</span>'; c.insertBefore(d,c.firstChild); }\n      });\n      c.querySelector(\".ph-x\").addEventListener(\"click\", function(){\n        keepPhotos=keepPhotos.filter(function(x){ return x!==id; });\n        photoCleared=true; renderPhotoStrip();\n      });\n    });\n    pendingPhotos.forEach(function(pp,i){\n      var c=document.createElement(\"div\"); c.className=\"ph-thumb ph-new\";\n      var note=\"\";\n      if(pp.wasBytes && pp.nowBytes && pp.nowBytes < pp.wasBytes*0.9)\n        note=kbTxt(pp.wasBytes)+\" \u2192 \"+kbTxt(pp.nowBytes);\n      else if(pp.nowBytes||pp.wasBytes) note=kbTxt(pp.nowBytes||pp.wasBytes);\n      c.title=(pp.name||\"photo\")+(note?\" \u00b7 \"+note:\"\");\n      var inner = attIsImage(pp.name,pp.dataUrl)\n        ? '<img src=\"'+pp.dataUrl+'\" alt=\"New attachment '+(i+1)+'\">'\n        : '<div class=\"ph-doc\"><span class=\"ph-ic\">'+attIcon(pp.name,pp.dataUrl)+'</span><span class=\"ph-nm\">'+esc((pp.name||\"file\").slice(0,14))+'</span></div>';\n      c.innerHTML=inner+'<button type=\"button\" class=\"ph-x\" title=\"Remove\">\u00d7</button>'\n        +(note?'<span class=\"ph-kb\">'+esc(note)+'</span>':'');\n      strip.appendChild(c);\n      c.querySelector(\".ph-x\").addEventListener(\"click\", function(){\n        pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip();\n      });\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderPhotoStrip!==\"undefined\"?renderPhotoStrip:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>slotArt — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 07-layout-theme</div>
+<h1>slotArt<span class="badge ok">tested · runs clean</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function slotArt(kind){
+    var eye=function(cx,cy){ return &#x27;&lt;circle cx=&quot;&#x27;+cx+&#x27;&quot; cy=&quot;&#x27;+cy+&#x27;&quot; r=&quot;2.4&quot; fill=&quot;currentColor&quot;/&gt;&#x27;; };
+    var head=&#x27;&lt;ellipse cx=&quot;24&quot; cy=&quot;24&quot; rx=&quot;14&quot; ry=&quot;17&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; opacity=&quot;.5&quot;/&gt;&#x27;;
+    var m={
+      straight: head+eye(19,21)+eye(29,21)+&#x27;&lt;path d=&quot;M19 30 Q24 33 29 30&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; fill=&quot;none&quot;/&gt;&#x27;,
+      right:    head+eye(25,21)+eye(33,21)+&#x27;&lt;path d=&quot;M25 30 Q30 33 34 30&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; fill=&quot;none&quot;/&gt;&lt;path d=&quot;M12 24 l-5 0 M9 21 l-3 3 3 3&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.4&quot; fill=&quot;none&quot; opacity=&quot;.6&quot;/&gt;&#x27;,
+      left:     head+eye(15,21)+eye(23,21)+&#x27;&lt;path d=&quot;M14 30 Q18 33 23 30&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; fill=&quot;none&quot;/&gt;&lt;path d=&quot;M36 24 l5 0 M39 21 l3 3 -3 3&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.4&quot; fill=&quot;none&quot; opacity=&quot;.6&quot;/&gt;&#x27;,
+      down:     head+eye(19,25)+eye(29,25)+&#x27;&lt;path d=&quot;M19 33 Q24 36 29 33&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; fill=&quot;none&quot;/&gt;&lt;path d=&quot;M24 6 l0 5 M21 9 l3 3 3 -3&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.4&quot; fill=&quot;none&quot; opacity=&quot;.6&quot;/&gt;&#x27;,
+      up:       head+eye(19,18)+eye(29,18)+&#x27;&lt;path d=&quot;M19 27 Q24 30 29 27&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.6&quot; fill=&quot;none&quot;/&gt;&lt;path d=&quot;M24 42 l0 -5 M21 39 l3 -3 3 3&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.4&quot; fill=&quot;none&quot; opacity=&quot;.6&quot;/&gt;&#x27;
+    };
+    return &#x27;&lt;svg viewBox=&quot;0 0 48 48&quot; class=&quot;ps-art&quot;&gt;&#x27;+(m[kind]||m.straight)+&#x27;&lt;/svg&gt;&#x27;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function slotArt(kind){\n    var eye=function(cx,cy){ return '<circle cx=\"'+cx+'\" cy=\"'+cy+'\" r=\"2.4\" fill=\"currentColor\"/>'; };\n    var head='<ellipse cx=\"24\" cy=\"24\" rx=\"14\" ry=\"17\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" opacity=\".5\"/>';\n    var m={\n      straight: head+eye(19,21)+eye(29,21)+'<path d=\"M19 30 Q24 33 29 30\" stroke=\"currentColor\" stroke-width=\"1.6\" fill=\"none\"/>',\n      right:    head+eye(25,21)+eye(33,21)+'<path d=\"M25 30 Q30 33 34 30\" stroke=\"currentColor\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M12 24 l-5 0 M9 21 l-3 3 3 3\" stroke=\"currentColor\" stroke-width=\"1.4\" fill=\"none\" opacity=\".6\"/>',\n      left:     head+eye(15,21)+eye(23,21)+'<path d=\"M14 30 Q18 33 23 30\" stroke=\"currentColor\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M36 24 l5 0 M39 21 l3 3 -3 3\" stroke=\"currentColor\" stroke-width=\"1.4\" fill=\"none\" opacity=\".6\"/>',\n      down:     head+eye(19,25)+eye(29,25)+'<path d=\"M19 33 Q24 36 29 33\" stroke=\"currentColor\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M24 6 l0 5 M21 9 l3 3 3 -3\" stroke=\"currentColor\" stroke-width=\"1.4\" fill=\"none\" opacity=\".6\"/>',\n      up:       head+eye(19,18)+eye(29,18)+'<path d=\"M19 27 Q24 30 29 27\" stroke=\"currentColor\" stroke-width=\"1.6\" fill=\"none\"/><path d=\"M24 42 l0 -5 M21 39 l3 -3 3 3\" stroke=\"currentColor\" stroke-width=\"1.4\" fill=\"none\" opacity=\".6\"/>'\n    };\n    return '<svg viewBox=\"0 0 48 48\" class=\"ps-art\">'+(m[kind]||m.straight)+'</svg>';\n  }",ARGS="kind";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof slotArt!==\"undefined\"?slotArt:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

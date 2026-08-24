@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>showLockScreen — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 04-typography-fonts</div>
+<h1>showLockScreen<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 3</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function showLockScreen(onUnlock){
+    var ls=lockState();
+    var hasBio=ls.credId&amp;&amp;webAuthnSupported();
+    var el=document.getElementById(&quot;lockScreen&quot;);
+    if(el) el.remove();
+    var div=document.createElement(&quot;div&quot;);
+    div.id=&quot;lockScreen&quot;;
+    div.innerHTML=&#x27;&lt;div class=&quot;lock-inner&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lock-icon&quot;&gt;🔐&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lock-title&quot;&gt;My Money&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lock-sub&quot;&gt;Enter your PIN to continue&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lock-dots&quot; id=&quot;lockDots&quot;&gt;○ ○ ○ ○&lt;/div&gt;&#x27;
+      +&#x27;&lt;input type=&quot;password&quot; id=&quot;lockPinInput&quot; inputmode=&quot;numeric&quot; maxlength=&quot;6&quot; autocomplete=&quot;off&quot; &#x27;
+        +&#x27;style=&quot;position:absolute;opacity:0;pointer-events:none&quot; aria-label=&quot;PIN&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lock-pad&quot; id=&quot;lockPad&quot;&gt;&lt;/div&gt;&#x27;
+      +(hasBio?&#x27;&lt;button class=&quot;btn ghost sm&quot; id=&quot;lockBioBtn&quot; style=&quot;margin-top:14px;width:200px&quot;&gt;Use Face ID / Fingerprint&lt;/button&gt;&#x27;:&#x27;&#x27;)
+      +&#x27;&lt;div class=&quot;lock-err&quot; id=&quot;lockErr&quot;&gt;&lt;/div&gt;&lt;/div&gt;&#x27;;
+    document.body.appendChild(div);
+    requestAnimationFrame(function(){ div.classList.add(&quot;in&quot;); });
+
+    var entered=&quot;&quot;;
+    function updateDots(){
+      var d=document.getElementById(&quot;lockDots&quot;); if(!d) return;
+      d.textContent=Array(4).fill(0).map((_,i)=&gt;entered.length&gt;i?&quot;●&quot;:&quot;○&quot;).join(&quot; &quot;);
+    }
+    function showErr(msg){ var e=document.getElementById(&quot;lockErr&quot;); if(e){e.textContent=msg;e.style.color=&quot;var(--down)&quot;;} }
+    async function tryPin(){
+      var stored=ls.pin, salt=ls.salt||&quot;mymoney&quot;;
+      var h=await hashPin(entered, salt);
+      if(h===stored){ unlock(); }
+      else{ showErr(&quot;Wrong PIN — try again&quot;); entered=&quot;&quot;; updateDots(); }
+    }
+    function unlock(){
+      _lockSession=true;
+      div.classList.remove(&quot;in&quot;);
+      setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); },250);
+      resetLockTimer();
+      if(onUnlock) onUnlock();
+    }
+    // number pad
+    var pad=document.getElementById(&quot;lockPad&quot;);
+    [1,2,3,4,5,6,7,8,9,&quot;&quot;,0,&quot;⌫&quot;].forEach(function(k){
+      var b=document.createElement(&quot;button&quot;);
+      b.className=&quot;lock-key&quot;+(k===&quot;&quot;?&quot; lock-key-blank&quot;:&quot;&quot;);
+      b.textContent=k===&quot;&quot;?&quot;&quot;:String(k);
+      if(k!==&quot;&quot;) b.addEventListener(&quot;click&quot;,function(){
+        if(k===&quot;⌫&quot;){ entered=entered.slice(0,-1); updateDots(); return; }
+        if(entered.length&gt;=6) return;
+        entered+=String(k); updateDots();
+        if(entered.length===4||entered.length===6) tryPin();
+      });
+      pad.appendChild(b);
+    });
+    // biometric
+    var bioBtn=document.getElementById(&quot;lockBioBtn&quot;);
+    if(bioBtn) bioBtn.addEventListener(&quot;click&quot;,async function(){
+      bioBtn.disabled=true; bioBtn.textContent=&quot;Waiting…&quot;;
+      var ok=await verifyBiometric(ls.credId);
+      if(ok) unlock(); else{ showErr(&quot;Biometric failed — use PIN&quot;); bioBtn.disabled=false; bioBtn.textContent=&quot;Use Face ID / Fingerprint&quot;; }
+    });
+    // keyboard
+    document.getElementById(&quot;lockPinInput&quot;).focus();
+    div.addEventListener(&quot;keydown&quot;,function(e){
+      if(e.key&gt;=&quot;0&quot;&amp;&amp;e.key&lt;=&quot;9&quot;){ if(entered.length&lt;6){entered+=e.key;updateDots();} if(entered.length===4||entered.length===6) tryPin(); }
+      else if(e.key===&quot;Backspace&quot;){ entered=entered.slice(0,-1); updateDots(); }
+    });
+    // auto-attempt biometric on first show
+    if(hasBio) setTimeout(function(){ if(bioBtn&amp;&amp;!bioBtn.disabled) bioBtn.click(); },400);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function showLockScreen(onUnlock){\n    var ls=lockState();\n    var hasBio=ls.credId&&webAuthnSupported();\n    var el=document.getElementById(\"lockScreen\");\n    if(el) el.remove();\n    var div=document.createElement(\"div\");\n    div.id=\"lockScreen\";\n    div.innerHTML='<div class=\"lock-inner\">'\n      +'<div class=\"lock-icon\">\ud83d\udd10</div>'\n      +'<div class=\"lock-title\">My Money</div>'\n      +'<div class=\"lock-sub\">Enter your PIN to continue</div>'\n      +'<div class=\"lock-dots\" id=\"lockDots\">\u25cb \u25cb \u25cb \u25cb</div>'\n      +'<input type=\"password\" id=\"lockPinInput\" inputmode=\"numeric\" maxlength=\"6\" autocomplete=\"off\" '\n        +'style=\"position:absolute;opacity:0;pointer-events:none\" aria-label=\"PIN\">'\n      +'<div class=\"lock-pad\" id=\"lockPad\"></div>'\n      +(hasBio?'<button class=\"btn ghost sm\" id=\"lockBioBtn\" style=\"margin-top:14px;width:200px\">Use Face ID / Fingerprint</button>':'')\n      +'<div class=\"lock-err\" id=\"lockErr\"></div></div>';\n    document.body.appendChild(div);\n    requestAnimationFrame(function(){ div.classList.add(\"in\"); });\n\n    var entered=\"\";\n    function updateDots(){\n      var d=document.getElementById(\"lockDots\"); if(!d) return;\n      d.textContent=Array(4).fill(0).map((_,i)=>entered.length>i?\"\u25cf\":\"\u25cb\").join(\" \");\n    }\n    function showErr(msg){ var e=document.getElementById(\"lockErr\"); if(e){e.textContent=msg;e.style.color=\"var(--down)\";} }\n    async function tryPin(){\n      var stored=ls.pin, salt=ls.salt||\"mymoney\";\n      var h=await hashPin(entered, salt);\n      if(h===stored){ unlock(); }\n      else{ showErr(\"Wrong PIN \u2014 try again\"); entered=\"\"; updateDots(); }\n    }\n    function unlock(){\n      _lockSession=true;\n      div.classList.remove(\"in\");\n      setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); },250);\n      resetLockTimer();\n      if(onUnlock) onUnlock();\n    }\n    // number pad\n    var pad=document.getElementById(\"lockPad\");\n    [1,2,3,4,5,6,7,8,9,\"\",0,\"\u232b\"].forEach(function(k){\n      var b=document.createElement(\"button\");\n      b.className=\"lock-key\"+(k===\"\"?\" lock-key-blank\":\"\");\n      b.textContent=k===\"\"?\"\":String(k);\n      if(k!==\"\") b.addEventListener(\"click\",function(){\n        if(k===\"\u232b\"){ entered=entered.slice(0,-1); updateDots(); return; }\n        if(entered.length>=6) return;\n        entered+=String(k); updateDots();\n        if(entered.length===4||entered.length===6) tryPin();\n      });\n      pad.appendChild(b);\n    });\n    // biometric\n    var bioBtn=document.getElementById(\"lockBioBtn\");\n    if(bioBtn) bioBtn.addEventListener(\"click\",async function(){\n      bioBtn.disabled=true; bioBtn.textContent=\"Waiting\u2026\";\n      var ok=await verifyBiometric(ls.credId);\n      if(ok) unlock(); else{ showErr(\"Biometric failed \u2014 use PIN\"); bioBtn.disabled=false; bioBtn.textContent=\"Use Face ID / Fingerprint\"; }\n    });\n    // keyboard\n    document.getElementById(\"lockPinInput\").focus();\n    div.addEventListener(\"keydown\",function(e){\n      if(e.key>=\"0\"&&e.key<=\"9\"){ if(entered.length<6){entered+=e.key;updateDots();} if(entered.length===4||entered.length===6) tryPin(); }\n      else if(e.key===\"Backspace\"){ entered=entered.slice(0,-1); updateDots(); }\n    });\n    // auto-attempt biometric on first show\n    if(hasBio) setTimeout(function(){ if(bioBtn&&!bioBtn.disabled) bioBtn.click(); },400);\n  }",ARGS="onUnlock";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof showLockScreen!==\"undefined\"?showLockScreen:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

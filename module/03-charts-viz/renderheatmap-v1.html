@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderHeatmap — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 03-charts-viz</div>
+<h1>renderHeatmap<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderHeatmap(){
+    var card=document.getElementById(&quot;hmCard&quot;);
+    if(!card) return;
+    var cells=hmGrid(HM_WEEKS), sc=hmScale(cells);
+    if(!sc.spentDays){ card.style.display=&quot;none&quot;; return; }   // nothing spent = nothing to show
+    card.style.display=&quot;&quot;;
+    document.getElementById(&quot;hmChart&quot;).innerHTML=hmSvg(cells, sc);
+    var first=cells[0].date, last=cells[cells.length-1].date;
+    document.getElementById(&quot;hmSpan&quot;).textContent=fcShortDate(first)+&quot; – &quot;+fcShortDate(last);
+
+    Array.prototype.forEach.call(document.querySelectorAll(&quot;#hmChart .hm-cell&quot;), function(r){
+      r.addEventListener(&quot;click&quot;, function(){
+        var ds=r.getAttribute(&quot;data-d&quot;);
+        hmSel=(hmSel===ds)?null:ds;
+        renderHeatmap();
+      });
+    });
+
+    var pick=document.getElementById(&quot;hmPick&quot;);
+    if(hmSel){
+      var day=state.transactions.filter(function(t){ return t.date===hmSel &amp;&amp; balDelta(t)&lt;0; });
+      var tot=day.reduce(function(n,t){ return n+(-balDelta(t)); },0);
+      pick.style.display=&quot;&quot;;
+      pick.innerHTML=&#x27;&lt;button type=&quot;button&quot; class=&quot;hm-pick-x&quot; id=&quot;hmPickX&quot; aria-label=&quot;Close&quot;&gt;✕&lt;/button&gt;&#x27;
+        +&#x27;&lt;b&gt;&#x27;+esc(niceDate(hmSel))+&#x27;&lt;/b&gt; — &#x27;+(day.length?(&#x27;&lt;b&gt;&#x27;+fmt(tot,state.currency)+&#x27;&lt;/b&gt; across &#x27;+day.length+&#x27; entr&#x27;+(day.length===1?&quot;y&quot;:&quot;ies&quot;)+&#x27;&lt;br&gt;&#x27;
+          +day.slice(0,4).map(function(t){ return &#x27;· &#x27;+esc((t.note||t.cat||TYPE_META[t.type].label))+&#x27; — &#x27;+fmt(Math.abs(num(t.amount)),state.currency); }).join(&quot;&lt;br&gt;&quot;)
+          +(day.length&gt;4?&quot;&lt;br&gt;· …and &quot;+(day.length-4)+&quot; more&quot;:&quot;&quot;)):&quot;nothing went out.&quot;);
+      document.getElementById(&quot;hmPickX&quot;).addEventListener(&quot;click&quot;, function(){ hmSel=null; renderHeatmap(); });
+    } else pick.style.display=&quot;none&quot;;
+
+    var by=hmByWeekday(cells);
+    var el=document.getElementById(&quot;hmInsight&quot;);
+    if(by.length&gt;=3){
+      var top=by[0];
+      var days=[&quot;Sundays&quot;,&quot;Mondays&quot;,&quot;Tuesdays&quot;,&quot;Wednesdays&quot;,&quot;Thursdays&quot;,&quot;Fridays&quot;,&quot;Saturdays&quot;];
+      el.innerHTML=&quot;&lt;b&gt;&quot;+days[top.dow]+&quot;&lt;/b&gt; cost you the most — &lt;b&gt;&quot;+fmt(top.total,state.currency)+&quot;&lt;/b&gt; across &quot;+top.n+&quot; of them, averaging &lt;b&gt;&quot;+fmt(top.avg,state.currency)+&quot;&lt;/b&gt; each. &quot;
+        +&quot;You spent something on &lt;b&gt;&quot;+sc.spentDays+&quot;&lt;/b&gt; of the last &quot;+cells.length+&quot; days.&quot;;
+    } else el.innerHTML=&quot;You spent something on &lt;b&gt;&quot;+sc.spentDays+&quot;&lt;/b&gt; of the last &quot;+cells.length+&quot; days.&quot;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderHeatmap(){\n    var card=document.getElementById(\"hmCard\");\n    if(!card) return;\n    var cells=hmGrid(HM_WEEKS), sc=hmScale(cells);\n    if(!sc.spentDays){ card.style.display=\"none\"; return; }   // nothing spent = nothing to show\n    card.style.display=\"\";\n    document.getElementById(\"hmChart\").innerHTML=hmSvg(cells, sc);\n    var first=cells[0].date, last=cells[cells.length-1].date;\n    document.getElementById(\"hmSpan\").textContent=fcShortDate(first)+\" \u2013 \"+fcShortDate(last);\n\n    Array.prototype.forEach.call(document.querySelectorAll(\"#hmChart .hm-cell\"), function(r){\n      r.addEventListener(\"click\", function(){\n        var ds=r.getAttribute(\"data-d\");\n        hmSel=(hmSel===ds)?null:ds;\n        renderHeatmap();\n      });\n    });\n\n    var pick=document.getElementById(\"hmPick\");\n    if(hmSel){\n      var day=state.transactions.filter(function(t){ return t.date===hmSel && balDelta(t)<0; });\n      var tot=day.reduce(function(n,t){ return n+(-balDelta(t)); },0);\n      pick.style.display=\"\";\n      pick.innerHTML='<button type=\"button\" class=\"hm-pick-x\" id=\"hmPickX\" aria-label=\"Close\">\u2715</button>'\n        +'<b>'+esc(niceDate(hmSel))+'</b> \u2014 '+(day.length?('<b>'+fmt(tot,state.currency)+'</b> across '+day.length+' entr'+(day.length===1?\"y\":\"ies\")+'<br>'\n          +day.slice(0,4).map(function(t){ return '\u00b7 '+esc((t.note||t.cat||TYPE_META[t.type].label))+' \u2014 '+fmt(Math.abs(num(t.amount)),state.currency); }).join(\"<br>\")\n          +(day.length>4?\"<br>\u00b7 \u2026and \"+(day.length-4)+\" more\":\"\")):\"nothing went out.\");\n      document.getElementById(\"hmPickX\").addEventListener(\"click\", function(){ hmSel=null; renderHeatmap(); });\n    } else pick.style.display=\"none\";\n\n    var by=hmByWeekday(cells);\n    var el=document.getElementById(\"hmInsight\");\n    if(by.length>=3){\n      var top=by[0];\n      var days=[\"Sundays\",\"Mondays\",\"Tuesdays\",\"Wednesdays\",\"Thursdays\",\"Fridays\",\"Saturdays\"];\n      el.innerHTML=\"<b>\"+days[top.dow]+\"</b> cost you the most \u2014 <b>\"+fmt(top.total,state.currency)+\"</b> across \"+top.n+\" of them, averaging <b>\"+fmt(top.avg,state.currency)+\"</b> each. \"\n        +\"You spent something on <b>\"+sc.spentDays+\"</b> of the last \"+cells.length+\" days.\";\n    } else el.innerHTML=\"You spent something on <b>\"+sc.spentDays+\"</b> of the last \"+cells.length+\" days.\";\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderHeatmap!==\"undefined\"?renderHeatmap:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

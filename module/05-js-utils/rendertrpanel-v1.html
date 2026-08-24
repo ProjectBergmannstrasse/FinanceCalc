@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTrPanel — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTrPanel<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v9.9 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTrPanel(){
+    var sym=state.currency;
+    // instrument filter options rebuild from the full list, not the filtered one
+    var sel=document.getElementById(&quot;trInst&quot;);
+    var prev=sel.value;
+    var insts=tradeByInstrument(tradeList()).map(function(r){ return r.inst; });
+    sel.innerHTML=&#x27;&lt;option value=&quot;__all&quot;&gt;All instruments&lt;/option&gt;&#x27;
+      + insts.map(function(i){ return &#x27;&lt;option value=&quot;&#x27;+esc(i)+&#x27;&quot;&gt;&#x27;+esc(i)+&#x27;&lt;/option&gt;&#x27;; }).join(&quot;&quot;);
+    sel.value = insts.indexOf(prev)&gt;=0 ? prev : &quot;__all&quot;;
+
+    var list=trScopedList();
+    var box=document.getElementById(&quot;trBody&quot;);
+    if(!list.length){
+      box.innerHTML=&#x27;&lt;div class=&quot;empty&quot;&gt;&lt;b&gt;No trades yet.&lt;/b&gt;&lt;br&gt;Log one with &lt;b&gt;Trade — made money&lt;/b&gt; or &lt;b&gt;Trade — lost money&lt;/b&gt;. Add an instrument (like XAUUSD) and you\&#x27;ll get a per-instrument breakdown here.&lt;/div&gt;&#x27;;
+      return;
+    }
+    var s=tradeStats(list);
+    var pfTxt = s.profitFactor===Infinity ? &quot;∞&quot; : s.profitFactor.toFixed(2);
+    var wrCls = s.winRate&gt;=0.5?&quot;up&quot;:&quot;down&quot;;
+    var html=&#x27;&lt;div class=&quot;tr-hero&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;tr-wr &#x27;+wrCls+&#x27;&quot;&gt;&#x27;+(s.winRate*100).toFixed(1)+&#x27;%&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;tr-wr-sub&quot;&gt;win rate · &#x27;+s.wins+&#x27;W / &#x27;+s.losses+&#x27;L over &#x27;+s.n+&#x27; trade&#x27;+(s.n===1?&quot;&quot;:&quot;s&quot;)+&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    html+=equityCurveSvg(s.curve, sym);
+    html+=&#x27;&lt;div class=&quot;tr-grid&quot;&gt;&#x27;
+      +trStat(&quot;Net P&amp;amp;L&quot;, fmt(s.net,sym), s.net&gt;=0?&quot;up&quot;:&quot;down&quot;)
+      +trStat(&quot;Expectancy / trade&quot;, fmt(s.expectancy,sym), s.expectancy&gt;=0?&quot;up&quot;:&quot;down&quot;)
+      +trStat(&quot;Profit factor&quot;, pfTxt, s.profitFactor&gt;=1?&quot;up&quot;:&quot;down&quot;)
+      +trStat(&quot;Max drawdown&quot;, fmt(s.maxDD,sym), s.maxDD&gt;0?&quot;down&quot;:&quot;&quot;)
+      +trStat(&quot;Avg win&quot;, fmt(s.avgWin,sym), &quot;up&quot;)
+      +trStat(&quot;Avg loss&quot;, fmt(s.avgLoss,sym), &quot;down&quot;)
+      +trStat(&quot;Best trade&quot;, fmt(s.best,sym), &quot;up&quot;)
+      +trStat(&quot;Worst trade&quot;, fmt(s.worst,sym), &quot;down&quot;)
+      +trStat(&quot;Longest win streak&quot;, s.bestWinStreak)
+      +trStat(&quot;Longest loss streak&quot;, s.bestLossStreak)
+      +&#x27;&lt;/div&gt;&#x27;;
+
+    // Expectancy is the honest headline — say so when win rate flatters a losing system.
+    if(s.winRate&gt;=0.5 &amp;&amp; s.expectancy&lt;0){
+      html+=&#x27;&lt;div class=&quot;ai-banner warn&quot; style=&quot;margin-top:10px&quot;&gt;⚠️ You win more often than you lose, but expectancy is &lt;b&gt;negative&lt;/b&gt; — the losses are bigger than the wins. Win rate is flattering this.&lt;/div&gt;&#x27;;
+    } else if(s.winRate&lt;0.5 &amp;&amp; s.expectancy&gt;0){
+      html+=&#x27;&lt;div class=&quot;ai-banner good&quot; style=&quot;margin-top:10px&quot;&gt;You lose more often than you win, but expectancy is &lt;b&gt;positive&lt;/b&gt; — the winners are big enough to carry it.&lt;/div&gt;&#x27;;
+    }
+
+    if(sel.value===&quot;__all&quot;){
+      var rows=tradeByInstrument(list);
+      if(rows.length&gt;1){
+        html+=&#x27;&lt;div class=&quot;tr-sec&quot;&gt;By instrument&lt;/div&gt;&lt;div class=&quot;tr-tbl&quot;&gt;&#x27;;
+        rows.forEach(function(r){
+          var st=r.stats;
+          html+=&#x27;&lt;div class=&quot;tr-row&quot;&gt;&#x27;
+            +&#x27;&lt;div class=&quot;tr-i&quot;&gt;&#x27;+esc(r.inst)+&#x27;&lt;span class=&quot;tr-n&quot;&gt;&#x27;+st.n+&#x27; trade&#x27;+(st.n===1?&quot;&quot;:&quot;s&quot;)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;tr-wr2 &#x27;+(st.winRate&gt;=0.5?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+(st.winRate*100).toFixed(0)+&#x27;%&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;tr-pl &#x27;+(st.net&gt;=0?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+fmt(st.net,sym)+&#x27;&lt;/div&gt;&#x27;
+            +&#x27;&lt;/div&gt;&#x27;;
+        });
+        html+=&#x27;&lt;/div&gt;&#x27;;
+      }
+    }
+    box.innerHTML=html;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTrPanel(){\n    var sym=state.currency;\n    // instrument filter options rebuild from the full list, not the filtered one\n    var sel=document.getElementById(\"trInst\");\n    var prev=sel.value;\n    var insts=tradeByInstrument(tradeList()).map(function(r){ return r.inst; });\n    sel.innerHTML='<option value=\"__all\">All instruments</option>'\n      + insts.map(function(i){ return '<option value=\"'+esc(i)+'\">'+esc(i)+'</option>'; }).join(\"\");\n    sel.value = insts.indexOf(prev)>=0 ? prev : \"__all\";\n\n    var list=trScopedList();\n    var box=document.getElementById(\"trBody\");\n    if(!list.length){\n      box.innerHTML='<div class=\"empty\"><b>No trades yet.</b><br>Log one with <b>Trade \u2014 made money</b> or <b>Trade \u2014 lost money</b>. Add an instrument (like XAUUSD) and you\\'ll get a per-instrument breakdown here.</div>';\n      return;\n    }\n    var s=tradeStats(list);\n    var pfTxt = s.profitFactor===Infinity ? \"\u221e\" : s.profitFactor.toFixed(2);\n    var wrCls = s.winRate>=0.5?\"up\":\"down\";\n    var html='<div class=\"tr-hero\">'\n      +'<div class=\"tr-wr '+wrCls+'\">'+(s.winRate*100).toFixed(1)+'%</div>'\n      +'<div class=\"tr-wr-sub\">win rate \u00b7 '+s.wins+'W / '+s.losses+'L over '+s.n+' trade'+(s.n===1?\"\":\"s\")+'</div>'\n      +'</div>';\n    html+=equityCurveSvg(s.curve, sym);\n    html+='<div class=\"tr-grid\">'\n      +trStat(\"Net P&amp;L\", fmt(s.net,sym), s.net>=0?\"up\":\"down\")\n      +trStat(\"Expectancy / trade\", fmt(s.expectancy,sym), s.expectancy>=0?\"up\":\"down\")\n      +trStat(\"Profit factor\", pfTxt, s.profitFactor>=1?\"up\":\"down\")\n      +trStat(\"Max drawdown\", fmt(s.maxDD,sym), s.maxDD>0?\"down\":\"\")\n      +trStat(\"Avg win\", fmt(s.avgWin,sym), \"up\")\n      +trStat(\"Avg loss\", fmt(s.avgLoss,sym), \"down\")\n      +trStat(\"Best trade\", fmt(s.best,sym), \"up\")\n      +trStat(\"Worst trade\", fmt(s.worst,sym), \"down\")\n      +trStat(\"Longest win streak\", s.bestWinStreak)\n      +trStat(\"Longest loss streak\", s.bestLossStreak)\n      +'</div>';\n\n    // Expectancy is the honest headline \u2014 say so when win rate flatters a losing system.\n    if(s.winRate>=0.5 && s.expectancy<0){\n      html+='<div class=\"ai-banner warn\" style=\"margin-top:10px\">\u26a0\ufe0f You win more often than you lose, but expectancy is <b>negative</b> \u2014 the losses are bigger than the wins. Win rate is flattering this.</div>';\n    } else if(s.winRate<0.5 && s.expectancy>0){\n      html+='<div class=\"ai-banner good\" style=\"margin-top:10px\">You lose more often than you win, but expectancy is <b>positive</b> \u2014 the winners are big enough to carry it.</div>';\n    }\n\n    if(sel.value===\"__all\"){\n      var rows=tradeByInstrument(list);\n      if(rows.length>1){\n        html+='<div class=\"tr-sec\">By instrument</div><div class=\"tr-tbl\">';\n        rows.forEach(function(r){\n          var st=r.stats;\n          html+='<div class=\"tr-row\">'\n            +'<div class=\"tr-i\">'+esc(r.inst)+'<span class=\"tr-n\">'+st.n+' trade'+(st.n===1?\"\":\"s\")+'</span></div>'\n            +'<div class=\"tr-wr2 '+(st.winRate>=0.5?\"up\":\"down\")+'\">'+(st.winRate*100).toFixed(0)+'%</div>'\n            +'<div class=\"tr-pl '+(st.net>=0?\"up\":\"down\")+'\">'+fmt(st.net,sym)+'</div>'\n            +'</div>';\n        });\n        html+='</div>';\n      }\n    }\n    box.innerHTML=html;\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTrPanel!==\"undefined\"?renderTrPanel:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

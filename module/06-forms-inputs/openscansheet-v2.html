@@ -1,0 +1,136 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openScanSheet — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openScanSheet<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v34.0 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openScanSheet(file, dataUrl){
+    var isTextDetectorSupported=typeof window.TextDetector!==&quot;undefined&quot;;
+    var sym=state.currency;
+
+    // build the sheet immediately and show the image
+    var sheetHtml=&#x27;&lt;div class=&quot;sheet&quot; style=&quot;max-width:600px&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;📷 Scan receipt&lt;/h3&gt;&#x27;
+        +&#x27;&lt;button class=&quot;x-btn&quot; id=&quot;scX&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-bd&quot; style=&quot;max-height:none;overflow:visible&quot;&gt;&#x27;
+        +&#x27;&lt;div style=&quot;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start&quot;&gt;&#x27;
+          +&#x27;&lt;div style=&quot;flex:1;min-width:140px;max-width:220px&quot;&gt;&#x27;
+            +&#x27;&lt;img id=&quot;scImg&quot; src=&quot;&#x27;+dataUrl+&#x27;&quot; alt=&quot;receipt&quot; &#x27;
+              +&#x27;style=&quot;width:100%;border-radius:10px;display:block&quot;&gt;&#x27;
+          +&#x27;&lt;/div&gt;&#x27;
+          +&#x27;&lt;div style=&quot;flex:2;min-width:180px&quot;&gt;&#x27;
+            +&#x27;&lt;div id=&quot;scStatus&quot; style=&quot;font-size:12px;color:var(--mut);margin-bottom:10px&quot;&gt;&#x27;
+              +(isTextDetectorSupported?&quot;Reading text…&quot;:&quot;Text reader not available in this browser — fill in manually.&quot;)
+            +&#x27;&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Amount&lt;/label&gt;&#x27;
+              +&#x27;&lt;input class=&quot;inp&quot; id=&quot;scAmt&quot; inputmode=&quot;decimal&quot; placeholder=&quot;e.g. 24.99&quot;&gt;&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Date&lt;/label&gt;&#x27;
+              +&#x27;&lt;input class=&quot;inp&quot; id=&quot;scDate&quot; type=&quot;date&quot;&gt;&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Note / merchant&lt;/label&gt;&#x27;
+              +&#x27;&lt;input class=&quot;inp&quot; id=&quot;scNote&quot; placeholder=&quot;e.g. Carrefour&quot;&gt;&lt;/div&gt;&#x27;
+            +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Category&lt;/label&gt;&#x27;
+              +&#x27;&lt;select class=&quot;inp&quot; id=&quot;scCat&quot;&gt;&#x27;
+                +&#x27;&lt;option&gt;Food&lt;/option&gt;&lt;option&gt;Snacks&lt;/option&gt;&lt;option&gt;Shopping&lt;/option&gt;&#x27;
+                +&#x27;&lt;option&gt;Transport&lt;/option&gt;&lt;option&gt;Utilities&lt;/option&gt;&lt;option&gt;Entertainment&lt;/option&gt;&#x27;
+                +&#x27;&lt;option&gt;Other&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;&#x27;
+          +&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-ft&quot;&gt;&#x27;
+        +&#x27;&lt;button class=&quot;btn sm&quot; id=&quot;scCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+        +&#x27;&lt;button class=&quot;btn sm solid&quot; id=&quot;scAdd&quot;&gt;Add expense&lt;/button&gt;&#x27;
+      +&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;;
+
+    var pair=openOverlay(sheetHtml, {ready:function(ov,close){
+      // pre-fill date with today
+      document.getElementById(&quot;scDate&quot;).value=todayStr();
+      attachDatePicker(document.getElementById(&quot;scDate&quot;));   // sheet is built at runtime
+      document.getElementById(&quot;scX&quot;).onclick=close;
+      document.getElementById(&quot;scCancel&quot;).onclick=close;
+      document.getElementById(&quot;scAdd&quot;).onclick=function(){
+        var amt=parseFloat(document.getElementById(&quot;scAmt&quot;).value);
+        if(!isFinite(amt)||amt&lt;=0){ shake(document.getElementById(&quot;scAmt&quot;)); return; }
+        var tx={
+          id:&quot;t&quot;+Date.now()+Math.floor(Math.random()*9999),
+          type:&quot;expense&quot;, amount:amt,
+          date:document.getElementById(&quot;scDate&quot;).value||todayStr(),
+          note:document.getElementById(&quot;scNote&quot;).value.trim(),
+          cat:document.getElementById(&quot;scCat&quot;).value
+        };
+        state.transactions.unshift(tx);
+        persist(); close(); render();
+        flashSaved(&quot;expense logged from receipt&quot;);
+      };
+
+      // run OCR after the image has painted
+      if(!isTextDetectorSupported) return;
+      var img=document.getElementById(&quot;scImg&quot;);
+      var status=document.getElementById(&quot;scStatus&quot;);
+      var run=function(){
+        try{
+          var cv=preprocessReceiptCanvas(img);
+          var detector=new window.TextDetector();
+          detector.detect(cv).then(function(blocks){
+            var lines=blocks.map(function(b){ return b.rawValue; })
+              .sort(function(a,b){
+                // sort roughly top-to-bottom by bounding box Y
+                return (a._y||0)-(b._y||0);
+              });
+            // preserve vertical order via blocks directly
+            var sorted=blocks.slice().sort(function(a,b){
+              return (a.boundingBox.top)-(b.boundingBox.top);
+            });
+            var sortedLines=sorted.map(function(b){ return b.rawValue; });
+            var parsed=parseReceiptText(sortedLines.length?sortedLines:lines);
+            // fill in whatever we found
+            if(parsed.total){
+              document.getElementById(&quot;scAmt&quot;).value=parsed.total.toFixed(2);
+            }
+            if(parsed.date){
+              document.getElementById(&quot;scDate&quot;).value=parsed.date;
+            }
+            if(parsed.merchant||parsed.note){
+              document.getElementById(&quot;scNote&quot;).value=parsed.merchant||parsed.note;
+            }
+            var found=[];
+            if(parsed.total) found.push(sym+parsed.total.toFixed(2));
+            if(parsed.date)  found.push(parsed.date);
+            if(parsed.merchant) found.push(&#x27;&quot;&#x27;+parsed.merchant+&#x27;&quot;&#x27;);
+            status.textContent=found.length
+              ? &quot;Found: &quot;+found.join(&quot; · &quot;)+&quot; — check and adjust if needed.&quot;
+              : &quot;Couldn&#x27;t read any amounts — fill in manually.&quot;;
+            status.style.color=found.length?&quot;var(--up)&quot;:&quot;var(--amber)&quot;;
+          }).catch(function(err){
+            status.textContent=&quot;OCR error — fill in manually. (&quot;+String(err).slice(0,60)+&quot;)&quot;;
+            status.style.color=&quot;var(--amber)&quot;;
+          });
+        }catch(err){
+          status.textContent=&quot;Couldn&#x27;t run OCR — fill in manually.&quot;;
+          status.style.color=&quot;var(--amber)&quot;;
+        }
+      };
+      if(img.complete) run(); else img.onload=run;
+    }});
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openScanSheet(file, dataUrl){\n    var isTextDetectorSupported=typeof window.TextDetector!==\"undefined\";\n    var sym=state.currency;\n\n    // build the sheet immediately and show the image\n    var sheetHtml='<div class=\"sheet\" style=\"max-width:600px\">'\n      +'<div class=\"sheet-hd\"><h3>\ud83d\udcf7 Scan receipt</h3>'\n        +'<button class=\"x-btn\" id=\"scX\">\u2715</button></div>'\n      +'<div class=\"sheet-bd\" style=\"max-height:none;overflow:visible\">'\n        +'<div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start\">'\n          +'<div style=\"flex:1;min-width:140px;max-width:220px\">'\n            +'<img id=\"scImg\" src=\"'+dataUrl+'\" alt=\"receipt\" '\n              +'style=\"width:100%;border-radius:10px;display:block\">'\n          +'</div>'\n          +'<div style=\"flex:2;min-width:180px\">'\n            +'<div id=\"scStatus\" style=\"font-size:12px;color:var(--mut);margin-bottom:10px\">'\n              +(isTextDetectorSupported?\"Reading text\u2026\":\"Text reader not available in this browser \u2014 fill in manually.\")\n            +'</div>'\n            +'<div class=\"fld\"><label>Amount</label>'\n              +'<input class=\"inp\" id=\"scAmt\" inputmode=\"decimal\" placeholder=\"e.g. 24.99\"></div>'\n            +'<div class=\"fld\"><label>Date</label>'\n              +'<input class=\"inp\" id=\"scDate\" type=\"date\"></div>'\n            +'<div class=\"fld\"><label>Note / merchant</label>'\n              +'<input class=\"inp\" id=\"scNote\" placeholder=\"e.g. Carrefour\"></div>'\n            +'<div class=\"fld\"><label>Category</label>'\n              +'<select class=\"inp\" id=\"scCat\">'\n                +'<option>Food</option><option>Snacks</option><option>Shopping</option>'\n                +'<option>Transport</option><option>Utilities</option><option>Entertainment</option>'\n                +'<option>Other</option></select></div>'\n          +'</div>'\n        +'</div>'\n      +'</div>'\n      +'<div class=\"sheet-ft\">'\n        +'<button class=\"btn sm\" id=\"scCancel\">Cancel</button>'\n        +'<button class=\"btn sm solid\" id=\"scAdd\">Add expense</button>'\n      +'</div></div>';\n\n    var pair=openOverlay(sheetHtml, {ready:function(ov,close){\n      // pre-fill date with today\n      document.getElementById(\"scDate\").value=todayStr();\n      attachDatePicker(document.getElementById(\"scDate\"));   // sheet is built at runtime\n      document.getElementById(\"scX\").onclick=close;\n      document.getElementById(\"scCancel\").onclick=close;\n      document.getElementById(\"scAdd\").onclick=function(){\n        var amt=parseFloat(document.getElementById(\"scAmt\").value);\n        if(!isFinite(amt)||amt<=0){ shake(document.getElementById(\"scAmt\")); return; }\n        var tx={\n          id:\"t\"+Date.now()+Math.floor(Math.random()*9999),\n          type:\"expense\", amount:amt,\n          date:document.getElementById(\"scDate\").value||todayStr(),\n          note:document.getElementById(\"scNote\").value.trim(),\n          cat:document.getElementById(\"scCat\").value\n        };\n        state.transactions.unshift(tx);\n        persist(); close(); render();\n        flashSaved(\"expense logged from receipt\");\n      };\n\n      // run OCR after the image has painted\n      if(!isTextDetectorSupported) return;\n      var img=document.getElementById(\"scImg\");\n      var status=document.getElementById(\"scStatus\");\n      var run=function(){\n        try{\n          var cv=preprocessReceiptCanvas(img);\n          var detector=new window.TextDetector();\n          detector.detect(cv).then(function(blocks){\n            var lines=blocks.map(function(b){ return b.rawValue; })\n              .sort(function(a,b){\n                // sort roughly top-to-bottom by bounding box Y\n                return (a._y||0)-(b._y||0);\n              });\n            // preserve vertical order via blocks directly\n            var sorted=blocks.slice().sort(function(a,b){\n              return (a.boundingBox.top)-(b.boundingBox.top);\n            });\n            var sortedLines=sorted.map(function(b){ return b.rawValue; });\n            var parsed=parseReceiptText(sortedLines.length?sortedLines:lines);\n            // fill in whatever we found\n            if(parsed.total){\n              document.getElementById(\"scAmt\").value=parsed.total.toFixed(2);\n            }\n            if(parsed.date){\n              document.getElementById(\"scDate\").value=parsed.date;\n            }\n            if(parsed.merchant||parsed.note){\n              document.getElementById(\"scNote\").value=parsed.merchant||parsed.note;\n            }\n            var found=[];\n            if(parsed.total) found.push(sym+parsed.total.toFixed(2));\n            if(parsed.date)  found.push(parsed.date);\n            if(parsed.merchant) found.push('\"'+parsed.merchant+'\"');\n            status.textContent=found.length\n              ? \"Found: \"+found.join(\" \u00b7 \")+\" \u2014 check and adjust if needed.\"\n              : \"Couldn't read any amounts \u2014 fill in manually.\";\n            status.style.color=found.length?\"var(--up)\":\"var(--amber)\";\n          }).catch(function(err){\n            status.textContent=\"OCR error \u2014 fill in manually. (\"+String(err).slice(0,60)+\")\";\n            status.style.color=\"var(--amber)\";\n          });\n        }catch(err){\n          status.textContent=\"Couldn't run OCR \u2014 fill in manually.\";\n          status.style.color=\"var(--amber)\";\n        }\n      };\n      if(img.complete) run(); else img.onload=run;\n    }});\n  }",ARGS="file, dataUrl";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openScanSheet!==\"undefined\"?openScanSheet:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

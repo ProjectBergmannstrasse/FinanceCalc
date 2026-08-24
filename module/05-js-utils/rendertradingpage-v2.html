@@ -1,0 +1,113 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTradingPage — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTradingPage<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v24.4 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTradingPage(){
+    var all=tradeList(), sym=state.currency;
+    document.getElementById(&quot;trEmpty&quot;).style.display=all.length?&quot;none&quot;:&quot;&quot;;
+    document.getElementById(&quot;trWrap&quot;).style.display=all.length?&quot;&quot;:&quot;none&quot;;
+    if(!all.length) return;
+
+    var sel=document.getElementById(&quot;trInst&quot;), prev=sel.value;
+    var insts=tradeByInstrument(all).map(function(r){ return r.inst; });
+    sel.innerHTML=&#x27;&lt;option value=&quot;__all&quot;&gt;All instruments&lt;/option&gt;&#x27;+insts.map(function(i){ return &#x27;&lt;option value=&quot;&#x27;+esc(i)+&#x27;&quot;&gt;&#x27;+esc(i)+&#x27;&lt;/option&gt;&#x27;; }).join(&quot;&quot;);
+    sel.value=insts.indexOf(prev)&gt;=0?prev:&quot;__all&quot;;
+    if(sel._xsync) sel._xsync();   // options were just rebuilt
+
+    var list=trScopedList();
+    var wrEl=document.getElementById(&quot;trWr&quot;), subEl=document.getElementById(&quot;trWrSub&quot;);
+    if(!list.length){
+      wrEl.textContent=&quot;—&quot;; wrEl.className=&quot;tr-wr mono&quot;;
+      subEl.textContent=&quot;No trades in this period.&quot;;
+      document.getElementById(&quot;trCurve&quot;).innerHTML=&quot;&quot;;
+      document.getElementById(&quot;trGrid&quot;).innerHTML=&quot;&quot;;
+      document.getElementById(&quot;trInstPanel&quot;).style.display=&quot;none&quot;;
+      document.getElementById(&quot;trInsights&quot;).innerHTML=&#x27;&lt;div class=&quot;ins ins-info&quot;&gt;Nothing to read in this period — try a longer one.&lt;/div&gt;&#x27;;
+      return;
+    }
+    var s=tradeStats(list);
+    wrEl.textContent=(s.winRate*100).toFixed(1)+&quot;%&quot;;
+    wrEl.className=&quot;tr-wr mono &quot;+(s.expectancy&gt;=0?&quot;up&quot;:&quot;down&quot;);
+    subEl.innerHTML=&quot;win rate · &quot;+s.wins+&quot;W / &quot;+s.losses+&quot;L over &quot;+s.n+&quot; trade&quot;+(s.n===1?&quot;&quot;:&quot;s&quot;);
+    document.getElementById(&quot;trCurve&quot;).innerHTML=equityCurveSvg(s.curve,sym);
+    equityCurveBind(s.curve,sym);
+
+    function cell(k,v,cls){ return &#x27;&lt;div class=&quot;tr-cell&quot;&gt;&lt;div class=&quot;tr-k&quot;&gt;&#x27;+k+&#x27;&lt;/div&gt;&lt;div class=&quot;tr-v mono &#x27;+(cls||&quot;&quot;)+&#x27;&quot;&gt;&#x27;+v+&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;; }
+    var pf=s.profitFactor===Infinity?&quot;∞&quot;:s.profitFactor.toFixed(2);
+    document.getElementById(&quot;trGrid&quot;).innerHTML=
+       cell(&quot;Net P&amp;amp;L&quot;,fmt(s.net,sym),s.net&gt;=0?&quot;up&quot;:&quot;down&quot;)
+      +cell(&quot;Expectancy / trade&quot;,fmt(s.expectancy,sym),s.expectancy&gt;=0?&quot;up&quot;:&quot;down&quot;)
+      +cell(&quot;Profit factor&quot;,pf,s.profitFactor&gt;=1?&quot;up&quot;:&quot;down&quot;)
+      +cell(&quot;Max drawdown&quot;,fmt(s.maxDD,sym),s.maxDD&gt;0?&quot;down&quot;:&quot;&quot;)
+      +cell(&quot;Avg win&quot;,fmt(s.avgWin,sym),&quot;up&quot;)
+      +cell(&quot;Avg loss&quot;,fmt(s.avgLoss,sym),&quot;down&quot;)
+      +cell(&quot;Best trade&quot;,fmt(s.best,sym),&quot;up&quot;)
+      +cell(&quot;Worst trade&quot;,fmt(s.worst,sym),&quot;down&quot;)
+      +cell(&quot;Longest win streak&quot;,s.bestWinStreak)
+      +cell(&quot;Longest loss streak&quot;,s.bestLossStreak);
+
+    var rows=tradeByInstrument(list);
+    var ip=document.getElementById(&quot;trInstPanel&quot;);
+    if(rows.length&gt;1 &amp;&amp; sel.value===&quot;__all&quot;){
+      ip.style.display=&quot;&quot;;
+      document.getElementById(&quot;trTbl&quot;).innerHTML=rows.map(function(r){
+        var st=r.stats;
+        return &#x27;&lt;div class=&quot;tr-row&quot;&gt;&lt;div class=&quot;tr-i&quot;&gt;&#x27;+esc(r.inst)+&#x27;&lt;span class=&quot;tr-n&quot;&gt;&#x27;+st.n+&#x27; trade&#x27;+(st.n===1?&quot;&quot;:&quot;s&quot;)+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;
+          +&#x27;&lt;div class=&quot;tr-wr2 mono &#x27;+(st.winRate&gt;=0.5?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+(st.winRate*100).toFixed(0)+&#x27;%&lt;/div&gt;&#x27;
+          +&#x27;&lt;div class=&quot;tr-pl mono &#x27;+(st.net&gt;=0?&quot;up&quot;:&quot;down&quot;)+&#x27;&quot;&gt;&#x27;+fmt(st.net,sym)+&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;;
+      }).join(&quot;&quot;);
+    } else ip.style.display=&quot;none&quot;;
+
+    renderTradeForecast(list, sym);
+    renderPlan(tradeList(), sym);   // the plan is your whole record, not the ticked period
+    renderTagCard();
+
+    var ICON={good:&quot;✅&quot;,bad:&quot;⚠️&quot;,warn:&quot;⚡&quot;,info:&quot;ℹ️&quot;};
+    // Seventeen rules can match at once. Fifteen paragraphs of advice is a wall nobody
+    // reads, so show the few that matter most: problems first, then warnings, then
+    // observations. The rest are one tap away rather than shouting over the important ones.
+    var RANK={bad:0, warn:1, good:2, info:3};
+    var all=tradeInsights(list,sym).map(function(x,i){ x._i=i; return x; })
+      .sort(function(a,b){ return (RANK[a.kind]-RANK[b.kind]) || (a._i-b._i); });
+    var top=all.slice(0, TR_INSIGHT_MAX), rest=all.slice(TR_INSIGHT_MAX);
+    var draw=function(x){
+      return &#x27;&lt;div class=&quot;ins ins-&#x27;+x.kind+&#x27;&quot;&gt;&lt;span class=&quot;ins-ic&quot;&gt;&#x27;+ICON[x.kind]+&#x27;&lt;/span&gt;&lt;span&gt;&#x27;+x.text+&#x27;&lt;/span&gt;&lt;/div&gt;&#x27;;
+    };
+    var h=top.map(draw).join(&quot;&quot;);
+    if(rest.length){
+      h+=&#x27;&lt;div id=&quot;insMore&quot; style=&quot;display:none&quot;&gt;&#x27;+rest.map(draw).join(&quot;&quot;)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;button type=&quot;button&quot; class=&quot;ins-more-btn&quot; id=&quot;insMoreBtn&quot;&gt;&#x27;+rest.length+&#x27; more&lt;/button&gt;&#x27;;
+    }
+    document.getElementById(&quot;trInsights&quot;).innerHTML=h;
+    var mb=document.getElementById(&quot;insMoreBtn&quot;);
+    if(mb) mb.addEventListener(&quot;click&quot;, function(){
+      var box=document.getElementById(&quot;insMore&quot;);
+      var open=box.style.display!==&quot;none&quot;;
+      box.style.display=open?&quot;none&quot;:&quot;block&quot;;
+      mb.textContent=open?(rest.length+&quot; more&quot;):&quot;Show less&quot;;
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTradingPage(){\n    var all=tradeList(), sym=state.currency;\n    document.getElementById(\"trEmpty\").style.display=all.length?\"none\":\"\";\n    document.getElementById(\"trWrap\").style.display=all.length?\"\":\"none\";\n    if(!all.length) return;\n\n    var sel=document.getElementById(\"trInst\"), prev=sel.value;\n    var insts=tradeByInstrument(all).map(function(r){ return r.inst; });\n    sel.innerHTML='<option value=\"__all\">All instruments</option>'+insts.map(function(i){ return '<option value=\"'+esc(i)+'\">'+esc(i)+'</option>'; }).join(\"\");\n    sel.value=insts.indexOf(prev)>=0?prev:\"__all\";\n    if(sel._xsync) sel._xsync();   // options were just rebuilt\n\n    var list=trScopedList();\n    var wrEl=document.getElementById(\"trWr\"), subEl=document.getElementById(\"trWrSub\");\n    if(!list.length){\n      wrEl.textContent=\"\u2014\"; wrEl.className=\"tr-wr mono\";\n      subEl.textContent=\"No trades in this period.\";\n      document.getElementById(\"trCurve\").innerHTML=\"\";\n      document.getElementById(\"trGrid\").innerHTML=\"\";\n      document.getElementById(\"trInstPanel\").style.display=\"none\";\n      document.getElementById(\"trInsights\").innerHTML='<div class=\"ins ins-info\">Nothing to read in this period \u2014 try a longer one.</div>';\n      return;\n    }\n    var s=tradeStats(list);\n    wrEl.textContent=(s.winRate*100).toFixed(1)+\"%\";\n    wrEl.className=\"tr-wr mono \"+(s.expectancy>=0?\"up\":\"down\");\n    subEl.innerHTML=\"win rate \u00b7 \"+s.wins+\"W / \"+s.losses+\"L over \"+s.n+\" trade\"+(s.n===1?\"\":\"s\");\n    document.getElementById(\"trCurve\").innerHTML=equityCurveSvg(s.curve,sym);\n    equityCurveBind(s.curve,sym);\n\n    function cell(k,v,cls){ return '<div class=\"tr-cell\"><div class=\"tr-k\">'+k+'</div><div class=\"tr-v mono '+(cls||\"\")+'\">'+v+'</div></div>'; }\n    var pf=s.profitFactor===Infinity?\"\u221e\":s.profitFactor.toFixed(2);\n    document.getElementById(\"trGrid\").innerHTML=\n       cell(\"Net P&amp;L\",fmt(s.net,sym),s.net>=0?\"up\":\"down\")\n      +cell(\"Expectancy / trade\",fmt(s.expectancy,sym),s.expectancy>=0?\"up\":\"down\")\n      +cell(\"Profit factor\",pf,s.profitFactor>=1?\"up\":\"down\")\n      +cell(\"Max drawdown\",fmt(s.maxDD,sym),s.maxDD>0?\"down\":\"\")\n      +cell(\"Avg win\",fmt(s.avgWin,sym),\"up\")\n      +cell(\"Avg loss\",fmt(s.avgLoss,sym),\"down\")\n      +cell(\"Best trade\",fmt(s.best,sym),\"up\")\n      +cell(\"Worst trade\",fmt(s.worst,sym),\"down\")\n      +cell(\"Longest win streak\",s.bestWinStreak)\n      +cell(\"Longest loss streak\",s.bestLossStreak);\n\n    var rows=tradeByInstrument(list);\n    var ip=document.getElementById(\"trInstPanel\");\n    if(rows.length>1 && sel.value===\"__all\"){\n      ip.style.display=\"\";\n      document.getElementById(\"trTbl\").innerHTML=rows.map(function(r){\n        var st=r.stats;\n        return '<div class=\"tr-row\"><div class=\"tr-i\">'+esc(r.inst)+'<span class=\"tr-n\">'+st.n+' trade'+(st.n===1?\"\":\"s\")+'</span></div>'\n          +'<div class=\"tr-wr2 mono '+(st.winRate>=0.5?\"up\":\"down\")+'\">'+(st.winRate*100).toFixed(0)+'%</div>'\n          +'<div class=\"tr-pl mono '+(st.net>=0?\"up\":\"down\")+'\">'+fmt(st.net,sym)+'</div></div>';\n      }).join(\"\");\n    } else ip.style.display=\"none\";\n\n    renderTradeForecast(list, sym);\n    renderPlan(tradeList(), sym);   // the plan is your whole record, not the ticked period\n    renderTagCard();\n\n    var ICON={good:\"\u2705\",bad:\"\u26a0\ufe0f\",warn:\"\u26a1\",info:\"\u2139\ufe0f\"};\n    // Seventeen rules can match at once. Fifteen paragraphs of advice is a wall nobody\n    // reads, so show the few that matter most: problems first, then warnings, then\n    // observations. The rest are one tap away rather than shouting over the important ones.\n    var RANK={bad:0, warn:1, good:2, info:3};\n    var all=tradeInsights(list,sym).map(function(x,i){ x._i=i; return x; })\n      .sort(function(a,b){ return (RANK[a.kind]-RANK[b.kind]) || (a._i-b._i); });\n    var top=all.slice(0, TR_INSIGHT_MAX), rest=all.slice(TR_INSIGHT_MAX);\n    var draw=function(x){\n      return '<div class=\"ins ins-'+x.kind+'\"><span class=\"ins-ic\">'+ICON[x.kind]+'</span><span>'+x.text+'</span></div>';\n    };\n    var h=top.map(draw).join(\"\");\n    if(rest.length){\n      h+='<div id=\"insMore\" style=\"display:none\">'+rest.map(draw).join(\"\")+'</div>'\n        +'<button type=\"button\" class=\"ins-more-btn\" id=\"insMoreBtn\">'+rest.length+' more</button>';\n    }\n    document.getElementById(\"trInsights\").innerHTML=h;\n    var mb=document.getElementById(\"insMoreBtn\");\n    if(mb) mb.addEventListener(\"click\", function(){\n      var box=document.getElementById(\"insMore\");\n      var open=box.style.display!==\"none\";\n      box.style.display=open?\"none\":\"block\";\n      mb.textContent=open?(rest.length+\" more\"):\"Show less\";\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTradingPage!==\"undefined\"?renderTradingPage:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

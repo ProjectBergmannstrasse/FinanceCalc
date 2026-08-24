@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openLockSetup — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openLockSetup<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openLockSetup(){
+    var ls=lockState();
+    var hasBio=webAuthnSupported();
+    openOverlay(
+      &#x27;&lt;div class=&quot;sheet&quot;&gt;&lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;🔐 App Lock&lt;/h3&gt;&lt;button class=&quot;x-btn&quot; id=&quot;lsX&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;New PIN (4–6 digits)&lt;/label&gt;&#x27;
+          +&#x27;&lt;input class=&quot;inp&quot; id=&quot;lsPin1&quot; type=&quot;password&quot; inputmode=&quot;numeric&quot; maxlength=&quot;6&quot; placeholder=&quot;4-6 digits&quot;&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Confirm PIN&lt;/label&gt;&#x27;
+          +&#x27;&lt;input class=&quot;inp&quot; id=&quot;lsPin2&quot; type=&quot;password&quot; inputmode=&quot;numeric&quot; maxlength=&quot;6&quot; placeholder=&quot;repeat PIN&quot;&gt;&lt;/div&gt;&#x27;
+        +(hasBio?&#x27;&lt;div class=&quot;fld&quot; style=&quot;display:flex;align-items:center;gap:10px;padding:10px 0&quot;&gt;&#x27;
+          +&#x27;&lt;label style=&quot;flex:1;cursor:pointer&quot;&gt;&lt;b&gt;Also use Face ID / Fingerprint&lt;/b&gt;&#x27;
+            +&#x27;&lt;span class=&quot;mut&quot; style=&quot;display:block;font-size:11px&quot;&gt;Registers your biometric after saving&lt;/span&gt;&lt;/label&gt;&#x27;
+          +&#x27;&lt;input type=&quot;checkbox&quot; id=&quot;lsBio&quot; class=&quot;pf-switch&quot; style=&quot;width:auto;height:auto&quot;&gt;&lt;/div&gt;&#x27;:&quot;&quot;)
+        +(ls.pin?&#x27;&lt;button class=&quot;btn danger wide&quot; id=&quot;lsRemove&quot; style=&quot;margin-top:8px&quot;&gt;Remove lock&lt;/button&gt;&#x27;:&quot;&quot;)
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-ft&quot;&gt;&lt;button class=&quot;btn sm&quot; id=&quot;lsCancel&quot;&gt;Cancel&lt;/button&gt;&#x27;
+        +&#x27;&lt;button class=&quot;btn sm solid&quot; id=&quot;lsSave&quot;&gt;Save lock&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&#x27;,
+      {ready:async function(ov,close){
+        ov.querySelector(&quot;#lsX&quot;).onclick=close;
+        ov.querySelector(&quot;#lsCancel&quot;).onclick=close;
+        var rmBtn=ov.querySelector(&quot;#lsRemove&quot;);
+        if(rmBtn) rmBtn.onclick=function(){
+          saveLockState({}); _lockSession=true; close(); flashSaved(&quot;lock removed&quot;);
+        };
+        ov.querySelector(&quot;#lsSave&quot;).onclick=async function(){
+          var p1=ov.querySelector(&quot;#lsPin1&quot;).value;
+          var p2=ov.querySelector(&quot;#lsPin2&quot;).value;
+          if(!/^\d{4,6}$/.test(p1)){ shake(ov.querySelector(&quot;#lsPin1&quot;)); return; }
+          if(p1!==p2){ shake(ov.querySelector(&quot;#lsPin2&quot;)); return; }
+          var salt=Math.random().toString(36).slice(2)+Date.now().toString(36);
+          var hashed=await hashPin(p1,salt);
+          var newState={pin:hashed,salt:salt};
+          var bioCb=ov.querySelector(&quot;#lsBio&quot;);
+          if(bioCb&amp;&amp;bioCb.checked){
+            var credId=await registerBiometric();
+            if(credId) newState.credId=credId;
+          }
+          saveLockState(newState);
+          close(); flashSaved(&quot;lock set&quot;);
+        };
+      }}
+    );
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openLockSetup(){\n    var ls=lockState();\n    var hasBio=webAuthnSupported();\n    openOverlay(\n      '<div class=\"sheet\"><div class=\"sheet-hd\"><h3>\ud83d\udd10 App Lock</h3><button class=\"x-btn\" id=\"lsX\">\u2715</button></div>'\n      +'<div class=\"sheet-bd\">'\n        +'<div class=\"fld\"><label>New PIN (4\u20136 digits)</label>'\n          +'<input class=\"inp\" id=\"lsPin1\" type=\"password\" inputmode=\"numeric\" maxlength=\"6\" placeholder=\"4-6 digits\"></div>'\n        +'<div class=\"fld\"><label>Confirm PIN</label>'\n          +'<input class=\"inp\" id=\"lsPin2\" type=\"password\" inputmode=\"numeric\" maxlength=\"6\" placeholder=\"repeat PIN\"></div>'\n        +(hasBio?'<div class=\"fld\" style=\"display:flex;align-items:center;gap:10px;padding:10px 0\">'\n          +'<label style=\"flex:1;cursor:pointer\"><b>Also use Face ID / Fingerprint</b>'\n            +'<span class=\"mut\" style=\"display:block;font-size:11px\">Registers your biometric after saving</span></label>'\n          +'<input type=\"checkbox\" id=\"lsBio\" class=\"pf-switch\" style=\"width:auto;height:auto\"></div>':\"\")\n        +(ls.pin?'<button class=\"btn danger wide\" id=\"lsRemove\" style=\"margin-top:8px\">Remove lock</button>':\"\")\n      +'</div>'\n      +'<div class=\"sheet-ft\"><button class=\"btn sm\" id=\"lsCancel\">Cancel</button>'\n        +'<button class=\"btn sm solid\" id=\"lsSave\">Save lock</button></div></div>',\n      {ready:async function(ov,close){\n        ov.querySelector(\"#lsX\").onclick=close;\n        ov.querySelector(\"#lsCancel\").onclick=close;\n        var rmBtn=ov.querySelector(\"#lsRemove\");\n        if(rmBtn) rmBtn.onclick=function(){\n          saveLockState({}); _lockSession=true; close(); flashSaved(\"lock removed\");\n        };\n        ov.querySelector(\"#lsSave\").onclick=async function(){\n          var p1=ov.querySelector(\"#lsPin1\").value;\n          var p2=ov.querySelector(\"#lsPin2\").value;\n          if(!/^\\d{4,6}$/.test(p1)){ shake(ov.querySelector(\"#lsPin1\")); return; }\n          if(p1!==p2){ shake(ov.querySelector(\"#lsPin2\")); return; }\n          var salt=Math.random().toString(36).slice(2)+Date.now().toString(36);\n          var hashed=await hashPin(p1,salt);\n          var newState={pin:hashed,salt:salt};\n          var bioCb=ov.querySelector(\"#lsBio\");\n          if(bioCb&&bioCb.checked){\n            var credId=await registerBiometric();\n            if(credId) newState.credId=credId;\n          }\n          saveLockState(newState);\n          close(); flashSaved(\"lock set\");\n        };\n      }}\n    );\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openLockSetup!==\"undefined\"?openLockSetup:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

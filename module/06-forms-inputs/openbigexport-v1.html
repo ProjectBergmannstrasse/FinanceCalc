@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openBigExport — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>openBigExport<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openBigExport(){
+    var rows=sortedTx();
+    var host=document.createElement(&quot;div&quot;);
+    host.className=&quot;ov in&quot;; host.id=&quot;bigExpOv&quot;;
+    host.innerHTML=
+       &#x27;&lt;div class=&quot;sheet&quot; style=&quot;max-width:400px&quot;&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;Export all entries&lt;/h3&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;x-btn&quot; id=&quot;beX&quot;&gt;\u2715&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;rc-secd&quot;&gt;&#x27;+rows.length.toLocaleString()+&#x27; entr&#x27;+(rows.length===1?&quot;y&quot;:&quot;ies&quot;)
+      +&#x27;      to write. Large exports are built in slices so the app stays responsive \u2014 &#x27;
+      +&#x27;      it won\u2019t be instant, but you can watch it and stop it.&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-meter&quot; style=&quot;margin-top:14px&quot;&gt;&lt;div class=&quot;ag-meter-bar&quot; id=&quot;beBar&quot;&gt;&lt;/div&gt;&lt;/div&gt;&#x27;
+      +&#x27;    &lt;div class=&quot;ag-now&quot; id=&quot;beNow&quot;&gt;Ready.&lt;/div&gt;&#x27;
+      +&#x27;  &lt;/div&gt;&#x27;
+      +&#x27;  &lt;div class=&quot;sheet-ft&quot;&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn ghost sm&quot; id=&quot;beCancel&quot;&gt;Close&lt;/button&gt;&#x27;
+      +&#x27;    &lt;button class=&quot;btn primary sm&quot; id=&quot;beGo&quot;&gt;Export CSV&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(host);
+    var close=function(){ _exportCancel=true; if(host.parentNode) host.parentNode.removeChild(host); };
+    host.querySelector(&quot;#beX&quot;).onclick=close;
+    host.querySelector(&quot;#beCancel&quot;).onclick=close;
+    host.querySelector(&quot;#beGo&quot;).onclick=function(){
+      var go=host.querySelector(&quot;#beGo&quot;), bar=host.querySelector(&quot;#beBar&quot;), now=host.querySelector(&quot;#beNow&quot;);
+      go.disabled=true; go.textContent=&quot;Working\u2026&quot;;
+      host.querySelector(&quot;#beCancel&quot;).textContent=&quot;Stop&quot;;
+      var t0=Date.now();
+      exportRowsChunked(rows,
+        [&quot;date&quot;,&quot;type&quot;,&quot;amount&quot;,&quot;category&quot;,&quot;note&quot;,&quot;split&quot;],
+        function(t){ return [t.date||&quot;&quot;, t.type||&quot;&quot;, num(t.amount), t.cat||&quot;&quot;, t.note||&quot;&quot;, t.splitWays||1]; },
+        &quot;mymoney-export-&quot;+todayStr()+&quot;.csv&quot;,
+        function(done,total){
+          var pct=Math.round(done/total*100);
+          bar.style.width=pct+&quot;%&quot;;
+          now.textContent=done.toLocaleString()+&quot; of &quot;+total.toLocaleString()+&quot; \u00b7 &quot;+pct+&quot;%&quot;;
+        }
+      ).then(function(r){
+        var secs=((Date.now()-t0)/1000).toFixed(1);
+        now.textContent=&quot;Done \u2014 &quot;+r.rows.toLocaleString()+&quot; rows, &quot;
+          +fmtBytes(r.bytes)+&quot;, &quot;+secs+&quot;s&quot;;
+        go.textContent=&quot;Export again&quot;; go.disabled=false;
+        host.querySelector(&quot;#beCancel&quot;).textContent=&quot;Close&quot;;
+      }).catch(function(e){
+        now.textContent = /cancel/i.test(String(e.message)) ? &quot;Stopped.&quot; : &quot;Failed: &quot;+String(e.message).slice(0,60);
+        go.textContent=&quot;Export CSV&quot;; go.disabled=false;
+        host.querySelector(&quot;#beCancel&quot;).textContent=&quot;Close&quot;;
+      });
+    };
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openBigExport(){\n    var rows=sortedTx();\n    var host=document.createElement(\"div\");\n    host.className=\"ov in\"; host.id=\"bigExpOv\";\n    host.innerHTML=\n       '<div class=\"sheet\" style=\"max-width:400px\">'\n      +'  <div class=\"sheet-hd\"><h3>Export all entries</h3>'\n      +'    <button class=\"x-btn\" id=\"beX\">\\u2715</button></div>'\n      +'  <div class=\"sheet-bd\">'\n      +'    <div class=\"rc-secd\">'+rows.length.toLocaleString()+' entr'+(rows.length===1?\"y\":\"ies\")\n      +'      to write. Large exports are built in slices so the app stays responsive \\u2014 '\n      +'      it won\\u2019t be instant, but you can watch it and stop it.</div>'\n      +'    <div class=\"ag-meter\" style=\"margin-top:14px\"><div class=\"ag-meter-bar\" id=\"beBar\"></div></div>'\n      +'    <div class=\"ag-now\" id=\"beNow\">Ready.</div>'\n      +'  </div>'\n      +'  <div class=\"sheet-ft\">'\n      +'    <button class=\"btn ghost sm\" id=\"beCancel\">Close</button>'\n      +'    <button class=\"btn primary sm\" id=\"beGo\">Export CSV</button></div>'\n      +'</div>';\n    document.body.appendChild(host);\n    var close=function(){ _exportCancel=true; if(host.parentNode) host.parentNode.removeChild(host); };\n    host.querySelector(\"#beX\").onclick=close;\n    host.querySelector(\"#beCancel\").onclick=close;\n    host.querySelector(\"#beGo\").onclick=function(){\n      var go=host.querySelector(\"#beGo\"), bar=host.querySelector(\"#beBar\"), now=host.querySelector(\"#beNow\");\n      go.disabled=true; go.textContent=\"Working\\u2026\";\n      host.querySelector(\"#beCancel\").textContent=\"Stop\";\n      var t0=Date.now();\n      exportRowsChunked(rows,\n        [\"date\",\"type\",\"amount\",\"category\",\"note\",\"split\"],\n        function(t){ return [t.date||\"\", t.type||\"\", num(t.amount), t.cat||\"\", t.note||\"\", t.splitWays||1]; },\n        \"mymoney-export-\"+todayStr()+\".csv\",\n        function(done,total){\n          var pct=Math.round(done/total*100);\n          bar.style.width=pct+\"%\";\n          now.textContent=done.toLocaleString()+\" of \"+total.toLocaleString()+\" \\u00b7 \"+pct+\"%\";\n        }\n      ).then(function(r){\n        var secs=((Date.now()-t0)/1000).toFixed(1);\n        now.textContent=\"Done \\u2014 \"+r.rows.toLocaleString()+\" rows, \"\n          +fmtBytes(r.bytes)+\", \"+secs+\"s\";\n        go.textContent=\"Export again\"; go.disabled=false;\n        host.querySelector(\"#beCancel\").textContent=\"Close\";\n      }).catch(function(e){\n        now.textContent = /cancel/i.test(String(e.message)) ? \"Stopped.\" : \"Failed: \"+String(e.message).slice(0,60);\n        go.textContent=\"Export CSV\"; go.disabled=false;\n        host.querySelector(\"#beCancel\").textContent=\"Close\";\n      });\n    };\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openBigExport!==\"undefined\"?openBigExport:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

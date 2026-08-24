@@ -1,0 +1,78 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>refreshSecUI — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 04-typography-fonts</div>
+<h1>refreshSecUI<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function refreshSecUI(){
+    var btn=document.getElementById(&quot;bioBtn&quot;);
+    var note=document.getElementById(&quot;bioNote&quot;);
+    if(btn){
+      btn.textContent = lockIsOn() ? &quot;Turn off&quot; : &quot;Set PIN&quot;;
+      btn.disabled=false;
+      if(note){
+        note.textContent = lockIsOn()
+          ? &quot;On — PIN required to open&quot;+(faceCfg.on?&quot;, face unlock enabled&quot;:&quot;&quot;)+&quot;.&quot;
+          : &quot;A PIN before the app opens. Works everywhere, including a file opened from disk.&quot;;
+        note.style.color = lockIsOn() ? &quot;var(--up)&quot; : &quot;&quot;;
+      }
+    }
+    var rb=document.getElementById(&quot;recBtn&quot;);
+    var rn=document.getElementById(&quot;recNote&quot;);
+    if(rb){
+      /* Deliberately NOT disabled when there&#x27;s no PIN: a dead button that
+         does nothing teaches you it&#x27;s broken. It stays clickable and says
+         what to do instead. */
+      rb.disabled=false;
+      rb.textContent = recoveryOn() ? &quot;Remove&quot; : &quot;Set up&quot;;
+      rb.classList.toggle(&quot;btn-muted&quot;, !lockIsOn());
+      if(rn){
+        rn.textContent = !lockIsOn()
+          ? &quot;Set a PIN first — there&#x27;d be nothing to recover.&quot;
+          : recoveryOn()
+            ? &quot;On — &quot; + lockCfg.recQ
+            : &quot;Optional. Lets you reset a forgotten PIN without wiping your data.&quot;;
+        rn.style.color = recoveryOn() ? &quot;var(--up)&quot; : &quot;&quot;;
+      }
+    }
+    var fb=document.getElementById(&quot;faceBtn&quot;);
+    var fn=document.getElementById(&quot;faceNote&quot;);
+    if(!fb) return;
+    cameraCheck().then(function(c){
+      if(!c.ok){
+        fb.textContent=&quot;Unavailable&quot;; fb.disabled=true;
+        if(fn){ fn.textContent=c.why; fn.style.color=&quot;var(--amber)&quot;; }
+        return;
+      }
+      fb.disabled=false;
+      fb.textContent = faceCfg.on ? &quot;Remove&quot; : &quot;Set up&quot;;
+      if(fn){
+        fn.textContent = faceCfg.on
+          ? &quot;On — your face is matched on this device. PIN still works as a fallback.&quot;
+          : &quot;Unlock with your face. One-time ~6MB model download, then it runs offline.&quot;;
+        fn.style.color = faceCfg.on ? &quot;var(--up)&quot; : &quot;&quot;;
+      }
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function refreshSecUI(){\n    var btn=document.getElementById(\"bioBtn\");\n    var note=document.getElementById(\"bioNote\");\n    if(btn){\n      btn.textContent = lockIsOn() ? \"Turn off\" : \"Set PIN\";\n      btn.disabled=false;\n      if(note){\n        note.textContent = lockIsOn()\n          ? \"On \u2014 PIN required to open\"+(faceCfg.on?\", face unlock enabled\":\"\")+\".\"\n          : \"A PIN before the app opens. Works everywhere, including a file opened from disk.\";\n        note.style.color = lockIsOn() ? \"var(--up)\" : \"\";\n      }\n    }\n    var rb=document.getElementById(\"recBtn\");\n    var rn=document.getElementById(\"recNote\");\n    if(rb){\n      /* Deliberately NOT disabled when there's no PIN: a dead button that\n         does nothing teaches you it's broken. It stays clickable and says\n         what to do instead. */\n      rb.disabled=false;\n      rb.textContent = recoveryOn() ? \"Remove\" : \"Set up\";\n      rb.classList.toggle(\"btn-muted\", !lockIsOn());\n      if(rn){\n        rn.textContent = !lockIsOn()\n          ? \"Set a PIN first \u2014 there'd be nothing to recover.\"\n          : recoveryOn()\n            ? \"On \u2014 \" + lockCfg.recQ\n            : \"Optional. Lets you reset a forgotten PIN without wiping your data.\";\n        rn.style.color = recoveryOn() ? \"var(--up)\" : \"\";\n      }\n    }\n    var fb=document.getElementById(\"faceBtn\");\n    var fn=document.getElementById(\"faceNote\");\n    if(!fb) return;\n    cameraCheck().then(function(c){\n      if(!c.ok){\n        fb.textContent=\"Unavailable\"; fb.disabled=true;\n        if(fn){ fn.textContent=c.why; fn.style.color=\"var(--amber)\"; }\n        return;\n      }\n      fb.disabled=false;\n      fb.textContent = faceCfg.on ? \"Remove\" : \"Set up\";\n      if(fn){\n        fn.textContent = faceCfg.on\n          ? \"On \u2014 your face is matched on this device. PIN still works as a fallback.\"\n          : \"Unlock with your face. One-time ~6MB model download, then it runs offline.\";\n        fn.style.color = faceCfg.on ? \"var(--up)\" : \"\";\n      }\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof refreshSecUI!==\"undefined\"?refreshSecUI:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

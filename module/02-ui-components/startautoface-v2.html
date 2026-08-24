@@ -1,0 +1,226 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>startAutoFace — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 02-ui-components</div>
+<h1>startAutoFace<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v35.9 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function startAutoFace(ovEl, onMatch, setStatus){
+    if(!autoFaceOn()) return;
+    if(!faceCfg.on || !facePeople().length) return;
+    if(cameraBlocked()) return;
+    if(inFrame() &amp;&amp; !window.faceapi) return;      // model can&#x27;t load in a frame
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+
+    cameraAlreadyGranted().then(function(granted){
+      // don&#x27;t ambush someone with a permission prompt at launch — only run
+      // automatically once they&#x27;ve already allowed it for this site
+      if(!granted) return;
+      setStatus &amp;&amp; setStatus(&quot;Looking for you\u2026&quot;);
+      var video=document.createElement(&quot;video&quot;);
+      video.autoplay=true; video.playsInline=true; video.muted=true;
+      video.style.cssText=&quot;position:absolute;width:1px;height:1px;opacity:0;pointer-events:none&quot;;
+      ovEl.appendChild(video);
+
+      navigator.mediaDevices.getUserMedia({video:{facingMode:&quot;user&quot;,width:320,height:240}})
+        .then(function(stream){
+          _autoFace.stream=stream; video.srcObject=stream;
+          return loadFaceApi();
+        })
+        .then(function(){
+          var tries=0;
+          var tick=function(){
+            if(!_autoFace.stream || !document.getElementById(&quot;lockScreen&quot;)) { _autoFace.stop(); return; }
+            faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+              .withFaceLandmarks(true).withFaceDescriptor()
+              .then(function(det){
+                if(!_autoFace.stream) return;
+                if(det){
+                  var who=matchFace(Array.from(det.descriptor));
+                  if(who){
+                    _autoFace.stop();
+                    setStatus &amp;&amp; setStatus(&quot;Welcome back, &quot;+who.name);
+                    setTimeout(function(){ onMatch(who); }, 350);
+                    return;
+                  }
+                  // not a match — say nothing accusatory, just keep offering the PIN
+                  if(++tries===6) setStatus &amp;&amp; setStatus(&quot;Not recognised \u2014 use your PIN&quot;);
+                }
+                if(tries&lt;40) _autoFace.raf=setTimeout(tick, 500);
+                else { _autoFace.stop(); setStatus &amp;&amp; setStatus(&quot;Enter your PIN&quot;); }
+              })
+              .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
+          };
+          tick();
+        })
+        .catch(function(){ _autoFace.stop(); setStatus &amp;&amp; setStatus(&quot;Enter your PIN&quot;); });
+    });
+  }
+  function showLockScreen(){
+    if(!lockIsOn()) return;
+    var ov=document.createElement(&quot;div&quot;);
+    ov.id=&quot;lockScreen&quot;;
+    ov.innerHTML=&#x27;&lt;div class=&quot;lk-box&quot;&gt;&#x27;
+      +&#x27;&lt;div class=&quot;lk-icon&quot;&gt;\uD83D\uDD12&lt;/div&gt;&#x27;
+      +&#x27;&lt;div id=&quot;lkPadHost&quot;&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;;
+    document.body.appendChild(ov);
+    document.body.style.overflow=&quot;hidden&quot;;
+
+    function unlock(){
+      _autoFace.stop();
+      if(pad) pad.dispose();
+      setTimeout(showAttemptBanner, 700);
+      ov.style.opacity=&quot;0&quot;;
+      document.body.style.overflow=&quot;&quot;;
+      document.removeEventListener(&quot;visibilitychange&quot;, onHide);
+      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 220);
+    }
+
+    // extras below the pad: face unlock and the recovery route
+    var extra=&quot;&quot;;
+    if(faceCfg.on &amp;&amp; facePeople().length)
+      extra+=&#x27;&lt;button class=&quot;btn ghost sm&quot; id=&quot;lkBio&quot;&gt;\uD83D\uDE00 Use face unlock&lt;/button&gt;&#x27;;
+    if(recoveryOn())
+      extra+=&#x27;&lt;button class=&quot;kp-link&quot; id=&quot;lkForgot&quot;&gt;Forgot your PIN?&lt;/button&gt;&#x27;;
+
+    var pad=buildKeypad({
+      title:&quot;My Money&quot;,
+      sub:&quot;Enter your PIN&quot;,
+      len:4, max:12,
+      wrongText:&quot;Wrong PIN \u2014 try again&quot;,
+      extra:extra,
+      validate:function(d, prog){
+        var cd=lockCooldownLeft();
+        if(cd&gt;0) return Promise.resolve(false);
+        return new Promise(function(res){
+          verifyPin(d, function(ok){
+            if(!ok){
+              recordFailedAttempt(&quot;pin&quot;);
+              var left=lockCooldownLeft();
+              if(left&gt;0) setTimeout(function(){ pad.say(&quot;Too many tries \u2014 wait &quot;+left+&quot;s&quot;); }, 460);
+            }
+            res(ok);
+          }, prog);
+        });
+      },
+      onDone:unlock
+    });
+    document.getElementById(&quot;lkPadHost&quot;).appendChild(pad.el);
+
+    var bio=pad.el.querySelector(&quot;#lkBio&quot;);
+    if(bio) bio.addEventListener(&quot;click&quot;, function(){
+      if(inFrame() &amp;&amp; !window.faceapi){
+        pad.say(&quot;Face unlock needs the app in its own tab&quot;); return;
+      }
+      pad.say(&quot;Opening the camera\u2026&quot;);
+      bio.disabled=true;
+      var answered=false;
+      var settle=function(ok){
+        if(answered) return; answered=true; bio.disabled=false;
+        if(ok) unlock();
+        else { recordFailedAttempt(&quot;face&quot;); pad.say(&quot;Face didn\u2019t match \u2014 use your PIN&quot;); }
+      };
+      setTimeout(function(){
+        if(answered) return; answered=true; bio.disabled=false;
+        var sh=document.getElementById(&quot;faceOv&quot;);
+        if(sh &amp;&amp; sh.parentNode) sh.parentNode.removeChild(sh);
+        pad.say(&quot;Camera didn\u2019t start \u2014 use your PIN&quot;);
+      }, 15000);
+      verifyFace(settle);
+    });
+    var fg=pad.el.querySelector(&quot;#lkForgot&quot;);
+    if(fg) fg.addEventListener(&quot;click&quot;, function(){ openRecoveryUnlock(function(){ unlock(); }); });
+
+    // look for the owner automatically, only while this screen is up
+    startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?&quot;ok&quot;:&quot;&quot;); });
+    var onHide=function(){ if(document.hidden) _autoFace.stop(); };
+    document.addEventListener(&quot;visibilitychange&quot;, onHide);
+  }
+
+  /* ============================================================
+     PWA INSTALL — single-file friendly
+     A normal PWA needs manifest.json + sw.js as separate files,
+     which would break the &quot;one file you double-click&quot; promise.
+     Both are generated at runtime as blob URLs instead, so the
+     app can be installed to the home screen and still ships as
+     exactly one file.
+     ============================================================ */
+  var _deferredPrompt=null;
+  function initPWA(){
+    // manifest, built in memory
+    try{
+      var manifest={
+        name:&quot;My Money Tracker&quot;, short_name:&quot;My Money&quot;,
+        start_url:location.href, display:&quot;standalone&quot;,
+        background_color:&quot;#0b0e14&quot;, theme_color:&quot;#0b0e14&quot;,
+        icons:[{src:pwaIcon(), sizes:&quot;512x512&quot;, type:&quot;image/png&quot;, purpose:&quot;any maskable&quot;}]
+      };
+      var mUrl=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:&quot;application/json&quot;}));
+      var link=document.createElement(&quot;link&quot;);
+      link.rel=&quot;manifest&quot;; link.href=mUrl;
+      document.head.appendChild(link);
+    }catch(e){}
+
+    // service worker — only registrable over http(s), not file://
+    if(&quot;serviceWorker&quot; in navigator &amp;&amp; location.protocol.indexOf(&quot;http&quot;)===0){
+      try{
+        var swSrc=[
+          &quot;const C=&#x27;mymoney-v1&#x27;;&quot;,
+          &quot;self.addEventListener(&#x27;install&#x27;,e=&gt;{self.skipWaiting();});&quot;,
+          &quot;self.addEventListener(&#x27;activate&#x27;,e=&gt;{e.waitUntil(self.clients.claim());});&quot;,
+          // cache-first for the app shell so it opens with no connection at all
+          &quot;self.addEventListener(&#x27;fetch&#x27;,e=&gt;{&quot;,
+          &quot;  if(e.request.method!==&#x27;GET&#x27;) return;&quot;,
+          &quot;  e.respondWith(caches.open(C).then(c=&gt;c.match(e.request).then(hit=&gt;{&quot;,
+          &quot;    const net=fetch(e.request).then(r=&gt;{ if(r&amp;&amp;r.status===200) c.put(e.request,r.clone()); return r; })&quot;,
+          &quot;      .catch(()=&gt;hit);&quot;,
+          &quot;    return hit||net;&quot;,
+          &quot;  })));&quot;,
+          &quot;});&quot;
+        ].join(&quot;\n&quot;);
+        var swUrl=URL.createObjectURL(new Blob([swSrc],{type:&quot;application/javascript&quot;}));
+        navigator.serviceWorker.register(swUrl).catch(function(){});
+      }catch(e){}
+    }
+
+    window.addEventListener(&quot;beforeinstallprompt&quot;, function(e){
+      e.preventDefault(); _deferredPrompt=e;
+      var b=document.getElementById(&quot;pwaInstallBtn&quot;);
+      if(b){ b.style.display=&quot;&quot;; b.disabled=false; }
+    });
+    window.addEventListener(&quot;appinstalled&quot;, function(){
+      var b=document.getElementById(&quot;pwaInstallBtn&quot;);
+      if(b){ b.textContent=&quot;✅ Installed&quot;; b.disabled=true; }
+    });
+  }
+  function pwaIcon(){
+    // a plain generated icon so we don&#x27;t ship a binary asset
+    var c=document.createElement(&quot;canvas&quot;); c.width=c.height=512;
+    var x=c.getContext(&quot;2d&quot;);
+    x.fillStyle=&quot;#0b0e14&quot;; x.fillRect(0,0,512,512);
+    x.fillStyle=&quot;#3ddc84&quot;; x.font=&quot;bold 300px ui-monospace,monospace&quot;;
+    x.textAlign=&quot;center&quot;; x.textBaseline=&quot;middle&quot;; x.fillText(&quot;$&quot;,256,270);
+    return c.toDataURL(&quot;image/png&quot;);
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function startAutoFace(ovEl, onMatch, setStatus){\n    if(!autoFaceOn()) return;\n    if(!faceCfg.on || !facePeople().length) return;\n    if(cameraBlocked()) return;\n    if(inFrame() && !window.faceapi) return;      // model can't load in a frame\n    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;\n\n    cameraAlreadyGranted().then(function(granted){\n      // don't ambush someone with a permission prompt at launch \u2014 only run\n      // automatically once they've already allowed it for this site\n      if(!granted) return;\n      setStatus && setStatus(\"Looking for you\\u2026\");\n      var video=document.createElement(\"video\");\n      video.autoplay=true; video.playsInline=true; video.muted=true;\n      video.style.cssText=\"position:absolute;width:1px;height:1px;opacity:0;pointer-events:none\";\n      ovEl.appendChild(video);\n\n      navigator.mediaDevices.getUserMedia({video:{facingMode:\"user\",width:320,height:240}})\n        .then(function(stream){\n          _autoFace.stream=stream; video.srcObject=stream;\n          return loadFaceApi();\n        })\n        .then(function(){\n          var tries=0;\n          var tick=function(){\n            if(!_autoFace.stream || !document.getElementById(\"lockScreen\")) { _autoFace.stop(); return; }\n            faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())\n              .withFaceLandmarks(true).withFaceDescriptor()\n              .then(function(det){\n                if(!_autoFace.stream) return;\n                if(det){\n                  var who=matchFace(Array.from(det.descriptor));\n                  if(who){\n                    _autoFace.stop();\n                    setStatus && setStatus(\"Welcome back, \"+who.name);\n                    setTimeout(function(){ onMatch(who); }, 350);\n                    return;\n                  }\n                  // not a match \u2014 say nothing accusatory, just keep offering the PIN\n                  if(++tries===6) setStatus && setStatus(\"Not recognised \\u2014 use your PIN\");\n                }\n                if(tries<40) _autoFace.raf=setTimeout(tick, 500);\n                else { _autoFace.stop(); setStatus && setStatus(\"Enter your PIN\"); }\n              })\n              .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });\n          };\n          tick();\n        })\n        .catch(function(){ _autoFace.stop(); setStatus && setStatus(\"Enter your PIN\"); });\n    });\n  }\n  function showLockScreen(){\n    if(!lockIsOn()) return;\n    var ov=document.createElement(\"div\");\n    ov.id=\"lockScreen\";\n    ov.innerHTML='<div class=\"lk-box\">'\n      +'<div class=\"lk-icon\">\\uD83D\\uDD12</div>'\n      +'<div id=\"lkPadHost\"></div>'\n      +'</div>';\n    document.body.appendChild(ov);\n    document.body.style.overflow=\"hidden\";\n\n    function unlock(){\n      _autoFace.stop();\n      if(pad) pad.dispose();\n      setTimeout(showAttemptBanner, 700);\n      ov.style.opacity=\"0\";\n      document.body.style.overflow=\"\";\n      document.removeEventListener(\"visibilitychange\", onHide);\n      setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 220);\n    }\n\n    // extras below the pad: face unlock and the recovery route\n    var extra=\"\";\n    if(faceCfg.on && facePeople().length)\n      extra+='<button class=\"btn ghost sm\" id=\"lkBio\">\\uD83D\\uDE00 Use face unlock</button>';\n    if(recoveryOn())\n      extra+='<button class=\"kp-link\" id=\"lkForgot\">Forgot your PIN?</button>';\n\n    var pad=buildKeypad({\n      title:\"My Money\",\n      sub:\"Enter your PIN\",\n      len:4, max:12,\n      wrongText:\"Wrong PIN \\u2014 try again\",\n      extra:extra,\n      validate:function(d, prog){\n        var cd=lockCooldownLeft();\n        if(cd>0) return Promise.resolve(false);\n        return new Promise(function(res){\n          verifyPin(d, function(ok){\n            if(!ok){\n              recordFailedAttempt(\"pin\");\n              var left=lockCooldownLeft();\n              if(left>0) setTimeout(function(){ pad.say(\"Too many tries \\u2014 wait \"+left+\"s\"); }, 460);\n            }\n            res(ok);\n          }, prog);\n        });\n      },\n      onDone:unlock\n    });\n    document.getElementById(\"lkPadHost\").appendChild(pad.el);\n\n    var bio=pad.el.querySelector(\"#lkBio\");\n    if(bio) bio.addEventListener(\"click\", function(){\n      if(inFrame() && !window.faceapi){\n        pad.say(\"Face unlock needs the app in its own tab\"); return;\n      }\n      pad.say(\"Opening the camera\\u2026\");\n      bio.disabled=true;\n      var answered=false;\n      var settle=function(ok){\n        if(answered) return; answered=true; bio.disabled=false;\n        if(ok) unlock();\n        else { recordFailedAttempt(\"face\"); pad.say(\"Face didn\\u2019t match \\u2014 use your PIN\"); }\n      };\n      setTimeout(function(){\n        if(answered) return; answered=true; bio.disabled=false;\n        var sh=document.getElementById(\"faceOv\");\n        if(sh && sh.parentNode) sh.parentNode.removeChild(sh);\n        pad.say(\"Camera didn\\u2019t start \\u2014 use your PIN\");\n      }, 15000);\n      verifyFace(settle);\n    });\n    var fg=pad.el.querySelector(\"#lkForgot\");\n    if(fg) fg.addEventListener(\"click\", function(){ openRecoveryUnlock(function(){ unlock(); }); });\n\n    // look for the owner automatically, only while this screen is up\n    startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?\"ok\":\"\"); });\n    var onHide=function(){ if(document.hidden) _autoFace.stop(); };\n    document.addEventListener(\"visibilitychange\", onHide);\n  }\n\n  /* ============================================================\n     PWA INSTALL \u2014 single-file friendly\n     A normal PWA needs manifest.json + sw.js as separate files,\n     which would break the \"one file you double-click\" promise.\n     Both are generated at runtime as blob URLs instead, so the\n     app can be installed to the home screen and still ships as\n     exactly one file.\n     ============================================================ */\n  var _deferredPrompt=null;\n  function initPWA(){\n    // manifest, built in memory\n    try{\n      var manifest={\n        name:\"My Money Tracker\", short_name:\"My Money\",\n        start_url:location.href, display:\"standalone\",\n        background_color:\"#0b0e14\", theme_color:\"#0b0e14\",\n        icons:[{src:pwaIcon(), sizes:\"512x512\", type:\"image/png\", purpose:\"any maskable\"}]\n      };\n      var mUrl=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:\"application/json\"}));\n      var link=document.createElement(\"link\");\n      link.rel=\"manifest\"; link.href=mUrl;\n      document.head.appendChild(link);\n    }catch(e){}\n\n    // service worker \u2014 only registrable over http(s), not file://\n    if(\"serviceWorker\" in navigator && location.protocol.indexOf(\"http\")===0){\n      try{\n        var swSrc=[\n          \"const C='mymoney-v1';\",\n          \"self.addEventListener('install',e=>{self.skipWaiting();});\",\n          \"self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});\",\n          // cache-first for the app shell so it opens with no connection at all\n          \"self.addEventListener('fetch',e=>{\",\n          \"  if(e.request.method!=='GET') return;\",\n          \"  e.respondWith(caches.open(C).then(c=>c.match(e.request).then(hit=>{\",\n          \"    const net=fetch(e.request).then(r=>{ if(r&&r.status===200) c.put(e.request,r.clone()); return r; })\",\n          \"      .catch(()=>hit);\",\n          \"    return hit||net;\",\n          \"  })));\",\n          \"});\"\n        ].join(\"\\n\");\n        var swUrl=URL.createObjectURL(new Blob([swSrc],{type:\"application/javascript\"}));\n        navigator.serviceWorker.register(swUrl).catch(function(){});\n      }catch(e){}\n    }\n\n    window.addEventListener(\"beforeinstallprompt\", function(e){\n      e.preventDefault(); _deferredPrompt=e;\n      var b=document.getElementById(\"pwaInstallBtn\");\n      if(b){ b.style.display=\"\"; b.disabled=false; }\n    });\n    window.addEventListener(\"appinstalled\", function(){\n      var b=document.getElementById(\"pwaInstallBtn\");\n      if(b){ b.textContent=\"\u2705 Installed\"; b.disabled=true; }\n    });\n  }\n  function pwaIcon(){\n    // a plain generated icon so we don't ship a binary asset\n    var c=document.createElement(\"canvas\"); c.width=c.height=512;\n    var x=c.getContext(\"2d\");\n    x.fillStyle=\"#0b0e14\"; x.fillRect(0,0,512,512);\n    x.fillStyle=\"#3ddc84\"; x.font=\"bold 300px ui-monospace,monospace\";\n    x.textAlign=\"center\"; x.textBaseline=\"middle\"; x.fillText(\"$\",256,270);\n    return c.toDataURL(\"image/png\");\n  }",ARGS="ovEl, onMatch, setStatus";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof startAutoFace!==\"undefined\"?startAutoFace:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

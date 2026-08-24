@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTradingSanity — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTradingSanity<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTradingSanity(){
+    var box=document.getElementById(&quot;trNegWarn&quot;);
+    if(!box) return;
+    if(!sepTrading()){ box.style.display=&quot;none&quot;; return; }
+    var t=totals(), sym=state.currency;
+    if(t.trading&gt;=0){ box.style.display=&quot;none&quot;; return; }
+    var funded=tradingFunded();
+    box.style.display=&quot;&quot;;
+    document.getElementById(&quot;trNegMsg&quot;).innerHTML=
+      &quot;⚠️ Your &lt;b&gt;&quot;+esc(L(&quot;trading&quot;))+&quot;&lt;/b&gt; account shows &lt;b&gt;&quot;+fmt(t.trading,sym)+&quot;&lt;/b&gt; — an account can&#x27;t hold less than nothing.&quot;
+      + (funded&lt;=0
+          ? &quot; You&#x27;ve logged trades but never logged &lt;b&gt;moving money into trading&lt;/b&gt;, so the losses are being charged to a pot that was never funded.&quot;
+          : &quot; You&#x27;ve funded &lt;b&gt;&quot;+fmt(funded,sym)+&quot;&lt;/b&gt; and lost more than that.&quot;)
+      + &quot; That means &lt;b&gt;Money I have right now&lt;/b&gt; is overstating your cash by &lt;b&gt;&quot;+fmt(Math.abs(t.trading),sym)+&quot;&lt;/b&gt; — it&#x27;s really &quot;
+      + fmt(t.balance-Math.abs(t.trading),sym) + &quot;. Add a &lt;b&gt;Moved to trading&lt;/b&gt; entry for what you actually put in, or turn the split off in Settings.&quot;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTradingSanity(){\n    var box=document.getElementById(\"trNegWarn\");\n    if(!box) return;\n    if(!sepTrading()){ box.style.display=\"none\"; return; }\n    var t=totals(), sym=state.currency;\n    if(t.trading>=0){ box.style.display=\"none\"; return; }\n    var funded=tradingFunded();\n    box.style.display=\"\";\n    document.getElementById(\"trNegMsg\").innerHTML=\n      \"\u26a0\ufe0f Your <b>\"+esc(L(\"trading\"))+\"</b> account shows <b>\"+fmt(t.trading,sym)+\"</b> \u2014 an account can't hold less than nothing.\"\n      + (funded<=0\n          ? \" You've logged trades but never logged <b>moving money into trading</b>, so the losses are being charged to a pot that was never funded.\"\n          : \" You've funded <b>\"+fmt(funded,sym)+\"</b> and lost more than that.\")\n      + \" That means <b>Money I have right now</b> is overstating your cash by <b>\"+fmt(Math.abs(t.trading),sym)+\"</b> \u2014 it's really \"\n      + fmt(t.balance-Math.abs(t.trading),sym) + \". Add a <b>Moved to trading</b> entry for what you actually put in, or turn the split off in Settings.\";\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTradingSanity!==\"undefined\"?renderTradingSanity:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

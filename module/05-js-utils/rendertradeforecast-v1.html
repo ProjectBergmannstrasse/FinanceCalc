@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTradeForecast — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTradeForecast<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTradeForecast(list, sym){
+    var card=document.getElementById(&quot;trFcCard&quot;);
+    if(!card) return;
+    if(!list.length){ card.style.display=&quot;none&quot;; return; }
+    var f=tradeForecast(list, trFcDays);
+    if(!f.trades){ card.style.display=&quot;none&quot;; return; }
+    card.style.display=&quot;&quot;;
+    var numEl=document.getElementById(&quot;trFcNum&quot;);
+    numEl.textContent=(f.expected&gt;=0?&quot;+&quot;:&quot;&quot;)+fmt(f.expected,sym);
+    numEl.className=&quot;fc-num mono &quot;+(f.expected&gt;=0?&quot;up&quot;:&quot;down&quot;);
+    document.getElementById(&quot;trFcCap&quot;).textContent=&quot;expected over &quot;+trFcDays+&quot; days · about &quot;+f.trades+&quot; trade&quot;+(f.trades===1?&quot;&quot;:&quot;s&quot;);
+
+    var sim=tradeSim(list, trFcDays, 1000);
+    var band=document.getElementById(&quot;trFcBand&quot;);
+    if(sim){
+      var pct=Math.round(sim.chanceDown*100);
+      band.innerHTML=mcBar(sim,sym)
+        +&#x27;&lt;div class=&quot;mc-legend&quot;&gt;&#x27;
+        +&#x27;&lt;span&gt;middle 80%: &lt;b&gt;&#x27;+fmt(sim.p10,sym)+&#x27;&lt;/b&gt; to &lt;b&gt;&#x27;+fmt(sim.p90,sym)+&#x27;&lt;/b&gt;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span&gt;typical: &lt;b&gt;&#x27;+fmt(sim.median,sym)+&#x27;&lt;/b&gt;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span&gt;down after &#x27;+trFcDays+&#x27;d: &lt;b&gt;&#x27;+pct+&#x27;%&lt;/b&gt;&lt;/span&gt;&#x27;
+        +&#x27;&lt;/div&gt;&#x27;;
+    } else band.innerHTML=&quot;&quot;;
+
+    var warn=document.getElementById(&quot;trFcWarn&quot;);
+    if(f.thin){
+      warn.innerHTML=&#x27;&lt;div class=&quot;fc-alert warn&quot;&gt;&lt;span&gt;◔&lt;/span&gt;&lt;span&gt;Only &lt;b&gt;&#x27;+list.length+&#x27;&lt;/b&gt; trade&#x27;+(list.length===1?&quot;&quot;:&quot;s&quot;)+&#x27; to go on. Under ~&#x27;+TR_FC_MIN_TRADES+&#x27;, one result moves all of this — treat it as a sketch.&lt;/span&gt;&lt;/div&gt;&#x27;;
+    } else if(f.expectancy&lt;0){
+      warn.innerHTML=&#x27;&lt;div class=&quot;fc-alert bad&quot;&gt;&lt;span&gt;⚠️&lt;/span&gt;&lt;span&gt;Your edge is &lt;b&gt;negative&lt;/b&gt; (&#x27;+fmt(f.expectancy,sym)+&#x27; per trade). More trading makes this worse, not better — the projection gets more negative the longer you go.&lt;/span&gt;&lt;/div&gt;&#x27;;
+    } else if(sim &amp;&amp; sim.chanceDown&gt;=0.35){
+      warn.innerHTML=&#x27;&lt;div class=&quot;fc-alert warn&quot;&gt;&lt;span&gt;⚡&lt;/span&gt;&lt;span&gt;Edge is positive, but &lt;b&gt;&#x27;+Math.round(sim.chanceDown*100)+&#x27;%&lt;/b&gt; of runs still finish down. A real edge loses often — that\&#x27;s what surviving it costs.&lt;/span&gt;&lt;/div&gt;&#x27;;
+    } else warn.innerHTML=&quot;&quot;;
+
+    document.getElementById(&quot;trFcBasis&quot;).innerHTML=&quot;Your edge is &lt;b&gt;&quot;+fmt(f.expectancy,sym)+&quot;/trade&lt;/b&gt; and you trade about &lt;b&gt;&quot;+(Math.round(f.perDay*10)/10)+&quot;×/day&lt;/b&gt; (over &quot;+f.histDays+&quot; days). Expected = edge × trades. The range comes from replaying your own wins and losses &lt;b&gt;1,000&lt;/b&gt; times — same numbers, reshuffled. It describes your record, it doesn\&#x27;t predict the market.&quot;;
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTradeForecast(list, sym){\n    var card=document.getElementById(\"trFcCard\");\n    if(!card) return;\n    if(!list.length){ card.style.display=\"none\"; return; }\n    var f=tradeForecast(list, trFcDays);\n    if(!f.trades){ card.style.display=\"none\"; return; }\n    card.style.display=\"\";\n    var numEl=document.getElementById(\"trFcNum\");\n    numEl.textContent=(f.expected>=0?\"+\":\"\")+fmt(f.expected,sym);\n    numEl.className=\"fc-num mono \"+(f.expected>=0?\"up\":\"down\");\n    document.getElementById(\"trFcCap\").textContent=\"expected over \"+trFcDays+\" days \u00b7 about \"+f.trades+\" trade\"+(f.trades===1?\"\":\"s\");\n\n    var sim=tradeSim(list, trFcDays, 1000);\n    var band=document.getElementById(\"trFcBand\");\n    if(sim){\n      var pct=Math.round(sim.chanceDown*100);\n      band.innerHTML=mcBar(sim,sym)\n        +'<div class=\"mc-legend\">'\n        +'<span>middle 80%: <b>'+fmt(sim.p10,sym)+'</b> to <b>'+fmt(sim.p90,sym)+'</b></span>'\n        +'<span>typical: <b>'+fmt(sim.median,sym)+'</b></span>'\n        +'<span>down after '+trFcDays+'d: <b>'+pct+'%</b></span>'\n        +'</div>';\n    } else band.innerHTML=\"\";\n\n    var warn=document.getElementById(\"trFcWarn\");\n    if(f.thin){\n      warn.innerHTML='<div class=\"fc-alert warn\"><span>\u25d4</span><span>Only <b>'+list.length+'</b> trade'+(list.length===1?\"\":\"s\")+' to go on. Under ~'+TR_FC_MIN_TRADES+', one result moves all of this \u2014 treat it as a sketch.</span></div>';\n    } else if(f.expectancy<0){\n      warn.innerHTML='<div class=\"fc-alert bad\"><span>\u26a0\ufe0f</span><span>Your edge is <b>negative</b> ('+fmt(f.expectancy,sym)+' per trade). More trading makes this worse, not better \u2014 the projection gets more negative the longer you go.</span></div>';\n    } else if(sim && sim.chanceDown>=0.35){\n      warn.innerHTML='<div class=\"fc-alert warn\"><span>\u26a1</span><span>Edge is positive, but <b>'+Math.round(sim.chanceDown*100)+'%</b> of runs still finish down. A real edge loses often \u2014 that\\'s what surviving it costs.</span></div>';\n    } else warn.innerHTML=\"\";\n\n    document.getElementById(\"trFcBasis\").innerHTML=\"Your edge is <b>\"+fmt(f.expectancy,sym)+\"/trade</b> and you trade about <b>\"+(Math.round(f.perDay*10)/10)+\"\u00d7/day</b> (over \"+f.histDays+\" days). Expected = edge \u00d7 trades. The range comes from replaying your own wins and losses <b>1,000</b> times \u2014 same numbers, reshuffled. It describes your record, it doesn\\'t predict the market.\";\n  }",ARGS="list, sym";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTradeForecast!==\"undefined\"?renderTradeForecast:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bind — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 06-forms-inputs</div>
+<h1>bind<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v1.0 · variant 2</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function bind(){
+    // chart toggle type
+    Array.prototype.forEach.call(document.querySelectorAll(&quot;#chartSeg button&quot;), function(b){
+      b.addEventListener(&quot;click&quot;, function(){ state.chartType=b.getAttribute(&quot;data-t&quot;); persist(); render(); });
+    });
+    // collapse chart
+    document.getElementById(&quot;chartToggle&quot;).addEventListener(&quot;click&quot;, function(){
+      state.chartCollapsed=!state.chartCollapsed; persist(); buildChart();
+    });
+
+    // type -&gt; show/hide category &amp; adjust label
+    var typeSel=document.getElementById(&quot;fType&quot;);
+    function typeUI(){
+      var v=typeSel.value;
+      document.getElementById(&quot;catFld&quot;).style.display = (v===&quot;spend&quot;)?&quot;flex&quot;:&quot;none&quot;;
+      var lbl=document.getElementById(&quot;amtLbl&quot;);
+      lbl.textContent = (v===&quot;adjust&quot;)?&quot;Amount (use − for a drop)&quot;:&quot;Amount&quot;;
+    }
+    typeSel.addEventListener(&quot;change&quot;, typeUI); typeUI();
+
+    // photo picker
+    var pendingPhoto=null;
+    var fPhoto=document.getElementById(&quot;fPhoto&quot;);
+    document.getElementById(&quot;fPhotoBtn&quot;).addEventListener(&quot;click&quot;, function(){ fPhoto.click(); });
+    fPhoto.addEventListener(&quot;change&quot;, function(){
+      var f=fPhoto.files &amp;&amp; fPhoto.files[0]; if(!f) return;
+      document.getElementById(&quot;fPhotoName&quot;).textContent=&quot;reading…&quot;;
+      processImage(f, function(res){
+        pendingPhoto=res;
+        var nm=res.name||&quot;photo&quot;;
+        document.getElementById(&quot;fPhotoName&quot;).textContent = nm.length&gt;22? nm.slice(0,20)+&quot;…&quot; : nm;
+        var prev=document.getElementById(&quot;fPhotoPrev&quot;);
+        if(!res.raw){ prev.src=res.dataUrl; prev.style.display=&quot;block&quot;; } else { prev.style.display=&quot;none&quot;; }
+        document.getElementById(&quot;fPhotoClear&quot;).style.display=&quot;inline-block&quot;;
+      });
+    });
+    function clearPhotoPick(){
+      pendingPhoto=null; fPhoto.value=&quot;&quot;;
+      document.getElementById(&quot;fPhotoName&quot;).textContent=&quot;&quot;;
+      document.getElementById(&quot;fPhotoPrev&quot;).style.display=&quot;none&quot;;
+      document.getElementById(&quot;fPhotoClear&quot;).style.display=&quot;none&quot;;
+    }
+    document.getElementById(&quot;fPhotoClear&quot;).addEventListener(&quot;click&quot;, clearPhotoPick);
+
+    // entry submit
+    document.getElementById(&quot;entryForm&quot;).addEventListener(&quot;submit&quot;, function(e){
+      e.preventDefault();
+      var type=typeSel.value;
+      var date=document.getElementById(&quot;fDate&quot;).value || todayStr();
+      var raw=num(document.getElementById(&quot;fAmt&quot;).value);
+      if(type!==&quot;adjust&quot;) raw=Math.abs(raw);
+      if(!raw){ shake(document.getElementById(&quot;fAmt&quot;)); return; }
+      var tx={ id:Date.now()+Math.floor(Math.random()*1000), date:date, type:type, amount:raw };
+      if(type===&quot;spend&quot;) tx.cat=document.getElementById(&quot;fCat&quot;).value;
+      var note=document.getElementById(&quot;fNote&quot;).value.trim(); if(note) tx.note=note;
+      if(pendingPhoto){ tx.photo=tx.id; savePhoto(tx.id, pendingPhoto.dataUrl); }
+      state.transactions.push(tx);
+      state.selectedMonth=monthKey(date);
+      persist(); render();
+      document.getElementById(&quot;fAmt&quot;).value=&quot;&quot;; document.getElementById(&quot;fNote&quot;).value=&quot;&quot;;
+      clearPhotoPick();
+      document.getElementById(&quot;fAmt&quot;).focus();
+    });
+
+    // month select
+    document.getElementById(&quot;monthSel&quot;).addEventListener(&quot;change&quot;, function(e){
+      state.selectedMonth=e.target.value; persist(); render();
+    });
+
+    // salary / allowance inputs
+    [[&quot;sAlw&quot;,&quot;allowance&quot;],[&quot;sDebt&quot;,&quot;toDebt&quot;],[&quot;sTrade&quot;,&quot;toTrading&quot;],[&quot;sSave&quot;,&quot;toSavings&quot;]].forEach(function(pair){
+      document.getElementById(pair[0]).addEventListener(&quot;input&quot;, function(e){
+        state.settings[pair[1]]=num(e.target.value); persist(); render();
+      });
+    });
+
+    // apply allowance — only once per calendar month (max 12 a year)
+    document.getElementById(&quot;applyAlw&quot;).addEventListener(&quot;click&quot;, function(){
+      if(appliedThisMonth()) return;
+      var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
+      if(sd+stt+ss&lt;=0) return;
+      var today=todayStr(), curM=monthKey(today), base=Date.now();
+      if(sd&gt;0) state.transactions.push({id:base+1,date:today,type:&quot;alw_debt&quot;,amount:sd,note:&quot;Allowance → debt&quot;,auto:true});
+      if(stt&gt;0) state.transactions.push({id:base+2,date:today,type:&quot;alw_trading&quot;,amount:stt,note:&quot;Allowance → trading&quot;,auto:true});
+      if(ss&gt;0) state.transactions.push({id:base+3,date:today,type:&quot;alw_savings&quot;,amount:ss,note:&quot;Allowance → savings&quot;,auto:true});
+      state.selectedMonth=curM;
+      persist(); render();
+      flashSaved(&quot;added&quot;);
+    });
+
+    // setup save
+    document.getElementById(&quot;saveSetup&quot;).addEventListener(&quot;click&quot;, function(){
+      state.opening.balance=num(document.getElementById(&quot;oBal&quot;).value);
+      state.opening.debt=num(document.getElementById(&quot;oDebt&quot;).value);
+      state.opening.savings=num(document.getElementById(&quot;oSav&quot;).value);
+      var c=document.getElementById(&quot;oCur&quot;).value.trim(); state.currency=c||&quot;$&quot;;
+      persist(); render(); flashSaved(&quot;saved&quot;);
+    });
+
+    // build a backup string that also bundles photos
+    function exportData(cb){
+      var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });
+      var photos={}, i=0;
+      (function next(){
+        if(i&gt;=ids.length){ cb(JSON.stringify({__mymoney:1, state:state, photos:photos}, null, 2)); return; }
+        var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });
+      })();
+    }
+    function fallbackShow(json){
+      var w=document.getElementById(&quot;impWrap&quot;); w.style.display=&quot;block&quot;;
+      document.getElementById(&quot;impBox&quot;).value=json;
+    }
+    // export copy
+    document.getElementById(&quot;expCopy&quot;).addEventListener(&quot;click&quot;, function(){
+      flashSaved(&quot;preparing…&quot;);
+      exportData(function(json){
+        if(navigator.clipboard &amp;&amp; navigator.clipboard.writeText){
+          navigator.clipboard.writeText(json).then(function(){ flashSaved(&quot;copied&quot;); }, function(){ fallbackShow(json); });
+        } else fallbackShow(json);
+      });
+    });
+    // export file
+    document.getElementById(&quot;expFile&quot;).addEventListener(&quot;click&quot;, function(){
+      flashSaved(&quot;preparing…&quot;);
+      exportData(function(json){
+        try{
+          var blob=new Blob([json],{type:&quot;application/json&quot;});
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement(&quot;a&quot;); a.href=url; a.download=&quot;my-money-backup.json&quot;;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+          flashSaved(&quot;downloaded&quot;);
+        }catch(e){ alert(&quot;Couldn&#x27;t download here — use Copy backup instead.&quot;); }
+      });
+    });
+    // import
+    document.getElementById(&quot;impToggle&quot;).addEventListener(&quot;click&quot;, function(){
+      var w=document.getElementById(&quot;impWrap&quot;); w.style.display=(w.style.display===&quot;none&quot;?&quot;block&quot;:&quot;none&quot;);
+    });
+    document.getElementById(&quot;impLoad&quot;).addEventListener(&quot;click&quot;, function(){
+      var txt=document.getElementById(&quot;impBox&quot;).value.trim(); if(!txt) return;
+      try{
+        var obj=JSON.parse(txt);
+        if(obj &amp;&amp; obj.__mymoney &amp;&amp; obj.state){
+          if(obj.photos){ for(var pid in obj.photos){ savePhoto(pid, obj.photos[pid]); } }
+          applyLoaded(JSON.stringify(obj.state));
+        } else {
+          applyLoaded(JSON.stringify(obj));
+        }
+        state.selectedMonth=null;
+        persist(); render();
+        document.getElementById(&quot;impWrap&quot;).style.display=&quot;none&quot;;
+        flashSaved(&quot;loaded&quot;);
+      }catch(e){ alert(&quot;That backup didn&#x27;t look right. Check you pasted the whole thing.&quot;); }
+    });
+    // reset
+    document.getElementById(&quot;resetBtn&quot;).addEventListener(&quot;click&quot;, function(){
+      if(!confirm(&quot;Erase everything and start fresh? Export a backup first if you want to keep it.&quot;)) return;
+      state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });
+      state=clone(DEFAULTS); state.selectedMonth=null;
+      persist(); render(); flashSaved(&quot;reset&quot;);
+    });
+
+    // image viewer
+    document.getElementById(&quot;viewerClose&quot;).addEventListener(&quot;click&quot;, closeViewer);
+    document.getElementById(&quot;viewer&quot;).addEventListener(&quot;click&quot;, function(e){ if(e.target===this) closeViewer(); });
+    document.getElementById(&quot;viewerDel&quot;).addEventListener(&quot;click&quot;, function(){
+      if(viewingId==null) return;
+      var tx=state.transactions.filter(function(x){ return x.id===viewingId; })[0];
+      if(tx &amp;&amp; tx.photo){ delPhoto(tx.photo); delete tx.photo; }
+      persist(); render(); closeViewer();
+    });
+    document.addEventListener(&quot;keydown&quot;, function(e){ if(e.key===&quot;Escape&quot;) closeViewer(); });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function bind(){\n    // chart toggle type\n    Array.prototype.forEach.call(document.querySelectorAll(\"#chartSeg button\"), function(b){\n      b.addEventListener(\"click\", function(){ state.chartType=b.getAttribute(\"data-t\"); persist(); render(); });\n    });\n    // collapse chart\n    document.getElementById(\"chartToggle\").addEventListener(\"click\", function(){\n      state.chartCollapsed=!state.chartCollapsed; persist(); buildChart();\n    });\n\n    // type -> show/hide category & adjust label\n    var typeSel=document.getElementById(\"fType\");\n    function typeUI(){\n      var v=typeSel.value;\n      document.getElementById(\"catFld\").style.display = (v===\"spend\")?\"flex\":\"none\";\n      var lbl=document.getElementById(\"amtLbl\");\n      lbl.textContent = (v===\"adjust\")?\"Amount (use \u2212 for a drop)\":\"Amount\";\n    }\n    typeSel.addEventListener(\"change\", typeUI); typeUI();\n\n    // photo picker\n    var pendingPhoto=null;\n    var fPhoto=document.getElementById(\"fPhoto\");\n    document.getElementById(\"fPhotoBtn\").addEventListener(\"click\", function(){ fPhoto.click(); });\n    fPhoto.addEventListener(\"change\", function(){\n      var f=fPhoto.files && fPhoto.files[0]; if(!f) return;\n      document.getElementById(\"fPhotoName\").textContent=\"reading\u2026\";\n      processImage(f, function(res){\n        pendingPhoto=res;\n        var nm=res.name||\"photo\";\n        document.getElementById(\"fPhotoName\").textContent = nm.length>22? nm.slice(0,20)+\"\u2026\" : nm;\n        var prev=document.getElementById(\"fPhotoPrev\");\n        if(!res.raw){ prev.src=res.dataUrl; prev.style.display=\"block\"; } else { prev.style.display=\"none\"; }\n        document.getElementById(\"fPhotoClear\").style.display=\"inline-block\";\n      });\n    });\n    function clearPhotoPick(){\n      pendingPhoto=null; fPhoto.value=\"\";\n      document.getElementById(\"fPhotoName\").textContent=\"\";\n      document.getElementById(\"fPhotoPrev\").style.display=\"none\";\n      document.getElementById(\"fPhotoClear\").style.display=\"none\";\n    }\n    document.getElementById(\"fPhotoClear\").addEventListener(\"click\", clearPhotoPick);\n\n    // entry submit\n    document.getElementById(\"entryForm\").addEventListener(\"submit\", function(e){\n      e.preventDefault();\n      var type=typeSel.value;\n      var date=document.getElementById(\"fDate\").value || todayStr();\n      var raw=num(document.getElementById(\"fAmt\").value);\n      if(type!==\"adjust\") raw=Math.abs(raw);\n      if(!raw){ shake(document.getElementById(\"fAmt\")); return; }\n      var tx={ id:Date.now()+Math.floor(Math.random()*1000), date:date, type:type, amount:raw };\n      if(type===\"spend\") tx.cat=document.getElementById(\"fCat\").value;\n      var note=document.getElementById(\"fNote\").value.trim(); if(note) tx.note=note;\n      if(pendingPhoto){ tx.photo=tx.id; savePhoto(tx.id, pendingPhoto.dataUrl); }\n      state.transactions.push(tx);\n      state.selectedMonth=monthKey(date);\n      persist(); render();\n      document.getElementById(\"fAmt\").value=\"\"; document.getElementById(\"fNote\").value=\"\";\n      clearPhotoPick();\n      document.getElementById(\"fAmt\").focus();\n    });\n\n    // month select\n    document.getElementById(\"monthSel\").addEventListener(\"change\", function(e){\n      state.selectedMonth=e.target.value; persist(); render();\n    });\n\n    // salary / allowance inputs\n    [[\"sAlw\",\"allowance\"],[\"sDebt\",\"toDebt\"],[\"sTrade\",\"toTrading\"],[\"sSave\",\"toSavings\"]].forEach(function(pair){\n      document.getElementById(pair[0]).addEventListener(\"input\", function(e){\n        state.settings[pair[1]]=num(e.target.value); persist(); render();\n      });\n    });\n\n    // apply allowance \u2014 only once per calendar month (max 12 a year)\n    document.getElementById(\"applyAlw\").addEventListener(\"click\", function(){\n      if(appliedThisMonth()) return;\n      var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);\n      if(sd+stt+ss<=0) return;\n      var today=todayStr(), curM=monthKey(today), base=Date.now();\n      if(sd>0) state.transactions.push({id:base+1,date:today,type:\"alw_debt\",amount:sd,note:\"Allowance \u2192 debt\",auto:true});\n      if(stt>0) state.transactions.push({id:base+2,date:today,type:\"alw_trading\",amount:stt,note:\"Allowance \u2192 trading\",auto:true});\n      if(ss>0) state.transactions.push({id:base+3,date:today,type:\"alw_savings\",amount:ss,note:\"Allowance \u2192 savings\",auto:true});\n      state.selectedMonth=curM;\n      persist(); render();\n      flashSaved(\"added\");\n    });\n\n    // setup save\n    document.getElementById(\"saveSetup\").addEventListener(\"click\", function(){\n      state.opening.balance=num(document.getElementById(\"oBal\").value);\n      state.opening.debt=num(document.getElementById(\"oDebt\").value);\n      state.opening.savings=num(document.getElementById(\"oSav\").value);\n      var c=document.getElementById(\"oCur\").value.trim(); state.currency=c||\"$\";\n      persist(); render(); flashSaved(\"saved\");\n    });\n\n    // build a backup string that also bundles photos\n    function exportData(cb){\n      var ids=[]; state.transactions.forEach(function(t){ if(t.photo) ids.push(t.photo); });\n      var photos={}, i=0;\n      (function next(){\n        if(i>=ids.length){ cb(JSON.stringify({__mymoney:1, state:state, photos:photos}, null, 2)); return; }\n        var id=ids[i++]; loadPhoto(id, function(v){ if(v) photos[id]=v; next(); });\n      })();\n    }\n    function fallbackShow(json){\n      var w=document.getElementById(\"impWrap\"); w.style.display=\"block\";\n      document.getElementById(\"impBox\").value=json;\n    }\n    // export copy\n    document.getElementById(\"expCopy\").addEventListener(\"click\", function(){\n      flashSaved(\"preparing\u2026\");\n      exportData(function(json){\n        if(navigator.clipboard && navigator.clipboard.writeText){\n          navigator.clipboard.writeText(json).then(function(){ flashSaved(\"copied\"); }, function(){ fallbackShow(json); });\n        } else fallbackShow(json);\n      });\n    });\n    // export file\n    document.getElementById(\"expFile\").addEventListener(\"click\", function(){\n      flashSaved(\"preparing\u2026\");\n      exportData(function(json){\n        try{\n          var blob=new Blob([json],{type:\"application/json\"});\n          var url=URL.createObjectURL(blob);\n          var a=document.createElement(\"a\"); a.href=url; a.download=\"my-money-backup.json\";\n          document.body.appendChild(a); a.click(); document.body.removeChild(a);\n          setTimeout(function(){ URL.revokeObjectURL(url); },1000);\n          flashSaved(\"downloaded\");\n        }catch(e){ alert(\"Couldn't download here \u2014 use Copy backup instead.\"); }\n      });\n    });\n    // import\n    document.getElementById(\"impToggle\").addEventListener(\"click\", function(){\n      var w=document.getElementById(\"impWrap\"); w.style.display=(w.style.display===\"none\"?\"block\":\"none\");\n    });\n    document.getElementById(\"impLoad\").addEventListener(\"click\", function(){\n      var txt=document.getElementById(\"impBox\").value.trim(); if(!txt) return;\n      try{\n        var obj=JSON.parse(txt);\n        if(obj && obj.__mymoney && obj.state){\n          if(obj.photos){ for(var pid in obj.photos){ savePhoto(pid, obj.photos[pid]); } }\n          applyLoaded(JSON.stringify(obj.state));\n        } else {\n          applyLoaded(JSON.stringify(obj));\n        }\n        state.selectedMonth=null;\n        persist(); render();\n        document.getElementById(\"impWrap\").style.display=\"none\";\n        flashSaved(\"loaded\");\n      }catch(e){ alert(\"That backup didn't look right. Check you pasted the whole thing.\"); }\n    });\n    // reset\n    document.getElementById(\"resetBtn\").addEventListener(\"click\", function(){\n      if(!confirm(\"Erase everything and start fresh? Export a backup first if you want to keep it.\")) return;\n      state.transactions.forEach(function(t){ if(t.photo) delPhoto(t.photo); });\n      state=clone(DEFAULTS); state.selectedMonth=null;\n      persist(); render(); flashSaved(\"reset\");\n    });\n\n    // image viewer\n    document.getElementById(\"viewerClose\").addEventListener(\"click\", closeViewer);\n    document.getElementById(\"viewer\").addEventListener(\"click\", function(e){ if(e.target===this) closeViewer(); });\n    document.getElementById(\"viewerDel\").addEventListener(\"click\", function(){\n      if(viewingId==null) return;\n      var tx=state.transactions.filter(function(x){ return x.id===viewingId; })[0];\n      if(tx && tx.photo){ delPhoto(tx.photo); delete tx.photo; }\n      persist(); render(); closeViewer();\n    });\n    document.addEventListener(\"keydown\", function(e){ if(e.key===\"Escape\") closeViewer(); });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof bind!==\"undefined\"?bind:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

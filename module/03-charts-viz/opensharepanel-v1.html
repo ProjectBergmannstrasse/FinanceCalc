@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>openSharePanel — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 03-charts-viz</div>
+<h1>openSharePanel<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v28.5 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function openSharePanel(){
+    openOverlay(
+      &#x27;&lt;div class=&quot;sheet&quot;&gt;&lt;div class=&quot;sheet-hd&quot;&gt;&lt;h3&gt;👨‍👩‍👦 Family sharing&lt;/h3&gt;&lt;button class=&quot;x-btn&quot; id=&quot;spX&quot;&gt;✕&lt;/button&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-bd&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;mut&quot; style=&quot;font-size:12px;margin-bottom:12px;line-height:1.65&quot;&gt;&#x27;
+          +&#x27;Generate a cryptographically signed access token. The recipient &#x27;
+          +&#x27;pastes it below or opens the shared link — their role is enforced locally.&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Role&lt;/label&gt;&lt;select class=&quot;inp&quot; id=&quot;spRole&quot;&gt;&#x27;
+          +&#x27;&lt;option value=&quot;editor&quot;&gt;Editor — can add entries, not delete or change settings&lt;/option&gt;&#x27;
+          +&#x27;&lt;option value=&quot;viewer&quot;&gt;Viewer — read only, no changes&lt;/option&gt;&lt;/select&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Label (who is this for?)&lt;/label&gt;&#x27;
+          +&#x27;&lt;input class=&quot;inp&quot; id=&quot;spLabel&quot; placeholder=&quot;e.g. Spouse, Accountant&quot;&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;fld&quot;&gt;&lt;label&gt;Expires (days)&lt;/label&gt;&#x27;
+          +&#x27;&lt;input class=&quot;inp&quot; id=&quot;spExp&quot; type=&quot;number&quot; value=&quot;30&quot; min=&quot;1&quot; max=&quot;365&quot;&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div id=&quot;spOut&quot; style=&quot;display:none;margin-top:10px&quot;&gt;&#x27;
+          +&#x27;&lt;label style=&quot;font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px&quot;&gt;Access token (copy and send)&lt;/label&gt;&#x27;
+          +&#x27;&lt;textarea class=&quot;inp&quot; id=&quot;spToken&quot; rows=&quot;3&quot; readonly style=&quot;font-size:11px;font-family:monospace;word-break:break-all&quot;&gt;&lt;/textarea&gt;&#x27;
+          +&#x27;&lt;button class=&quot;btn sm&quot; id=&quot;spCopy&quot; style=&quot;margin-top:8px;width:100%&quot;&gt;📋 Copy token&lt;/button&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div style=&quot;margin-top:14px;border-top:1px solid var(--bd);padding-top:12px&quot;&gt;&#x27;
+          +&#x27;&lt;label style=&quot;font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px&quot;&gt;Or paste a received token&lt;/label&gt;&#x27;
+          +&#x27;&lt;div style=&quot;display:flex;gap:8px&quot;&gt;&lt;input class=&quot;inp&quot; id=&quot;spPaste&quot; placeholder=&quot;paste token here&quot;&gt;&#x27;
+          +&#x27;&lt;button class=&quot;btn sm&quot; id=&quot;spActivate&quot;&gt;Activate&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&#x27;
+      +&#x27;&lt;/div&gt;&#x27;
+      +&#x27;&lt;div class=&quot;sheet-ft&quot;&gt;&lt;button class=&quot;btn sm&quot; id=&quot;spCancel&quot;&gt;Close&lt;/button&gt;&#x27;
+        +&#x27;&lt;button class=&quot;btn sm solid&quot; id=&quot;spGen&quot;&gt;Generate token&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&#x27;,
+      {ready:function(ov,close){
+        ov.querySelector(&quot;#spX&quot;).onclick=close;
+        ov.querySelector(&quot;#spCancel&quot;).onclick=close;
+        ov.querySelector(&quot;#spGen&quot;).onclick=async function(){
+          var btn=ov.querySelector(&quot;#spGen&quot;); btn.disabled=true; btn.textContent=&quot;Signing…&quot;;
+          var role=ov.querySelector(&quot;#spRole&quot;).value;
+          var label=ov.querySelector(&quot;#spLabel&quot;).value.trim();
+          var exp=parseInt(ov.querySelector(&quot;#spExp&quot;).value,10)||30;
+          var token=await createShareToken(role,label,exp);
+          ov.querySelector(&quot;#spToken&quot;).value=token;
+          ov.querySelector(&quot;#spOut&quot;).style.display=&quot;&quot;;
+          btn.disabled=false; btn.textContent=&quot;Generate token&quot;;
+        };
+        ov.querySelector(&quot;#spCopy&quot;).onclick=function(){
+          var t=ov.querySelector(&quot;#spToken&quot;).value; if(!t) return;
+          if(navigator.clipboard&amp;&amp;navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ flashSaved(&quot;token copied&quot;); });
+          else{ ov.querySelector(&quot;#spToken&quot;).select(); document.execCommand(&quot;copy&quot;); flashSaved(&quot;copied&quot;); }
+        };
+        ov.querySelector(&quot;#spActivate&quot;).onclick=async function(){
+          var token=ov.querySelector(&quot;#spPaste&quot;).value.trim();
+          if(!token) return;
+          var payload=await verifyToken(token);
+          if(payload){ applyRole(payload.role); close(); flashSaved(&quot;Activated as &quot;+payload.role); }
+          else flashSaved(&quot;Invalid or expired token&quot;);
+        };
+      }}
+    );
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function openSharePanel(){\n    openOverlay(\n      '<div class=\"sheet\"><div class=\"sheet-hd\"><h3>\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc66 Family sharing</h3><button class=\"x-btn\" id=\"spX\">\u2715</button></div>'\n      +'<div class=\"sheet-bd\">'\n        +'<div class=\"mut\" style=\"font-size:12px;margin-bottom:12px;line-height:1.65\">'\n          +'Generate a cryptographically signed access token. The recipient '\n          +'pastes it below or opens the shared link \u2014 their role is enforced locally.</div>'\n        +'<div class=\"fld\"><label>Role</label><select class=\"inp\" id=\"spRole\">'\n          +'<option value=\"editor\">Editor \u2014 can add entries, not delete or change settings</option>'\n          +'<option value=\"viewer\">Viewer \u2014 read only, no changes</option></select></div>'\n        +'<div class=\"fld\"><label>Label (who is this for?)</label>'\n          +'<input class=\"inp\" id=\"spLabel\" placeholder=\"e.g. Spouse, Accountant\"></div>'\n        +'<div class=\"fld\"><label>Expires (days)</label>'\n          +'<input class=\"inp\" id=\"spExp\" type=\"number\" value=\"30\" min=\"1\" max=\"365\"></div>'\n        +'<div id=\"spOut\" style=\"display:none;margin-top:10px\">'\n          +'<label style=\"font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px\">Access token (copy and send)</label>'\n          +'<textarea class=\"inp\" id=\"spToken\" rows=\"3\" readonly style=\"font-size:11px;font-family:monospace;word-break:break-all\"></textarea>'\n          +'<button class=\"btn sm\" id=\"spCopy\" style=\"margin-top:8px;width:100%\">\ud83d\udccb Copy token</button></div>'\n        +'<div style=\"margin-top:14px;border-top:1px solid var(--bd);padding-top:12px\">'\n          +'<label style=\"font-size:11px;color:var(--mut);font-weight:700;display:block;margin-bottom:6px\">Or paste a received token</label>'\n          +'<div style=\"display:flex;gap:8px\"><input class=\"inp\" id=\"spPaste\" placeholder=\"paste token here\">'\n          +'<button class=\"btn sm\" id=\"spActivate\">Activate</button></div></div>'\n      +'</div>'\n      +'<div class=\"sheet-ft\"><button class=\"btn sm\" id=\"spCancel\">Close</button>'\n        +'<button class=\"btn sm solid\" id=\"spGen\">Generate token</button></div></div>',\n      {ready:function(ov,close){\n        ov.querySelector(\"#spX\").onclick=close;\n        ov.querySelector(\"#spCancel\").onclick=close;\n        ov.querySelector(\"#spGen\").onclick=async function(){\n          var btn=ov.querySelector(\"#spGen\"); btn.disabled=true; btn.textContent=\"Signing\u2026\";\n          var role=ov.querySelector(\"#spRole\").value;\n          var label=ov.querySelector(\"#spLabel\").value.trim();\n          var exp=parseInt(ov.querySelector(\"#spExp\").value,10)||30;\n          var token=await createShareToken(role,label,exp);\n          ov.querySelector(\"#spToken\").value=token;\n          ov.querySelector(\"#spOut\").style.display=\"\";\n          btn.disabled=false; btn.textContent=\"Generate token\";\n        };\n        ov.querySelector(\"#spCopy\").onclick=function(){\n          var t=ov.querySelector(\"#spToken\").value; if(!t) return;\n          if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ flashSaved(\"token copied\"); });\n          else{ ov.querySelector(\"#spToken\").select(); document.execCommand(\"copy\"); flashSaved(\"copied\"); }\n        };\n        ov.querySelector(\"#spActivate\").onclick=async function(){\n          var token=ov.querySelector(\"#spPaste\").value.trim();\n          if(!token) return;\n          var payload=await verifyToken(token);\n          if(payload){ applyRole(payload.role); close(); flashSaved(\"Activated as \"+payload.role); }\n          else flashSaved(\"Invalid or expired token\");\n        };\n      }}\n    );\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof openSharePanel!==\"undefined\"?openSharePanel:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>

@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>renderTrash — FinanceCalc module</title><style>:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f2f2f2;font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums;padding:28px 18px}
+.m{max-width:860px;margin:0 auto}
+.k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:20px;margin:6px 0 2px;word-break:break-all}
+.meta{color:#9a9a9a;font-size:12.5px;margin-bottom:18px}
+.badge{display:inline-block;border:1px solid #333;padding:2px 8px;font-size:11px;color:#9a9a9a;margin-left:8px;vertical-align:middle}
+.badge.ok{border-color:#f2f2f2;color:#f2f2f2;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9a9a9a;margin:22px 0 10px}
+.prev{border:1px solid #262626;background:#111;padding:26px;min-height:110px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;overflow:auto;transform:translateZ(0)}
+pre{border:1px solid #262626;background:#0d0d0d;padding:14px;overflow:auto;font-size:12px;line-height:1.5;max-height:420px;white-space:pre-wrap;word-break:break-all}
+button.act{background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;transition:transform .12s cubic-bezier(.22,1,.36,1)}
+button.act:active{transform:scale(.94)}
+button.ghost{background:none;color:#9a9a9a;border:1px solid #333}
+.outbox{border:1px dashed #333;padding:12px;margin-top:10px;font-size:12.5px;color:#9a9a9a;min-height:20px;word-break:break-all}
+.row{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+a{color:#9a9a9a;text-decoration:none;border-bottom:1px solid #333}a:hover{color:#f2f2f2}
+.sw{width:120px;border:1px solid #262626;padding:8px;font-size:11px}
+.swc{height:34px;border:1px solid #333;margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}</style></head><body><div class="m">
+<div class="k">FinanceCalc module · 05-js-utils</div>
+<h1>renderTrash<span class="badge">tested · needs app context</span></h1>
+<div class="meta">JS function · extracted from build v38.4 · variant 1</div>
+<h2>Live preview</h2><div class="prev" style="display:block"><div class="row"><button class="act" id="run">Run with sample args</button><button class="act ghost" id="copy">Copy code</button></div><div class="outbox" id="out">Not run yet.</div></div>
+<h2>Source</h2><pre>function renderTrash(){
+    var box=document.getElementById(&quot;trashList&quot;);
+    if(!box) return;
+    var items=trashList(), sym=state.currency;
+    var btns=document.getElementById(&quot;trashBtns&quot;);
+    if(btns) btns.style.display=items.length?&quot;&quot;:&quot;none&quot;;
+    if(!items.length){
+      box.innerHTML=&#x27;&lt;div class=&quot;hs-empty&quot;&gt;&lt;div class=&quot;he-ic&quot;&gt;\uD83D\uDDD1\uFE0F&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;he-t&quot;&gt;Nothing deleted recently&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;he-d&quot;&gt;Deleted entries wait here for &#x27;+TRASH_DAYS+&#x27; days&lt;br&gt;before they\u2019re cleared.&lt;/div&gt;&lt;/div&gt;&#x27;;
+      return;
+    }
+    /* Same card shape as the action list, grouped by the day it was deleted,
+       showing the amount and how long is left — the old version buried all
+       of that in one grey line. */
+    var html=&quot;&quot;, lastDay=&quot;&quot;;
+    items.slice(0,60).forEach(function(item,i){
+      var t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||&quot;?&quot;};
+      var nm=(t.note||t.cat||meta.label||&quot;Entry&quot;);
+      var left=trashDaysLeft(item);
+      var when = left&lt;=0 ? &quot;going now&quot; : (left===1 ? &quot;1 day left&quot; : left+&quot; days left&quot;);
+      var day=dayHeading(item.at||Date.now());
+      if(day!==lastDay){ html+=&#x27;&lt;div class=&quot;hs-day&quot;&gt;deleted &#x27;+esc(day)+&#x27;&lt;/div&gt;&#x27;; lastDay=day; }
+      var delta=balDelta(t);
+      var pics=photosOf(t).length;
+      html+=&#x27;&lt;div class=&quot;hs-card&quot; style=&quot;animation-delay:&#x27;+Math.min(i*22,220)+&#x27;ms&quot;&gt;&#x27;
+        +&#x27;&lt;div class=&quot;hs-ic del&quot;&gt;&#x27;+(meta.label||&quot;?&quot;).charAt(0)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;hs-main&quot;&gt;&lt;div class=&quot;hs-t&quot;&gt;&#x27;+esc(nm)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;hs-sub&quot;&gt;&lt;span&gt;&#x27;+esc(t.date||&quot;no date&quot;)+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;span class=&quot;hs-dot&quot;&gt;&lt;/span&gt;&lt;span&gt;&#x27;+esc(meta.label)+&#x27;&lt;/span&gt;&#x27;
+        + (pics?&#x27;&lt;span class=&quot;hs-dot&quot;&gt;&lt;/span&gt;&lt;span&gt;\uD83D\uDCCE&#x27;+(pics&gt;1?pics:&quot;&quot;)+&#x27;&lt;/span&gt;&#x27;:&quot;&quot;)
+        +&#x27;&lt;span class=&quot;hs-pill&#x27;+(left&lt;=5?&quot; soon&quot;:&quot;&quot;)+&#x27;&quot;&gt;&#x27;+esc(when)+&#x27;&lt;/span&gt;&#x27;
+        +&#x27;&lt;/div&gt;&lt;/div&gt;&#x27;
+        +&#x27;&lt;div class=&quot;hs-amt &#x27;+(delta&gt;0?&quot;in&quot;:delta&lt;0?&quot;out&quot;:&quot;&quot;)+&#x27;&quot;&gt;&#x27;
+        + (delta&gt;0?&quot;+&quot;:delta&lt;0?&quot;\u2212&quot;:&quot;&quot;)+fmt(Math.abs(num(t.amount)),sym)+&#x27;&lt;/div&gt;&#x27;
+        +&#x27;&lt;button type=&quot;button&quot; class=&quot;hs-btn tr-item-btn&quot; data-i=&quot;&#x27;+i+&#x27;&quot;&gt;Restore&lt;/button&gt;&#x27;
+        +&#x27;&lt;/div&gt;&#x27;;
+    });
+    if(items.length&gt;60) html+=&#x27;&lt;div class=&quot;hs-empty&quot; style=&quot;padding:14px&quot;&gt;&lt;div class=&quot;he-d&quot;&gt;\u2026and &#x27;+(items.length-60)+&#x27; more&lt;/div&gt;&lt;/div&gt;&#x27;;
+    box.innerHTML=html;
+    Array.prototype.forEach.call(box.querySelectorAll(&quot;.tr-item-btn&quot;), function(b){
+      b.addEventListener(&quot;click&quot;, function(){
+        var tx=restoreFromTrash(+b.getAttribute(&quot;data-i&quot;));
+        if(tx){
+          resetLedgerView();
+          render(); renderTrash();
+          flashSaved(&quot;restored&quot;);
+        }
+      });
+    });
+  }</pre>
+<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+</div><script>var CODE="function renderTrash(){\n    var box=document.getElementById(\"trashList\");\n    if(!box) return;\n    var items=trashList(), sym=state.currency;\n    var btns=document.getElementById(\"trashBtns\");\n    if(btns) btns.style.display=items.length?\"\":\"none\";\n    if(!items.length){\n      box.innerHTML='<div class=\"hs-empty\"><div class=\"he-ic\">\\uD83D\\uDDD1\\uFE0F</div>'\n        +'<div class=\"he-t\">Nothing deleted recently</div>'\n        +'<div class=\"he-d\">Deleted entries wait here for '+TRASH_DAYS+' days<br>before they\\u2019re cleared.</div></div>';\n      return;\n    }\n    /* Same card shape as the action list, grouped by the day it was deleted,\n       showing the amount and how long is left \u2014 the old version buried all\n       of that in one grey line. */\n    var html=\"\", lastDay=\"\";\n    items.slice(0,60).forEach(function(item,i){\n      var t=item.tx||{}, meta=TYPE_META[t.type]||{label:t.type||\"?\"};\n      var nm=(t.note||t.cat||meta.label||\"Entry\");\n      var left=trashDaysLeft(item);\n      var when = left<=0 ? \"going now\" : (left===1 ? \"1 day left\" : left+\" days left\");\n      var day=dayHeading(item.at||Date.now());\n      if(day!==lastDay){ html+='<div class=\"hs-day\">deleted '+esc(day)+'</div>'; lastDay=day; }\n      var delta=balDelta(t);\n      var pics=photosOf(t).length;\n      html+='<div class=\"hs-card\" style=\"animation-delay:'+Math.min(i*22,220)+'ms\">'\n        +'<div class=\"hs-ic del\">'+(meta.label||\"?\").charAt(0)+'</div>'\n        +'<div class=\"hs-main\"><div class=\"hs-t\">'+esc(nm)+'</div>'\n        +'<div class=\"hs-sub\"><span>'+esc(t.date||\"no date\")+'</span>'\n        +'<span class=\"hs-dot\"></span><span>'+esc(meta.label)+'</span>'\n        + (pics?'<span class=\"hs-dot\"></span><span>\\uD83D\\uDCCE'+(pics>1?pics:\"\")+'</span>':\"\")\n        +'<span class=\"hs-pill'+(left<=5?\" soon\":\"\")+'\">'+esc(when)+'</span>'\n        +'</div></div>'\n        +'<div class=\"hs-amt '+(delta>0?\"in\":delta<0?\"out\":\"\")+'\">'\n        + (delta>0?\"+\":delta<0?\"\\u2212\":\"\")+fmt(Math.abs(num(t.amount)),sym)+'</div>'\n        +'<button type=\"button\" class=\"hs-btn tr-item-btn\" data-i=\"'+i+'\">Restore</button>'\n        +'</div>';\n    });\n    if(items.length>60) html+='<div class=\"hs-empty\" style=\"padding:14px\"><div class=\"he-d\">\\u2026and '+(items.length-60)+' more</div></div>';\n    box.innerHTML=html;\n    Array.prototype.forEach.call(box.querySelectorAll(\".tr-item-btn\"), function(b){\n      b.addEventListener(\"click\", function(){\n        var tx=restoreFromTrash(+b.getAttribute(\"data-i\"));\n        if(tx){\n          resetLedgerView();\n          render(); renderTrash();\n          flashSaved(\"restored\");\n        }\n      });\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof renderTrash!==\"undefined\"?renderTrash:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script></body></html>
