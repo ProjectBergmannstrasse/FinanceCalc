@@ -6367,56 +6367,73 @@ AI_TYPES.join(", "),
 
   /* Runs only while the lock screen is up. Cleans itself up on unlock,
      on tab-hide, and on any error. */
+  /* Ask once, then just work. The old version only ran if permission was
+     ALREADY granted — but it never asked, so it never was, and you were
+     pushed to a button every time. Now it asks on the first lock screen,
+     the browser remembers the grant, and after that it simply looks for
+     you and unlocks. No button, no repeated prompts.
+
+     Camera scope is unchanged and strict: opened only while this screen
+     is showing, stopped on unlock, on tab-hide, and on teardown. */
   function startAutoFace(ovEl, onMatch, setStatus){
     if(!autoFaceOn()) return;
     if(!faceCfg.on || !facePeople().length) return;
     if(cameraBlocked()) return;
-    if(inFrame() && !window.faceapi) return;      // model can't load in a frame
+    if(inFrame() && !window.faceapi){
+      setStatus && setStatus("Face unlock needs the app in its own tab");
+      return;
+    }
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
 
-    cameraAlreadyGranted().then(function(granted){
-      // don't ambush someone with a permission prompt at launch — only run
-      // automatically once they've already allowed it for this site
-      if(!granted) return;
-      setStatus && setStatus("Looking for you\u2026");
-      var video=document.createElement("video");
-      video.autoplay=true; video.playsInline=true; video.muted=true;
-      video.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
-      ovEl.appendChild(video);
+    var video=document.createElement("video");
+    video.autoplay=true; video.playsInline=true; video.muted=true;
+    video.setAttribute("playsinline","");
+    video.style.cssText="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+    ovEl.appendChild(video);
 
-      navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:320,height:240}})
-        .then(function(stream){
-          _autoFace.stream=stream; video.srcObject=stream;
-          return loadFaceApi();
-        })
-        .then(function(){
-          var tries=0;
-          var tick=function(){
-            if(!_autoFace.stream || !document.getElementById("lockScreen")) { _autoFace.stop(); return; }
-            faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-              .withFaceLandmarks(true).withFaceDescriptor()
-              .then(function(det){
-                if(!_autoFace.stream) return;
-                if(det){
-                  var who=matchFace(Array.from(det.descriptor));
-                  if(who){
-                    _autoFace.stop();
-                    setStatus && setStatus("Welcome back, "+who.name);
-                    setTimeout(function(){ onMatch(who); }, 350);
-                    return;
-                  }
-                  // not a match — say nothing accusatory, just keep offering the PIN
-                  if(++tries===6) setStatus && setStatus("Not recognised \u2014 use your PIN");
+    setStatus && setStatus("Looking for you\u2026");
+    // request directly — the browser only prompts the first time, then remembers
+    navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:320,height:240}})
+      .then(function(stream){
+        _autoFace.stream=stream; video.srcObject=stream;
+        try{ localStorage.setItem("mymoney_cam_granted","1"); }catch(e){}
+        setStatus && setStatus("Looking for you\u2026");
+        return loadFaceApi();
+      })
+      .then(function(){
+        var tries=0, told=false;
+        var tick=function(){
+          if(!_autoFace.stream || !document.getElementById("lockScreen")){ _autoFace.stop(); return; }
+          faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks(true).withFaceDescriptor()
+            .then(function(det){
+              if(!_autoFace.stream) return;
+              if(det){
+                var who=matchFace(Array.from(det.descriptor));
+                if(who){
+                  _autoFace.stop();
+                  setStatus && setStatus("Welcome back, "+who.name);
+                  setTimeout(function(){ onMatch(who); }, 350);
+                  return;
                 }
-                if(tries<40) _autoFace.raf=setTimeout(tick, 500);
-                else { _autoFace.stop(); setStatus && setStatus("Enter your PIN"); }
-              })
-              .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
-          };
-          tick();
-        })
-        .catch(function(){ _autoFace.stop(); setStatus && setStatus("Enter your PIN"); });
-    });
+                // keep trying rather than giving up — they may just be at an angle
+                if(++tries===8 && !told){ told=true; setStatus && setStatus("Still looking \u2014 or enter your PIN"); }
+              }
+              // no timeout: keep watching for as long as this screen is open
+              _autoFace.raf=setTimeout(tick, 450);
+            })
+            .catch(function(){ _autoFace.raf=setTimeout(tick, 900); });
+        };
+        tick();
+      })
+      .catch(function(err){
+        _autoFace.stop();
+        var n=String(err&&err.name||err);
+        setStatus && setStatus(
+          /NotAllowed|Permission/i.test(n) ? "Camera blocked \u2014 enter your PIN"
+          : /NotFound/i.test(n) ? "No camera \u2014 enter your PIN"
+          : "Enter your PIN");
+      });
   }
   function showLockScreen(){
     if(!lockIsOn()) return;
@@ -6440,9 +6457,10 @@ AI_TYPES.join(", "),
     }
 
     // extras below the pad: face unlock and the recovery route
+    /* No "use face unlock" button. If a face is enrolled the camera just
+       looks for you while this screen is open — a button to start something
+       that should be automatic was the wrong design. */
     var extra="";
-    if(faceCfg.on && facePeople().length)
-      extra+='<button class="btn ghost sm" id="lkBio">\uD83D\uDE00 Use face unlock</button>';
     if(recoveryOn())
       extra+='<button class="kp-link" id="lkForgot">Forgot your PIN?</button>';
 
@@ -6470,34 +6488,27 @@ AI_TYPES.join(", "),
     });
     document.getElementById("lkPadHost").appendChild(pad.el);
 
-    var bio=pad.el.querySelector("#lkBio");
-    if(bio) bio.addEventListener("click", function(){
-      if(inFrame() && !window.faceapi){
-        pad.say("Face unlock needs the app in its own tab"); return;
-      }
-      pad.say("Opening the camera\u2026");
-      bio.disabled=true;
-      var answered=false;
-      var settle=function(ok){
-        if(answered) return; answered=true; bio.disabled=false;
-        if(ok) unlock();
-        else { recordFailedAttempt("face"); pad.say("Face didn\u2019t match \u2014 use your PIN"); }
-      };
-      setTimeout(function(){
-        if(answered) return; answered=true; bio.disabled=false;
-        var sh=document.getElementById("faceOv");
-        if(sh && sh.parentNode) sh.parentNode.removeChild(sh);
-        pad.say("Camera didn\u2019t start \u2014 use your PIN");
-      }, 15000);
-      verifyFace(settle);
-    });
     var fg=pad.el.querySelector("#lkForgot");
     if(fg) fg.addEventListener("click", function(){ openRecoveryUnlock(function(){ unlock(); }); });
 
     // look for the owner automatically, only while this screen is up
     startAutoFace(ov, unlock, function(msg){ pad.say(msg, /Welcome/.test(msg)?"ok":""); });
-    var onHide=function(){ if(document.hidden) _autoFace.stop(); };
+
+    /* The camera must never outlive this screen. Three independent triggers,
+       because one missed path leaves the light on: leaving the tab, the
+       element being removed by anything at all, and page unload. */
+    var onHide=function(){ if(document.hidden) _autoFace.stop(); else if(document.getElementById("lockScreen")) startAutoFace(ov, unlock, function(m){ pad.say(m, /Welcome/.test(m)?"ok":""); }); };
     document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", function(){ _autoFace.stop(); });
+    try{
+      new MutationObserver(function(_,obs){
+        if(!document.getElementById("lockScreen")){
+          _autoFace.stop();
+          document.removeEventListener("visibilitychange", onHide);
+          obs.disconnect();
+        }
+      }).observe(document.body,{childList:true});
+    }catch(e){}
   }
 
   /* ============================================================
@@ -6982,6 +6993,16 @@ AI_TYPES.join(", "),
   function inFrame(){ try{ return window.self!==window.top; }catch(e){ return true; } }
   function loadFaceApi(onProgress){
     if(_faceApiReady) return Promise.resolve(true);
+    // already on the page (cached from an earlier load) — just load the weights
+    if(window.faceapi && window.faceapi.nets && !_faceApiLoading){
+      _faceApiLoading=Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(FACEAPI_MODELS),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACEAPI_MODELS),
+        faceapi.nets.faceRecognitionNet.loadFromUri(FACEAPI_MODELS)
+      ]).then(function(){ _faceApiReady=true; faceCfg.model=true; saveFace(); return true; })
+        .catch(function(e){ _faceApiLoading=null; throw e; });
+      return _faceApiLoading;
+    }
     if(_faceApiLoading) return _faceApiLoading;
     if(inFrame() && !window.faceapi){
       return Promise.reject(new Error("Face recognition needs a one-time model download, and this "
