@@ -8241,9 +8241,167 @@ AI_TYPES.join(", "),
   }
 
   /* ---- the agents. Each owns one question and reports findings. ---- */
+  /* ---- shared statistics helpers ---- */
+  function median(arr){
+    if(!arr.length) return 0;
+    var s=arr.slice().sort(function(a,b){ return a-b; });
+    var m=Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+  }
+  function madOf(arr){
+    var med=median(arr);
+    return median(arr.map(function(v){ return Math.abs(v-med); }));
+  }
+  function linSlope(pts){
+    var n=pts.length; if(n<3) return 0;
+    var sx=0,sy=0,sxy=0,sxx=0;
+    pts.forEach(function(p){ sx+=p.x; sy+=p.y; sxy+=p.x*p.y; sxx+=p.x*p.x; });
+    var d=(n*sxx-sx*sx); return d===0?0:(n*sxy-sx*sy)/d;
+  }
+  function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+  function txKey(t){ return String(t.note||t.cat||"").toLowerCase().trim().replace(/\s+/g," ").slice(0,30); }
+  function outflows(txs){ return txs.filter(function(t){ return balDelta(t)<0; }); }
+
   var AGENTS=[
-    { id:"dupes", name:"Duplicate hunter", icon:"👯",
-      brief:"Identical amounts on the same day",
+    /* ── forensic: leading-digit distribution ───────────────────────
+       Benford's Law: in naturally occurring figures, 1 leads about 30%
+       of the time and 9 under 5%. Invented or heavily rounded numbers
+       don't follow it. Used in real audit work; needs 30+ figures. */
+    { id:"benford", name:"Digit-pattern audit", icon:"🔢",
+      brief:"Benford's Law test for invented or estimated figures",
+      run:function(txs, report){
+        var vals=outflows(txs).map(function(t){ return Math.abs(balDelta(t)); }).filter(function(v){ return v>0; });
+        if(vals.length<30){
+          report({level:"info", title:"Digit audit needs more data",
+            body:"Benford's test needs about 30 spending entries to mean anything; you have "+vals.length+".", ids:[]});
+          return;
+        }
+        var BEN=[0,.301,.176,.125,.097,.079,.067,.058,.051,.046];
+        var obs=new Array(10).fill(0), n=0;
+        vals.forEach(function(v){
+          var d=+String(v).replace(/^[0.]+/,"").charAt(0);
+          if(d>=1&&d<=9){ obs[d]++; n++; }
+        });
+        var chi=0;
+        for(var d2=1;d2<=9;d2++){ var e=n*BEN[d2]; if(e>0) chi+=Math.pow(obs[d2]-e,2)/e; }
+        var worst=1, worstGap=0;
+        for(var d3=1;d3<=9;d3++){
+          var gap=Math.abs(obs[d3]/n - BEN[d3]);
+          if(gap>worstGap){ worstGap=gap; worst=d3; }
+        }
+        if(chi>20.09){   // p < 0.01 with 8 degrees of freedom
+          report({level:"warn", title:"Figures don't follow the natural digit pattern",
+            body:"A Benford test over "+n+" entries gives \\u03c7\\u00b2="+chi.toFixed(1)
+                 +" (anything over 20 is unusual). Digit "+worst+" appears "
+                 +Math.round(obs[worst]/n*100)+"% of the time, expected "+Math.round(BEN[worst]*100)
+                 +"%. That usually means estimated or rounded amounts rather than exact ones \\u2014 "
+                 +"worth knowing if you rely on these figures.", ids:[]});
+        } else {
+          report({level:"info", title:"Digit pattern looks natural",
+            body:"\\u03c7\\u00b2="+chi.toFixed(1)+" over "+n+" entries \\u2014 consistent with real recorded amounts.", ids:[]});
+        }
+      }},
+
+    /* ── subscriptions you never registered ───────────────────────
+       Clusters by description, then requires BOTH regular intervals
+       and near-identical amounts. Interval regularity alone gives
+       false positives on ordinary monthly shopping. */
+    { id:"subs", name:"Hidden subscription finder", icon:"🔁",
+      brief:"Regular charges you never set up as a repeat",
+      run:function(txs, report){
+        var known={};
+        (state.recurring||[]).forEach(function(r){ known[String(r.note||"").toLowerCase().trim()]=1; });
+        var by={};
+        outflows(txs).forEach(function(t){ var k=txKey(t); if(k) (by[k]=by[k]||[]).push(t); });
+        Object.keys(by).forEach(function(k){
+          var g=by[k].slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+          if(g.length<3) return;
+          var gaps=[];
+          for(var i=1;i<g.length;i++) gaps.push(daysBetween(g[i-1].date, g[i].date));
+          var gm=gaps.reduce(function(a,b){return a+b;},0)/gaps.length;
+          if(gm<6) return;
+          var gsd=Math.sqrt(gaps.reduce(function(a,b){ return a+Math.pow(b-gm,2); },0)/gaps.length);
+          var amts=g.map(function(t){ return Math.abs(balDelta(t)); });
+          var am=amts.reduce(function(a,b){return a+b;},0)/amts.length;
+          var asd=Math.sqrt(amts.reduce(function(a,b){ return a+Math.pow(b-am,2); },0)/amts.length);
+          if(gsd/gm<0.25 && am>0 && asd/am<0.15){
+            var cadence = gm<10?"weekly" : gm<17?"fortnightly" : gm<45?"monthly" : gm<100?"quarterly" : "yearly";
+            var yearly=am*(365/gm);
+            if(known[k]) return;   // already tracked as a repeat
+            report({level:"warn", title:"Untracked "+cadence+" charge: "+k,
+              body:fmt(am,state.currency)+" every ~"+Math.round(gm)+" days, "+g.length+" times so far \\u2014 "
+                   +fmt(yearly,state.currency)+" a year. It isn't in your repeats, so it won't be forecast or reminded.",
+              ids:g.map(function(t){ return t.id; })});
+          }
+        });
+      }},
+
+    /* ── price creep: regression on repeated charges ────────────── */
+    { id:"creep", name:"Price-rise detector", icon:"📊",
+      brief:"Repeat charges quietly getting more expensive",
+      run:function(txs, report){
+        var by={};
+        outflows(txs).forEach(function(t){ var k=txKey(t); if(k) (by[k]=by[k]||[]).push(t); });
+        Object.keys(by).forEach(function(k){
+          var g=by[k].slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+          if(g.length<4) return;
+          var pts=g.map(function(t,i){ return {x:i, y:Math.abs(balDelta(t))}; });
+          var ys=pts.map(function(p){ return p.y; });
+          var m=linSlope(pts);
+          if(m<=0) return;
+          /* Comparing only first vs last calls noise a trend: two random
+             values 15% apart look like a rise. Require the fitted line to
+             explain most of the movement, and the rise to be material. */
+          var meanY=ys.reduce(function(a,b){ return a+b; },0)/ys.length;
+          if(meanY<=0) return;
+          var b0=meanY-m*((ys.length-1)/2);
+          var ssRes=0, ssTot=0;
+          pts.forEach(function(p){
+            var fit=b0+m*p.x;
+            ssRes+=Math.pow(p.y-fit,2);
+            ssTot+=Math.pow(p.y-meanY,2);
+          });
+          var r2 = ssTot>0 ? 1-(ssRes/ssTot) : 0;
+          var totalRise=m*(ys.length-1);
+          if(r2<0.6 || totalRise < meanY*0.15) return;
+          var first=ys[0], last=ys[ys.length-1];
+          var pct=Math.round((last/first-1)*100);
+          report({level:"warn", title:"\u201c"+k+"\u201d is costing more",
+            body:"Started at "+fmt(first,state.currency)+", now "+fmt(last,state.currency)
+                 +" \u2014 up "+pct+"% across "+g.length+" charges, rising about "
+                 +fmt(m,state.currency)+" each time. The trend is consistent ("
+                 +Math.round(r2*100)+"% of the movement), not random variation.",
+            ids:g.map(function(t){ return t.id; })});
+        });
+      }},
+
+    /* ── zombie: a repeat that stopped, or one you're still paying ── */
+    { id:"zombie", name:"Zombie charge check", icon:"🧟",
+      brief:"Repeats that stopped, or ones still running unused",
+      run:function(txs, report){
+        var by={};
+        outflows(txs).forEach(function(t){ var k=txKey(t); if(k) (by[k]=by[k]||[]).push(t); });
+        var today=new Date();
+        Object.keys(by).forEach(function(k){
+          var g=by[k].slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+          if(g.length<4) return;
+          var gaps=[];
+          for(var i=1;i<g.length;i++) gaps.push(daysBetween(g[i-1].date, g[i].date));
+          var gm=median(gaps);
+          if(gm<6) return;
+          var sinceLast=Math.round((today-new Date(g[g.length-1].date))/86400000);
+          if(sinceLast > gm*2.5 && sinceLast<400){
+            report({level:"info", title:"“"+k+"” seems to have stopped",
+              body:"It ran every ~"+Math.round(gm)+" days but nothing for "+sinceLast
+                   +" days. If you cancelled it, good \\u2014 if not, the charge may have moved or failed.",
+              ids:[]});
+          }
+        });
+      }},
+
+    /* ── near-duplicates: same thing, similar amount, days apart ── */
+    { id:"neardupe", name:"Near-duplicate hunter", icon:"👯",
+      brief:"Same charge twice — exact or close, days apart",
       run:function(txs, report){
         var seen={};
         txs.forEach(function(t){
@@ -8252,86 +8410,137 @@ AI_TYPES.join(", "),
         });
         Object.keys(seen).forEach(function(k){
           var g=seen[k];
-          if(g.length>1) report({
-            level:"warn", title:"Possible duplicate",
+          if(g.length>1) report({level:"warn", title:"Exact duplicate",
             body:g.length+" identical entries of "+fmt(Math.abs(num(g[0].amount)),state.currency)
                  +" on "+g[0].date+(g[0].note?" ("+g[0].note+")":"")+".",
-            ids:g.map(function(t){ return t.id; })
-          });
+            ids:g.map(function(t){ return t.id; })});
         });
+        // near-matches: same description, within 3 days, amount within 2%
+        var out=outflows(txs).slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+        for(var i=0;i<out.length;i++){
+          for(var j=i+1;j<out.length;j++){
+            var d=daysBetween(out[i].date, out[j].date);
+            if(d>3) break;
+            if(d===0) continue;                       // exact-day case handled above
+            if(txKey(out[i])!==txKey(out[j]) || !txKey(out[i])) continue;
+            var a=Math.abs(balDelta(out[i])), b=Math.abs(balDelta(out[j]));
+            if(a>0 && Math.abs(a-b)/a<0.02){
+              report({level:"warn", title:"Possible double charge",
+                body:fmt(a,state.currency)+" and "+fmt(b,state.currency)+" for \\u201c"+txKey(out[i])
+                     +"\\u201d just "+d+" day"+(d===1?"":"s")+" apart. Worth checking it wasn't billed twice.",
+                ids:[out[i].id, out[j].id]});
+            }
+          }
+        }
       }},
-    { id:"outliers", name:"Outlier spotter", icon:"📈",
-      brief:"Amounts far outside your normal range",
+
+    /* ── runway: burn rate with variance, not a flat average ────── */
+    { id:"runway", name:"Runway forecast", icon:"⏳",
+      brief:"How long the money lasts at your real burn rate",
       run:function(txs, report){
-        var outs=txs.filter(function(t){ return balDelta(t)<0; })
-                    .map(function(t){ return Math.abs(balDelta(t)); });
-        if(outs.length<6) return;
-        /* Median + MAD, not mean + standard deviation. One huge transaction
-           inflates the sd enough to hide itself — a $9,000 charge among $40
-           ones scored z=3.0 and slipped under a z>3 threshold. The median
-           and MAD are unmoved by the very outlier we're hunting. */
-        var sorted=outs.slice().sort(function(a,b){ return a-b; });
-        var median=sorted[Math.floor(sorted.length/2)];
-        var devs=outs.map(function(v){ return Math.abs(v-median); })
-                     .sort(function(a,b){ return a-b; });
-        var mad=devs[Math.floor(devs.length/2)];
-        if(!mad || mad<=0) mad=median*0.15 || 1;      // near-identical amounts
-        txs.forEach(function(t){
-          if(balDelta(t)>=0) return;
-          var v=Math.abs(balDelta(t));
-          var z=0.6745*(v-median)/mad;                 // 0.6745 makes MAD comparable to sd
-          if(z>3.5 && v>median*2) report({
-            level:"warn", title:"Unusually large",
-            body:fmt(v,state.currency)+" on "+t.date+(t.note?" ("+t.note+")":"")
-                 +" is far outside your usual range \u2014 most of your spending sits near "
-                 +fmt(median,state.currency)+".",
-            ids:[t.id]
-          });
-        });
-      }},
-    { id:"gaps", name:"Missing-data checker", icon:"🕳️",
-      brief:"Entries missing a category, note or date",
-      run:function(txs, report){
-        var noCat=txs.filter(function(t){ return balDelta(t)<0 && !t.cat; });
-        if(noCat.length) report({
-          level:"info", title:noCat.length+" uncategorised",
-          body:"These won't appear in any budget or breakdown. Oldest: "+(noCat[noCat.length-1].date||"?")+".",
-          ids:noCat.slice(0,20).map(function(t){ return t.id; })
-        });
-        var bad=txs.filter(function(t){ return !/^\d{4}-\d{2}-\d{2}$/.test(t.date||""); });
-        if(bad.length) report({
-          level:"flag", title:bad.length+" with a broken date",
-          body:"These are excluded from every monthly total until fixed.",
-          ids:bad.map(function(t){ return t.id; })
-        });
-      }},
-    { id:"drift", name:"Spending drift", icon:"🌊",
-      brief:"Categories creeping up month on month",
-      run:function(txs, report){
-        var byCatMonth={};
-        txs.forEach(function(t){
-          if(balDelta(t)>=0 || !t.cat) return;
+        var byMonth={};
+        outflows(txs).forEach(function(t){
           var m=(t.date||"").slice(0,7); if(!m) return;
-          var top=topCatOf(t.cat);
-          byCatMonth[top]=byCatMonth[top]||{};
-          byCatMonth[top][m]=(byCatMonth[top][m]||0)+Math.abs(balDelta(t));
+          byMonth[m]=(byMonth[m]||0)+Math.abs(balDelta(t));
         });
-        Object.keys(byCatMonth).forEach(function(c){
-          var ms=Object.keys(byCatMonth[c]).sort();
-          if(ms.length<3) return;
-          var recent=byCatMonth[c][ms[ms.length-1]];
-          var prior=ms.slice(-4,-1).map(function(m){ return byCatMonth[c][m]; });
-          var avg=prior.reduce(function(a,b){return a+b;},0)/prior.length;
-          if(avg>0 && recent>avg*1.5) report({
-            level:"warn", title:c+" is climbing",
-            body:fmt(recent,state.currency)+" last month vs a "+fmt(avg,state.currency)
-                 +" average before that \u2014 up "+Math.round((recent/avg-1)*100)+"%.",
-            ids:[]
-          });
-        });
+        var months=Object.keys(byMonth).sort();
+        if(months.length<3){
+          report({level:"info", title:"Runway needs a few months",
+            body:"Three months of history gives a usable burn rate; you have "+months.length+".", ids:[]});
+          return;
+        }
+        var spends=months.map(function(m){ return byMonth[m]; });
+        var med=median(spends), mad=madOf(spends);
+        var t2=totals();
+        var liquid=t2.balance+t2.savings;
+        if(med<=0) return;
+        var base=liquid/med;
+        var worst=liquid/(med+mad*1.5);     // a bad month, not an average one
+        report({
+          level: base<3 ? "flag" : base<6 ? "warn" : "info",
+          title:"Runway: about "+base.toFixed(1)+" months",
+          body:"Typical spend is "+fmt(med,state.currency)+"/month (median of "+months.length
+               +" months, which one unusual month can't distort). You hold "+fmt(liquid,state.currency)
+               +". On a heavier month that shortens to "+worst.toFixed(1)+" months."
+               +(base<3?" That's tight \\u2014 worth acting on.":""),
+          ids:[]});
       }},
+
+    /* ── when money moves: timing risk within the month ─────────── */
+    { id:"timing", name:"Cash-flow timing", icon:"📆",
+      brief:"Whether bills land before or after money arrives",
+      run:function(txs, report){
+        var inDays=[], outDays=[];
+        txs.forEach(function(t){
+          var d=+String(t.date||"").slice(8,10); if(!d) return;
+          if(balDelta(t)>0) inDays.push(d); else if(balDelta(t)<0) outDays.push({d:d, v:Math.abs(balDelta(t))});
+        });
+        if(inDays.length<2 || outDays.length<8) return;
+        var payDay=median(inDays);
+        var before=outDays.filter(function(o){ return o.d<payDay; });
+        var beforeSum=before.reduce(function(a,o){ return a+o.v; },0);
+        var totalSum=outDays.reduce(function(a,o){ return a+o.v; },0);
+        if(totalSum<=0) return;
+        var pct=Math.round(beforeSum/totalSum*100);
+        if(pct>55) report({level:"warn", title:pct+"% of spending lands before payday",
+          body:"Money typically arrives around day "+Math.round(payDay)+", but most of your outgoings hit before that. "
+               +"That's what makes a month feel tight even when the totals work \\u2014 moving a bill's date can fix it.",
+          ids:[]});
+        else report({level:"info", title:"Bill timing looks comfortable",
+          body:"Income lands around day "+Math.round(payDay)+" and only "+pct+"% of spending falls before it.",
+          ids:[]});
+      }},
+
+    /* ── weekday behaviour ─────────────────────────────────────── */
+    { id:"weekday", name:"Spending rhythm", icon:"🗓️",
+      brief:"Which days cost you the most",
+      run:function(txs, report){
+        var days=[[],[],[],[],[],[],[]];
+        outflows(txs).forEach(function(t){
+          var dt=new Date(t.date); if(isNaN(dt)) return;
+          days[dt.getDay()].push(Math.abs(balDelta(t)));
+        });
+        var names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+        var totalsByDay=days.map(function(a){ return a.reduce(function(x,y){return x+y;},0); });
+        var all=totalsByDay.reduce(function(a,b){return a+b;},0);
+        if(all<=0 || outflows(txs).length<14) return;
+        var top=0;
+        totalsByDay.forEach(function(v,i){ if(v>totalsByDay[top]) top=i; });
+        var share=Math.round(totalsByDay[top]/all*100);
+        var weekend=totalsByDay[0]+totalsByDay[6];
+        var wkShare=Math.round(weekend/all*100);
+        report({level:"info", title:names[top]+" is your most expensive day",
+          body:share+"% of everything you spend falls on a "+names[top]
+               +". Weekends account for "+wkShare+"% of the total"
+               +(wkShare>45?" \\u2014 unusually high, and usually the easiest thing to change.":"."),
+          ids:[]});
+      }},
+
+    /* ── data integrity ────────────────────────────────────────── */
+    { id:"integrity", name:"Data integrity", icon:"🕳️",
+      brief:"Broken dates, missing categories, impossible values",
+      run:function(txs, report){
+        var bad=txs.filter(function(t){ return !/^\d{4}-\d{2}-\d{2}$/.test(t.date||""); });
+        if(bad.length) report({level:"flag", title:bad.length+" entries with a broken date",
+          body:"These are silently excluded from every monthly total and chart until fixed.",
+          ids:bad.map(function(t){ return t.id; })});
+        var future=txs.filter(function(t){ return (t.date||"")>todayStr(); });
+        if(future.length) report({level:"warn", title:future.length+" dated in the future",
+          body:"Latest is "+future.map(function(t){return t.date;}).sort().pop()
+               +". Fine if deliberate, otherwise a typo that skews this month.",
+          ids:future.map(function(t){ return t.id; })});
+        var noCat=outflows(txs).filter(function(t){ return !t.cat; });
+        if(noCat.length) report({level:"info", title:noCat.length+" uncategorised",
+          body:"They count toward totals but appear in no budget or breakdown.",
+          ids:noCat.slice(0,20).map(function(t){ return t.id; })});
+        var zero=txs.filter(function(t){ return num(t.amount)===0; });
+        if(zero.length) report({level:"info", title:zero.length+" with a zero amount",
+          body:"Probably unfinished entries.", ids:zero.map(function(t){ return t.id; })});
+      }},
+
+    /* ── the balance sheet view ────────────────────────────────── */
     { id:"balance", name:"Balance auditor", icon:"⚖️",
-      brief:"Cash flow, debt age and savings rate",
+      brief:"Net worth, cash flow, savings rate and debt age",
       run:function(txs, report){
         var t=totals();
         if(t.net<0) report({level:"flag", title:"Net worth is negative",
@@ -8345,17 +8554,26 @@ AI_TYPES.join(", "),
           var rate=Math.round(saved/inSum*100);
           if(rate<10) report({level:"warn", title:"Savings rate is "+rate+"%",
             body:"You've saved "+fmt(saved,state.currency)+" of "+fmt(inSum,state.currency)
-                 +" income. A recurring auto-save is the easiest fix.", ids:[]});
+                 +" income. A recurring auto-save is the least painful fix.", ids:[]});
+        }
+        if(t.debt>0){
+          var debtTx=txs.filter(function(x){ return debtDelta(x)>0; });
+          if(debtTx.length){
+            var age=Math.round((Date.now()-new Date(debtTx[0].date))/86400000);
+            if(age>60) report({level:"warn", title:"Debt outstanding "+age+" days",
+              body:"Oldest unpaid entry is from "+debtTx[0].date+". Current balance "+fmt(t.debt,state.currency)+".", ids:[]});
+          }
         }
       }},
+
+    /* ── the model, given everything the others found ──────────── */
     { id:"ai", name:"AI reviewer", icon:"🧠",
-      brief:"Reads your figures and comments in plain English",
+      brief:"Reads the findings and says what to do first",
       needsModel:true,
       run:function(txs, report, done){
-        // only meaningful with a model — otherwise it says so rather than pretending
         var prompt=financialContext()
-          +"\n\nLook at these figures and name the single most useful thing to fix. "
-          +"Two sentences maximum. Be specific to the numbers.";
+          +"\n\nName the single most useful thing to fix, and why, in two sentences. "
+          +"Be specific to these numbers \u2014 no generic advice.";
         var go=function(ans){
           if(ans) report({level:"info", title:"AI review", body:String(ans).trim().slice(0,400), ids:[]});
           done&&done();
@@ -8416,7 +8634,7 @@ AI_TYPES.join(", "),
     if(!agentCfg.watch || agentState.running) return;
     if(!state.transactions || state.transactions.length<3) return;
     // the light set — no AI call, so it costs almost nothing
-    runAgents(["dupes","gaps","balance"]).then(function(findings){
+    runAgents(["neardupe","integrity","balance"]).then(function(findings){
       var serious=findings.filter(function(f){ return f.level==="flag" || f.level==="warn"; });
       var fresh=serious.filter(function(f){
         var k=f.title+"|"+(f.ids||[]).join(",");
