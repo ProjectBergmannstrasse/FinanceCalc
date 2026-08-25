@@ -104,6 +104,24 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 .crow2 code{word-break:break-all;font-size:12px;flex:1;min-width:180px}
 .cpy{background:none;border:1px solid var(--line2);color:var(--dim);font:inherit;font-size:11px;padding:5px 11px;cursor:pointer;transition:transform .12s,color .15s,border-color .15s}
 .cpy:hover{color:var(--fg);border-color:var(--fg)}.cpy:active{transform:scale(.93)}
+
+.srcbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.srcbtn{background:none;border:1px solid var(--line2);color:var(--dim);font:inherit;font-size:12.5px;padding:8px 13px;cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s,transform .12s var(--ease)}
+.srcbtn:hover{color:var(--fg);border-color:var(--fg)}
+.srcbtn:active{transform:scale(.96)}
+.srcbtn.pri{background:var(--fg);color:#000;border-color:var(--fg);font-weight:700}
+.srcmeta{color:var(--faint);font-size:12px;margin-bottom:12px}
+.srcmeta b{color:var(--dim);font-weight:400}
+.codewrap{border:1px solid var(--line);background:#0d0d0d;overflow:auto;max-height:70vh;position:relative}
+.codewrap table{border:0;width:auto;min-width:100%}
+.codewrap td{border:0;padding:0;font-size:12px;line-height:1.5;vertical-align:top;white-space:pre}
+.lnum{color:#3a3a3a;text-align:right;padding:0 12px 0 14px!important;-webkit-user-select:none;user-select:none;position:sticky;left:0;background:#0d0d0d;border-right:1px solid var(--line)!important}
+.lcode{padding:0 16px 0 14px!important;color:#cfcfcf}
+.codewrap tr:hover .lcode{background:#141414}
+.codewrap tr:hover .lnum{color:var(--dim)}
+.srcload{padding:16px;text-align:center;color:var(--faint);font-size:12.5px}
+.srcmore{margin-top:12px;text-align:center}
+.tk{color:#8a8a8a}
 @media(max-width:640px){.acts{flex-direction:column;gap:4px}thead th:nth-child(4),tbody td:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
@@ -151,6 +169,20 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 
 
 
+
+<main id="view-source" hidden>
+ <h2 id="srcTitle">Source</h2>
+ <div class="srcbar">
+  <button class="srcbtn" id="srcBack">← Back to builds</button>
+  <a class="srcbtn pri" id="srcRun" href="#">Run this build</a>
+  <a class="srcbtn" id="srcDl" href="#" download>Download</a>
+  <button class="srcbtn" id="srcCopy">Copy all</button>
+  <a class="srcbtn" id="srcDiff" href="#">Diff vs previous</a>
+ </div>
+ <div class="srcmeta" id="srcMeta"></div>
+ <div class="codewrap" id="codewrap"><div class="srcload">Loading source…</div></div>
+ <div class="srcmore" id="srcMore"></div>
+</main>
 <main id="view-modules" hidden>
  <h2>Module library <small>1,834 components extracted from 22 builds</small></h2>
  <div class="toolrow">
@@ -201,7 +233,7 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 <button role="tab" aria-selected="false"><span class="ic">✳</span><span class="lb">Credits</span></button>
 </nav>
 
-<script src="data.js"></script><script src="modules.js"></script><script>
+<script src="data.js?b=b6e51d40"></script><script src="modules.js?b=b6e51d40"></script><script>
 (function(){
 "use strict";
 var REPO="https://github.com/ProjectBergmannstrasse/FinanceCalc";
@@ -218,14 +250,15 @@ V.forEach(function(d){totB+=d.bytes;totL+=d.lines;if(d.bytes>maxB)maxB=d.bytes;i
 var first=V[0],last=V[V.length-1];
 
 /* ===== views + touch bar (4 tabs, one app) ===== */
-var views=[$("view-home"),$("view-builds"),$("view-modules"),$("view-credits")];
-var HASH=["home","builds","modules","credits"];
+var views=[$("view-home"),$("view-builds"),$("view-modules"),$("view-credits"),$("view-source")];
+var HASH=["home","builds","modules","credits","source"];
 var bs=[].slice.call(document.querySelectorAll(".tbar button"));
 var pill=$("tpill"),sel=0,modsBuilt=false;
 function align(i){var b=bs[i];if(!b||!pill)return;pill.style.left=(b.offsetLeft||0)+"px";pill.style.width=(b.offsetWidth||0)+"px"}
 function anim(el){if(!el)return;el.classList.remove("pageanim");void el.offsetWidth;el.classList.add("pageanim")}
 function show(i,noHash){
- sel=i;bs.forEach(function(b,j){b.setAttribute("aria-selected",j===i?"true":"false")});align(i);
+ sel=i;var lit=(i===4?1:i);
+ bs.forEach(function(b,j){b.setAttribute("aria-selected",j===lit?"true":"false")});align(lit);
  views.forEach(function(v,j){if(v)v.hidden=(j!==i)});
  if(i===2&&!modsBuilt){buildModules();modsBuilt=true}
  anim(views[i]);
@@ -244,6 +277,53 @@ if(window.addEventListener){window.addEventListener("resize",function(){align(se
 $("solcp").addEventListener("click",function(){var b=this;
  (navigator.clipboard?navigator.clipboard.writeText($("solad").textContent):Promise.reject())
  .then(function(){b.textContent="copied \u2713";setTimeout(function(){b.textContent="copy"},1200)},function(){b.textContent="select it"})});
+
+
+/* ===== in-site source viewer (no GitHub round-trip) ===== */
+var SRC={cur:null,lines:[],shown:0,CHUNK:2500};
+function esc(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function renderChunk(){
+ var wrap=$("codewrap"),tbl=wrap.querySelector("table");
+ if(!tbl){wrap.innerHTML="<table><tbody></tbody></table>";tbl=wrap.querySelector("table")}
+ var tb=tbl.querySelector("tbody"),end=Math.min(SRC.lines.length,SRC.shown+SRC.CHUNK),html="";
+ for(var i=SRC.shown;i<end;i++){
+  html+="<tr><td class='lnum'>"+(i+1)+"</td><td class='lcode'>"+esc(SRC.lines[i])+"</td></tr>";
+ }
+ tb.insertAdjacentHTML("beforeend",html);
+ SRC.shown=end;
+ var more=$("srcMore");
+ if(SRC.shown<SRC.lines.length){
+  more.innerHTML='<button class="srcbtn" id="srcMoreBtn">Show '+Math.min(SRC.CHUNK,SRC.lines.length-SRC.shown).toLocaleString()+' more lines \u00b7 '+(SRC.lines.length-SRC.shown).toLocaleString()+' remaining</button>';
+  $("srcMoreBtn").addEventListener("click",renderChunk);
+ } else { more.innerHTML='<span style="color:var(--faint);font-size:12px">End of file \u00b7 '+SRC.lines.length.toLocaleString()+' lines</span>' }
+}
+function openSource(idx){
+ var d=V[idx];SRC.cur=d;SRC.lines=[];SRC.shown=0;
+ $("srcTitle").textContent="FinanceCalc "+d.ver;
+ $("srcMeta").innerHTML="build "+d.seq+" of "+V.length+" \u00b7 <b>"+fmtB(d.bytes)+"</b> \u00b7 <b>"+fmtN(d.lines)+" lines</b> \u00b7 single-file HTML";
+ var url="./versions/"+enc(d.file);
+ $("srcRun").href=url;$("srcDl").href=url;$("srcDl").setAttribute("download",d.file);
+ var dv=$("srcDiff");
+ if(d.prev){dv.style.display="";dv.href=REPO+"/compare/"+d.prev+"..."+d.sha}else{dv.style.display="none"}
+ $("codewrap").innerHTML='<div class="srcload">Loading '+fmtB(d.bytes)+' of source\u2026</div>';
+ $("srcMore").innerHTML="";
+ show(4);
+ fetch(url).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
+ .then(function(t){SRC.text=t;SRC.lines=t.split("\n");$("codewrap").innerHTML="";renderChunk()})
+ .catch(function(e){$("codewrap").innerHTML='<div class="srcload">Could not load this file ('+e.message+'). <a href="'+url+'">Open it directly \u2192</a></div>'});
+}
+$("srcBack").addEventListener("click",function(){show(1)});
+$("srcCopy").addEventListener("click",function(){var b=this;
+ (navigator.clipboard&&SRC.text?navigator.clipboard.writeText(SRC.text):Promise.reject())
+ .then(function(){b.textContent="Copied \u2713";setTimeout(function(){b.textContent="Copy all"},1400)},
+       function(){b.textContent="Use Download instead";setTimeout(function(){b.textContent="Copy all"},1800)})});
+/* delegate: source links inside the builds table */
+$("rows").addEventListener("click",function(ev){
+ var a=ev.target;
+ if(a&&a.getAttribute&&a.getAttribute("data-src")!==null){
+  ev.preventDefault();openSource(+a.getAttribute("data-src"));
+ }
+});
 
 /* ===== modules view ===== */
 var MC=(typeof MODCATS!=="undefined")?MODCATS:[];
@@ -279,15 +359,15 @@ function buildModules(){
 }
 
 /* ===== stats ===== */
-var stats=[[V.length,"builds",1],[38.4,"final version",10],[Math.round(totB/1048576),"MB of source",1],
- [totL,"total lines",1],[last.lines,"lines in v38.5",1],[Math.round(last.lines/first.lines*10)/10,"growth since v1.0",10]];
+var stats=[[V.length,"builds",1],[parseFloat(String(last.ver).replace("v","")),"final version",10],[Math.round(totB/1048576),"MB of source",1],
+ [totL,"total lines",1],[last.lines,"lines in "+last.ver,1],[Math.round(last.lines/first.lines*10)/10,"growth since v1.0",10]];
 var sEl=$("stats");
 stats.forEach(function(s){var d=document.createElement("div");d.className="stat";
  d.innerHTML='<div class="n" data-t="'+s[0]+'" data-m="'+s[2]+'">0</div><div class="l">'+s[1]+"</div>";sEl.appendChild(d)});
 var reduce=(window.matchMedia?matchMedia("(prefers-reduced-motion: reduce)").matches:false);
 [].slice.call(document.querySelectorAll(".stat .n")).forEach(function(el){
  var t=parseFloat(el.dataset.t),m=+el.dataset.m;
- function showv(v){el.textContent=(m===10?v.toFixed(1):fmtN(Math.round(v)))+(el.dataset.t==="38.4"?"":"")}
+ function showv(v){el.textContent=(m===10?v.toFixed(1):fmtN(Math.round(v)))+("")}
  if(reduce||!window.requestAnimationFrame){showv(t);return}
  var st=null,dur=700;
  (function step(ts){if(ts===undefined){requestAnimationFrame(step);return}if(!st)st=ts;var k=Math.min(1,(ts-st)/dur);k=1-Math.pow(1-k,3);showv(t*k);if(k<1)requestAnimationFrame(step)})();
@@ -351,7 +431,7 @@ function render(){
    "<td class='num'>"+fmtN(d.lines)+"</td><td class='num'>"+dTxt+"</td>"+
    "<td><span class='acts'><a href='./versions/"+enc(d.file)+"'>open</a>"+
    "<a href='./versions/"+enc(d.file)+"' download>save</a>"+
-   "<a href='"+REPO+"/blob/main/versions/"+enc(d.file)+"'>source</a>"+diff+"</span></td></tr>"}).join("");
+   "<a href='#source' data-src='"+r.i+"'>source</a>"+diff+"</span></td></tr>"}).join("");
  cnt.textContent=list.length+" / "+V.length;
  empty.style.display=list.length?"none":"block";}
 $("q").addEventListener("input",function(){q=this.value.trim();render()});
@@ -366,7 +446,6 @@ b.addEventListener("click",up);
 function chk(){var y=window.pageYOffset||((document.documentElement&&document.documentElement.scrollTop)||0);
  b.classList.toggle("show",y>500)}
 if(window.addEventListener){window.addEventListener("scroll",chk,{passive:true});}
-chk();
-}
+chk();}
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
 })();</script></body></html>
