@@ -74,7 +74,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     --hero-grad:linear-gradient(160deg,#ffffff,#f4f1ea);
     --hero-glow:rgba(179,115,13,.10);
   }</pre>
-<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+<div class="meta" style="margin-top:16px"><a href="../../index.html#modules">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
 </div><nav class="tabbar" id="pbBar" role="tablist"><button type="button" class="tab on" data-act="lib" role="tab" aria-selected="true"><span class="tab-ic">←</span><span class="tab-t">Library</span></button><button type="button" class="tab" data-act="dl" role="tab" aria-selected="false"><span class="tab-ic">↓</span><span class="tab-t">Download</span></button><button type="button" class="tab" data-act="cp" role="tab" aria-selected="false"><span class="tab-ic">⧉</span><span class="tab-t">Copy</span></button><button type="button" class="tab" data-act="cr" role="tab" aria-selected="false"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button><span class="tab-pill" id="pbPill"></span></nav><script>var C="[data-theme=\"paper\"]{\n    --bg:#f4f1ea; --panel:#ffffff; --card:#faf8f3; --card2:#efece3;\n    --bd:#ded9cd; --bd2:#c9c3b4;\n    --tx:#1f1c17; --mut:#716a5d;\n    --amber:#b3730d; --amber-dim:#d9ac6a;\n    --hm0:#e8e4da; --hm1:#f0d9b0; --hm2:#e3b978; --hm3:#d19a42; --hm4:#bd8018; --hm5:#8f5a06;\n    --up:#0f7a45; --down:#be2b2b; --cool:#2a6fa8;\n    --hero-grad:linear-gradient(160deg,#ffffff,#f4f1ea);\n    --hero-glow:rgba(179,115,13,.10);\n  }";document.getElementById("copy2").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(C):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"})});</script><script>
 function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
 if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
@@ -91,12 +91,12 @@ window.addEventListener("load",function(){var on=document.querySelector("#pbBar 
 setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);},60);}
 
 bindTabs({
- lib:function(){location.href="../index.html"},
+ lib:function(){location.href="../../index.html#modules"},
  dl:function(){var a=document.createElement("a");a.href=encodeURIComponent("data-theme-paper-v1.html");a.download="data-theme-paper-v1.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){setTab("lib")},600)},
  cp:function(){var pre=document.querySelector("pre");
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
   .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
- cr:function(){location.href="../credits.html"}
+ cr:function(){location.href="../../index.html#credits"}
 });</script><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
  if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}

@@ -56,7 +56,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 <div class="meta">CSS component · extracted from build v38.4 · variant 1</div>
 <h2>Live preview</h2><div class="prev"><div class="chat-turn ai"><div class="chat-bub"><span>Aa 1,234.56 — demo</span></div></div></div><style>.chat-turn.ai .chat-bub{background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}</style><p style="color:#5c5c5c;font-size:12px;margin-top:8px">A sample element matching <code>.chat-turn.ai .chat-bub</code> is rendered above with the rule applied. Hover / focus states are live.</p>
 <h2>Source</h2><div class="row"><button class="act ghost" id="copy2">Copy code</button></div><pre>.chat-turn.ai .chat-bub{background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}</pre>
-<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+<div class="meta" style="margin-top:16px"><a href="../../index.html#modules">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
 </div><nav class="tabbar" id="pbBar" role="tablist"><button type="button" class="tab on" data-act="lib" role="tab" aria-selected="true"><span class="tab-ic">←</span><span class="tab-t">Library</span></button><button type="button" class="tab" data-act="dl" role="tab" aria-selected="false"><span class="tab-ic">↓</span><span class="tab-t">Download</span></button><button type="button" class="tab" data-act="cp" role="tab" aria-selected="false"><span class="tab-ic">⧉</span><span class="tab-t">Copy</span></button><button type="button" class="tab" data-act="cr" role="tab" aria-selected="false"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button><span class="tab-pill" id="pbPill"></span></nav><script>var C=".chat-turn.ai .chat-bub{background:var(--card2);border:1px solid var(--bd);border-bottom-left-radius:5px}";document.getElementById("copy2").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(C):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"})});</script><script>
 function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
 if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
@@ -73,12 +73,12 @@ window.addEventListener("load",function(){var on=document.querySelector("#pbBar 
 setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);},60);}
 
 bindTabs({
- lib:function(){location.href="../index.html"},
+ lib:function(){location.href="../../index.html#modules"},
  dl:function(){var a=document.createElement("a");a.href=encodeURIComponent("chat-turn-ai-chat-bub-v1.html");a.download="chat-turn-ai-chat-bub-v1.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){setTab("lib")},600)},
  cp:function(){var pre=document.querySelector("pre");
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
   .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
- cr:function(){location.href="../credits.html"}
+ cr:function(){location.href="../../index.html#credits"}
 });</script><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
  if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}

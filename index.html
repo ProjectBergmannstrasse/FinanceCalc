@@ -83,20 +83,27 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 .tbar button .lb{font-size:10.5px;letter-spacing:.04em}
 .tbar button[aria-selected="true"]{color:#f2f2f2}
 .tbar button[aria-selected="true"] .ic{transform:translateY(-1px) scale(1.16)}
-.covl{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s;z-index:95}
-.covl.on{opacity:1;pointer-events:auto}
-.csheet{position:fixed;left:50%;transform:translate(-50%,110%);bottom:0;width:min(460px,100vw);background:#111;border:1px solid #333;border-bottom:0;border-radius:18px 18px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px));z-index:96;transition:transform .3s var(--ease)}
-.csheet.on{transform:translate(-50%,0)}
-.cs-k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
-.cs-t{font-weight:700;font-size:17px;margin:6px 0 14px}
-.cs-row{display:flex;gap:10px;align-items:center;border-top:1px solid #222;padding:10px 0;font-size:12.5px;flex-wrap:wrap}
-.cs-row>span{color:#5c5c5c;width:58px;flex:none;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
-.cs-row a{color:#f2f2f2;border-bottom:1px solid #333}
-.cs-row code{color:#f2f2f2;word-break:break-all;font-size:11.5px;flex:1;min-width:180px}
-.cs-copy{background:none;border:1px solid #333;color:#9a9a9a;font:inherit;font-size:11px;padding:4px 10px;cursor:pointer;transition:transform .12s,color .15s,border-color .15s}
-.cs-copy:hover{color:#f2f2f2;border-color:#f2f2f2}.cs-copy:active{transform:scale(.93)}
-.cs-close{margin-top:16px;width:100%;background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:11px;cursor:pointer;transition:transform .12s}
-.cs-close:active{transform:scale(.97)}
+
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.cell{background:var(--panel);padding:12px 13px;text-decoration:none;color:var(--fg);display:block;border-bottom:none;transition:background .12s var(--ease)}
+.cell:hover{background:#1a1a1a}
+.cn{display:block;font-weight:700;font-size:13px;word-break:break-all}
+.ci{display:block;color:var(--faint);font-size:11px;margin-top:4px}
+.ci em{font-style:normal}.ci em.ok{color:var(--fg);font-weight:700}
+.catnav{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 16px;font-size:12px}
+.catnav button{background:none;border:1px solid var(--line);color:var(--dim);font:inherit;font-size:12px;padding:5px 10px;cursor:pointer;transition:color .15s,border-color .15s,transform .12s}
+.catnav button:hover{color:var(--fg);border-color:var(--fg)}
+.catnav button:active{transform:scale(.96)}
+.catnav button b{color:var(--fg)}
+.crd{border:1px solid var(--line);background:var(--panel);padding:22px;max-width:640px}
+.crd .crd-k{color:var(--faint);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.crd .nm{font-size:22px;font-weight:700;margin:8px 0 4px}
+.crd .rl{color:var(--dim);margin-bottom:16px}
+.crow2{display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);padding:13px 0;flex-wrap:wrap}
+.crow2>span.lbl{color:var(--faint);width:70px;flex:none;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.crow2 code{word-break:break-all;font-size:12px;flex:1;min-width:180px}
+.cpy{background:none;border:1px solid var(--line2);color:var(--dim);font:inherit;font-size:11px;padding:5px 11px;cursor:pointer;transition:transform .12s,color .15s,border-color .15s}
+.cpy:hover{color:var(--fg);border-color:var(--fg)}.cpy:active{transform:scale(.93)}
 @media(max-width:640px){.acts{flex-direction:column;gap:4px}thead th:nth-child(4),tbody td:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
@@ -141,7 +148,31 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
  <div class="empty" id="empty">No builds match.</div>
 </main>
 
-<main id="view-info" hidden>
+
+
+
+<main id="view-modules" hidden>
+ <h2>Module library <small>1,834 components extracted from 22 builds</small></h2>
+ <div class="toolrow">
+  <input class="search" id="mq" type="search" placeholder="Search 1,834 modules… e.g. fade, chart, storage" aria-label="Search modules">
+  <span class="count" id="mcnt"></span>
+ </div>
+ <div class="catnav" id="catnav"></div>
+ <div id="modwrap"></div>
+ <div class="empty" id="mempty">No modules match.</div>
+</main>
+
+<main id="view-credits" hidden>
+ <h2>Credits</h2>
+ <div class="crd">
+  <div class="crd-k">ProjectBergmannstrasse</div>
+  <div class="nm">Zuhayr</div>
+  <div class="rl">Built and maintained FinanceCalc — 143 builds from v1.0 to v38.4, plus 1,834 extracted modules.</div>
+  <div class="crow2"><span class="lbl">Email</span><a href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a></div>
+  <div class="crow2"><span class="lbl">GitHub</span><a href="https://github.com/ProjectBergmannstrasse">github.com/ProjectBergmannstrasse</a></div>
+  <div class="crow2"><span class="lbl">Repo</span><a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">FinanceCalc</a></div>
+  <div class="crow2"><span class="lbl">Solana</span><code id="solad">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</code><button class="cpy" id="solcp">copy</button></div>
+ </div>
  <h2>Everything on this project</h2>
  <div class="cards"><a class='crow' href='./FinanceCalc.html' ><span><span class='ct'>Open latest build</span><div class='cd'>FinanceCalc v38.4, straight from this site</div></span><span class='arr'>→</span></a><a class='crow' href='#builds' data-tab='1'><span><span class='ct'>All 143 builds</span><div class='cd'>Browse, run, save and diff every version</div></span><span class='arr'>→</span></a><a class='crow' href='./module/index.html' ><span><span class='ct'>Module library</span><div class='cd'>1,834 extracted components with live previews</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/archive/refs/heads/main.zip' ><span><span class='ct'>Download everything</span><div class='cd'>.zip of the full repository</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc' ><span><span class='ct'>Repository on GitHub</span><div class='cd'>Source of everything on this site</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/commits/main' ><span><span class='ct'>Commit history</span><div class='cd'>One commit per build, in order</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/tree/evolution' ><span><span class='ct'>Evolution branch</span><div class='cd'>Same builds over one file — proper diffs</div></span><span class='arr'>→</span></a></div>
  <h2>README</h2>
@@ -160,25 +191,15 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 
 <footer>FinanceCalc · ProjectBergmannstrasse · served entirely client-side</footer>
 </div>
-
 <div class="tbar-pad"></div>
 <nav class="tbar" role="tablist" aria-label="Site navigation"><span class="tpill" id="tpill"></span>
 <button role="tab" aria-selected="true"><span class="ic">⌂</span><span class="lb">Home</span></button>
 <button role="tab" aria-selected="false"><span class="ic">▤</span><span class="lb">Builds</span></button>
 <button role="tab" aria-selected="false"><span class="ic">❖</span><span class="lb">Modules</span></button>
-<button role="tab" aria-selected="false"><span class="ic">☰</span><span class="lb">Info</span></button>
 <button role="tab" aria-selected="false"><span class="ic">✳</span><span class="lb">Credits</span></button>
 </nav>
-<div class="covl" id="covl"></div>
-<div class="csheet" id="csheet" role="dialog" aria-label="Credits">
-<div class="cs-k">Credits · ProjectBergmannstrasse</div>
-<div class="cs-t">Zeeshan · FinanceCalc</div>
-<div class="cs-row"><span>Email</span><a href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a></div>
-<div class="cs-row"><span>GitHub</span><a href="https://github.com/ProjectBergmannstrasse">github.com/ProjectBergmannstrasse</a></div>
-<div class="cs-row"><span>Solana</span><code id="solad">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</code><button class="cs-copy" id="solcp">copy</button></div>
-<button class="cs-close" id="csclose">Close</button>
-</div>
-<script src="data.js"></script><script>
+
+<script src="data.js"></script><script src="modules.js"></script><script>
 (function(){
 "use strict";
 var REPO="https://github.com/ProjectBergmannstrasse/FinanceCalc";
@@ -194,36 +215,66 @@ V.forEach(function(d){totB+=d.bytes;totL+=d.lines;if(d.bytes>maxB)maxB=d.bytes;i
  if(d.bytes<=SPIKE_LIMIT&&d.bytes>maxB2)maxB2=d.bytes;});
 var first=V[0],last=V[V.length-1];
 
-/* ===== views + touch bar ===== */
-var views=[$("view-home"),$("view-builds"),null,$("view-info"),null];
+/* ===== views + touch bar (4 tabs, one app) ===== */
+var views=[$("view-home"),$("view-builds"),$("view-modules"),$("view-credits")];
+var HASH=["home","builds","modules","credits"];
 var bs=[].slice.call(document.querySelectorAll(".tbar button"));
-var pill=$("tpill"),sel=0;
+var pill=$("tpill"),sel=0,modsBuilt=false;
 function align(i){var b=bs[i];if(!b||!pill)return;pill.style.left=(b.offsetLeft||0)+"px";pill.style.width=(b.offsetWidth||0)+"px"}
 function anim(el){if(!el)return;el.classList.remove("pageanim");void el.offsetWidth;el.classList.add("pageanim")}
-function show(i){sel=i;bs.forEach(function(b,j){b.setAttribute("aria-selected",j===i?"true":"false")});align(i);
+function show(i,noHash){
+ sel=i;bs.forEach(function(b,j){b.setAttribute("aria-selected",j===i?"true":"false")});align(i);
  views.forEach(function(v,j){if(v)v.hidden=(j!==i)});
- var v=views[i];if(v)anim(v);
- try{scrollTo({top:0,behavior:"smooth"})}catch(e){}}
-var openC,closeC;
-bs[0].addEventListener("click",function(){show(0)});
-bs[1].addEventListener("click",function(){show(1)});
-bs[2].addEventListener("click",function(){bs[2].setAttribute("aria-selected","true");align(2);location.href="./module/index.html"});
-bs[3].addEventListener("click",function(){show(3)});
-bs[4].addEventListener("click",function(){bs.forEach(function(b,j){b.setAttribute("aria-selected",j===4?"true":"false")});align(4);openC()});
-if(window.addEventListener){window.addEventListener("resize",function(){align(sel)});window.addEventListener("load",function(){align(sel)});}
-/* in-page tab links (Info -> Builds, hero buttons) */
+ if(i===2&&!modsBuilt){buildModules();modsBuilt=true}
+ anim(views[i]);
+ if(!noHash&&window.history&&history.replaceState){try{history.replaceState(null,"","#"+HASH[i])}catch(e){}}
+ try{scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}
+}
+bs.forEach(function(b,i){b.addEventListener("click",function(){show(i)})});
+if(window.addEventListener){window.addEventListener("resize",function(){align(sel)});
+ window.addEventListener("load",function(){align(sel)});
+ window.addEventListener("hashchange",function(){var k=HASH.indexOf((location.hash||"").replace("#",""));if(k>=0&&k!==sel)show(k,true)});}
 [].slice.call(document.querySelectorAll("[data-tab]")).forEach(function(a){
  a.addEventListener("click",function(ev){ev.preventDefault();show(+this.getAttribute("data-tab"))})});
-/* credits sheet */
-var covl=$("covl"),sheet=$("csheet");
-openC=function(){covl.classList.add("on");sheet.classList.add("on")};
-closeC=function(){covl.classList.remove("on");sheet.classList.remove("on");
- bs.forEach(function(b,j){b.setAttribute("aria-selected",j===sel?"true":"false")});align(sel)};
-covl.addEventListener("click",closeC);
-$("csclose").addEventListener("click",closeC);
+/* deep link: index.html#modules / #credits */
+(function(){var k=HASH.indexOf((location.hash||"").replace("#",""));if(k>0)show(k,true)})();
+/* copy solana */
 $("solcp").addEventListener("click",function(){var b=this;
  (navigator.clipboard?navigator.clipboard.writeText($("solad").textContent):Promise.reject())
  .then(function(){b.textContent="copied \u2713";setTimeout(function(){b.textContent="copy"},1200)},function(){b.textContent="select it"})});
+
+/* ===== modules view ===== */
+var MC=(typeof MODCATS!=="undefined")?MODCATS:[];
+var mTotal=0;MC.forEach(function(c){mTotal+=c.m.length});
+function buildModules(){
+ var nav="",body="";
+ MC.forEach(function(c){
+  nav+='<button data-go="'+c.k+'">'+c.l+' <b>'+c.m.length+'</b></button>';
+  body+='<h2 id="cat-'+c.k+'">'+c.l+' <small>'+c.m.length+' modules</small></h2><div class="mgrid" data-cat="'+c.k+'">';
+  c.m.forEach(function(m){
+   var badge=m[4]?'<em class="ok">'+(m[2]==="JS"?"runs clean":"valid")+'</em>':'<em>needs app ctx</em>';
+   body+='<a class="cell" href="./module/'+m[1]+'" data-s="'+String(m[0]).toLowerCase().replace(/"/g,"&quot;")+'">'+
+    '<span class="cn">'+m[0].replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</span>'+
+    '<span class="ci">'+m[2]+' \u00b7 '+m[3]+' \u00b7 '+badge+'</span></a>';
+  });
+  body+='</div>';
+ });
+ $("catnav").innerHTML=nav;$("modwrap").innerHTML=body;
+ $("mcnt").textContent=mTotal+" modules";
+ [].slice.call($("catnav").querySelectorAll("button")).forEach(function(b){
+  b.addEventListener("click",function(){var t=document.getElementById("cat-"+this.getAttribute("data-go"));
+   if(t&&t.scrollIntoView){try{t.scrollIntoView({behavior:"smooth",block:"start"})}catch(e){t.scrollIntoView()}}})});
+ $("mq").addEventListener("input",function(){
+  var v=this.value.trim().toLowerCase(),n=0;
+  [].slice.call($("modwrap").querySelectorAll(".cell")).forEach(function(c){
+   var hit=!v||c.dataset.s.indexOf(v)>=0;c.style.display=hit?"":"none";if(hit)n++});
+  [].slice.call($("modwrap").querySelectorAll(".mgrid")).forEach(function(g){
+   var any=[].slice.call(g.querySelectorAll(".cell")).some(function(c){return c.style.display!=="none"});
+   g.style.display=any?"":"none";var h=g.previousElementSibling;if(h&&h.tagName==="H2")h.style.display=any?"":"none"});
+  $("mcnt").textContent=n+" of "+mTotal+" modules";
+  $("mempty").style.display=n?"none":"block";
+ });
+}
 
 /* ===== stats ===== */
 var stats=[[V.length,"builds",1],[38.4,"final version",10],[Math.round(totB/1048576),"MB of source",1],
@@ -305,8 +356,7 @@ $("q").addEventListener("input",function(){q=this.value.trim();render()});
 $("sort").addEventListener("change",function(){sortMode=this.value;render()});
 render();
 })();
-</script><script>
-(function(){function init(){var b=document.getElementById("btt");if(!b)return;
+</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
  if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}
  else{if(el)el.scrollTop=0;if(document.body)document.body.scrollTop=0}}
@@ -317,4 +367,4 @@ if(window.addEventListener){window.addEventListener("scroll",chk,{passive:true})
 chk();
 }
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
-})();</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button></body></html>
+})();</script></body></html>

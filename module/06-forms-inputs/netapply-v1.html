@@ -62,7 +62,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
       el.style.display = NET.online ? &quot;&quot; : &quot;none&quot;;
     });
   }</pre>
-<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+<div class="meta" style="margin-top:16px"><a href="../../index.html#modules">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
 </div><nav class="tabbar" id="pbBar" role="tablist"><button type="button" class="tab on" data-act="lib" role="tab" aria-selected="true"><span class="tab-ic">←</span><span class="tab-t">Library</span></button><button type="button" class="tab" data-act="dl" role="tab" aria-selected="false"><span class="tab-ic">↓</span><span class="tab-t">Download</span></button><button type="button" class="tab" data-act="cp" role="tab" aria-selected="false"><span class="tab-ic">⧉</span><span class="tab-t">Copy</span></button><button type="button" class="tab" data-act="cr" role="tab" aria-selected="false"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button><span class="tab-pill" id="pbPill"></span></nav><script>var CODE="function netApply(){\n    NET.subs.forEach(function(fn){ try{ fn(NET.online); }catch(e){} });\n    // toggle every online-only control in one pass\n    Array.prototype.forEach.call(document.querySelectorAll(\"[data-needs-net]\"), function(el){\n      el.style.display = NET.online ? \"\" : \"none\";\n    });\n  }",ARGS="";function sample(p){p=p.trim().replace(/=.*$/,"").trim();var l=p.toLowerCase();if(!p)return undefined;if(/(el|node|elem|target|container|parent|dom)/.test(l))return document.createElement("div");if(/(arr|list|items|rows|data|values|entries)/.test(l))return[1,2,3];if(/(obj|opts|options|config|state|settings|record|item)/.test(l))return{};if(/(date|time|ts|when)/.test(l))return Date.now();if(/(str|text|name|label|msg|key|id|title|query)/.test(l))return"sample";if(/(fn|cb|callback|handler)/.test(l))return function(){};if(/(bool|flag|is|has|show)/.test(l))return true;return 1234.56}document.getElementById("run").addEventListener("click",function(){var out=document.getElementById("out");try{var f=new Function(CODE+"\n;return typeof netApply!==\"undefined\"?netApply:null;")();if(typeof f!=="function"){out.textContent="Defined, but not directly callable here.";return}var a=ARGS.split(",").filter(function(s){return s.trim()}).map(sample);var r=f.apply(null,a);out.textContent="→ "+(r===undefined?"undefined (side-effect function)":JSON.stringify(r,null,1));}catch(e){out.textContent="✕ "+e.message+"  — this function expects the full FinanceCalc app context; use it as source, not standalone."}});document.getElementById("copy").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(CODE):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"});});</script><script>
 function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
 if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
@@ -79,12 +79,12 @@ window.addEventListener("load",function(){var on=document.querySelector("#pbBar 
 setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);},60);}
 
 bindTabs({
- lib:function(){location.href="../index.html"},
+ lib:function(){location.href="../../index.html#modules"},
  dl:function(){var a=document.createElement("a");a.href=encodeURIComponent("netapply-v1.html");a.download="netapply-v1.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){setTab("lib")},600)},
  cp:function(){var pre=document.querySelector("pre");
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
   .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
- cr:function(){location.href="../credits.html"}
+ cr:function(){location.href="../../index.html#credits"}
 });</script><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
  if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}

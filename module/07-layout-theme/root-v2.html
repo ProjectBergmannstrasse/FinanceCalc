@@ -78,7 +78,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
     --hero-grad:linear-gradient(160deg,#151b28,#10151f);
     --hero-glow:rgba(244,183,63,.13);
   }</pre>
-<div class="meta" style="margin-top:16px"><a href="../index.html">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
+<div class="meta" style="margin-top:16px"><a href="../../index.html#modules">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
 </div><nav class="tabbar" id="pbBar" role="tablist"><button type="button" class="tab on" data-act="lib" role="tab" aria-selected="true"><span class="tab-ic">←</span><span class="tab-t">Library</span></button><button type="button" class="tab" data-act="dl" role="tab" aria-selected="false"><span class="tab-ic">↓</span><span class="tab-t">Download</span></button><button type="button" class="tab" data-act="cp" role="tab" aria-selected="false"><span class="tab-ic">⧉</span><span class="tab-t">Copy</span></button><button type="button" class="tab" data-act="cr" role="tab" aria-selected="false"><span class="tab-ic">✳</span><span class="tab-t">Credits</span></button><span class="tab-pill" id="pbPill"></span></nav><script>var vs=[["--bg", "#0b0e14"], ["--panel", "#121722"], ["--card", "#161c28"], ["--card2", "#1b2230"], ["--bd", "#232c3d"], ["--bd2", "#2c3648"], ["--tx", "#e6ebf2"], ["--mut", "#7c8798"], ["--amber", "#f4b73f"], ["--amber-dim", "#8a6a1f"], ["--hm0", "#1b2230"], ["--hm1", "#4a3a1c"], ["--hm2", "#7a5a20"], ["--hm3", "#b08328"], ["--hm4", "#e0a832"], ["--hm5", "#f4b73f"], ["--up", "#3ddc84"], ["--down", "#ff5d5d"], ["--cool", "#5aa9e6"], ["--mono", "ui-monospace,\"SF Mono\",Menlo,Consolas,\"Liberation Mono\",monospace"], ["--sans", "-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif"], ["--hero-grad", "linear-gradient(160deg,#151b28,#10151f)"], ["--hero-glow", "rgba(244,183,63,.13)"]];var s=document.getElementById("swatches");vs.forEach(function(v){var d=document.createElement("div");d.className="sw";d.innerHTML='<div class="swc" style="background:var('+v[0]+')"></div>'+v[0]+"<br><span style='color:#5c5c5c'>"+v[1].trim()+"</span>";s.appendChild(d)});var C=":root{\n    --bg:#0b0e14; --panel:#121722; --card:#161c28; --card2:#1b2230;\n    --bd:#232c3d; --bd2:#2c3648;\n    --tx:#e6ebf2; --mut:#7c8798;\n    --amber:#f4b73f; --amber-dim:#8a6a1f;\n    --hm0:#1b2230; --hm1:#4a3a1c; --hm2:#7a5a20; --hm3:#b08328; --hm4:#e0a832; --hm5:#f4b73f;\n    --up:#3ddc84; --down:#ff5d5d; --cool:#5aa9e6;\n    --mono:ui-monospace,\"SF Mono\",Menlo,Consolas,\"Liberation Mono\",monospace;\n    --sans:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;\n    --hero-grad:linear-gradient(160deg,#151b28,#10151f);\n    --hero-glow:rgba(244,183,63,.13);\n  }";document.getElementById("copy2").addEventListener("click",function(){var b=this;(navigator.clipboard?navigator.clipboard.writeText(C):Promise.reject()).then(function(){b.textContent="Copied ✓";setTimeout(function(){b.textContent="Copy code"},1200)},function(){b.textContent="Select & copy below"})});</script><script>
 function movePill(btn){var pill=document.getElementById("pbPill"),bar=document.getElementById("pbBar");
 if(!pill||!btn||!bar)return;var b=btn.getBoundingClientRect(),r=bar.getBoundingClientRect();
@@ -95,12 +95,12 @@ window.addEventListener("load",function(){var on=document.querySelector("#pbBar 
 setTimeout(function(){var on=document.querySelector("#pbBar .tab.on");if(on)movePill(on);},60);}
 
 bindTabs({
- lib:function(){location.href="../index.html"},
+ lib:function(){location.href="../../index.html#modules"},
  dl:function(){var a=document.createElement("a");a.href=encodeURIComponent("root-v2.html");a.download="root-v2.html";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){setTab("lib")},600)},
  cp:function(){var pre=document.querySelector("pre");
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
   .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
- cr:function(){location.href="../credits.html"}
+ cr:function(){location.href="../../index.html#credits"}
 });</script><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
  if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}
