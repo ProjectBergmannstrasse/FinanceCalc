@@ -46,6 +46,10 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:reduce){.pageanim{animation:none}.tab-pill,.tab,.tab-ic{transition:none}}
 .topmail{position:absolute;top:18px;right:0;color:#9a9a9a;font-size:12px;border-bottom:1px solid #333;text-decoration:none;transition:color .15s}
 .topmail:hover{color:#f2f2f2}
+
+.btt{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:42px;height:42px;border-radius:12px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;color:#f2f2f2;font:inherit;font-size:16px;cursor:pointer;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1);z-index:89}
+.btt.show{opacity:1;transform:none;pointer-events:auto}
+.btt:active{transform:scale(.9)}
 </style></head><body><div class="m">
 <div class="k">FinanceCalc module · 04-typography-fonts</div>
 <h1>finish<span class="badge">tested · needs app context</span></h1>
@@ -82,4 +86,15 @@ bindTabs({
   (navigator.clipboard?navigator.clipboard.writeText(pre?pre.textContent:""):Promise.reject())
   .then(function(){setTimeout(function(){setTab("lib")},800)},function(){});},
  cr:function(){location.href="../credits.html"}
-});</script></body></html>
+});</script><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
+function up(){var el=document.documentElement;
+ if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}
+ else{if(el)el.scrollTop=0;if(document.body)document.body.scrollTop=0}}
+b.addEventListener("click",up);
+function chk(){var y=window.pageYOffset||((document.documentElement&&document.documentElement.scrollTop)||0);
+ b.classList.toggle("show",y>500)}
+if(window.addEventListener){window.addEventListener("scroll",chk,{passive:true});}
+chk();
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
+})();</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button></body></html>

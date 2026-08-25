@@ -99,6 +99,10 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 .cs-close:active{transform:scale(.97)}
 @media(max-width:640px){.acts{flex-direction:column;gap:4px}thead th:nth-child(4),tbody td:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.btt{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:42px;height:42px;border-radius:12px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;color:#f2f2f2;font:inherit;font-size:16px;cursor:pointer;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1);z-index:89}
+.btt.show{opacity:1;transform:none;pointer-events:auto}
+.btt:active{transform:scale(.9)}
 </style></head><body><div class="wrap">
 <header>
  <a class="topmail" href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a>
@@ -156,6 +160,7 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 
 <footer>FinanceCalc · ProjectBergmannstrasse · served entirely client-side</footer>
 </div>
+
 <div class="tbar-pad"></div>
 <nav class="tbar" role="tablist" aria-label="Site navigation"><span class="tpill" id="tpill"></span>
 <button role="tab" aria-selected="true"><span class="ic">⌂</span><span class="lb">Home</span></button>
@@ -300,4 +305,16 @@ $("q").addEventListener("input",function(){q=this.value.trim();render()});
 $("sort").addEventListener("change",function(){sortMode=this.value;render()});
 render();
 })();
-</script></body></html>
+</script><script>
+(function(){function init(){var b=document.getElementById("btt");if(!b)return;
+function up(){var el=document.documentElement;
+ if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}
+ else{if(el)el.scrollTop=0;if(document.body)document.body.scrollTop=0}}
+b.addEventListener("click",up);
+function chk(){var y=window.pageYOffset||((document.documentElement&&document.documentElement.scrollTop)||0);
+ b.classList.toggle("show",y>500)}
+if(window.addEventListener){window.addEventListener("scroll",chk,{passive:true});}
+chk();
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
+})();</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button></body></html>
