@@ -2387,6 +2387,255 @@
     }
   };
 
+
+  /* ============================================================
+     v38.5 — SINGLE-FOLDER STORAGE + SUPABASE BACKUP
+     ------------------------------------------------------------
+     Before this patch data lived in three places at once:
+       - OPFS (won by priority, invisible in Finder/Explorer)
+       - IndexedDB "mymoney_v15" (mirror)
+       - localStorage (8 settings keys)
+     Now: if a real folder is chosen, EVERYTHING lives there:
+       <folder>/core.json        all records
+       <folder>/settings.json    every setting (mirrors localStorage)
+       <folder>/photos/          receipts
+       <folder>/backups/         timestamped snapshots
+       <folder>/supabase.json    backup config (URL + anon key)
+     IndexedDB/localStorage stay as a crash-safety mirror only.
+     ============================================================ */
+  var FolderStore = {
+    LS_KEYS:["mymoney_theme","mymoney_sect","mymoney_cam_granted","mymoney_capture_off",
+             "mymoney_dismissed_prompt","mymoney_v15_emergency","__mm_t"],
+    _dir:null,
+
+    async dir(){
+      if(this._dir) return this._dir;
+      var h=null;
+      try{ h=await TierFSA._restoreHandle(); }catch(e){ h=null; }
+      this._dir=h; return h;
+    },
+    async isActive(){ return !!(await this.dir()); },
+
+    async _sub(name){
+      var d=await this.dir(); if(!d) return null;
+      return await d.getDirectoryHandle(name,{create:true});
+    },
+    async _writeFile(dirHandle,name,text){
+      var fh=await dirHandle.getFileHandle(name,{create:true});
+      var w=await fh.createWritable();
+      await w.write(text); await w.close();
+    },
+    async _readFile(dirHandle,name){
+      try{
+        var fh=await dirHandle.getFileHandle(name);
+        return await (await fh.getFile()).text();
+      }catch(e){ return null; }
+    },
+
+    /* ---- settings.json : the folder becomes the source of truth ---- */
+    collectSettings(){
+      var o={};
+      try{
+        for(var i=0;i<this.LS_KEYS.length;i++){
+          var k=this.LS_KEYS[i], v=localStorage.getItem(k);
+          if(v!==null) o[k]=v;
+        }
+        for(var j=0;j<localStorage.length;j++){
+          var kk=localStorage.key(j);
+          if(kk && kk.indexOf("mymoney_ph_")===0) o[kk]=localStorage.getItem(kk);
+        }
+      }catch(e){}
+      return o;
+    },
+    async saveSettings(){
+      var d=await this.dir(); if(!d) return false;
+      try{
+        await this._writeFile(d,"settings.json",JSON.stringify({
+          savedAt:new Date().toISOString(), app:"FinanceCalc", version:"38.5",
+          settings:this.collectSettings()
+        },null,2));
+        return true;
+      }catch(e){ return false; }
+    },
+    async loadSettings(){
+      var d=await this.dir(); if(!d) return false;
+      var txt=await this._readFile(d,"settings.json");
+      if(!txt) return false;
+      try{
+        var o=JSON.parse(txt); var s=o.settings||{};
+        for(var k in s){ if(Object.prototype.hasOwnProperty.call(s,k)){
+          try{ localStorage.setItem(k,s[k]); }catch(e){}
+        }}
+        return true;
+      }catch(e){ return false; }
+    },
+
+    /* ---- backups/ ---- */
+    async snapshot(core){
+      var d=await this._sub("backups"); if(!d) return false;
+      var stamp=new Date().toISOString().replace(/[:.]/g,"-");
+      try{
+        await this._writeFile(d,"backup-"+stamp+".json",JSON.stringify({
+          savedAt:new Date().toISOString(), version:"38.5",
+          core:core, settings:this.collectSettings()
+        }));
+        await this.pruneBackups(30);
+        return true;
+      }catch(e){ return false; }
+    },
+    async pruneBackups(keep){
+      try{
+        var d=await this._sub("backups"); if(!d||!d.values) return;
+        var names=[];
+        for await (var e of d.values()){ if(e.kind==="file" && e.name.indexOf("backup-")===0) names.push(e.name); }
+        names.sort();
+        while(names.length>keep){ var old=names.shift(); try{ await d.removeEntry(old); }catch(e){} }
+      }catch(e){}
+    },
+
+    /* ---- one-time migration of everything already stored elsewhere ---- */
+    async migrateInto(){
+      var d=await this.dir(); if(!d) return {ok:false,reason:"no folder"};
+      var moved={core:false,photos:0,settings:false};
+      try{
+        var cur=null;
+        try{ cur=await StorageManager.read(); }catch(e){}
+        if(cur){ await TierFSA.write(cur); moved.core=true; }
+        var ids=[];
+        try{ ids=await StorageManager.listPhotos(); }catch(e){ ids=[]; }
+        for(var i=0;i<ids.length;i++){
+          var p=ids[i], id=p.id!==undefined?p.id:p, ext=p.ext||"jpg";
+          try{
+            var blob=await StorageManager.readPhoto(id,ext);
+            if(blob){ await TierFSA.writePhoto(id,ext,blob); moved.photos++; }
+          }catch(e){}
+        }
+        moved.settings=await this.saveSettings();
+        if(cur) await this.snapshot(cur);
+      }catch(e){ return {ok:false,reason:String(e&&e.message||e),moved:moved}; }
+      return {ok:true,moved:moved};
+    }
+  };
+
+  /* ---- folder wins over OPFS once chosen ---- */
+  StorageManager._origBest = StorageManager.best;
+  StorageManager.best = async function(forcedName){
+    if(!forcedName){
+      try{
+        if(await FolderStore.isActive()){
+          if(await TierFSA.available()) return TierFSA;
+        }
+      }catch(e){}
+    }
+    return await this._origBest(forcedName);
+  };
+
+  /* ---- every write also updates settings.json, backup + Supabase ---- */
+  StorageManager._origWrite = StorageManager.write;
+  StorageManager.write = async function(core){
+    await this._origWrite(core);
+    try{
+      if(await FolderStore.isActive()){
+        await FolderStore.saveSettings();
+        SupaBackup.schedule(core);
+      }
+    }catch(e){}
+  };
+
+  /* ---- pick folder → migrate → make it primary ---- */
+  async function chooseDataFolder(){
+    var h=await TierFSA.pickFolder();          // must be called from a click
+    FolderStore._dir=h;
+    var res=await FolderStore.migrateInto();
+    StorageManager._active=TierFSA;
+    return res;
+  }
+
+  /* ============================================================
+     SUPABASE BACKUP — REST, no SDK, no bundler.
+     Config lives in <folder>/supabase.json (and localStorage as fallback).
+     Table SQL is in the README next to this app.
+     ============================================================ */
+  var SupaBackup = {
+    _cfg:null, _timer:null, _busy:false, lastResult:null,
+    async config(){
+      if(this._cfg) return this._cfg;
+      var cfg=null;
+      try{
+        var d=await FolderStore.dir();
+        if(d){ var t=await FolderStore._readFile(d,"supabase.json"); if(t) cfg=JSON.parse(t); }
+      }catch(e){}
+      if(!cfg){ try{ var l=localStorage.getItem("mymoney_supabase"); if(l) cfg=JSON.parse(l); }catch(e){} }
+      this._cfg=cfg; return cfg;
+    },
+    async setConfig(url,key,table){
+      var cfg={url:String(url||"").replace(/\/+$/,""),anonKey:String(key||""),
+               table:String(table||"financecalc_backups"),
+               deviceId:(function(){
+                 var id=null; try{ id=localStorage.getItem("mymoney_device_id"); }catch(e){}
+                 if(!id){ id="dev-"+Math.random().toString(36).slice(2,10);
+                   try{ localStorage.setItem("mymoney_device_id",id); }catch(e){} }
+                 return id;
+               })()};
+      this._cfg=cfg;
+      try{ localStorage.setItem("mymoney_supabase",JSON.stringify(cfg)); }catch(e){}
+      try{
+        var d=await FolderStore.dir();
+        if(d) await FolderStore._writeFile(d,"supabase.json",JSON.stringify(cfg,null,2));
+      }catch(e){}
+      return cfg;
+    },
+    configured:function(){ return !!(this._cfg && this._cfg.url && this._cfg.anonKey); },
+    schedule:function(core){
+      var self=this;
+      if(this._timer) clearTimeout(this._timer);
+      this._timer=setTimeout(function(){ self.push(core).catch(function(){}); }, 8000);
+    },
+    async push(core){
+      var cfg=await this.config();
+      if(!cfg || !cfg.url || !cfg.anonKey) return {ok:false,reason:"not configured"};
+      if(this._busy) return {ok:false,reason:"busy"};
+      this._busy=true;
+      try{
+        if(!core){ try{ core=await StorageManager.read(); }catch(e){} }
+        var body=[{ device_id:cfg.deviceId, version:"38.5",
+                    core:core||{}, settings:FolderStore.collectSettings() }];
+        var r=await fetch(cfg.url+"/rest/v1/"+encodeURIComponent(cfg.table),{
+          method:"POST",
+          headers:{ "Content-Type":"application/json", "apikey":cfg.anonKey,
+                    "Authorization":"Bearer "+cfg.anonKey, "Prefer":"return=minimal" },
+          body:JSON.stringify(body)
+        });
+        var out= r.ok ? {ok:true,at:new Date().toISOString()}
+                      : {ok:false,reason:"HTTP "+r.status+" "+(await r.text()).slice(0,180)};
+        this.lastResult=out;
+        try{ localStorage.setItem("mymoney_supabase_last",JSON.stringify(out)); }catch(e){}
+        return out;
+      }catch(e){
+        var err={ok:false,reason:String(e&&e.message||e)};
+        this.lastResult=err; return err;
+      } finally { this._busy=false; }
+    },
+    async restoreLatest(){
+      var cfg=await this.config();
+      if(!cfg||!cfg.url||!cfg.anonKey) return {ok:false,reason:"not configured"};
+      try{
+        var r=await fetch(cfg.url+"/rest/v1/"+encodeURIComponent(cfg.table)+
+              "?select=core,settings,created_at&order=created_at.desc&limit=1",
+              {headers:{"apikey":cfg.anonKey,"Authorization":"Bearer "+cfg.anonKey}});
+        if(!r.ok) return {ok:false,reason:"HTTP "+r.status};
+        var rows=await r.json();
+        if(!rows.length) return {ok:false,reason:"no backups found"};
+        return {ok:true,core:rows[0].core,settings:rows[0].settings,at:rows[0].created_at};
+      }catch(e){ return {ok:false,reason:String(e&&e.message||e)}; }
+    }
+  };
+
+  try{
+    window.FinanceCalcData={ FolderStore:FolderStore, SupaBackup:SupaBackup,
+                             chooseDataFolder:chooseDataFolder };
+  }catch(e){}
+
   var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
   var WEEKDAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
