@@ -1,6 +1,6 @@
 # FinanceCalc — complete version history
 https://projectbergmannstrasse.github.io/FinanceCalc/
-143 builds, **v1.0 to v38.4**, oldest to newest.
+144 builds, **v1.0 to v38.5**, oldest to newest.
 
 Files are numbered `001` upward so they sort chronologically in any file browser.
 Duplicates were removed: the original archive's 217 files contained 143 unique builds.
@@ -186,3 +186,7 @@ code grew more than 12%.
 | 141 | v37.8 | 758 KB | refinements |
 | 142 | v38.0 | 760 KB | refinements |
 | 143 | v38.4 | 769 KB | FFT texture analysis |
+
+## v38.5
+
+All app data now lives in one folder you choose (core.json, settings.json, photos/, backups/), with Supabase backup. See DATA-SETUP.md.
