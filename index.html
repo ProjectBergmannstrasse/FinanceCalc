@@ -1,273 +1,303 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FinanceCalc — 143 builds, v1.0 → v38.4</title>
-<meta name="description" content="Complete version history of FinanceCalc / My Money — every build live-viewable, with growth charts and per-version diffs.">
-<style>
-:root{
-  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
-  --bg:#0a0a0a; --panel:#111; --panel2:#161616; --line:#262626; --line2:#333;
-  --fg:#f2f2f2; --dim:#9a9a9a; --faint:#5c5c5c;
-  --ease:cubic-bezier(.22,1,.36,1);
-}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FinanceCalc — 143 builds, v1.0 → v38.4</title><meta name="description" content="Complete version history of FinanceCalc — every build runnable, growth charts, diffs, and a 1,834-piece module library."><style>
+:root{--mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;--bg:#0a0a0a;--panel:#111;--panel2:#161616;--line:#262626;--line2:#333;--fg:#f2f2f2;--dim:#9a9a9a;--faint:#5c5c5c;--ease:cubic-bezier(.22,1,.36,1)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg);color:var(--fg);font:14px/1.55 var(--mono);font-variant-numeric:tabular-nums}
 a{color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line2);transition:border-color .15s var(--ease),color .15s var(--ease)}
 a:hover{border-color:var(--fg)}
-.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
-
-header{padding:64px 0 40px;border-bottom:1px solid var(--line);position:relative}
-.kicker{color:var(--faint);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
-h1{font-size:clamp(26px,5vw,40px);font-weight:700;letter-spacing:-.01em}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px calc(96px + env(safe-area-inset-bottom,0px))}
+header{padding:52px 0 30px;border-bottom:1px solid var(--line);position:relative}
+.topmail{position:absolute;top:20px;right:0;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line);text-decoration:none}
+.topmail:hover{color:var(--fg)}
+.kicker{color:var(--faint);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+h1{font-size:clamp(26px,5vw,38px);font-weight:700;letter-spacing:-.01em}
 h1 span{color:var(--dim);font-weight:400}
 .sub{color:var(--dim);margin-top:10px;max-width:640px}
 .sub b{color:var(--fg);font-weight:600}
-.hlinks{margin-top:22px;display:flex;gap:18px;flex-wrap:wrap;font-size:13px}
-.hlinks a{color:var(--dim);border-bottom-color:var(--line)}
-.hlinks a:hover{color:var(--fg)}
-
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:36px 0}
+.btnrow{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+.bbtn{background:var(--fg);color:#000;border:0;font:inherit;font-weight:700;padding:10px 16px;cursor:pointer;text-decoration:none;transition:transform .12s var(--ease)}
+.bbtn:active{transform:scale(.96)}
+.bbtn.ghost{background:none;color:var(--dim);border:1px solid var(--line2)}
+.bbtn.ghost:hover{color:var(--fg);border-color:var(--fg)}
+main[hidden]{display:none}
+.pageanim{animation:tpage .3s var(--ease)}
+@keyframes tpage{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:32px 0}
 .stat{background:var(--panel);padding:18px 16px;opacity:0;transform:translateY(8px);animation:rise .3s var(--ease) forwards}
-.stat:nth-child(1){animation-delay:.02s}.stat:nth-child(2){animation-delay:.07s}
-.stat:nth-child(3){animation-delay:.12s}.stat:nth-child(4){animation-delay:.17s}
-.stat:nth-child(5){animation-delay:.22s}.stat:nth-child(6){animation-delay:.27s}
+.stat:nth-child(1){animation-delay:.02s}.stat:nth-child(2){animation-delay:.07s}.stat:nth-child(3){animation-delay:.12s}
+.stat:nth-child(4){animation-delay:.17s}.stat:nth-child(5){animation-delay:.22s}.stat:nth-child(6){animation-delay:.27s}
 @keyframes rise{to{opacity:1;transform:none}}
-.stat .n{font-size:24px;font-weight:700;letter-spacing:-.01em}
-.stat .l{color:var(--faint);font-size:11.5px;margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
-
-h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:44px 0 16px;font-weight:600}
+.stat .n{font-size:24px;font-weight:700}.stat .l{color:var(--faint);font-size:11.5px;margin-top:4px;letter-spacing:.06em;text-transform:uppercase}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:40px 0 14px;font-weight:600}
 h2 small{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400;margin-left:10px}
-
-.chartbox{border:1px solid var(--line);background:var(--panel);padding:14px 14px 6px;position:relative}
-.chartbox svg{display:block;width:100%;height:auto}
-.bar{fill:#3d3d3d;transition:fill .12s var(--ease)}
-.bar:hover{fill:#f2f2f2}
-.tip{position:absolute;pointer-events:none;background:#000;border:1px solid var(--line2);padding:7px 10px;font-size:12px;opacity:0;transform:translateY(3px);transition:opacity .12s var(--ease),transform .12s var(--ease);white-space:nowrap;z-index:5}
-.tip.on{opacity:1;transform:none}
-.tip b{font-weight:700}
-.tip .d{color:var(--dim)}
-.chartnote{color:var(--faint);font-size:12px;padding:10px 2px 8px}
 .ctoggle{display:inline-flex;border:1px solid var(--line2);margin-left:12px;vertical-align:middle}
-.ctoggle button{background:none;border:0;color:var(--dim);font:inherit;font-size:11.5px;padding:4px 10px;cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+.ctoggle button{background:none;border:0;color:var(--dim);font:inherit;font-size:11.5px;padding:4px 10px;cursor:pointer;transition:background .15s,color .15s,transform .12s}
 .ctoggle button.on{background:var(--fg);color:#000;font-weight:700}
 .ctoggle button:active{transform:scale(.96)}
-
+.chartbox{border:1px solid var(--line);background:var(--panel);padding:14px 14px 6px;position:relative}
+.chartbox svg{display:block;width:100%;height:auto}
+.bar{fill:#3d3d3d;transition:fill .12s}.bar:hover{fill:#f2f2f2}
+.bar.clip{fill:#222;stroke:#4a4a4a;stroke-dasharray:3 3}
+.tip{position:absolute;pointer-events:none;background:#000;border:1px solid var(--line2);padding:7px 10px;font-size:12px;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s;white-space:nowrap;z-index:5}
+.tip.on{opacity:1;transform:none}.tip b{font-weight:700}.tip .d{color:var(--dim)}
+.chartnote{color:var(--faint);font-size:12px;padding:10px 2px 8px}
+.milestones{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.mile{background:var(--panel);padding:16px}.mile .mv{font-weight:700}.mile .mt{color:var(--dim);font-size:12.5px;margin-top:5px}
 .toolrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-.search{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line2);color:var(--fg);font:inherit;padding:10px 12px;outline:none;transition:border-color .15s var(--ease)}
-.search:focus{border-color:var(--fg)}
-.search::placeholder{color:var(--faint)}
+.search{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line2);color:var(--fg);font:inherit;padding:10px 12px;outline:none;transition:border-color .15s}
+.search:focus{border-color:var(--fg)}.search::placeholder{color:var(--faint)}
 .count{color:var(--faint);font-size:12.5px;white-space:nowrap}
 .sortsel{background:var(--panel);border:1px solid var(--line2);color:var(--dim);font:inherit;font-size:12.5px;padding:10px 8px;outline:none;cursor:pointer}
-
 table{width:100%;border-collapse:collapse;border:1px solid var(--line)}
-thead th{background:var(--panel2);color:var(--faint);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600;position:sticky;top:0}
+thead th{background:var(--panel2);color:var(--faint);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600}
 tbody td{padding:9px 12px;border-bottom:1px solid #1c1c1c;font-size:13px}
-tbody tr{transition:background .12s var(--ease)}
-tbody tr:hover{background:#151515}
-td.num{color:var(--dim)}
-td .seq{color:var(--faint)}
-td .ver{font-weight:700}
+tbody tr{transition:background .12s}tbody tr:hover{background:#151515}
+td.num{color:var(--dim)}td .seq{color:var(--faint)}td .ver{font-weight:700}
 .acts{display:flex;gap:12px;white-space:nowrap}
-.acts a{border-bottom:none;color:var(--dim);font-size:12px;padding:2px 0}
-.acts a:hover{color:var(--fg)}
-.acts a::before{content:"→ ";color:var(--faint)}
+.acts a{border-bottom:none;color:var(--dim);font-size:12px}
+.acts a:hover{color:var(--fg)}.acts a::before{content:"→ ";color:var(--faint)}
 .sizebar{display:inline-block;height:7px;background:#3d3d3d;vertical-align:middle;margin-right:8px;min-width:1px}
 tr:hover .sizebar{background:var(--fg)}
 .spike{color:var(--fg);font-weight:700}
 .empty{color:var(--faint);text-align:center;padding:32px 0;display:none}
-
-.milestones{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
-.mile{background:var(--panel);padding:16px}
-.mile .mv{font-weight:700}
-.mile .mt{color:var(--dim);font-size:12.5px;margin-top:5px;line-height:1.5}
-
-footer{margin-top:56px;padding:28px 0 48px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
-footer a{color:var(--dim);border-bottom-color:var(--line)}
-
-@media(max-width:640px){
-  header{padding:44px 0 30px}
-  .acts{flex-direction:column;gap:4px}
-  thead th:nth-child(4),tbody td:nth-child(4){display:none}
-}
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
-}
-.topmail{position:absolute;top:22px;right:0;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line);text-decoration:none;transition:color .15s}.topmail:hover{color:var(--fg)}</style>
-</head>
-<body>
-<div class="wrap">
-
-<header><a class="topmail" href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a>
-  <div class="kicker">ProjectBergmannstrasse</div>
-  <h1>FinanceCalc <span>/ My Money</span></h1>
-  <p class="sub">The complete build history of a single-file, offline-first personal finance app —
-  <b>143 unique builds</b> from <b>v1.0</b> to <b>v38.4</b>, every one of them live and openable below.
-  Deduplicated from an original archive of 217 files.</p>
-  <div class="hlinks">
-    <a href="./FinanceCalc.html"><b>Open latest (v38.4)</b></a>
-    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">Repository</a>
-    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/commits/main">Commit history</a>
-    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/tree/evolution">Evolution branch (diffable)</a>
-    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/blob/main/README.md">README</a>
-    <a href="./module/index.html"><b>Module library (1,834)</b></a>
-    <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc/archive/refs/heads/main.zip">Download everything (.zip)</a>
-  </div>
+.cards{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--panel);padding:15px 16px;text-decoration:none;border-bottom:none;transition:background .12s}
+.crow:hover{background:#161616}
+.crow .ct{font-weight:700}.crow .cd{color:var(--faint);font-size:12px;margin-top:3px}
+.crow .arr{color:var(--faint);font-size:16px;flex:none;transition:transform .15s var(--ease)}
+.crow:hover .arr{transform:translateX(3px);color:var(--fg)}
+.readme{border:1px solid var(--line);background:var(--panel);padding:20px}
+.readme h3{font-size:14px;margin:18px 0 8px}.readme h3:first-child{margin-top:0}
+.readme p{color:var(--dim);margin:8px 0;max-width:70ch}.readme p.li{margin:4px 0}
+.readme b{color:var(--fg)}.readme code{background:#1a1a1a;border:1px solid var(--line);padding:1px 5px;font-size:12px}
+.readme .rt{width:100%;border-collapse:collapse;margin:12px 0;border:1px solid var(--line)}
+.readme .rt th,.readme .rt td{border:1px solid var(--line);padding:8px 10px;font-size:12.5px;text-align:left}
+.readme .rt th{background:var(--panel2);color:var(--faint)}
+footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px}
+.tbar-pad{height:calc(78px + env(safe-area-inset-bottom,0px))}
+.tbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));width:min(420px,100vw - 24px);border-radius:18px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;display:flex;z-index:90;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.tbar .tpill{position:absolute;top:5px;bottom:5px;border-radius:13px;background:#2c2c2c;transition:left .32s var(--ease),width .32s var(--ease)}
+.tbar button{flex:1;min-height:50px;background:none;border:0;color:#9a9a9a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;transition:color .2s,transform .12s var(--ease)}
+.tbar button:active{transform:scale(.93)}
+.tbar button .ic{font-size:16px;line-height:1;transition:transform .32s cubic-bezier(.34,1.56,.64,1)}
+.tbar button .lb{font-size:10.5px;letter-spacing:.04em}
+.tbar button[aria-selected="true"]{color:#f2f2f2}
+.tbar button[aria-selected="true"] .ic{transform:translateY(-1px) scale(1.16)}
+.covl{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s;z-index:95}
+.covl.on{opacity:1;pointer-events:auto}
+.csheet{position:fixed;left:50%;transform:translate(-50%,110%);bottom:0;width:min(460px,100vw);background:#111;border:1px solid #333;border-bottom:0;border-radius:18px 18px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom,0px));z-index:96;transition:transform .3s var(--ease)}
+.csheet.on{transform:translate(-50%,0)}
+.cs-k{color:#5c5c5c;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.cs-t{font-weight:700;font-size:17px;margin:6px 0 14px}
+.cs-row{display:flex;gap:10px;align-items:center;border-top:1px solid #222;padding:10px 0;font-size:12.5px;flex-wrap:wrap}
+.cs-row>span{color:#5c5c5c;width:58px;flex:none;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.cs-row a{color:#f2f2f2;border-bottom:1px solid #333}
+.cs-row code{color:#f2f2f2;word-break:break-all;font-size:11.5px;flex:1;min-width:180px}
+.cs-copy{background:none;border:1px solid #333;color:#9a9a9a;font:inherit;font-size:11px;padding:4px 10px;cursor:pointer;transition:transform .12s,color .15s,border-color .15s}
+.cs-copy:hover{color:#f2f2f2;border-color:#f2f2f2}.cs-copy:active{transform:scale(.93)}
+.cs-close{margin-top:16px;width:100%;background:#f2f2f2;color:#000;border:0;font:inherit;font-weight:700;padding:11px;cursor:pointer;transition:transform .12s}
+.cs-close:active{transform:scale(.97)}
+@media(max-width:640px){.acts{flex-direction:column;gap:4px}thead th:nth-child(4),tbody td:nth-child(4){display:none}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style></head><body><div class="wrap">
+<header>
+ <a class="topmail" href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a>
+ <div class="kicker">ProjectBergmannstrasse</div>
+ <h1>FinanceCalc <span>/ My Money</span></h1>
+ <p class="sub">The complete build history of a single-file, offline-first personal finance app —
+ <b>143 unique builds</b> from <b>v1.0</b> to <b>v38.4</b>, all runnable here, plus <b>1,834 extracted modules</b>.</p>
+ <div class="btnrow">
+  <a class="bbtn" href="./FinanceCalc.html">Open latest — v38.4</a>
+  <a class="bbtn ghost" href="#builds" data-tab="1">Browse all builds</a>
+ </div>
 </header>
 
-<div class="stats" id="stats"></div>
-
-<h2>Growth over 143 builds
-  <span class="ctoggle" role="tablist">
-    <button id="btnLines" class="on">lines</button><button id="btnBytes">size</button>
-  </span>
-  <small id="chartLabel">code lines per build</small>
-</h2>
-<div class="chartbox" id="chartbox">
+<main id="view-home">
+ <div class="stats" id="stats"></div>
+ <h2>Growth over 143 builds
+  <span class="ctoggle" role="tablist"><button id="btnLines" class="on">lines</button><button id="btnBytes">size</button></span>
+  <span class="ctoggle" id="spikeTog" style="display:none" role="tablist" aria-label="Spike toggle"><button id="spWith" class="on">with v3.2–v4.8 spike</button><button id="spWithout">without</button></span>
+  <small id="chartLabel">code lines per build</small></h2>
+ <div class="chartbox" id="chartbox">
   <svg id="chart" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-label="Growth chart"></svg>
-  <div class="tip" id="tip"></div>
-  <div class="chartnote" id="chartnote"></div>
-</div>
+  <div class="tip" id="tip"></div><div class="chartnote" id="chartnote"></div>
+ </div>
+ <h2>Milestones</h2>
+ <div class="milestones" id="miles"></div>
+</main>
 
-<h2>Milestones</h2>
-<div class="milestones" id="miles"></div>
-
-<h2>All builds <small>newest first — Open runs the build in your browser</small></h2>
-<div class="toolrow">
+<main id="view-builds" hidden>
+ <h2>All builds <small>newest first — open runs it, save downloads it</small></h2>
+ <div class="toolrow">
   <input class="search" id="q" type="search" placeholder="Filter by version… e.g. v23, 100, 38.4" aria-label="Filter builds">
-  <select class="sortsel" id="sort" aria-label="Sort">
-    <option value="new">Newest first</option>
-    <option value="old">Oldest first</option>
-    <option value="big">Largest first</option>
-  </select>
+  <select class="sortsel" id="sort" aria-label="Sort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="big">Largest first</option></select>
   <span class="count" id="cnt"></span>
-</div>
-<table>
-  <thead><tr><th>Build</th><th>Size</th><th>Lines</th><th>Δ lines</th><th>Links</th></tr></thead>
-  <tbody id="rows"></tbody>
-</table>
-<div class="empty" id="empty">No builds match.</div>
+ </div>
+ <table><thead><tr><th>Build</th><th>Size</th><th>Lines</th><th>Δ lines</th><th>Links</th></tr></thead><tbody id="rows"></tbody></table>
+ <div class="empty" id="empty">No builds match.</div>
+</main>
 
-<footer>
-  <div>FinanceCalc · ProjectBergmannstrasse · builds served as-committed, entirely client-side</div>
-  <div><a href="#" onclick="scrollTo({top:0,behavior:'smooth'});return false">Back to top</a></div>
-</footer>
+<main id="view-info" hidden>
+ <h2>Everything on this project</h2>
+ <div class="cards"><a class='crow' href='./FinanceCalc.html' ><span><span class='ct'>Open latest build</span><div class='cd'>FinanceCalc v38.4, straight from this site</div></span><span class='arr'>→</span></a><a class='crow' href='#builds' data-tab='1'><span><span class='ct'>All 143 builds</span><div class='cd'>Browse, run, save and diff every version</div></span><span class='arr'>→</span></a><a class='crow' href='./module/index.html' ><span><span class='ct'>Module library</span><div class='cd'>1,834 extracted components with live previews</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/archive/refs/heads/main.zip' ><span><span class='ct'>Download everything</span><div class='cd'>.zip of the full repository</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc' ><span><span class='ct'>Repository on GitHub</span><div class='cd'>Source of everything on this site</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/commits/main' ><span><span class='ct'>Commit history</span><div class='cd'>One commit per build, in order</div></span><span class='arr'>→</span></a><a class='crow' href='https://github.com/ProjectBergmannstrasse/FinanceCalc/tree/evolution' ><span><span class='ct'>Evolution branch</span><div class='cd'>Same builds over one file — proper diffs</div></span><span class='arr'>→</span></a></div>
+ <h2>README</h2>
+ <div class="readme"><h3>FinanceCalc — complete version history</h3>
+<p>https://projectbergmannstrasse.github.io/FinanceCalc/ 143 builds, <b>v1.0 to v38.4</b>, oldest to newest.</p>
+<p>Files are numbered <code>001</code> upward so they sort chronologically in any file browser. Duplicates were removed: the original archive&#x27;s 217 files contained 143 unique builds.</p>
+<h3>How versions were numbered</h3>
+<p>Each step scored on impact against complexity, as you specified:</p>
+<table class='rt'><tr><th></th><th>Low complexity</th><th>High complexity</th></tr><tr><td><b>High impact</b></td><td>+1.0</td><td>+0.7</td></tr><tr><td><b>Medium impact</b></td><td>+0.7</td><td>+0.35</td></tr><tr><td><b>Low impact</b></td><td>+0.5</td><td>+0.2</td></tr></table>
+<p>High impact and easy earns a full point; intricate work that barely moved the product earns 0.2. Builds adding no new capability step +0.2, or +0.5 where the code grew more than 12%.</p>
+<h3>Feature milestones</h3>
+<table class='rt'><tr><th>Version</th><th>What arrived</th></tr><tr><td>v5.5</td><td>multi-tier storage</td></tr><tr><td>v6.2</td><td>multi-portfolio</td></tr><tr><td>v8.1</td><td>AI assist</td></tr><tr><td>v11.6</td><td>trading mode</td></tr><tr><td>v13.4</td><td>recurring entries</td></tr><tr><td>v14.1</td><td>savings goals</td></tr><tr><td>v20.0</td><td>receipt photos</td></tr><tr><td>v25.3</td><td>on-device receipt OCR</td></tr><tr><td>v27.3</td><td>app lock</td></tr><tr><td>v29.6</td><td>face unlock</td></tr><tr><td>v31.5</td><td>deep recovery vault</td></tr><tr><td>v32.8</td><td>background agents</td></tr><tr><td>v35.7</td><td>cash-flow forecast</td></tr><tr><td>v37.4</td><td>anti-spoofing</td></tr><tr><td>v38.4</td><td>FFT texture analysis</td></tr></table>
+<h3>Every build</h3>
+<table class='rt'><tr><th>#</th><th>Version</th><th>Size</th><th>Notes</th></tr><tr><td>001</td><td>v1.0</td><td>50 KB</td><td>refinements</td></tr><tr><td>002</td><td>v1.5</td><td>65 KB</td><td>refinements</td></tr><tr><td>003</td><td>v2.0</td><td>86 KB</td><td>refinements</td></tr><tr><td>004</td><td>v2.2</td><td>88 KB</td><td>refinements</td></tr><tr><td>005</td><td>v2.7</td><td>101 KB</td><td>refinements</td></tr><tr><td>006</td><td>v3.2</td><td>6536 KB</td><td>refinements</td></tr><tr><td>007</td><td>v3.7</td><td>8781 KB</td><td>refinements</td></tr><tr><td>008</td><td>v3.9</td><td>9448 KB</td><td>refinements</td></tr><tr><td>009</td><td>v4.1</td><td>9451 KB</td><td>refinements</td></tr><tr><td>010</td><td>v4.3</td><td>10401 KB</td><td>refinements</td></tr><tr><td>011</td><td>v4.8</td><td>14032 KB</td><td>refinements</td></tr><tr><td>012</td><td>v5.5</td><td>134 KB</td><td>multi-tier storage</td></tr><tr><td>013</td><td>v6.2</td><td>143 KB</td><td>multi-portfolio</td></tr><tr><td>014</td><td>v6.4</td><td>148 KB</td><td>refinements</td></tr><tr><td>015</td><td>v6.6</td><td>150 KB</td><td>refinements</td></tr><tr><td>016</td><td>v6.8</td><td>154 KB</td><td>refinements</td></tr><tr><td>017</td><td>v7.0</td><td>157 KB</td><td>refinements</td></tr><tr><td>018</td><td>v7.2</td><td>158 KB</td><td>refinements</td></tr><tr><td>019</td><td>v7.4</td><td>175 KB</td><td>refinements</td></tr><tr><td>020</td><td>v8.1</td><td>209 KB</td><td>AI assist</td></tr><tr><td>021</td><td>v8.3</td><td>218 KB</td><td>refinements</td></tr><tr><td>022</td><td>v8.5</td><td>221 KB</td><td>refinements</td></tr><tr><td>023</td><td>v8.7</td><td>225 KB</td><td>refinements</td></tr><tr><td>024</td><td>v8.9</td><td>236 KB</td><td>refinements</td></tr><tr><td>025</td><td>v9.1</td><td>237 KB</td><td>refinements</td></tr><tr><td>026</td><td>v9.3</td><td>238 KB</td><td>refinements</td></tr><tr><td>027</td><td>v9.5</td><td>238 KB</td><td>refinements</td></tr><tr><td>028</td><td>v9.7</td><td>239 KB</td><td>refinements</td></tr><tr><td>029</td><td>v9.9</td><td>244 KB</td><td>refinements</td></tr><tr><td>030</td><td>v10.1</td><td>246 KB</td><td>refinements</td></tr><tr><td>031</td><td>v10.3</td><td>253 KB</td><td>refinements</td></tr><tr><td>032</td><td>v10.5</td><td>253 KB</td><td>refinements</td></tr><tr><td>033</td><td>v10.7</td><td>254 KB</td><td>refinements</td></tr><tr><td>034</td><td>v10.9</td><td>254 KB</td><td>refinements</td></tr><tr><td>035</td><td>v11.1</td><td>254 KB</td><td>refinements</td></tr><tr><td>036</td><td>v11.6</td><td>267 KB</td><td>trading mode</td></tr><tr><td>037</td><td>v11.8</td><td>270 KB</td><td>refinements</td></tr><tr><td>038</td><td>v12.0</td><td>271 KB</td><td>refinements</td></tr><tr><td>039</td><td>v12.2</td><td>286 KB</td><td>refinements</td></tr><tr><td>040</td><td>v12.4</td><td>298 KB</td><td>refinements</td></tr><tr><td>041</td><td>v13.4</td><td>309 KB</td><td>recurring entries</td></tr><tr><td>042</td><td>v14.1</td><td>322 KB</td><td>savings goals</td></tr><tr><td>043</td><td>v14.3</td><td>322 KB</td><td>refinements</td></tr><tr><td>044</td><td>v14.5</td><td>322 KB</td><td>refinements</td></tr><tr><td>045</td><td>v14.7</td><td>324 KB</td><td>refinements</td></tr><tr><td>046</td><td>v14.9</td><td>332 KB</td><td>refinements</td></tr><tr><td>047</td><td>v15.1</td><td>332 KB</td><td>refinements</td></tr><tr><td>048</td><td>v15.3</td><td>332 KB</td><td>refinements</td></tr><tr><td>049</td><td>v15.5</td><td>341 KB</td><td>refinements</td></tr><tr><td>050</td><td>v15.7</td><td>344 KB</td><td>refinements</td></tr><tr><td>051</td><td>v15.9</td><td>345 KB</td><td>refinements</td></tr><tr><td>052</td><td>v16.1</td><td>346 KB</td><td>refinements</td></tr><tr><td>053</td><td>v16.3</td><td>348 KB</td><td>refinements</td></tr><tr><td>054</td><td>v16.5</td><td>355 KB</td><td>refinements</td></tr><tr><td>055</td><td>v16.7</td><td>359 KB</td><td>refinements</td></tr><tr><td>056</td><td>v16.9</td><td>367 KB</td><td>refinements</td></tr><tr><td>057</td><td>v17.1</td><td>373 KB</td><td>refinements</td></tr><tr><td>058</td><td>v17.3</td><td>381 KB</td><td>refinements</td></tr><tr><td>059</td><td>v17.5</td><td>381 KB</td><td>refinements</td></tr><tr><td>060</td><td>v17.7</td><td>385 KB</td><td>refinements</td></tr><tr><td>061</td><td>v17.9</td><td>392 KB</td><td>refinements</td></tr><tr><td>062</td><td>v18.1</td><td>398 KB</td><td>refinements</td></tr><tr><td>063</td><td>v18.3</td><td>399 KB</td><td>refinements</td></tr><tr><td>064</td><td>v18.5</td><td>400 KB</td><td>refinements</td></tr><tr><td>065</td><td>v18.7</td><td>401 KB</td><td>refinements</td></tr><tr><td>066</td><td>v18.9</td><td>401 KB</td><td>refinements</td></tr><tr><td>067</td><td>v19.1</td><td>402 KB</td><td>refinements</td></tr><tr><td>068</td><td>v19.3</td><td>409 KB</td><td>refinements</td></tr><tr><td>069</td><td>v19.5</td><td>419 KB</td><td>refinements</td></tr><tr><td>070</td><td>v20.0</td><td>425 KB</td><td>receipt photos</td></tr><tr><td>071</td><td>v20.2</td><td>439 KB</td><td>refinements</td></tr><tr><td>072</td><td>v20.4</td><td>439 KB</td><td>refinements</td></tr><tr><td>073</td><td>v20.6</td><td>439 KB</td><td>refinements</td></tr><tr><td>074</td><td>v20.8</td><td>445 KB</td><td>refinements</td></tr><tr><td>075</td><td>v21.0</td><td>446 KB</td><td>refinements</td></tr><tr><td>076</td><td>v21.2</td><td>447 KB</td><td>refinements</td></tr><tr><td>077</td><td>v21.4</td><td>447 KB</td><td>refinements</td></tr><tr><td>078</td><td>v21.6</td><td>454 KB</td><td>refinements</td></tr><tr><td>079</td><td>v21.8</td><td>455 KB</td><td>refinements</td></tr><tr><td>080</td><td>v22.0</td><td>457 KB</td><td>refinements</td></tr><tr><td>081</td><td>v22.2</td><td>472 KB</td><td>refinements</td></tr><tr><td>082</td><td>v22.4</td><td>475 KB</td><td>refinements</td></tr><tr><td>083</td><td>v22.6</td><td>479 KB</td><td>refinements</td></tr><tr><td>084</td><td>v22.8</td><td>504 KB</td><td>refinements</td></tr><tr><td>085</td><td>v23.0</td><td>515 KB</td><td>refinements</td></tr><tr><td>086</td><td>v23.2</td><td>523 KB</td><td>refinements</td></tr><tr><td>087</td><td>v23.4</td><td>525 KB</td><td>refinements</td></tr><tr><td>088</td><td>v23.6</td><td>525 KB</td><td>refinements</td></tr><tr><td>089</td><td>v23.8</td><td>525 KB</td><td>refinements</td></tr><tr><td>090</td><td>v24.0</td><td>526 KB</td><td>refinements</td></tr><tr><td>091</td><td>v24.2</td><td>526 KB</td><td>refinements</td></tr><tr><td>092</td><td>v24.4</td><td>531 KB</td><td>refinements</td></tr><tr><td>093</td><td>v24.6</td><td>581 KB</td><td>refinements</td></tr><tr><td>094</td><td>v25.3</td><td>480 KB</td><td>on-device receipt OCR</td></tr><tr><td>095</td><td>v25.5</td><td>502 KB</td><td>refinements</td></tr><tr><td>096</td><td>v25.7</td><td>517 KB</td><td>refinements</td></tr><tr><td>097</td><td>v25.9</td><td>518 KB</td><td>refinements</td></tr><tr><td>098</td><td>v26.1</td><td>522 KB</td><td>refinements</td></tr><tr><td>099</td><td>v26.3</td><td>526 KB</td><td>refinements</td></tr><tr><td>100</td><td>v27.3</td><td>529 KB</td><td>app lock</td></tr><tr><td>101</td><td>v27.5</td><td>546 KB</td><td>refinements</td></tr><tr><td>102</td><td>v27.7</td><td>549 KB</td><td>refinements</td></tr><tr><td>103</td><td>v27.9</td><td>562 KB</td><td>refinements</td></tr><tr><td>104</td><td>v28.1</td><td>563 KB</td><td>refinements</td></tr><tr><td>105</td><td>v28.3</td><td>564 KB</td><td>refinements</td></tr><tr><td>106</td><td>v28.5</td><td>564 KB</td><td>refinements</td></tr><tr><td>107</td><td>v28.7</td><td>574 KB</td><td>refinements</td></tr><tr><td>108</td><td>v28.9</td><td>581 KB</td><td>refinements</td></tr><tr><td>109</td><td>v29.6</td><td>560 KB</td><td>face unlock</td></tr><tr><td>110</td><td>v29.8</td><td>561 KB</td><td>refinements</td></tr><tr><td>111</td><td>v30.0</td><td>561 KB</td><td>refinements</td></tr><tr><td>112</td><td>v30.2</td><td>563 KB</td><td>refinements</td></tr><tr><td>113</td><td>v30.4</td><td>570 KB</td><td>refinements</td></tr><tr><td>114</td><td>v30.6</td><td>579 KB</td><td>refinements</td></tr><tr><td>115</td><td>v30.8</td><td>581 KB</td><td>refinements</td></tr><tr><td>116</td><td>v31.0</td><td>589 KB</td><td>refinements</td></tr><tr><td>117</td><td>v31.5</td><td>611 KB</td><td>deep recovery vault</td></tr><tr><td>118</td><td>v31.7</td><td>614 KB</td><td>refinements</td></tr><tr><td>119</td><td>v31.9</td><td>628 KB</td><td>refinements</td></tr><tr><td>120</td><td>v32.1</td><td>629 KB</td><td>refinements</td></tr><tr><td>121</td><td>v32.8</td><td>650 KB</td><td>background agents</td></tr><tr><td>122</td><td>v33.0</td><td>663 KB</td><td>refinements</td></tr><tr><td>123</td><td>v33.2</td><td>667 KB</td><td>refinements</td></tr><tr><td>124</td><td>v33.4</td><td>668 KB</td><td>refinements</td></tr><tr><td>125</td><td>v33.6</td><td>670 KB</td><td>refinements</td></tr><tr><td>126</td><td>v33.8</td><td>673 KB</td><td>refinements</td></tr><tr><td>127</td><td>v34.0</td><td>684 KB</td><td>refinements</td></tr><tr><td>128</td><td>v34.2</td><td>685 KB</td><td>refinements</td></tr><tr><td>129</td><td>v34.4</td><td>691 KB</td><td>refinements</td></tr><tr><td>130</td><td>v34.6</td><td>691 KB</td><td>refinements</td></tr><tr><td>131</td><td>v34.8</td><td>693 KB</td><td>refinements</td></tr><tr><td>132</td><td>v35.0</td><td>702 KB</td><td>refinements</td></tr><tr><td>133</td><td>v35.7</td><td>728 KB</td><td>cash-flow forecast</td></tr><tr><td>134</td><td>v35.9</td><td>732 KB</td><td>refinements</td></tr><tr><td>135</td><td>v36.1</td><td>733 KB</td><td>refinements</td></tr><tr><td>136</td><td>v36.3</td><td>734 KB</td><td>refinements</td></tr><tr><td>137</td><td>v36.5</td><td>737 KB</td><td>refinements</td></tr><tr><td>138</td><td>v36.7</td><td>738 KB</td><td>refinements</td></tr><tr><td>139</td><td>v37.4</td><td>753 KB</td><td>anti-spoofing</td></tr><tr><td>140</td><td>v37.6</td><td>754 KB</td><td>refinements</td></tr><tr><td>141</td><td>v37.8</td><td>758 KB</td><td>refinements</td></tr><tr><td>142</td><td>v38.0</td><td>760 KB</td><td>refinements</td></tr><tr><td>143</td><td>v38.4</td><td>769 KB</td><td>FFT texture analysis</td></tr></table></div>
+</main>
 
+<footer>FinanceCalc · ProjectBergmannstrasse · served entirely client-side</footer>
 </div>
-<script src="data.js"></script>
-<script>
+<div class="tbar-pad"></div>
+<nav class="tbar" role="tablist" aria-label="Site navigation"><span class="tpill" id="tpill"></span>
+<button role="tab" aria-selected="true"><span class="ic">⌂</span><span class="lb">Home</span></button>
+<button role="tab" aria-selected="false"><span class="ic">▤</span><span class="lb">Builds</span></button>
+<button role="tab" aria-selected="false"><span class="ic">❖</span><span class="lb">Modules</span></button>
+<button role="tab" aria-selected="false"><span class="ic">☰</span><span class="lb">Info</span></button>
+<button role="tab" aria-selected="false"><span class="ic">✳</span><span class="lb">Credits</span></button>
+</nav>
+<div class="covl" id="covl"></div>
+<div class="csheet" id="csheet" role="dialog" aria-label="Credits">
+<div class="cs-k">Credits · ProjectBergmannstrasse</div>
+<div class="cs-t">Zeeshan · FinanceCalc</div>
+<div class="cs-row"><span>Email</span><a href="mailto:67ace67a@gmail.com">67ace67a@gmail.com</a></div>
+<div class="cs-row"><span>GitHub</span><a href="https://github.com/ProjectBergmannstrasse">github.com/ProjectBergmannstrasse</a></div>
+<div class="cs-row"><span>Solana</span><code id="solad">8gShJdd29gLhwuB2uxf8K63EGQkYrdYSeWJSWFSyXgfx</code><button class="cs-copy" id="solcp">copy</button></div>
+<button class="cs-close" id="csclose">Close</button>
+</div>
+<script src="data.js"></script><script>
 (function(){
 "use strict";
 var REPO="https://github.com/ProjectBergmannstrasse/FinanceCalc";
 var V=(typeof VERSIONS!=="undefined")?VERSIONS:[];
-if(!V.length){document.getElementById("empty").style.display="block";return;}
-
+var $=function(id){return document.getElementById(id)};
+if(!V.length){var e=$("empty");if(e)e.style.display="block";return;}
 function fmtB(b){if(b>=1048576)return (b/1048576).toFixed(1)+" MB";if(b>=1024)return (b/1024|0)+" KB";return b+" B"}
 function fmtN(n){try{return n.toLocaleString("en-US")}catch(e){var s=String(n),o="";while(s.length>3){o=","+s.slice(-3)+o;s=s.slice(0,-3)}return s+o}}
-function enc(f){return encodeURIComponent(f).replace(/%2F/g,"/")}
-
-var totB=0,totL=0,maxB=0,maxL=0;
-V.forEach(function(d){totB+=d.bytes;totL+=d.lines;if(d.bytes>maxB)maxB=d.bytes;if(d.lines>maxL)maxL=d.lines});
+function enc(f){return encodeURIComponent(f)}
+var SPIKE_LIMIT=2097152;
+var totB=0,totL=0,maxB=0,maxL=0,maxB2=0;
+V.forEach(function(d){totB+=d.bytes;totL+=d.lines;if(d.bytes>maxB)maxB=d.bytes;if(d.lines>maxL)maxL=d.lines;
+ if(d.bytes<=SPIKE_LIMIT&&d.bytes>maxB2)maxB2=d.bytes;});
 var first=V[0],last=V[V.length-1];
 
-/* ---- stat cards with count-up ---- */
-var stats=[
-  [V.length,"builds",1],
-  [38.4,"final version",10],
-  [Math.round(totB/1048576),"MB of source",1,"","\u00A0MB"],
-  [totL,"total lines",1],
-  [last.lines,"lines in v38.4",1],
-  [Math.round(last.lines/first.lines*10)/10,"growth since v1.0",10,"\u00D7"]
-];
-var sEl=document.getElementById("stats");
-stats.forEach(function(s){
-  var d=document.createElement("div");d.className="stat";
-  d.innerHTML='<div class="n" data-t="'+s[0]+'" data-m="'+s[2]+'" data-p="'+(s[3]||"")+'" data-x="'+(s[4]||"")+'">0</div><div class="l">'+s[1]+"</div>";
-  sEl.appendChild(d);
-});
-var reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-Array.prototype.forEach.call(document.querySelectorAll(".stat .n"),function(el){
-  var t=parseFloat(el.dataset.t),m=+el.dataset.m,p=el.dataset.p,x=el.dataset.x;
-  function show(v){el.textContent=p+(m===10?v.toFixed(1):fmtN(Math.round(v)))+x}
-  if(reduce){show(t);return}
-  var st=null,dur=700;
-  function step(ts){if(!st)st=ts;var k=Math.min(1,(ts-st)/dur);k=1-Math.pow(1-k,3);show(t*k);if(k<1)requestAnimationFrame(step)}
-  requestAnimationFrame(step);
+/* ===== views + touch bar ===== */
+var views=[$("view-home"),$("view-builds"),null,$("view-info"),null];
+var bs=[].slice.call(document.querySelectorAll(".tbar button"));
+var pill=$("tpill"),sel=0;
+function align(i){var b=bs[i];if(!b||!pill)return;pill.style.left=(b.offsetLeft||0)+"px";pill.style.width=(b.offsetWidth||0)+"px"}
+function anim(el){if(!el)return;el.classList.remove("pageanim");void el.offsetWidth;el.classList.add("pageanim")}
+function show(i){sel=i;bs.forEach(function(b,j){b.setAttribute("aria-selected",j===i?"true":"false")});align(i);
+ views.forEach(function(v,j){if(v)v.hidden=(j!==i)});
+ var v=views[i];if(v)anim(v);
+ try{scrollTo({top:0,behavior:"smooth"})}catch(e){}}
+var openC,closeC;
+bs[0].addEventListener("click",function(){show(0)});
+bs[1].addEventListener("click",function(){show(1)});
+bs[2].addEventListener("click",function(){bs[2].setAttribute("aria-selected","true");align(2);location.href="./module/index.html"});
+bs[3].addEventListener("click",function(){show(3)});
+bs[4].addEventListener("click",function(){bs.forEach(function(b,j){b.setAttribute("aria-selected",j===4?"true":"false")});align(4);openC()});
+if(window.addEventListener){window.addEventListener("resize",function(){align(sel)});window.addEventListener("load",function(){align(sel)});}
+/* in-page tab links (Info -> Builds, hero buttons) */
+[].slice.call(document.querySelectorAll("[data-tab]")).forEach(function(a){
+ a.addEventListener("click",function(ev){ev.preventDefault();show(+this.getAttribute("data-tab"))})});
+/* credits sheet */
+var covl=$("covl"),sheet=$("csheet");
+openC=function(){covl.classList.add("on");sheet.classList.add("on")};
+closeC=function(){covl.classList.remove("on");sheet.classList.remove("on");
+ bs.forEach(function(b,j){b.setAttribute("aria-selected",j===sel?"true":"false")});align(sel)};
+covl.addEventListener("click",closeC);
+$("csclose").addEventListener("click",closeC);
+$("solcp").addEventListener("click",function(){var b=this;
+ (navigator.clipboard?navigator.clipboard.writeText($("solad").textContent):Promise.reject())
+ .then(function(){b.textContent="copied \u2713";setTimeout(function(){b.textContent="copy"},1200)},function(){b.textContent="select it"})});
+
+/* ===== stats ===== */
+var stats=[[V.length,"builds",1],[38.4,"final version",10],[Math.round(totB/1048576),"MB of source",1],
+ [totL,"total lines",1],[last.lines,"lines in v38.4",1],[Math.round(last.lines/first.lines*10)/10,"growth since v1.0",10]];
+var sEl=$("stats");
+stats.forEach(function(s){var d=document.createElement("div");d.className="stat";
+ d.innerHTML='<div class="n" data-t="'+s[0]+'" data-m="'+s[2]+'">0</div><div class="l">'+s[1]+"</div>";sEl.appendChild(d)});
+var reduce=(window.matchMedia?matchMedia("(prefers-reduced-motion: reduce)").matches:false);
+[].slice.call(document.querySelectorAll(".stat .n")).forEach(function(el){
+ var t=parseFloat(el.dataset.t),m=+el.dataset.m;
+ function showv(v){el.textContent=(m===10?v.toFixed(1):fmtN(Math.round(v)))+(el.dataset.t==="38.4"?"":"")}
+ if(reduce||!window.requestAnimationFrame){showv(t);return}
+ var st=null,dur=700;
+ (function step(ts){if(ts===undefined){requestAnimationFrame(step);return}if(!st)st=ts;var k=Math.min(1,(ts-st)/dur);k=1-Math.pow(1-k,3);showv(t*k);if(k<1)requestAnimationFrame(step)})();
 });
 
-/* ---- chart ---- */
-var svg=document.getElementById("chart"),tip=document.getElementById("tip"),box=document.getElementById("chartbox");
-var mode="lines";
+/* ===== chart with spike toggle ===== */
+var svg=$("chart"),tip=$("tip"),box=$("chartbox");
+var mode="lines",spikeOn=true;
 function draw(){
-  var W=1000,H=260,pad=4,n=V.length,bw=(W-pad*2)/n;
-  var mx=mode==="lines"?maxL:maxB;
-  var out=[];
-  for(var i=0;i<n;i++){
-    var d=V[i],val=mode==="lines"?d.lines:d.bytes;
-    var h=Math.max(2,(val/mx)*(H-10));
-    out.push('<rect class="bar" data-i="'+i+'" x="'+(pad+i*bw).toFixed(2)+'" y="'+(H-h).toFixed(2)+'" width="'+Math.max(1,bw-1).toFixed(2)+'" height="'+h.toFixed(2)+'"></rect>');
-  }
-  svg.innerHTML=out.join("");
-  document.getElementById("chartLabel").textContent=mode==="lines"?"code lines per build":"file size per build";
-  document.getElementById("chartnote").textContent=mode==="lines"
-    ?"Steady climb from "+fmtN(first.lines)+" lines (v1.0) to "+fmtN(last.lines)+" (v38.4)."
-    :"The v3.9\u2013v4.8 spike is builds carrying ~10\u201314 MB of embedded assets, later stripped back out.";
+ var W=1000,H=260,pad=4,n=V.length,bw=(W-pad*2)/n;
+ var mx=mode==="lines"?maxL:(spikeOn?maxB:maxB2);
+ var out=[];
+ for(var i=0;i<n;i++){var d=V[i],val=mode==="lines"?d.lines:d.bytes;
+  var clipped=(mode==="bytes"&&!spikeOn&&d.bytes>SPIKE_LIMIT);
+  var h=clipped?(H-10):Math.max(2,(val/mx)*(H-10));
+  out.push('<rect class="bar'+(clipped?' clip':'')+'" data-i="'+i+'" x="'+(pad+i*bw).toFixed(2)+'" y="'+(H-h).toFixed(2)+'" width="'+Math.max(1,bw-1).toFixed(2)+'" height="'+h.toFixed(2)+'"></rect>');}
+ svg.innerHTML=out.join("");
+ $("chartLabel").textContent=mode==="lines"?"code lines per build":"file size per build";
+ var st=$("spikeTog");if(st)st.style.display=(mode==="bytes")?"inline-flex":"none";
+ $("chartnote").textContent=mode==="lines"
+  ?"Steady climb from "+fmtN(first.lines)+" lines (v1.0) to "+fmtN(last.lines)+" (v38.4)."
+  :(spikeOn?"The v3.2\u2013v4.8 spike is six builds carrying 7\u201314 MB of embedded assets, later stripped back out."
+           :"Spike hidden: the six v3.2\u2013v4.8 builds are clipped (dashed) so the other 137 scale honestly.");
 }
 draw();
-svg.addEventListener("mousemove",function(e){
-  var t=e.target;if(!t.classList||!t.classList.contains("bar")){tip.classList.remove("on");return}
-  var d=V[+t.dataset.i];
-  tip.innerHTML="<b>"+d.ver+"</b> <span class='d'>build "+d.seq+"</span><br>"+fmtN(d.lines)+" lines \u00B7 "+fmtB(d.bytes);
-  var r=box.getBoundingClientRect();
-  var x=Math.min(e.clientX-r.left+12,r.width-tip.offsetWidth-8);
-  tip.style.left=x+"px";tip.style.top=(e.clientY-r.top-44)+"px";
-  tip.classList.add("on");
-});
+svg.addEventListener("mousemove",function(e){var t=e.target;
+ if(!t.classList||!t.classList.contains("bar")){tip.classList.remove("on");return}
+ var d=V[+t.dataset.i];
+ tip.innerHTML="<b>"+d.ver+"</b> <span class='d'>build "+d.seq+"</span><br>"+fmtN(d.lines)+" lines \u00B7 "+fmtB(d.bytes);
+ var r=box.getBoundingClientRect();
+ var x=Math.min(e.clientX-r.left+12,Math.max(0,r.width-tip.offsetWidth-8));
+ tip.style.left=x+"px";tip.style.top=(e.clientY-r.top-44)+"px";tip.classList.add("on")});
 svg.addEventListener("mouseleave",function(){tip.classList.remove("on")});
-document.getElementById("btnLines").onclick=function(){mode="lines";this.classList.add("on");document.getElementById("btnBytes").classList.remove("on");draw()};
-document.getElementById("btnBytes").onclick=function(){mode="bytes";this.classList.add("on");document.getElementById("btnLines").classList.remove("on");draw()};
+function setMode(m,btnOn,btnOff){mode=m;$(btnOn).classList.add("on");$(btnOff).classList.remove("on");draw()}
+$("btnLines").addEventListener("click",function(){setMode("lines","btnLines","btnBytes")});
+$("btnBytes").addEventListener("click",function(){setMode("bytes","btnBytes","btnLines")});
+$("spWith").addEventListener("click",function(){spikeOn=true;this.classList.add("on");$("spWithout").classList.remove("on");draw()});
+$("spWithout").addEventListener("click",function(){spikeOn=false;this.classList.add("on");$("spWith").classList.remove("on");draw()});
 
-/* ---- milestones ---- */
-var miles=[
-  ["v1.0","Where it started — "+fmtN(first.lines)+" lines, "+fmtB(first.bytes)+"."],
-  ["v3.9\u2013v4.8","The heavy era: builds balloon to 9\u201314 MB with embedded assets before being slimmed down at v5.5."],
-  ["v20.0","Roughly the midpoint of the run — the app crosses "+fmtN(V[69].lines)+" lines."],
-  ["v38.4","Latest build: "+fmtN(last.lines)+" lines, "+fmtB(last.bytes)+" — "+Math.round(last.lines/first.lines)+"\u00D7 the size of v1.0."]
-];
-document.getElementById("miles").innerHTML=miles.map(function(m){
-  return '<div class="mile"><div class="mv">'+m[0]+'</div><div class="mt">'+m[1]+"</div></div>"}).join("");
+/* ===== milestones ===== */
+var miles=[["v1.0","Where it started \u2014 "+fmtN(first.lines)+" lines, "+fmtB(first.bytes)+"."],
+ ["v3.2\u2013v4.8","The heavy era: six builds balloon to 7\u201314 MB with embedded assets before slimming down at v5.5."],
+ ["v20.0","Roughly the midpoint \u2014 the app crosses "+fmtN(V[69].lines)+" lines."],
+ ["v38.4","Latest: "+fmtN(last.lines)+" lines, "+fmtB(last.bytes)+" \u2014 "+Math.round(last.lines/first.lines)+"\u00D7 the size of v1.0."]];
+$("miles").innerHTML=miles.map(function(m){return '<div class="mile"><div class="mv">'+m[0]+'</div><div class="mt">'+m[1]+"</div></div>"}).join("");
 
-/* ---- table ---- */
-var rowsEl=document.getElementById("rows"),cnt=document.getElementById("cnt"),empty=document.getElementById("empty");
-var q="",sortMode="new";
+/* ===== builds table ===== */
+var rowsEl=$("rows"),cnt=$("cnt"),empty=$("empty"),q="",sortMode="new";
 function delta(i){if(i===0)return null;return V[i].lines-V[i-1].lines}
 function render(){
-  var list=V.map(function(d,i){return{d:d,i:i}});
-  if(q){var Q=q.toLowerCase();list=list.filter(function(r){return r.d.ver.toLowerCase().indexOf(Q)>=0||r.d.seq.indexOf(Q)>=0})}
-  if(sortMode==="new")list.reverse();
-  else if(sortMode==="big")list.sort(function(a,b){return b.d.bytes-a.d.bytes});
-  var html=list.map(function(r){
-    var d=r.d,dl=delta(r.i);
-    var dTxt=dl===null?'<span class="seq">\u2014</span>':(dl>=0?"+":"\u2212")+fmtN(Math.abs(dl));
-    var spike=d.bytes>2097152?' class="spike"':"";
-    var w=Math.max(1,Math.round(d.bytes/maxB*90));
-    var diff=d.prev?'<a href="'+REPO+"/compare/"+d.prev+"..."+d.sha+'" title="What changed vs previous build">diff</a>':"";
-    return "<tr><td><span class='seq'>"+d.seq+"</span> <span class='ver'>"+d.ver+"</span></td>"+
-      "<td class='num'><span class='sizebar' style='width:"+w+"px'></span><span"+spike+">"+fmtB(d.bytes)+"</span></td>"+
-      "<td class='num'>"+fmtN(d.lines)+"</td>"+
-      "<td class='num'>"+dTxt+"</td>"+
-      "<td><span class='acts'><a href='./versions/"+enc(d.file)+"'>open</a>"+
-      "<a href='"+REPO+"/blob/main/versions/"+enc(d.file)+"'>source</a><a href='./versions/"+enc(d.file)+"' download>save</a>"+diff+"</span></td></tr>";
-  }).join("");
-  rowsEl.innerHTML=html;
-  cnt.textContent=list.length+" / "+V.length;
-  empty.style.display=list.length?"none":"block";
-}
-document.getElementById("q").addEventListener("input",function(){q=this.value.trim();render()});
-document.getElementById("sort").addEventListener("change",function(){sortMode=this.value;render()});
+ var list=V.map(function(d,i){return{d:d,i:i}});
+ if(q){var Q=q.toLowerCase();list=list.filter(function(r){return r.d.ver.toLowerCase().indexOf(Q)>=0||r.d.seq.indexOf(Q)>=0})}
+ if(sortMode==="new")list.reverse();else if(sortMode==="big")list.sort(function(a,b){return b.d.bytes-a.d.bytes});
+ rowsEl.innerHTML=list.map(function(r){var d=r.d,dl=delta(r.i);
+  var dTxt=dl===null?'<span class="seq">\u2014</span>':(dl>=0?"+":"\u2212")+fmtN(Math.abs(dl));
+  var sp=d.bytes>SPIKE_LIMIT?' class="spike"':"";
+  var w=Math.max(1,Math.round(d.bytes/maxB*90));
+  var diff=d.prev?'<a href="'+REPO+"/compare/"+d.prev+"..."+d.sha+'">diff</a>':"";
+  return "<tr><td><span class='seq'>"+d.seq+"</span> <span class='ver'>"+d.ver+"</span></td>"+
+   "<td class='num'><span class='sizebar' style='width:"+w+"px'></span><span"+sp+">"+fmtB(d.bytes)+"</span></td>"+
+   "<td class='num'>"+fmtN(d.lines)+"</td><td class='num'>"+dTxt+"</td>"+
+   "<td><span class='acts'><a href='./versions/"+enc(d.file)+"'>open</a>"+
+   "<a href='./versions/"+enc(d.file)+"' download>save</a>"+
+   "<a href='"+REPO+"/blob/main/versions/"+enc(d.file)+"'>source</a>"+diff+"</span></td></tr>"}).join("");
+ cnt.textContent=list.length+" / "+V.length;
+ empty.style.display=list.length?"none":"block";}
+$("q").addEventListener("input",function(){q=this.value.trim();render()});
+$("sort").addEventListener("change",function(){sortMode=this.value;render()});
 render();
 })();
-</script>
-</body>
-</html>
+</script></body></html>
