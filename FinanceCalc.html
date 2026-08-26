@@ -6333,7 +6333,7 @@ AI_TYPES.join(", "),
       });
       /* status shown on the chat badge */
       return true;
-    }catch(e){ dot.style.background="var(--mut)"; return false; }
+    }catch(e){ return false; }
   }
   function financialContext(){
     var t=totals(), sym=state.currency, txs=sortedTx();
@@ -7120,7 +7120,7 @@ AI_TYPES.join(", "),
     }).then(function(ans){
       setAnswer(ans || "No model is ready yet. Chrome 127+ has one built in — otherwise set one up in Settings › Extra › AI mode.");
     }).catch(function(e){
-      setAnswer("Error: "+String(e&&e.message||e).slice(0,120));
+      setAnswer("\u26a0 "+errxLine(e,{source:"chat"}));
     });
   }
 
@@ -7880,7 +7880,7 @@ AI_TYPES.join(", "),
   window.addEventListener("wllm-failed", function(e){
     var sta=document.getElementById("wllmLoadStatus");
     if(sta){ sta.style.display=""; sta.style.color="var(--amber)";
-      sta.textContent="Couldn't start the model: "+String(e.detail||"").slice(0,90); }
+      sta.textContent="Couldn't start the model \u2014 "+errxLine(String(e.detail||"model failed"),{source:"WebLLM"}).slice(0,220); }
     refreshWllmUI();
   });
 
@@ -11477,19 +11477,104 @@ AI_TYPES.join(", "),
      All processing runs in the browser, completely offline.
      ============================================================ */
 
-  function initReceiptScanner(){
-    var camInput=document.getElementById("scanCamInput");
-    if(!camInput) return;
-    camInput.addEventListener("change", function(e){
-      var f=e.target.files&&e.target.files[0]; if(!f) return;
-      e.target.value="";
-      var reader=new FileReader();
-      reader.onload=function(){ openScanSheet(f, reader.result); };
-      reader.readAsDataURL(f);
+  function scanFilesToUrls(files, cb){
+    var list=Array.prototype.slice.call(files||[]).filter(function(f){ return f && /^image\//.test(f.type||"image/*"); });
+    if(!list.length){ cb([]); return; }
+    var urls=new Array(list.length), left=list.length;
+    list.forEach(function(f,i){
+      var r=new FileReader();
+      r.onload=function(){ urls[i]=r.result; if(--left===0) cb(urls); };
+      r.onerror=function(){ urls[i]=null; if(--left===0) cb(urls.filter(Boolean)); };
+      r.readAsDataURL(f);
     });
   }
+  function scanGalleryInput(){
+    var g=document.getElementById("scanPickInput");
+    if(!g){
+      g=document.createElement("input");
+      g.type="file"; g.id="scanPickInput"; g.accept="image/*"; g.multiple=true; g.style.display="none";
+      document.body.appendChild(g);
+    }
+    return g;
+  }
+  function initReceiptScanner(){
+    var camInput=document.getElementById("scanCamInput");
+    if(camInput) camInput.addEventListener("change", function(e){
+      scanFilesToUrls(e.target.files, function(urls){ e.target.value=""; if(urls.length) openScanSheet(null, urls); });
+    });
+  }
+  function scanLiveCamera(done){
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ done(null, new Error("Live camera is not available in this browser.")); return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false}).then(function(stream){
+      var ov=document.createElement("div"); ov.className="mdl-ov"; ov.id="camOv";
+      ov.innerHTML='<div class="sheet scan-cam"><div class="sheet-hd" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 0">'
+        +'<h3 style="margin:0">📸 Camera</h3><button class="x-btn" id="camX">✕</button></div>'
+        +'<div class="sheet-bd" style="padding:12px 16px"><video id="camVid" autoplay playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh;object-fit:cover"></video>'
+        +'<div id="camThumbs" class="sc-thumbs" style="margin-top:10px"></div></div>'
+        +'<div class="sheet-ft" style="display:flex;gap:8px;justify-content:flex-end;padding:0 16px 14px">'
+        +'<button class="btn sm" id="camCancel">Cancel</button>'
+        +'<button class="btn sm" id="camSnap">📷 Snap</button>'
+        +'<button class="btn sm solid" id="camDone" disabled>Use 0 photos</button></div></div>';
+      document.body.appendChild(ov);
+      var vid=document.getElementById("camVid"); vid.srcObject=stream;
+      var shots=[];
+      var stopAll=function(){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} ov.remove(); };
+      var refresh=function(){
+        var d=document.getElementById("camDone");
+        d.disabled=!shots.length; d.textContent="Use "+shots.length+" photo"+(shots.length===1?"":"s");
+        document.getElementById("camThumbs").innerHTML=shots.map(function(u,i){
+          return '<div class="sc-th"><img src="'+u+'"><button data-i="'+i+'" class="sc-th-x">✕</button></div>';
+        }).join("");
+      };
+      document.getElementById("camThumbs").addEventListener("click", function(e){
+        var b=e.target.closest(".sc-th-x"); if(!b) return;
+        shots.splice(+b.getAttribute("data-i"),1); refresh();
+      });
+      document.getElementById("camSnap").onclick=function(){
+        try{
+          var cv=document.createElement("canvas");
+          cv.width=vid.videoWidth||1280; cv.height=vid.videoHeight||720;
+          cv.getContext("2d").drawImage(vid,0,0,cv.width,cv.height);
+          shots.push(cv.toDataURL("image/jpeg",0.9)); refresh();
+          if(navigator.vibrate) try{ navigator.vibrate(18); }catch(e){}
+        }catch(err){ flashSaved("snap failed: "+errxTranslate(err,{}).title); }
+      };
+      var bail=function(){ stopAll(); done(null,null); };
+      document.getElementById("camX").onclick=bail;
+      document.getElementById("camCancel").onclick=bail;
+      document.getElementById("camDone").onclick=function(){ var s=shots.slice(); stopAll(); done(s.length?s:null, null); };
+    }).catch(function(err){ done(null, err); });
+  }
   function tapScanReceipt(){
-    var cam=document.getElementById("scanCamInput"); if(cam) cam.click();
+    var ov=document.createElement("div"); ov.className="mdl-ov"; ov.id="scSrcOv";
+    ov.innerHTML='<div class="mdl" style="max-width:320px"><h3 style="margin:0 0 4px">📷 Scan receipt</h3>'
+      +'<p class="hint" style="margin:0 0 12px">You can pick several photos — long receipts or multiple receipts are fine.</p>'
+      +'<div style="display:grid;gap:8px">'
+      +'<button class="btn" id="scSrcCam">📸 Take photo (camera)</button>'
+      +'<button class="btn" id="scSrcPick">🖼 Choose photos</button>'
+      +'<button class="btn ghost" id="scSrcX">Cancel</button></div></div>';
+    document.body.appendChild(ov);
+    var close=function(){ ov.remove(); };
+    ov.addEventListener("click", function(e){ if(e.target===ov) close(); });
+    document.getElementById("scSrcX").onclick=close;
+    document.getElementById("scSrcPick").onclick=function(){
+      close();
+      var g=scanGalleryInput();
+      g.onchange=function(e){ scanFilesToUrls(e.target.files, function(urls){ g.value=""; if(urls.length) openScanSheet(null, urls); }); };
+      g.click();
+    };
+    document.getElementById("scSrcCam").onclick=function(){
+      close();
+      scanLiveCamera(function(urls, err){
+        if(urls && urls.length){ openScanSheet(null, urls); return; }
+        if(err){
+          var t=errxTranslate(err,{source:"Camera"});
+          investAutoNote("Camera", t);
+          flashSaved("camera: "+t.title+" — using photo picker");
+          var cam=document.getElementById("scanCamInput"); if(cam) cam.click();
+        }
+      });
+    };
   }
 
   // ---- preprocessing: boost contrast, greyscale → helps OCR ----
@@ -15067,6 +15152,1273 @@ AI_TYPES.join(", "),
     initSync();
     initPWA();
   }
+
+  /* ============================================================
+     ERRX — ERROR TRANSLATION ENGINE
+     Every error that reaches the user gets translated into a plain
+     sentence plus a "what to do" line. Three layers:
+       1. Catalog — every HTTP status, every documented error code
+          for OpenAI / Claude / Gemini / OpenRouter / Grok, every
+          DOMException name, WebGPU/WebLLM, storage and file errors.
+       2. Pattern heuristics — for the one-in-a-million error the
+          catalog has never seen, keyword scoring still produces a
+          clean translation instead of raw goo.
+       3. De-mojibake — strings like "/u/23/gsgd/m9" or "\u00e2\u0080\u0099"
+          (escaped unicode, double-encoded UTF-8, control characters)
+          are decoded or, when unrecoverable, replaced with a note —
+          the raw original is always kept in the details drawer.
+     ============================================================ */
+
+  var ERRX_HTTP={
+    100:["Continue","The server said 'keep going' mid-request and then nothing followed.","Retry — this is a transient protocol hiccup."],
+    101:["Switching protocols","The server tried to switch protocols mid-conversation.","Retry; if it repeats, the endpoint address is wrong."],
+    102:["Processing","The server is still working and hasn't answered yet.","Wait and retry."],
+    103:["Early hints","Only a preliminary answer arrived.","Retry."],
+    204:["No content","The request worked but the server sent back an empty answer.","Usually fine — but if data was expected, the endpoint may be wrong."],
+    206:["Partial content","Only part of the answer arrived.","Retry — the connection was likely interrupted."],
+    301:["Moved permanently","The address this app is calling has permanently moved.","The app needs updating to the new address — report this."],
+    302:["Found (redirect)","The server redirected the request somewhere else.","APIs shouldn't redirect — the base address is probably wrong."],
+    304:["Not modified","The server says nothing changed since last time.","Harmless — cached data is being reused."],
+    307:["Temporary redirect","The server bounced the request to another address temporarily.","Retry; if it persists the address is stale."],
+    308:["Permanent redirect","The address has permanently changed.","The app's endpoint needs updating."],
+    400:["Bad request","The server understood nothing was wrong with the connection — it rejected what was SENT. Usually a malformed setting, an impossible parameter, or a model that doesn't accept images.","Check the model name and settings; try 'Find models' to pick a valid one."],
+    401:["Unauthorized","The API key was rejected. It's missing, mistyped, revoked, or belongs to a different service.","Re-paste the key whole (no spaces), make sure it matches the engine selected, and check it hasn't been deleted on the provider's dashboard."],
+    402:["Payment required","The account behind this key has no credit or an unpaid balance.","Add billing/credits on the provider's site — the key itself is fine."],
+    403:["Forbidden","The key is valid but not ALLOWED to do this — wrong permissions, a region block, or a referrer restriction on the key.","On the provider's dashboard, remove HTTP-referrer/IP restrictions from the key or create an unrestricted one."],
+    404:["Not found","The thing asked for doesn't exist — almost always a model name this key can't see.","Tap 'Find models' and pick from the real list instead of typing a name."],
+    405:["Method not allowed","The request used the wrong HTTP method for this address.","App-side bug — report it with these details."],
+    406:["Not acceptable","The server can't answer in the format requested.","App-side bug — report it."],
+    407:["Proxy auth required","A proxy between you and the internet wants its own login.","You're behind a corporate/school proxy — sign into it or use another network."],
+    408:["Request timeout","The server gave up waiting for the request to finish arriving.","Your connection is slow or dropping — retry on better internet."],
+    409:["Conflict","The request clashed with the server's current state.","Retry once; if it persists, report it."],
+    410:["Gone","This endpoint used to exist and has been retired.","The app needs updating for the provider's new API — report this."],
+    411:["Length required","The server demanded a length header the request didn't send.","App-side bug — report it."],
+    412:["Precondition failed","A condition attached to the request wasn't met.","Retry."],
+    413:["Payload too large","What was sent is bigger than the server accepts — usually a photo that's too big.","Lower Photo quality in Settings, or crop the image and retry."],
+    414:["URL too long","The request address itself was too long.","App-side bug — report it."],
+    415:["Unsupported media type","The server doesn't accept this file format.","Use a JPG or PNG photo."],
+    416:["Range not satisfiable","A partial-download request asked for a range that doesn't exist.","Retry from scratch."],
+    417:["Expectation failed","A protocol expectation wasn't met.","Retry."],
+    418:["I'm a teapot","The server is refusing, jokingly. Some providers use this for blocked traffic.","You may be behind a filter or bot-block — try another network."],
+    421:["Misdirected request","The request reached a server that doesn't serve this address.","Retry; if persistent, DNS or proxy issues on your network."],
+    422:["Unprocessable","The request was well-formed but the content doesn't make sense to the server — an invalid parameter value.","Check the model name and any custom settings."],
+    423:["Locked","The resource is locked.","Wait and retry."],
+    424:["Failed dependency","Something this request depended on failed first.","Retry."],
+    425:["Too early","The server refused to process a request that arrived too early.","Retry."],
+    426:["Upgrade required","The server wants a newer protocol.","Update your browser."],
+    428:["Precondition required","The server requires a condition header that wasn't sent.","App-side bug — report it."],
+    429:["Rate limited","Too many requests too fast, or the account's quota/credits are used up. The key works — the account is throttled.","Wait a minute and retry. If it keeps happening, check usage limits and billing on the provider's dashboard."],
+    431:["Headers too large","The request headers were too big — sometimes a corrupted, enormous key.","Re-paste the key; it may have extra junk in it."],
+    451:["Unavailable for legal reasons","The provider blocks this content or region for legal reasons.","This service isn't available where you are — a different provider may work."],
+    500:["Server error","The provider's own server crashed handling this. Nothing on your side caused it.","Wait a moment and retry — their problem, not yours."],
+    501:["Not implemented","The server doesn't support this operation.","The app may be calling an outdated API — report it."],
+    502:["Bad gateway","A server in front of the provider got a garbage answer from behind it. Provider-side outage or blip.","Retry in a minute; check the provider's status page if it persists."],
+    503:["Service unavailable","The provider is overloaded or down for maintenance right now.","Wait and retry — this passes on its own."],
+    504:["Gateway timeout","A server in front of the provider waited too long for an answer.","Retry; the provider is slow right now."],
+    505:["HTTP version not supported","Protocol mismatch.","Update your browser."],
+    507:["Insufficient storage","The server is out of space.","Provider-side — retry later."],
+    508:["Loop detected","The server got stuck in a loop.","Provider-side — retry later."],
+    511:["Network auth required","The network you're on (hotel/airport wifi) wants a sign-in first.","Open any normal website, complete the wifi sign-in page, then retry."],
+    529:["Overloaded","The provider is at capacity (Anthropic uses this).","Wait ~30 seconds and retry."]
+  };
+
+  /* Provider-specific error CODES (the machine-readable strings in error bodies).
+     Keyed lowercase; matched against the code, type and message. */
+  var ERRX_CODES=[
+    /* — OpenAI / OpenRouter / xAI (same wire format) — */
+    ["invalid_api_key","The key itself is malformed or revoked.","Re-paste it whole from the provider's dashboard."],
+    ["incorrect_api_key","This key isn't recognised at all — often a key for a DIFFERENT provider pasted into the wrong engine.","Check the key's prefix matches the engine (sk-… OpenAI, sk-or-v1-… OpenRouter, sk-ant-… Claude, AIza… Gemini, xai-… Grok)."],
+    ["insufficient_quota","The account has run out of credits — the key is fine.","Top up billing on the provider's dashboard."],
+    ["billing_hard_limit_reached","The account hit its own spending cap.","Raise the limit in the provider's billing settings."],
+    ["rate_limit_exceeded","Requests are arriving faster than this account tier allows.","Wait a minute and retry."],
+    ["model_not_found","The model name doesn't exist for this key.","Tap 'Find models' and pick from the real list."],
+    ["context_length_exceeded","Too much was sent for this model to read in one go — usually an image too large or a prompt too long.","Lower photo quality, or use a model with a bigger context."],
+    ["content_policy_violation","The provider's safety filter refused this content.","Nothing is broken — this content just can't be processed by that provider."],
+    ["invalid_request_error","The request was structurally wrong for this provider.","Check the model name; if it persists, report the details."],
+    ["tokens_exceeded","The response ran past the model's output limit.","Retry — usually transient."],
+    ["engine_overloaded","The model is at capacity.","Retry in a minute."],
+    ["server_error","The provider's server failed internally.","Their side — retry shortly."],
+    ["account_deactivated","This account was deactivated by the provider.","Sign into the provider's dashboard and check the account status."],
+    ["invalid_organization","The key belongs to an organisation that can't be used here.","Generate a personal key on the provider's dashboard."],
+    ["unsupported_country_region_territory","The provider doesn't serve your region.","Use a provider available in your region (OpenRouter often is)."],
+    /* — Anthropic (Claude) — */
+    ["authentication_error","Claude rejected the key.","Re-paste an sk-ant-… key from console.anthropic.com."],
+    ["permission_error","This Claude key isn't allowed to use that model or feature.","Use a model the key has access to — tap 'Find models'."],
+    ["not_found_error","Claude says that model or endpoint doesn't exist.","Pick a model from 'Find models'."],
+    ["request_too_large","The request (usually the photo) is bigger than Claude accepts.","Lower photo quality in Settings and retry."],
+    ["rate_limit_error","Claude is throttling this key for sending too much too fast.","Wait a minute and retry."],
+    ["api_error","Claude's own servers had an internal problem.","Their side — retry shortly."],
+    ["overloaded_error","Claude is at capacity right now.","Wait ~30 seconds and retry."],
+    /* — Google Gemini (gRPC-style statuses) — */
+    ["api_key_invalid","Gemini says the key is invalid — wrong key, or the Generative Language API isn't enabled on the Google project.","In Google AI Studio, create a fresh key and make sure the Generative Language API is enabled."],
+    ["api key not valid","Gemini rejected the key.","Get a fresh AIza… key from aistudio.google.com/apikey."],
+    ["invalid_argument","Gemini couldn't understand part of the request — often a model that doesn't take images, or a malformed setting.","Tap 'Find models' and pick a vision-capable Gemini model."],
+    ["failed_precondition","Gemini's free tier isn't available in your region, or billing isn't set up.","Enable billing on the Google Cloud project, or use another provider."],
+    ["permission_denied","The key doesn't have permission — API not enabled or key restricted.","In Google Cloud, enable the Generative Language API and remove key restrictions."],
+    ["resource_exhausted","Gemini's quota for this key is used up.","Wait for the quota window to reset, or enable billing for higher limits."],
+    ["deadline_exceeded","Gemini took too long and gave up.","Retry — usually a big image or a slow moment on their side."],
+    ["unavailable","Gemini's service is temporarily down or overloaded.","Retry in a minute."],
+    ["recitation","Gemini refused because the answer would reproduce copyrighted text.","Rephrase, or use a different engine for this image."],
+    ["safety","Gemini's safety filter blocked this content.","Nothing is broken — that provider won't process this particular content."],
+    ["blocked","The provider's filter blocked the request or the answer.","Try a different engine for this item."],
+    /* — OpenRouter specifics — */
+    ["no allowed providers","OpenRouter couldn't find any backend willing to serve this model with your settings.","Pick a different model, or check your OpenRouter privacy/provider settings."],
+    ["insufficient credits","The OpenRouter account is out of credits.","Top up at openrouter.ai/credits."],
+    ["moderation","OpenRouter's moderation layer refused the content.","Try a different model or provider."]
+  ];
+
+  var ERRX_DOM={
+    AbortError:["The operation was cancelled before it finished.","If you didn't cancel it, a timeout fired — retry on a steadier connection."],
+    ConstraintError:["A storage rule was violated while saving.","Retry; if it persists, export a backup and report it."],
+    DataCloneError:["Data couldn't be copied between parts of the browser.","Retry; report if persistent."],
+    DataError:["The data passed to storage was invalid.","Report this with the details below."],
+    EncodingError:["A file or image couldn't be decoded — it's damaged or an unsupported format.","Re-save or re-export the file and try again."],
+    HierarchyRequestError:["The page tried to build its interface in an impossible way.","Reload the page; report if it repeats."],
+    IndexSizeError:["An internal measurement went out of range.","Reload; report if it repeats."],
+    InvalidCharacterError:["A name contained characters the browser forbids.","Report this."],
+    InvalidStateError:["Something was used before it was ready or after it was closed — a camera, a database, or a reader.","Retry; if it persists, reload the page."],
+    NetworkError:["The browser hit a network failure mid-operation.","Check the connection and retry."],
+    NotAllowedError:["The browser blocked this — permission was denied (camera, notifications, storage) or it needed a user tap first.","Check the site permissions in the browser's address bar and allow what's needed."],
+    NotFoundError:["The browser couldn't find what was asked for — a device (camera) or a stored record.","If this was the camera: none is connected or it's blocked. Otherwise retry."],
+    NotReadableError:["The device (usually the camera) exists but couldn't be read — another app may be using it.","Close other apps using the camera and retry."],
+    NotSupportedError:["This browser doesn't support the feature that was just used.","Try Chrome or Edge on desktop — or use the fallback the app offers."],
+    OperationError:["The operation failed for a device-specific reason.","Retry; report if persistent."],
+    QuotaExceededError:["The browser's storage for this site is FULL. Nothing else will save until space is freed.","Download a backup now, then reduce photo quality or delete old photos to free space."],
+    ReadOnlyError:["Storage was opened read-only and a write was attempted.","Reload the page and retry."],
+    SecurityError:["The browser blocked this for security — usually because the file is opened from disk (file://) or across origins.","Serve the file over http(s) instead of double-clicking it, or use the in-app fallback."],
+    SyntaxError:["Something that should have been structured data wasn't.","Retry; if a provider sent this, their answer was malformed."],
+    TimeoutError:["The operation ran out of time.","Retry on a faster connection."],
+    TransactionInactiveError:["A storage transaction was used after it ended.","Reload; report if it repeats."],
+    UnknownError:["The browser failed for an unknown internal reason — often disk or profile trouble.","Restart the browser; if it persists, try another browser and export a backup first."],
+    VersionError:["The stored database is from a NEWER version of this app than the file you opened.","Open the newest version of the app file."]
+  };
+
+  /* Pattern heuristics — the safety net for errors nobody has ever seen. Ordered;
+     first match wins. Each entry: [regex, title, plain, action] */
+  var ERRX_PATTERNS=[
+    [/failed to fetch|load failed|networkerror|network error|fetch failed|err_internet|err_name_not_resolved|err_connection/i,
+      "Request never left the browser","The call was blocked before it reached any server — you're offline, the address couldn't be found, or CORS/security rules stopped it. The API key was never even read.",
+      "Check the internet connection. If the file is opened straight from disk (file://), serve it over http — Gemini usually still works from disk."],
+    [/cors|cross-origin|access-control-allow/i,
+      "Blocked by cross-origin rules","The browser refused to let this page talk to that server (CORS). Common when the file is opened from disk.",
+      "Host the file over http(s), or use a provider that allows browser calls (Gemini, OpenRouter)."],
+    [/content security policy|csp|refused to load|refused to connect/i,
+      "Blocked by security policy","The environment this page runs in forbids loading that resource (Content-Security-Policy).",
+      "Open the file directly in a normal browser tab instead of an embedded viewer."],
+    [/certificate|ssl|tls|cert_/i,
+      "Secure connection failed","The encrypted connection to the server couldn't be established — clock skew, a proxy, or a certificate problem.",
+      "Check the device's date/time is correct and try another network."],
+    [/timeout|timed out|deadline/i,
+      "Took too long","The operation ran past its time limit and was stopped.",
+      "Retry — a slow connection or an overloaded server. Smaller photos help too."],
+    [/quota|storage full|no space|disk full|exceeded the quota/i,
+      "Out of storage space","The browser's storage for this site is full.",
+      "Download a backup, then free space: lower photo quality or delete old photos."],
+    [/out of memory|oom|allocation failed|memory/i,
+      "Ran out of memory","The browser ran out of working memory — usually a model or image too big for this device.",
+      "Close other tabs and retry. For the on-device model, this device may not have enough free RAM (~4GB needed)."],
+    [/webgpu|gpu adapter|no available adapters|shader|device lost/i,
+      "Graphics (WebGPU) problem","The on-device model runs on the graphics chip through WebGPU, and that failed — unsupported browser, blocked GPU, or the GPU was reset.",
+      "Use Chrome or Edge (recent, desktop). On some machines enabling 'Use graphics acceleration' in browser settings fixes it."],
+    [/unauthoriz|api key|apikey|invalid key|credential|forbidden|401|403/i,
+      "Key rejected","The service refused the API key.",
+      "Re-paste the key whole and make sure its prefix matches the engine selected."],
+    [/rate limit|too many requests|429|quota exceeded/i,
+      "Rate limited","Too many requests, or the account's allowance is used up.",
+      "Wait a minute and retry; check usage on the provider's dashboard."],
+    [/model.*(not found|does not exist|unknown|unavailable)|no such model/i,
+      "Model not found","That model name doesn't exist for this key.",
+      "Tap 'Find models' and pick from the real list."],
+    [/json|unexpected token|parse|malformed/i,
+      "Answer couldn't be read","The reply arrived but wasn't in the structured format expected — the provider sent prose or a truncated answer.",
+      "Retry once; if it persists, try a different model."],
+    [/permission|denied|not allowed/i,
+      "Permission denied","The browser or service refused permission for this action.",
+      "Check browser site permissions (camera, storage) or the key's restrictions."],
+    [/abort|cancell?ed/i,
+      "Cancelled","The operation was stopped before finishing.",
+      "Retry if you didn't cancel it yourself."],
+    [/safety|blocked|moderation|policy/i,
+      "Blocked by content filter","A safety/moderation layer refused to process this content.",
+      "Nothing is broken — try a different engine for this item."],
+    [/offline|no internet|connection (lost|refused|reset)/i,
+      "No connection","The device appears to be offline or the connection dropped mid-request.",
+      "Reconnect and retry — nothing was lost."]
+  ];
+
+  /* ---- de-mojibake: decode escaped/garbled strings ---- */
+  function errxDemojibake(s){
+    s=String(s==null?"":s);
+    var original=s, garbled=false;
+    try{
+      /* literal \uXXXX and \xXX escapes that leaked through as text */
+      if(/\\u[0-9a-fA-F]{4}/.test(s)) s=s.replace(/\\u([0-9a-fA-F]{4})/g, function(_,h){ return String.fromCharCode(parseInt(h,16)); });
+      if(/\\x[0-9a-fA-F]{2}/.test(s)) s=s.replace(/\\x([0-9a-fA-F]{2})/g, function(_,h){ return String.fromCharCode(parseInt(h,16)); });
+      /* /u/1234-style broken escapes (slash instead of backslash) */
+      s=s.replace(/\/u\/?([0-9a-fA-F]{4})(?![0-9a-zA-Z])/g, function(_,h){ var c=parseInt(h,16); return (c>=32&&c<65534)?String.fromCharCode(c):""; });
+      /* percent-encoded runs */
+      if(/%[0-9a-fA-F]{2}/.test(s)){ try{ var d=decodeURIComponent(s); if(d && d.length<=s.length) s=d; }catch(e){} }
+      /* HTML entities */
+      if(/&[a-z#0-9]+;/i.test(s)){ var el=document.createElement("textarea"); el.innerHTML=s; s=el.value; }
+      /* double-encoded UTF-8 (Ã©, â€™ …) */
+      if(/[\u00c2-\u00c3\u00e2][\u0080-\u00bf]/.test(s)){ try{ var fixed=decodeURIComponent(escape(s)); if(fixed) s=fixed; }catch(e){} }
+      /* control chars + replacement chars */
+      s=s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\uFFFD]/g,"");
+      s=s.replace(/\s{3,}/g," ").trim();
+      /* still gibberish? measure: share of chars outside normal prose */
+      var meat=s.replace(/[A-Za-z0-9\s.,:;!?'"()\-–—/%$€£+&_=\[\]{}@#<>|\\^~`*\u0600-\u06FF\u00C0-\u024F]/g,"");
+      if(s.length>6 && meat.length/s.length>0.35){ garbled=true; }
+      /* pure path-shaped noise like /u/23/gsgd/m9 with no words */
+      if(/^[\/\w\-\.]+$/.test(s) && !/[aeiou]{1}[a-z]{2,}/i.test(s.replace(/[^a-z]/gi," ")) && (s.match(/\//g)||[]).length>=2) garbled=true;
+    }catch(e){ /* never let the cleaner itself throw */ }
+    if(!s) garbled=true;
+    return {text: garbled ? "(garbled text — the raw original is kept below)" : s, garbled:garbled, raw:original};
+  }
+
+  /* ---- the translator ----
+     errxTranslate(err, ctx) -> {title, plain, action, source, status, code, raw, garbled}
+     Accepts an Error, a string, a Response-shaped {status}, or anything. */
+  function errxTranslate(err, ctx){
+    ctx=ctx||{};
+    var raw = (err && err.stack && err.message) ? String(err.message)
+            : (typeof err==="string") ? err
+            : (err && err.message) ? String(err.message)
+            : (function(){ try{ return JSON.stringify(err); }catch(e){ return String(err); } })();
+    var clean=errxDemojibake(raw);
+    var msg=clean.text, low=(raw+" "+msg).toLowerCase();
+    var out={ title:"Something went wrong", plain:msg, action:"Retry; if it keeps happening, use Investigate below.",
+              source:ctx.source||"", status:null, code:"", raw:raw, garbled:clean.garbled };
+
+    /* DOMException name wins first — it's the most precise signal */
+    var domName=(err && err.name && ERRX_DOM[err.name]) ? err.name : null;
+    if(!domName){ var nm=low.match(/\b([a-z]+error)\b/i); if(nm){ var cand=nm[1].replace(/^(.)/,function(c){return c.toUpperCase();}); if(ERRX_DOM[cand]) domName=cand; } }
+    if(domName){
+      out.title=domName.replace(/([A-Z])/g," $1").trim();
+      out.plain=ERRX_DOM[domName][0]; out.action=ERRX_DOM[domName][1]; out.code=domName;
+      if(!clean.garbled && msg && msg.length<200 && msg.toLowerCase()!==domName.toLowerCase()) out.plain+=" ("+msg+")";
+      return out;
+    }
+    /* HTTP status anywhere in it */
+    var st=(err&&typeof err.status==="number")?err.status:null;
+    if(st===null){ var sm=low.match(/\b(?:http\s*)?([1-5][0-9]{2})\b(?=[:\s]|$)/); if(sm) st=+sm[1]; }
+    if(st!==null && ERRX_HTTP[st]){
+      var h=ERRX_HTTP[st];
+      out.status=st; out.title=h[0]+" ("+st+")"; out.plain=h[1]; out.action=h[2];
+      /* layer a provider code on top if one is present */
+      for(var i=0;i<ERRX_CODES.length;i++){
+        if(low.indexOf(ERRX_CODES[i][0])>=0){ out.code=ERRX_CODES[i][0]; out.plain=ERRX_CODES[i][1]; out.action=ERRX_CODES[i][2]; break; }
+      }
+      return out;
+    }
+    /* provider code without a status */
+    for(var j=0;j<ERRX_CODES.length;j++){
+      if(low.indexOf(ERRX_CODES[j][0])>=0){
+        out.code=ERRX_CODES[j][0];
+        out.title=ERRX_CODES[j][0].replace(/_/g," ").replace(/^./,function(c){return c.toUpperCase();});
+        out.plain=ERRX_CODES[j][1]; out.action=ERRX_CODES[j][2]; return out;
+      }
+    }
+    /* heuristic patterns — the one-in-a-million net */
+    for(var k=0;k<ERRX_PATTERNS.length;k++){
+      if(ERRX_PATTERNS[k][0].test(low)){
+        out.title=ERRX_PATTERNS[k][1]; out.plain=ERRX_PATTERNS[k][2]; out.action=ERRX_PATTERNS[k][3]; return out;
+      }
+    }
+    /* nothing matched: compose the best generic translation we can */
+    if(clean.garbled){
+      out.title="Unreadable error";
+      out.plain="The error text itself arrived garbled — this usually means a truncated or badly-encoded reply from a server, or a crash mid-message.";
+      out.action="Retry once. The raw bytes are kept below for reporting.";
+    } else {
+      out.plain=msg.slice(0,300);
+      out.title="Unrecognised error";
+      out.action="Retry; if it repeats, tap Investigate so it's logged with full details.";
+    }
+    return out;
+  }
+
+  /* One-line rendering helper for status rows */
+  function errxLine(err, ctx){ var t=errxTranslate(err,ctx); return t.title+" — "+t.plain; }
+
+  /* Full error card HTML (used by AEP and Investigation) */
+  function errxCardHtml(t, opts){
+    opts=opts||{};
+    return '<div class="errx">'
+      +'<div class="errx-t">⛔ '+esc(t.title)+(t.source?' <span class="errx-src">'+esc(t.source)+'</span>':'')+'</div>'
+      +'<div class="errx-p">'+esc(t.plain)+'</div>'
+      +'<div class="errx-a">→ '+esc(t.action)+'</div>'
+      +'<details class="errx-d"><summary>Raw details</summary><pre>'+esc(String(t.raw).slice(0,1200))+'</pre></details>'
+      +(opts.buttons!==false
+        ? '<div class="errx-b">'
+          +(opts.retryId?'<button class="btn ghost sm" id="'+opts.retryId+'">↻ Retry</button>':'')
+          +'<button class="btn ghost sm errx-inv" data-t="'+esc(encodeURIComponent(JSON.stringify({title:t.title,plain:t.plain,action:t.action,raw:String(t.raw).slice(0,800),source:t.source})))+'">🕵️ Investigate</button>'
+          +'</div>'
+        : '')
+      +'</div>';
+  }
+
+
+  /* ============================================================
+     AEP — ADVANCED ESTIMATION PROGRESS
+     One live bar for every long operation: percentage, a real ETA,
+     the current phase, and a running commentary in the voice of
+     whichever engine is doing the work.
+
+     ETA is LEARNED: every completed phase's duration is stored
+     (EWMA per task+phase in localStorage), so the second scan
+     predicts from how long the first one actually took on THIS
+     device and THIS connection. First-ever run uses sane defaults.
+
+     Phrases are generated combinatorially per engine per phase:
+     each engine has its own openers, verbs, objects and sign-offs,
+     giving every engine tens of thousands of distinct lines per
+     phase — a different stream every time, no repeats within a
+     session (co-prime stride walk over the combination space).
+     ============================================================ */
+
+  var AEP_TKEY="mymoney_aep_times_v1";
+  var aepTimes={};
+  try{ var _r=localStorage.getItem(AEP_TKEY); if(_r) aepTimes=JSON.parse(_r)||{}; }catch(e){}
+  function aepSaveTimes(){ try{ localStorage.setItem(AEP_TKEY, JSON.stringify(aepTimes)); }catch(e){} }
+  function aepLearn(task, phase, ms){
+    if(!(ms>50&&ms<36e5)) return;
+    var k=task+"::"+phase, old=aepTimes[k];
+    aepTimes[k]= old ? Math.round(old*0.7+ms*0.3) : Math.round(ms);
+    aepSaveTimes();
+  }
+  function aepEst(task, phase, fallback){ return aepTimes[task+"::"+phase] || fallback || 3000; }
+
+  /* ---- engine voices ---- */
+  var AEP_VOICES={
+    claude:{ name:"Claude", ic:"✴️",
+      openers:["Alright,","Let me see —","Carefully now:","One moment,","Thinking this through:","Here we go —","Steadily,","With care,","Right, so","Taking a proper look:","Methodically,","Hmm,","Considering everything,","Being thorough:","Quietly working:","Let's be precise —"],
+      tails:["nothing gets skipped","every detail counts","I'd rather be right than fast","double-checking as I go","precision over speed","this deserves attention","no assumptions made","reading it like a person would","context matters here","being honest about uncertainty","the numbers will thank us","carefully does it"]},
+    gemini:{ name:"Gemini", ic:"✦",
+      openers:["Ooh —","Sparks flying:","Multi-tasking:","Zipping along —","Constellations aligning:","Bright idea:","In parallel:","Shimmering through:","Quick as light —","Twin-engines on:","Streaming in:","Colourfully put:","Fresh angle:","Beaming:","Signal locked:","Prismatic pass:"],
+      tails:["at the speed of thought","in glorious parallel","all channels open","with a little sparkle","across every modality","faster than you'd think","pixel by pixel","and loving it","in one smooth stream","with twin minds","catching every glint","refracting the details"]},
+    gpt:{ name:"GPT", ic:"◇",
+      openers:["Step one:","Systematically,","In order:","Processing:","Token by token:","As specified:","Executing:","Per the plan:","Structured pass:","Deterministically,","Batch running:","Cleanly,","On schedule:","Sequence engaged:","Precisely:","Checklist says:"],
+      tails:["exactly as requested","no step skipped","by the book","within parameters","as structured output","fully validated","in canonical order","with a tidy schema","logged and verified","per specification","end to end","without drama"]},
+    grok:{ name:"Grok", ic:"𝕏",
+      openers:["Hold my coffee —","Pfft, easy:","Buckle up:","No sweat —","Plot twist:","Casually","Watch this:","Zero chill:","Full send:","Spicy bit:","Real talk:","Meanwhile,","Turbo mode:","Not to brag, but","Cracking on:","Vibes are good:"],
+      tails:["what could go wrong?","this is the fun part","receipts don't scare me","allegedly very fast","physics permitting","don't tell the other AIs","like it's nothing","with maximum swagger","and a little chaos","because why not","speedrun any%","trust the process"]},
+    openrouter:{ name:"OpenRouter", ic:"⇄",
+      openers:["Routing:","Switchboard live —","Traffic flowing:","Best path found:","Relay engaged:","Junction cleared:","Signals green:","Dispatching:","Through the exchange:","Network humming:","Lanes open:","Forwarding:","Handshake done:","Route optimised:","Carrier locked:","Packets away:"],
+      tails:["via the fastest lane","one key, many minds","load-balanced nicely","across the backbone","no tolls today","with graceful failover","through clean pipes","upstream looks healthy","latency behaving","provider negotiated","end-to-end routed","delivery guaranteed-ish"]},
+    llama:{ name:"Llama (on device)", ic:"🦙",
+      openers:["Cosy and local:","No cloud needed —","Right here on-device:","Homegrown compute:","Privately,","In your pocket:","Offline-friendly:","Chewing steadily:","Warm silicon:","On our own hardware:","Self-sufficiently,","Grazing through:","Local-first:","Snug in memory:","Device-side:","Independently:"],
+      tails:["nothing leaves this device","your GPU is doing great","no internet required after this","free of charge, forever","just you and the silicon","weights nice and warm","fully private","at local speed","cached for next time","battery permitting","quietly capable","made it ourselves"]},
+    chrome:{ name:"Chrome AI", ic:"◐",
+      openers:["Built-in engine:","Natively,","Browser-side:","On-board model:","Quietly integrated:","Straight from Chrome:","No download needed:","In-browser:","System model:","Locally provisioned:","First-party pass:","Embedded engine:","Direct path:","Zero-setup:","Inline compute:","From the toolbox:"],
+      tails:["already on this machine","no keys, no cloud","courtesy of the browser","native and nimble","zero configuration","instantly available","fully offline","the quiet workhorse","built right in","no strings attached","system-optimised","ready out of the box"]},
+    ocr:{ name:"Local reader", ic:"🔎",
+      openers:["Squinting at pixels:","Letter by letter:","Tracing glyphs:","Contrast up —","Edge-finding:","Line by line:","Scanning rows:","Character hunt:","Grid sweep:","Threshold set:","Sharpening first:","Following the ink:","Down the columns:","Baseline found:","Reading raster:","Decoding print:"],
+      tails:["no AI, no internet","pure pattern matching","old-school and proud","every pixel inspected","thermal paper permitting","crinkles and all","faded ink is my enemy","right on this device","free and instant","the honest way","one glyph at a time","nothing sent anywhere"]},
+    app:{ name:"My Money", ic:"◎",
+      openers:["Working:","On it —","Processing:","In progress:","Handling it:","Running:","Busy:","Underway:","Executing:","Moving along:","Ticking over:","Almost there:","Setting up:","Preparing:","Continuing:","Finalising:"],
+      tails:["hang tight","won't be long","everything is local","your data is safe","step by step","as fast as this device allows","progress is real","no shortcuts taken","thanks for the patience","this is the slow bit","smooth so far","nearly done"]}
+  };
+
+  /* phase-kind word banks shared across engines (the VOICE differentiates them) */
+  var AEP_PW={
+    prep:   {v:["preparing","warming up","sizing","normalising","sharpening","staging","arranging","calibrating","priming","framing","aligning","tidying"],
+             o:["the image","the canvas","the pixels","the workspace","the input","the buffers","the pipeline","the request","the photo","the payload","the frame","the data"]},
+    network:{v:["contacting","reaching","dialling","handshaking with","negotiating with","waking","pinging","connecting to","authenticating with","greeting","calling","linking to"],
+             o:["the server","the endpoint","the mothership","the API","headquarters","the cloud","the gateway","the service","the datacentre","the relay","the backend","the provider"]},
+    model:  {v:["loading","fetching","streaming","compiling","assembling","mounting","unpacking","caching","initialising","binding","spinning up","attaching"],
+             o:["the model","the weights","the layers","the tensors","the runtime","the shaders","the engine","the parameters","the neural net","660MB of brains","the checkpoints","the kernels"]},
+    read:   {v:["reading","interpreting","examining","deciphering","studying","parsing","inspecting","absorbing","reviewing","understanding","extracting","surveying"],
+             o:["the receipt","the totals","the line items","the merchant name","the fine print","the digits","the date stamp","the text","every row","the amounts","the details","the columns"]},
+    parse:  {v:["structuring","organising","validating","cross-checking","reconciling","sorting","formatting","verifying","mapping","assembling","categorising","confirming"],
+             o:["the results","the numbers","the fields","the entry","the categories","the totals","the answer","the findings","the currency","the tax line","the output","the summary"]},
+    finish: {v:["polishing","wrapping up","finalising","committing","sealing","completing","tidying","landing","confirming","closing out","delivering","stamping"],
+             o:["the result","everything","the entry","the last details","the report","the outcome","the handoff","the final numbers","the finish line","the paperwork","the summary","the record"]},
+    wait:   {v:["waiting on","monitoring","watching","tracking","following","observing","pacing","measuring","timing","holding for","counting down","supervising"],
+             o:["the download","the transfer","the stream","progress","the queue","the response","the bytes","the pipeline","the compile","the long part","the heavy lifting","completion"]}
+  };
+
+  /* non-repeating combinatorial walk: idx maps to (opener,verb,obj,tail) via mixed radix,
+     stepped by a stride co-prime with the space so the sequence covers everything before
+     repeating. Per engine+phase state lives for the session. */
+  var _aepSeq={};
+  function aepPhrase(engine, kind){
+    var V=AEP_VOICES[engine]||AEP_VOICES.app, P=AEP_PW[kind]||AEP_PW.wait;
+    var a=V.openers.length,b=P.v.length,c=P.o.length,d=V.tails.length, N=a*b*c*d;
+    var key=engine+"|"+kind, st=_aepSeq[key];
+    if(!st){ st=_aepSeq[key]={i:Math.floor(Math.random()*N), s:0}; 
+      var strides=[7919,104729,1299709,15485863]; /* primes; pick one co-prime with N */
+      for(var q=0;q<strides.length;q++){ if(N%strides[q]!==0){ st.s=strides[q]%N||1; break; } }
+      if(!st.s) st.s=1;
+    }
+    st.i=(st.i+st.s)%N;
+    var i=st.i, ti=i%d; i=(i-ti)/d; var oi=i%c; i=(i-oi)/c; var vi=i%b; i=(i-vi)/b; var pi=i%a;
+    var verb=P.v[vi]; 
+    return V.openers[pi]+" "+verb+" "+P.o[oi]+" — "+V.tails[ti];
+  }
+  /* how many distinct lines an engine can say per phase (for the curious) */
+  function aepVocab(engine, kind){
+    var V=AEP_VOICES[engine]||AEP_VOICES.app, P=AEP_PW[kind]||AEP_PW.wait;
+    return V.openers.length*P.v.length*P.o.length*V.tails.length;
+  }
+
+  /* ---- the live session ----
+     aepStart({task:"scan", title:"Reading receipt", engine:"gemini",
+               host:element|null (null = floating above the tab bar),
+               phases:[{id,label,kind,est,weight}], onCancel:fn}) */
+  function aepStart(cfg){
+    var phases=cfg.phases.map(function(p){ return Object.assign({}, p, {est:aepEst(cfg.task,p.id,p.est||3000)}); });
+    var totalW=phases.reduce(function(a,p){ return a+(p.weight||p.est); },0);
+    var box=document.createElement("div");
+    box.className="aep"+(cfg.host?"":" aep-float");
+    box.innerHTML=
+       '<div class="aep-hd"><span class="aep-eng" id="aepEng"></span><span class="aep-title">'+esc(cfg.title||"Working…")+'</span>'
+      +(cfg.onCancel?'<button class="x-btn aep-x" title="Cancel">✕</button>':'')
+      +'</div>'
+      +'<div class="aep-bar"><div class="aep-fill"></div></div>'
+      +'<div class="aep-row"><b class="aep-pct">0%</b><span class="aep-eta">estimating…</span><span class="aep-ph"></span></div>'
+      +'<div class="aep-say"></div>'
+      +'<div class="aep-err" style="display:none"></div>';
+    (cfg.host||document.body).appendChild(box);
+    var fill=box.querySelector(".aep-fill"), pctEl=box.querySelector(".aep-pct"),
+        etaEl=box.querySelector(".aep-eta"), phEl=box.querySelector(".aep-ph"),
+        sayEl=box.querySelector(".aep-say"), engEl=box.querySelector("#aepEng"),
+        errEl=box.querySelector(".aep-err");
+    var xBtn=box.querySelector(".aep-x");
+
+    var H={ engine:cfg.engine||"app", pi:0, pProg:0, shownPct:0, t0:Date.now(), pT0:Date.now(),
+            done:false, failed:false, timers:[] };
+    if(xBtn) xBtn.onclick=function(){ H.cancel(); if(cfg.onCancel) cfg.onCancel(); };
+
+    function setEngine(e){ H.engine=e; var V=AEP_VOICES[e]||AEP_VOICES.app; engEl.textContent=V.ic+" "+V.name; }
+    setEngine(H.engine);
+
+    function overall(){
+      var doneW=0;
+      for(var i=0;i<H.pi;i++) doneW+=(phases[i].weight||phases[i].est);
+      var cur=phases[H.pi]; if(cur) doneW+=(cur.weight||cur.est)*Math.min(1,H.pProg);
+      return Math.min(0.99, doneW/totalW);
+    }
+    function etaMs(){
+      var rem=0, cur=phases[H.pi];
+      if(cur){
+        var el=Date.now()-H.pT0;
+        var curRem = H.pProg>0.03 ? Math.max(0, el/H.pProg - el) : Math.max(0, cur.est-el);
+        rem+=curRem;
+      }
+      for(var i=H.pi+1;i<phases.length;i++) rem+=phases[i].est;
+      return rem;
+    }
+    function fmtEta(ms){
+      if(ms<1500) return "almost done";
+      var s=Math.round(ms/1000);
+      if(s<60) return "~"+s+"s left";
+      var m=Math.floor(s/60); return "~"+m+"m "+(s%60)+"s left";
+    }
+    function paint(){
+      if(H.done||H.failed) return;
+      var p=Math.round(overall()*100);
+      if(p>H.shownPct) H.shownPct=Math.min(p, H.shownPct+ (p-H.shownPct>15?4:1)); /* monotonic, eased */
+      fill.style.width=H.shownPct+"%";
+      pctEl.textContent=H.shownPct+"%";
+      etaEl.textContent=fmtEta(etaMs());
+      var cur=phases[H.pi]; phEl.textContent=cur? cur.label : "";
+    }
+    function chatter(){
+      if(H.done||H.failed) return;
+      var cur=phases[H.pi]; if(!cur) return;
+      sayEl.classList.remove("in"); void sayEl.offsetWidth;
+      sayEl.textContent=aepPhrase(H.engine, cur.kind||"wait");
+      sayEl.classList.add("in");
+    }
+    H.timers.push(setInterval(paint,140));
+    H.timers.push(setInterval(chatter,1500));
+    chatter(); paint();
+
+    H.setEngine=setEngine;
+    H.phase=function(id, prog){
+      var idx=phases.findIndex(function(p){ return p.id===id; });
+      if(idx<0) return;
+      if(idx!==H.pi){
+        /* learn the finished phase's real duration */
+        if(idx>H.pi && phases[H.pi]) aepLearn(cfg.task, phases[H.pi].id, Date.now()-H.pT0);
+        H.pi=idx; H.pProg=0; H.pT0=Date.now(); chatter();
+      }
+      if(prog!=null) H.pProg=Math.max(H.pProg, Math.min(1,prog));
+      paint();
+    };
+    H.progress=function(prog){ H.pProg=Math.max(H.pProg, Math.min(1,prog)); paint(); };
+    H.note=function(txt){ sayEl.textContent=txt; };
+    H.done=false;
+    H.finish=function(msg){
+      if(H.failed) return;
+      if(phases[H.pi]) aepLearn(cfg.task, phases[H.pi].id, Date.now()-H.pT0);
+      H.done=true; H.timers.forEach(clearInterval);
+      fill.style.width="100%"; pctEl.textContent="100%";
+      etaEl.textContent="done in "+Math.round((Date.now()-H.t0)/100)/10+"s";
+      phEl.textContent=""; sayEl.textContent=msg||"Done.";
+      box.classList.add("aep-done");
+      setTimeout(function(){ box.classList.add("aep-out"); setTimeout(function(){ box.remove(); }, 350); }, cfg.host?900:1600);
+    };
+    H.fail=function(err, opts){
+      if(H.done||H.failed) return;
+      H.failed=true; H.timers.forEach(clearInterval);
+      var t=errxTranslate(err,{source:(AEP_VOICES[H.engine]||AEP_VOICES.app).name});
+      investAutoNote(cfg.title||cfg.task, t);           /* silently logged so Investigate finds it */
+      box.classList.add("aep-failed");
+      sayEl.textContent=""; etaEl.textContent=""; phEl.textContent="";
+      errEl.style.display=""; errEl.innerHTML=errxCardHtml(t,{retryId:(opts&&opts.retryId)||""});
+      bindErrxButtons(errEl);
+      if(opts&&opts.onRetry&&opts.retryId){ var rb=errEl.querySelector("#"+opts.retryId); if(rb) rb.onclick=function(){ box.remove(); opts.onRetry(); }; }
+      if(!cfg.host) setTimeout(function(){ if(document.body.contains(box)){ box.classList.add("aep-out"); setTimeout(function(){ box.remove(); },350);} }, 30000);
+      return t;
+    };
+    H.cancel=function(){ H.failed=true; H.timers.forEach(clearInterval); box.remove(); };
+    H.el=box;
+    return H;
+  }
+
+  /* wire every "🕵️ Investigate" button an error card renders */
+  function bindErrxButtons(scope){
+    (scope||document).querySelectorAll(".errx-inv").forEach(function(b){
+      if(b._inv) return; b._inv=true;
+      b.addEventListener("click", function(){
+        var t={}; try{ t=JSON.parse(decodeURIComponent(b.getAttribute("data-t")||"")); }catch(e){}
+        investOpenWith(t);
+      });
+    });
+  }
+
+
+  /* ============================================================
+     INVESTIGATION — one place that gathers every issue
+     A popup's "Investigate" button (or any failed operation) files
+     the issue here. The Investigation tab shows a MINI of each
+     affected page with its issues inside, so fixes happen in one
+     place instead of hunting through the app. Every fix applied
+     from here snapshots the data first, so single actions — or the
+     whole investigation — can be reverted. "End investigation"
+     archives the session; past investigations live under
+     Trading → Investigation.
+     ============================================================ */
+
+  var INVEST_KEY="mymoney_invest_v1";
+  var INVEST={active:null, history:[]};
+  try{ var _iv=localStorage.getItem(INVEST_KEY); if(_iv) INVEST=Object.assign(INVEST, JSON.parse(_iv)); }catch(e){}
+  function investSave(){ try{ localStorage.setItem(INVEST_KEY, JSON.stringify(INVEST)); }catch(e){} }
+
+  var _invSnaps={};   /* snapshot ring for reverts — session only, keyed by snap id */
+  function investSnap(){
+    var id="s"+Date.now()+Math.floor(Math.random()*999);
+    try{ _invSnaps[id]=JSON.stringify(state); }catch(e){ return null; }
+    var keys=Object.keys(_invSnaps); if(keys.length>12) delete _invSnaps[keys[0]];
+    return id;
+  }
+  function investRestore(id){
+    var raw=_invSnaps[id]; if(!raw) return false;
+    try{ var s=JSON.parse(raw); Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state,s); }
+    catch(e){ return false; }
+    persistNow(); render(); return true;
+  }
+
+  function investEnsure(){
+    if(!INVEST.active) INVEST.active={id:"inv"+Date.now(), started:new Date().toISOString(), issues:[], firstSnap:null};
+    if(!INVEST.active.firstSnap) INVEST.active.firstSnap=investSnap();
+    return INVEST.active;
+  }
+  function investPageOf(src){
+    src=String(src||"").toLowerCase();
+    if(/scan|receipt|ocr|photo/.test(src)) return "Scanner";
+    if(/model|webllm|llama|chat|webgpu/.test(src)) return "AI model";
+    if(/key|engine|gemini|openai|claude|grok|openrouter|api/.test(src)) return "AI settings";
+    if(/storage|backup|quota|save|import|export/.test(src)) return "Data & storage";
+    if(/trade|trading|instrument/.test(src)) return "Trading";
+    if(/entry|ledger|transaction/.test(src)) return "Entries";
+    if(/setting/.test(src)) return "Settings";
+    return "General";
+  }
+  function investLog(o){
+    var a=investEnsure();
+    var iss={ id:"i"+Date.now()+Math.floor(Math.random()*999), ts:new Date().toISOString(),
+      page:o.page||investPageOf((o.source||"")+" "+(o.title||"")),
+      source:o.source||"", title:o.title||"Issue", plain:o.plain||"", action:o.action||"",
+      raw:(o.raw||"").slice(0,800), status:"open", fixes:[] };
+    a.issues.unshift(iss); if(a.issues.length>80) a.issues.length=80;
+    investSave(); investBadge();
+    return iss.id;
+  }
+  /* quiet logging from AEP failures — no UI jump, just recorded */
+  function investAutoNote(source, t){
+    investLog({source:source, title:t.title, plain:t.plain, action:t.action, raw:t.raw});
+  }
+  /* the Investigate button path — logs AND jumps to the tab */
+  function investOpenWith(t){
+    if(t && t.title) investLog({source:t.source||"popup", title:t.title, plain:t.plain, action:t.action, raw:t.raw});
+    closeModal();
+    var host=document.getElementById("chatSheetHost"); if(host) host.innerHTML="";
+    setTab("pageTrading"); trSetSub("invest");
+    flashSaved("filed to Investigation");
+  }
+  function investBadge(){
+    var n=INVEST.active?INVEST.active.issues.filter(function(i){return i.status==="open";}).length:0;
+    var tab=document.querySelector('#tabbar .tab[data-page="pageTrading"] .tab-ic');
+    if(!tab) return;
+    var b=tab.querySelector(".inv-dot");
+    if(n>0){ if(!b){ b=document.createElement("span"); b.className="inv-dot"; tab.appendChild(b); } b.textContent=n>9?"9+":n; }
+    else if(b) b.remove();
+  }
+
+  /* per-issue quick fixes, chosen by which page the issue belongs to */
+  function investFixesFor(iss){
+    var f=[];
+    function add(label, run){ f.push({label:label, run:run}); }
+    switch(iss.page){
+      case "AI settings":
+        add("Open AI settings", function(){ if(typeof openAiSettings==="function") openAiSettings(); });
+        add("Test keys now", function(){ if(typeof openAiSettings==="function") openAiSettings(); setTimeout(function(){ var b=document.getElementById("aiTestBtn"); if(b) b.click(); },400); });
+        break;
+      case "AI model":
+        add("Retry loading the model", function(){ wllmGuardedLoad(); });
+        add("Open chat", function(){ openChatSheet(); });
+        break;
+      case "Scanner":
+        add("Scan again", function(){ tapScanReceipt(); });
+        add("Open AI settings", function(){ if(typeof openAiSettings==="function") openAiSettings(); });
+        break;
+      case "Data & storage":
+        add("Download a backup now", function(){ var b=document.getElementById("expFile"); if(b) b.click(); });
+        break;
+      case "Trading":
+        add("Open trading stats", function(){ trSetSub("stats"); });
+        break;
+      case "Entries":
+        add("Open entries", function(){ setTab("pageLedger"); });
+        break;
+    }
+    add("Retry last action", null); /* placeholder replaced below if a retry exists */
+    f.pop();
+    return f;
+  }
+
+  function investRender(){
+    var host=document.getElementById("trSubInvest"); if(!host) return;
+    var a=INVEST.active;
+    var openN=a?a.issues.filter(function(i){return i.status==="open";}).length:0;
+    var html='<div class="panel"><div class="p-head"><h2><span class="tick">🕵️</span> Investigation</h2>'
+      +(a?'<span class="mut" style="font-size:12px">'+a.issues.length+' issue'+(a.issues.length===1?'':'s')+' · '+openN+' open</span>':'')
+      +'</div><div class="p-body" style="padding-top:4px">';
+    if(!a || !a.issues.length){
+      html+='<div class="hint">Nothing under investigation. When a pop-up or a failed operation offers <b>🕵️ Investigate</b>, it lands here — a mini of each affected page, fixable from one place.</div>';
+    } else {
+      /* group by page — "a mini of each page with the issues" */
+      var byPage={};
+      a.issues.forEach(function(i){ (byPage[i.page]=byPage[i.page]||[]).push(i); });
+      Object.keys(byPage).forEach(function(pg){
+        var list=byPage[pg];
+        html+='<div class="inv-page"><div class="inv-page-h"><b>'+esc(pg)+'</b><span class="mut">'+list.length+' issue'+(list.length===1?'':'s')+'</span></div>';
+        list.forEach(function(i){
+          html+='<div class="inv-card '+i.status+'" data-id="'+i.id+'">'
+            +'<div class="inv-t">'+(i.status==="fixed"?"✅ ":i.status==="dismissed"?"➖ ":"⛔ ")+esc(i.title)
+              +' <span class="inv-when">'+esc((i.ts||"").slice(11,16))+'</span></div>'
+            +(i.plain?'<div class="inv-p">'+esc(i.plain)+'</div>':'')
+            +(i.action?'<div class="inv-a">→ '+esc(i.action)+'</div>':'')
+            +(i.raw?'<details class="errx-d"><summary>Raw details</summary><pre>'+esc(i.raw)+'</pre></details>':'')
+            +'<div class="inv-b">'
+              +investFixesFor(i).map(function(fx,ix){ return '<button class="btn ghost sm" data-fix="'+ix+'">'+esc(fx.label)+'</button>'; }).join("")
+              +(i.status!=="fixed"?'<button class="btn ghost sm" data-act="fixed">Mark fixed</button>':'')
+              +(i.fixes.length?'<button class="btn ghost sm" data-act="revert">↩ Revert this fix</button>':'')
+              +(i.status!=="dismissed"?'<button class="btn ghost sm" data-act="dismiss">Dismiss</button>':'')
+            +'</div></div>';
+        });
+        html+='</div>';
+      });
+      html+='<div class="inv-foot">'
+        +'<button class="btn ghost sm" id="invRevertAll">↩ Revert everything</button>'
+        +'<button class="btn primary sm" id="invEnd">🏁 End investigation</button>'
+        +'</div>'
+        +'<div class="hint" style="margin-top:8px">“Revert everything” restores your data to the moment this investigation started (this session). Ending saves it to the history below.</div>';
+    }
+    html+='</div></div>';
+
+    /* history */
+    html+='<div class="panel"><div class="p-head"><h2><span class="tick">🗂️</span> Past investigations</h2></div><div class="p-body" style="padding-top:4px">';
+    if(!INVEST.history.length) html+='<div class="hint">Ended investigations are saved here for review.</div>';
+    else INVEST.history.slice(0,20).forEach(function(h){
+      var fx=h.issues.filter(function(i){return i.status==="fixed";}).length;
+      html+='<details class="inv-hist"><summary><b>'+esc((h.started||"").slice(0,16).replace("T"," "))+'</b>'
+        +' · '+h.issues.length+' issue'+(h.issues.length===1?'':'s')+' · '+fx+' fixed</summary>'
+        +h.issues.map(function(i){ return '<div class="inv-card '+i.status+'"><div class="inv-t">'+(i.status==="fixed"?"✅ ":i.status==="dismissed"?"➖ ":"⛔ ")+esc(i.title)+'</div>'+(i.plain?'<div class="inv-p">'+esc(i.plain)+'</div>':'')+'</div>'; }).join("")
+        +'</details>';
+    });
+    html+='</div></div>';
+    host.innerHTML=html;
+
+    /* bind */
+    host.querySelectorAll(".inv-card[data-id]").forEach(function(card){
+      var iss=a.issues.find(function(i){ return i.id===card.getAttribute("data-id"); });
+      if(!iss) return;
+      var fixes=investFixesFor(iss);
+      card.querySelectorAll("[data-fix]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var fx=fixes[+b.getAttribute("data-fix")]; if(!fx) return;
+          var snap=investSnap();
+          iss.fixes.push({ts:Date.now(), label:fx.label, snap:snap});
+          investSave();
+          try{ fx.run(); flashSaved("applied: "+fx.label); }
+          catch(e){ var t=errxTranslate(e,{source:"fix"}); investLog({source:"fix", title:"Fix failed: "+fx.label, plain:t.plain, action:t.action, raw:t.raw}); }
+          investRender();
+        });
+      });
+      card.querySelectorAll("[data-act]").forEach(function(b){
+        b.addEventListener("click", function(){
+          var act=b.getAttribute("data-act");
+          if(act==="fixed"){ iss.status="fixed"; }
+          else if(act==="dismiss"){ iss.status="dismissed"; }
+          else if(act==="revert"){
+            var last=iss.fixes[iss.fixes.length-1];
+            if(last && last.snap && investRestore(last.snap)){ iss.fixes.pop(); flashSaved("reverted: "+last.label); }
+            else appModal({title:"Can't revert", message:"That fix's snapshot isn't available any more (snapshots live for the session). Your data hasn't been changed.", confirmText:"OK", cancelText:"Close", critical:true});
+          }
+          investSave(); investBadge(); investRender();
+        });
+      });
+    });
+    var ra=document.getElementById("invRevertAll");
+    if(ra) ra.addEventListener("click", function(){
+      appModal({title:"Revert everything?", message:"Your data goes back to the moment this investigation started. Entries added since then in this session are removed. A backup snapshot is taken first.", confirmText:"Revert", danger:true, critical:true, onConfirm:function(){
+        investSnap();
+        if(a.firstSnap && investRestore(a.firstSnap)) flashSaved("reverted to investigation start");
+        else appModal({title:"Nothing to revert to", message:"The starting snapshot isn't available (it lives for the session only). No changes were made.", confirmText:"OK", cancelText:"Close", critical:true});
+        investRender();
+      }});
+    });
+    var en=document.getElementById("invEnd");
+    if(en) en.addEventListener("click", function(){
+      appModal({title:"End this investigation?", message:"It's saved to Past investigations under Trading → Investigation, and the active list is cleared.", confirmText:"End & save", critical:true, onConfirm:function(){
+        INVEST.active.ended=new Date().toISOString();
+        INVEST.history.unshift(INVEST.active); if(INVEST.history.length>30) INVEST.history.length=30;
+        INVEST.active=null; investSave(); investBadge(); investRender();
+        flashSaved("investigation saved");
+      }});
+    });
+  }
+
+  /* ============================================================
+     POP-UP CONTROL — quiet mode + 🕵️ Investigate on every notice
+     Quiet mode suppresses purely-informational pop-ups (no input,
+     no typed word, not destructive) and files them to Investigation
+     instead. Confirmations that DO something always still show.
+     ============================================================ */
+  var POPUP_KEY="mymoney_popups_v1";
+  function popupsQuiet(){ try{ return localStorage.getItem(POPUP_KEY)==="quiet"; }catch(e){ return false; } }
+  function setPopupsMode(m){ try{ localStorage.setItem(POPUP_KEY,m); }catch(e){} }
+
+  var _appModalCore=appModal;
+  appModal=function(o){
+    o=o||{};
+    var informational = !o.input && !o.requireWord && !o.danger && !o.critical &&
+        (!o.onConfirm || /^(ok|close|got it|okay)$/i.test(o.confirmText||"OK"));
+    if(popupsQuiet() && informational){
+      investLog({source:"popup", title:o.title||"Notice",
+        plain:String(o.message||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400)});
+      flashSaved("notice → Investigation");
+      if(o.onCancel) o.onCancel();
+      return;
+    }
+    _appModalCore(o);
+    /* add 🕵️ Investigate to notices that aren't guarded destructive flows */
+    if(!(informational || o.investigate)) return;
+    var ft=document.querySelector("#mdlOv .mdl-ft"); if(!ft) return;
+    var b=document.createElement("button");
+    b.type="button"; b.className="btn ghost sm mdl-inv"; b.textContent="🕵️ Investigate";
+    b.addEventListener("click", function(){
+      investOpenWith({source:"popup", title:o.title||"Notice",
+        plain:String(o.message||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,400),
+        action:"", raw:String(o.message||"").slice(0,800)});
+    });
+    ft.insertBefore(b, ft.firstChild);
+  };
+
+  /* ============================================================
+     TRADING SUB-TABS — Stats · Questions · Investigation · Auto Analyze
+     ============================================================ */
+  var _trSub="stats";
+  function trSetSub(s){
+    _trSub=s;
+    var bar=document.getElementById("trSubBar");
+    if(bar) bar.querySelectorAll("button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-sub")===s); });
+    var stats=s==="stats";
+    var we=document.getElementById("trEmpty"), ww=document.getElementById("trWrap");
+    if(!stats){ if(we) we.style.display="none"; if(ww) ww.style.display="none"; }
+    ["trSubQuestions","trSubInvest","trSubAuto"].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.display="none";
+    });
+    if(s==="stats"){ if(typeof _renderTradingCore==="function") _renderTradingCore(); }
+    else if(s==="questions"){ var q=document.getElementById("trSubQuestions"); if(q){ q.style.display=""; trRenderQuestions(); } }
+    else if(s==="invest"){ var v=document.getElementById("trSubInvest"); if(v){ v.style.display=""; investRender(); } }
+    else if(s==="auto"){ var t=document.getElementById("trSubAuto"); if(t){ t.style.display=""; trRenderAuto(); } }
+  }
+
+  function trRenderQuestions(){
+    var host=document.getElementById("trSubQuestions"); if(!host) return;
+    var presets=[
+      "How did my trading go this month?",
+      "What's my win rate telling me?",
+      "Am I risking too much per trade?",
+      "Which instrument is actually making me money?",
+      "What should I change about my spending?",
+      "Is my savings rate on track?"
+    ];
+    var recent=(typeof chatLog!=="undefined"&&chatLog.length)
+      ? chatLog.slice(-6).map(function(m){
+          return '<div class="q-msg '+(m.role==="user"?"me":"ai")+'">'+esc(String(m.text||"").slice(0,240))+'</div>';
+        }).join("")
+      : '<div class="hint">No conversation yet — ask anything below.</div>';
+    host.innerHTML=
+      '<div class="panel"><div class="p-head"><h2><span class="tick">💬</span> Questions</h2></div>'
+      +'<div class="p-body" style="padding-top:4px">'
+      +'<div class="hint" style="margin-bottom:10px">Ask about your money and your trades. Answers run on this device when a local model is ready — nothing is sent anywhere.</div>'
+      +'<div class="q-chips">'+presets.map(function(p,i){ return '<button class="q-chip" data-q="'+i+'">'+esc(p)+'</button>'; }).join("")+'</div>'
+      +'<button class="btn solid" id="qOpenChat" style="width:100%;margin-top:10px">💬 Open the full chat</button>'
+      +'<div class="q-recent"><div class="q-recent-h">Recent conversation</div>'+recent+'</div>'
+      +'</div></div>';
+    host.querySelectorAll(".q-chip").forEach(function(b){
+      b.addEventListener("click", function(){
+        var q=presets[+b.getAttribute("data-q")];
+        openChatSheet();
+        setTimeout(function(){
+          var inp=document.getElementById("chatInput");
+          if(inp){ inp.value=q; if(window._chatSync) window._chatSync(); chatSend(); }
+        }, 250);
+      });
+    });
+    var oc=document.getElementById("qOpenChat");
+    if(oc) oc.addEventListener("click", openChatSheet);
+  }
+
+  function trRenderAuto(){
+    var host=document.getElementById("trSubAuto"); if(!host) return;
+    var cloud=aiConfigured() ? "cloud engine ready ("+((AI_PROVIDERS[aiCfg.provA]||{}).label||aiCfg.provA)+")" : "no cloud key set";
+    var local=window._wllmEngine ? "on-device model ready" : (wllmRemembered() ? "on-device model cached (reconnects on use)" : "on-device model not downloaded");
+    host.innerHTML=
+      '<div class="panel"><div class="p-head"><h2><span class="tick">🤖</span> Auto Analyze</h2></div>'
+      +'<div class="p-body" style="padding-top:4px">'
+      +'<div class="hint" style="margin-bottom:10px">Everything that reads your data for you, in one place. Status: '+esc(cloud)+' · '+esc(local)+'.</div>'
+      +'<div class="auto-grid">'
+      +'<button class="btn" id="auScan">📷 Scan a receipt<br><span class="mut">photo → filled entry, with live progress</span></button>'
+      +'<button class="btn" id="auPhotos">🖼️ Analyse photos with AI<br><span class="mut">MT5 / bank screenshots → entries</span></button>'
+      +'<button class="btn" id="auDeep">🔬 Run advanced check<br><span class="mut">agents audit every entry</span></button>'
+      +'<button class="btn" id="auModel">🧠 On-device model<br><span class="mut" id="auModelSub">'+esc(local)+'</span></button>'
+      +'</div>'
+      +'<div id="auModelHost"></div>'
+      +'</div></div>';
+    var s=document.getElementById("auScan"); if(s) s.addEventListener("click", tapScanReceipt);
+    var p=document.getElementById("auPhotos"); if(p) p.addEventListener("click", function(){
+      if(typeof openAiPanel==="function") openAiPanel();
+    });
+    var d=document.getElementById("auDeep"); if(d) d.addEventListener("click", function(){
+      var b=document.getElementById("agDeepBtn");
+      if(b) b.click(); else appModal({title:"Not available", message:"The advanced check lives in Settings → AI mode → Continuous review.", confirmText:"OK", cancelText:"Close"});
+    });
+    var m=document.getElementById("auModel"); if(m) m.addEventListener("click", function(){ wllmGuardedLoad(document.getElementById("auModelHost")); });
+  }
+
+  /* wrap the trading renderer so sub-tab state survives every re-render */
+  var _renderTradingCore=renderTradingPage;
+  renderTradingPage=function(){
+    if(_trSub==="stats") _renderTradingCore();
+    else {
+      var we=document.getElementById("trEmpty"), ww=document.getElementById("trWrap");
+      if(we) we.style.display="none"; if(ww) ww.style.display="none";
+      trSetSub(_trSub);
+    }
+  };
+
+  /* ============================================================
+     LOAD MODEL — fixed. The button had NO click handler at all;
+     now it runs a guarded load with the live estimation bar,
+     a WebGPU pre-check, a stall watchdog, and translated failures.
+     ============================================================ */
+  function wllmGuardedLoad(host){
+    if(window._wllmEngine){ flashSaved("model already loaded"); if(typeof wllmMarkReady==="function") wllmMarkReady(); return; }
+    if(!navigator.onLine){
+      appModal({title:"You're offline", message:"Fetching the model runtime needs a connection (the weights themselves are cached after the first download).", confirmText:"OK", cancelText:"Close"});
+      return;
+    }
+    if(!navigator.gpu){
+      var t={title:"WebGPU isn't available", plain:"The on-device model runs on the graphics chip through WebGPU, and this browser doesn't expose it. Chrome or Edge (recent, desktop) support it; many mobile and embedded browsers don't.", action:"Open this file in desktop Chrome/Edge — or use a cloud engine in Settings → AI mode instead.", raw:"navigator.gpu undefined", source:"WebLLM"};
+      investAutoNote("Load model", t);
+      appModal({title:t.title, message:esc(t.plain)+"<br><br>→ "+esc(t.action), confirmText:"OK", cancelText:"Close"});
+      return;
+    }
+    var cached=wllmRemembered();
+    var aep=aepStart({
+      task:"wllm", engine:"llama", host:host||null,
+      title: cached ? "Reconnecting the on-device model" : "Downloading Llama 3.2 1B (~660MB, once)",
+      phases:[
+        {id:"runtime", label:"Fetching runtime",  kind:"network", est:4000},
+        {id:"weights", label:cached?"Re-attaching cached weights":"Downloading weights", kind:"model", est:cached?12000:180000},
+        {id:"compile", label:"Compiling for this GPU", kind:"model", est:15000},
+        {id:"ready",   label:"Warming up", kind:"finish", est:2000}
+      ],
+      onCancel:function(){ /* the injected loader can't be aborted; the bar just closes */ }
+    });
+    var lastTxt="", lastChange=Date.now(), doneFlag=false;
+
+    function onReady(){ cleanup(); doneFlag=true; aep.phase("ready",1); aep.finish("Model ready — running fully on this device."); }
+    function onFail(e){ cleanup(); doneFlag=true;
+      aep.fail(new Error(String(e&&e.detail||e||"model failed")), {retryId:"wllmRetry", onRetry:function(){ wllmGuardedLoad(host); }});
+    }
+    function cleanup(){
+      window.removeEventListener("wllm-ready", onReady);
+      window.removeEventListener("wllm-failed", onFail);
+      clearInterval(watch);
+    }
+    window.addEventListener("wllm-ready", onReady);
+    window.addEventListener("wllm-failed", onFail);
+
+    /* the loader script writes progress into #wllmBar / #wllmLoadStatus — mirror it */
+    var watch=setInterval(function(){
+      if(doneFlag) return;
+      var sta=document.getElementById("wllmLoadStatus");
+      var txt=sta?sta.textContent:"";
+      if(txt && txt!==lastTxt){ lastTxt=txt; lastChange=Date.now(); }
+      var m=txt.match(/\[(\d+)\s*\/\s*(\d+)\]/);            /* "[13/24]" cache-load style */
+      var pm=txt.match(/(\d{1,3})\s*%/);
+      if(/fetch|runtime/i.test(txt)) aep.phase("runtime", 0.5);
+      else if(m){ aep.phase("weights", (+m[1])/(+m[2]||1)); }
+      else if(pm){ aep.phase("weights", Math.min(1,(+pm[1])/100)); }
+      else if(/compil|shader|gpu/i.test(txt)) aep.phase("compile", 0.5);
+      else if(/finish|complete|ready/i.test(txt)) aep.phase("ready", 0.8);
+      if(Date.now()-lastChange > 60000){
+        cleanup(); doneFlag=true; window._wllmLoading=false;
+        aep.fail(new Error("Timeout: the download made no progress for 60 seconds — the connection stalled or the runtime was blocked."),
+                 {retryId:"wllmRetry", onRetry:function(){ wllmGuardedLoad(host); }});
+      }
+    }, 400);
+
+    aep.phase("runtime", 0.1);
+    try{ loadWebllm({}); }
+    catch(e){ cleanup(); aep.fail(e, {retryId:"wllmRetry", onRetry:function(){ wllmGuardedLoad(host); }}); }
+  }
+
+  /* ============================================================
+     SCAN — rebuilt. The old sheet called openOverlay(), which was
+     never defined, so choosing a photo threw and nothing appeared.
+     The rebuilt flow: photo → sheet opens instantly → live bar with
+     %, ETA and engine commentary → cloud engine A reads it (if a
+     key is set), else engine B, else the browser's TextDetector,
+     else manual — every failure translated and Investigate-able,
+     and each fallback tried automatically.
+     ============================================================ */
+  function scanDataUrlParts(dataUrl){
+    var m=/^data:(.*?);base64,(.*)$/.exec(dataUrl||"");
+    return m ? {mime:m[1]||"image/jpeg", b64:m[2]} : null;
+  }
+  var SCAN_PROMPT='You are reading ONE photo of a receipt. Return ONLY a JSON object, no prose, no markdown fences, exactly this shape: {"total": number or null, "date": "YYYY-MM-DD" or null, "merchant": "string or empty", "category": one of ["Food","Snacks","Shopping","Transport","Utilities","Entertainment","Other"], "tax": number or null}. total is the final amount paid. If unreadable, use nulls.';
+
+  function scanParseAiJson(txt){
+    var s=String(txt||"").replace(/```json|```/g,"").trim();
+    var a=s.indexOf("{"), b=s.lastIndexOf("}");
+    if(a>=0&&b>a) s=s.slice(a,b+1);
+    var j=JSON.parse(s);
+    return { total: (j.total!=null&&isFinite(+j.total)&&+j.total>0)?+j.total:null,
+             date: (typeof j.date==="string"&&/^\d{4}-\d{2}-\d{2}$/.test(j.date))?j.date:null,
+             merchant: String(j.merchant||"").slice(0,60),
+             category: ["Food","Snacks","Shopping","Transport","Utilities","Entertainment","Other"].indexOf(j.category)>=0?j.category:"",
+             tax: (j.tax!=null&&isFinite(+j.tax))?+j.tax:null };
+  }
+  function scanEngineName(prov){
+    return {gemini:"gemini", openai:"gpt", openrouter:"openrouter", xai:"grok", anthropic:"claude"}[prov]||"app";
+  }
+
+  openScanSheet=function(file, dataUrl){
+    var urls=Array.isArray(dataUrl)?dataUrl.slice():[dataUrl];
+    var sym=state.currency;
+    var host=document.createElement("div"); host.className="mdl-ov"; host.id="scanOv";
+    host.innerHTML='<div class="sheet scan-sheet">'
+      +'<div class="sheet-hd" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 0"><h3 style="margin:0">📷 Scan receipt</h3>'
+        +'<button class="x-btn" id="scX">✕</button></div>'
+      +'<div class="sheet-bd" style="padding:12px 16px">'
+        +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">'
+          +'<div style="flex:1;min-width:120px;max-width:200px"><img id="scImg" alt="receipt" style="width:100%;border-radius:10px;display:block">'
+            +'<div id="scThumbs" class="sc-thumbs"></div>'
+            +'<button class="btn ghost sm" id="scMore" style="width:100%;margin-top:6px">＋ Add photo</button></div'
+          +'<div style="flex:2;min-width:200px">'
+            +'<div id="scAep"></div>'
+            +'<div class="fld"><label>Amount</label><input class="inp" id="scAmt" inputmode="decimal" placeholder="e.g. 24.99"></div>'
+            +'<div class="fld"><label>Date</label><input class="inp" id="scDate" type="date"></div>'
+            +'<div class="fld"><label>Note / merchant</label><input class="inp" id="scNote" placeholder="e.g. Carrefour"></div>'
+            +'<div class="fld"><label>Category</label><select class="inp" id="scCat">'
+              +'<option>Food</option><option>Snacks</option><option>Shopping</option>'
+              +'<option>Transport</option><option>Utilities</option><option>Entertainment</option>'
+              +'<option>Other</option></select></div>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="sheet-ft" style="display:flex;gap:8px;justify-content:flex-end;padding:0 16px 14px">'
+        +'<button class="btn sm" id="scCancel">Cancel</button>'
+        +'<button class="btn sm solid" id="scAdd">Add expense</button>'
+      +'</div></div>';
+    document.body.appendChild(host);
+    var close=function(){ host.remove(); };
+    document.getElementById("scX").onclick=close;
+    document.getElementById("scCancel").onclick=close;
+    host.addEventListener("click", function(e){ if(e.target===host) close(); });
+    document.getElementById("scDate").value=todayStr();
+    try{ attachDatePicker(document.getElementById("scDate")); }catch(e){}
+    function paintImgs(){
+      document.getElementById("scImg").src=urls[0]||"";
+      document.getElementById("scThumbs").innerHTML = urls.length<2 ? "" :
+        urls.map(function(u,i){ return '<div class="sc-th'+(i===0?" on":"")+'"><img src="'+u+'" data-i="'+i+'"><button class="sc-th-x" data-i="'+i+'">✕</button></div>'; }).join("");
+    }
+    document.getElementById("scThumbs").addEventListener("click", function(e){
+      var x=e.target.closest(".sc-th-x");
+      if(x){ urls.splice(+x.getAttribute("data-i"),1); paintImgs(); runPipeline(); return; }
+      var im=e.target.closest("img[data-i]");
+      if(im){ var i=+im.getAttribute("data-i"); var u=urls.splice(i,1)[0]; urls.unshift(u); paintImgs(); }
+    });
+    document.getElementById("scMore").onclick=function(){
+      var g=scanGalleryInput();
+      g.onchange=function(e){ scanFilesToUrls(e.target.files, function(more){ g.value=""; if(more.length){ urls=urls.concat(more); paintImgs(); runPipeline(); } }); };
+      g.click();
+    };
+    paintImgs();
+    document.getElementById("scAdd").onclick=function(){
+      var amt=parseFloat(document.getElementById("scAmt").value);
+      if(!isFinite(amt)||amt<=0){ shake(document.getElementById("scAmt")); return; }
+      state.transactions.unshift({
+        id:"t"+Date.now()+Math.floor(Math.random()*9999),
+        type:"expense", amount:amt,
+        date:document.getElementById("scDate").value||todayStr(),
+        note:document.getElementById("scNote").value.trim(),
+        cat:document.getElementById("scCat").value
+      });
+      persist(); close(); render();
+      flashSaved("expense logged from receipt");
+    };
+
+    /* ---- the reading pipeline ---- */
+    function fill(parsed, via){
+      if(parsed.total!=null) document.getElementById("scAmt").value=parsed.total.toFixed(2);
+      if(parsed.date) document.getElementById("scDate").value=parsed.date;
+      if(parsed.merchant) document.getElementById("scNote").value=parsed.merchant;
+      if(parsed.category){ var cs=document.getElementById("scCat"); if(cs) cs.value=parsed.category; }
+      var found=[];
+      if(parsed.total!=null) found.push(sym+parsed.total.toFixed(2));
+      if(parsed.tax) found.push("tax "+sym+(+parsed.tax).toFixed(2));
+      if(parsed.category) found.push(parsed.category);
+      if(parsed.date) found.push(parsed.date);
+      if(parsed.merchant) found.push('"'+parsed.merchant+'"');
+      return found;
+    }
+    function runPipeline(){
+      var aepHost=document.getElementById("scAep"); aepHost.innerHTML="";
+      var chain=[];
+      if(aiCfg.keyA && aiCfg.provA) chain.push({kind:"cloud", slot:"A", prov:aiCfg.provA, key:aiCfg.keyA, model:aiCfg.modelA});
+      if(aiCfg.keyB && aiCfg.provB) chain.push({kind:"cloud", slot:"B", prov:aiCfg.provB, key:aiCfg.keyB, model:aiCfg.modelB});
+      if(typeof window.TextDetector!=="undefined") chain.push({kind:"ocr"});
+      var firstEngine = chain.length ? (chain[0].kind==="cloud" ? scanEngineName(chain[0].prov) : "ocr") : "app";
+      var aep=aepStart({ task:"scan", engine:firstEngine, host:aepHost, title:"Reading the receipt",
+        phases:[
+          {id:"prep",  label:"Preparing image",  kind:"prep",    est:700},
+          {id:"read",  label:"Reading text",     kind:"read",    est:chain.length&&chain[0].kind==="cloud"?6000:2500},
+          {id:"parse", label:"Structuring",      kind:"parse",   est:600},
+          {id:"fill",  label:"Filling the form", kind:"finish",  est:300}
+        ]});
+      if(!chain.length){
+        aep.cancel();
+        aepHost.innerHTML='<div class="hint">No reader is available: add an AI key in <b>Settings → AI mode</b> for the best results (this browser has no built-in text reader). Fill the fields in manually below.</div>';
+        return;
+      }
+      var imgs=null;
+      var loadAll=function(cb){
+        if(imgs){ cb(); return; }
+        var out=new Array(urls.length), left=urls.length;
+        urls.forEach(function(u,i){
+          var im=new Image();
+          im.onload=im.onerror=function(){ out[i]=im; if(--left===0){ imgs=out.filter(function(x){ return x&&(x.naturalWidth||x.width); }); cb(); } };
+          im.src=u;
+        });
+      };
+      var step=function(idx, lastErr){
+        if(idx>=chain.length){
+          aep.fail(lastErr||new Error("No reader could make out this receipt."),
+                   {retryId:"scRetry", onRetry:runPipeline});
+          return;
+        }
+        var eng=chain[idx];
+        aep.setEngine(eng.kind==="cloud" ? scanEngineName(eng.prov) : "ocr");
+        aep.phase("prep", 0.4);
+        var go=function(){
+          try{
+            var cvs=(imgs&&imgs.length?imgs:[]).map(function(im){ return preprocessReceiptCanvas(im); });
+            if(!cvs.length) cvs=[preprocessReceiptCanvas(document.getElementById("scImg"))];
+            aep.phase("prep", 1);
+            if(eng.kind==="cloud"){
+              aep.phase("read", 0.1);
+              var parts=cvs.map(function(cv){ return scanDataUrlParts(cv.toDataURL("image/jpeg",0.85)); });
+              var prov=AI_PROVIDERS[eng.prov];
+              var tick=setInterval(function(){ aep.progress(Math.min(0.92, (aep.pProg||0)+0.05)); }, 600);
+              var timeout=setTimeout(function(){ clearInterval(tick); step(idx+1, new Error("Timeout: "+prov.label+" didn't answer within 30 seconds.")); }, 30000);
+              var settled=false;
+              prov.run(eng.key, SCAN_PROMPT+(cvs.length>1?"\nThere are "+cvs.length+" images: they may be parts of ONE long receipt (combine into one entry) or separate receipts (use the clearest single total).":""), parts, eng.model||undefined)
+                .then(function(txt){
+                  if(settled) return; settled=true; clearTimeout(timeout); clearInterval(tick);
+                  aep.phase("parse", 0.3);
+                  var parsed;
+                  try{ parsed=scanParseAiJson(txt); }
+                  catch(pe){ step(idx+1, new Error(prov.label+" answered but not in a readable structure: "+String(txt).slice(0,120))); return; }
+                  aep.phase("fill", 0.5);
+                  var found=fill(parsed, prov.label);
+                  aep.finish(found.length ? "Read by "+prov.label+": "+found.join(" · ")+" — check and adjust." : prov.label+" couldn't find an amount — fill in manually.");
+                })
+                .catch(function(err){
+                  if(settled) return; settled=true; clearTimeout(timeout); clearInterval(tick);
+                  var t=errxTranslate(err,{source:prov.label});
+                  investAutoNote("Scan via "+prov.label, t);
+                  aep.note("⚠ "+prov.label+": "+t.title+" — trying the next reader…");
+                  setTimeout(function(){ step(idx+1, err); }, 900);
+                });
+            } else { /* TextDetector */
+              aep.phase("read", 0.3);
+              var det=new window.TextDetector();
+              Promise.all(cvs.map(function(cv){ return det.detect(cv); })).then(function(all){
+                aep.phase("parse", 0.3);
+                var lines=[];
+                all.forEach(function(blocks){
+                  blocks.slice().sort(function(a,b){ return a.boundingBox.top-b.boundingBox.top; })
+                    .forEach(function(b){ lines.push(b.rawValue); });
+                });
+                var parsed=(typeof parseReceiptSmart==="function"?parseReceiptSmart(lines):parseReceiptText(lines));
+                aep.phase("fill", 0.5);
+                var found=fill(parsed, "Local reader");
+                aep.finish(found.length ? "Read locally: "+found.join(" · ")+" — check and adjust." : "Couldn't read any amounts — fill in manually.");
+              }).catch(function(err){ step(idx+1, err); });
+            }
+          }catch(err){ step(idx+1, err); }
+        };
+        loadAll(go);
+      };
+      step(0, null);
+    }
+    runPipeline();
+  };
+
+  /* ============================================================
+     CSS for everything above (injected so the module is one block)
+     ============================================================ */
+  (function(){
+    var css=document.createElement("style");
+    css.textContent=[
+      ".aep{background:var(--card2,#151b28);border:1px solid var(--bd2,#2a3448);border-radius:12px;padding:12px 14px;margin:8px 0;font-size:12.5px;animation:aepIn .28s ease}",
+      "@keyframes aepIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+      ".aep-float{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));width:min(440px,calc(100vw - 24px));z-index:75;box-shadow:0 12px 34px rgba(0,0,0,.45)}",
+      ".aep-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}",
+      ".aep-eng{font-weight:800;font-size:11.5px;background:var(--bd2,#2a3448);border-radius:7px;padding:2px 7px;flex:none}",
+      ".aep-title{font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".aep-x{flex:none}",
+      ".aep-bar{height:8px;background:var(--bd2,#2a3448);border-radius:6px;overflow:hidden}",
+      ".aep-fill{height:100%;width:0;background:var(--amber,#f4b73f);border-radius:6px;transition:width .3s ease}",
+      ".aep-done .aep-fill{background:var(--up,#3ddc84)}",
+      ".aep-failed .aep-fill{background:var(--down,#ff5d5d)}",
+      ".aep-row{display:flex;gap:10px;align-items:baseline;margin-top:7px;color:var(--mut,#8a94a6)}",
+      ".aep-row b{color:var(--tx,#e8ecf4);font-size:14px}",
+      ".aep-ph{margin-left:auto;font-size:11px}",
+      ".aep-say{margin-top:6px;font-size:11.5px;color:var(--mut,#8a94a6);min-height:16px;font-style:italic;opacity:.95}",
+      ".aep-say.in{animation:aepSay .4s ease}",
+      "@keyframes aepSay{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}",
+      ".aep-out{opacity:0;transform:translateY(8px);transition:all .3s ease}",
+      ".errx{background:rgba(255,93,93,.07);border:1px solid rgba(255,93,93,.35);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12.5px}",
+      ".errx-t{font-weight:800;margin-bottom:4px}",
+      ".errx-src{font-weight:600;color:var(--mut,#8a94a6);font-size:11px;margin-left:6px}",
+      ".errx-p{margin-bottom:4px;line-height:1.5}",
+      ".errx-a{color:var(--amber,#f4b73f);margin-bottom:6px}",
+      ".errx-d summary{cursor:pointer;color:var(--mut,#8a94a6);font-size:11px}",
+      ".errx-d pre{white-space:pre-wrap;word-break:break-all;font-size:10.5px;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;max-height:140px;overflow:auto}",
+      ".errx-b{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}",
+      ".sc-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}",
+      ".sc-th{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;border:1px solid var(--bd2,#2a3448);animation:aepIn .22s ease}",
+      ".sc-th.on{border-color:var(--amber,#f4b73f)}",
+      ".sc-th img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}",
+      ".sc-th-x{position:absolute;top:1px;right:1px;border:0;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;font-size:9px;padding:1px 4px;cursor:pointer}",
+      ".scan-cam video{animation:aepIn .3s ease}",
+      ".tr-subbar{display:flex;gap:4px;background:var(--card2,#151b28);border:1px solid var(--bd2,#2a3448);border-radius:12px;padding:4px;margin:0 0 14px}",
+      ".tr-subbar button{flex:1;border:0;background:transparent;color:var(--mut,#8a94a6);font:inherit;font-size:12px;font-weight:700;padding:8px 4px;border-radius:9px;cursor:pointer;transition:all .18s ease}",
+      ".tr-subbar button:active{transform:scale(.96)}",
+      ".tr-subbar button.on{background:var(--bd2,#2a3448);color:var(--tx,#e8ecf4)}",
+      ".inv-dot{position:absolute;top:-4px;right:-10px;background:var(--down,#ff5d5d);color:#fff;font-size:9px;font-weight:800;border-radius:8px;padding:1px 4px;line-height:1.3}",
+      ".tab-ic{position:relative}",
+      ".inv-page{border:1px solid var(--bd2,#2a3448);border-radius:12px;padding:10px 12px;margin-bottom:12px}",
+      ".inv-page-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:13px}",
+      ".inv-card{background:var(--card2,#151b28);border:1px solid var(--bd2,#2a3448);border-radius:10px;padding:9px 11px;margin-bottom:8px;font-size:12.5px;animation:aepIn .25s ease}",
+      ".inv-card.fixed{opacity:.65}",
+      ".inv-card.dismissed{opacity:.45}",
+      ".inv-t{font-weight:800}",
+      ".inv-when{color:var(--mut,#8a94a6);font-weight:500;font-size:10.5px;margin-left:6px}",
+      ".inv-p{margin-top:3px;line-height:1.5}",
+      ".inv-a{margin-top:3px;color:var(--amber,#f4b73f)}",
+      ".inv-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}",
+      ".inv-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}",
+      ".inv-hist{border:1px solid var(--bd2,#2a3448);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12.5px}",
+      ".inv-hist summary{cursor:pointer}",
+      ".inv-hist .inv-card{margin-top:8px}",
+      ".q-chips{display:flex;flex-wrap:wrap;gap:6px}",
+      ".q-chip{background:var(--card2,#151b28);border:1px solid var(--bd2,#2a3448);color:var(--tx,#e8ecf4);border-radius:99px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer;transition:all .18s ease}",
+      ".q-chip:active{transform:scale(.95)}",
+      ".q-recent{margin-top:14px}",
+      ".q-recent-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut,#8a94a6);margin-bottom:8px}",
+      ".q-msg{border-radius:10px;padding:8px 11px;margin-bottom:6px;font-size:12.5px;max-width:92%}",
+      ".q-msg.me{background:var(--bd2,#2a3448);margin-left:auto}",
+      ".q-msg.ai{background:var(--card2,#151b28);border:1px solid var(--bd2,#2a3448)}",
+      ".auto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}",
+      ".auto-grid .btn{text-align:left;line-height:1.4;padding:12px}",
+      ".auto-grid .mut{font-weight:500;font-size:11px}",
+      "@media(max-width:420px){.auto-grid{grid-template-columns:1fr}}",
+      ".mdl-inv{margin-right:auto}",
+      ".scan-sheet{max-width:600px;width:calc(100vw - 32px);background:var(--card,#111726);border:1px solid var(--bd2,#2a3448);border-radius:16px;max-height:88vh;overflow:auto}",
+      "@media(prefers-reduced-motion:reduce){.aep,.aep-say.in,.inv-card{animation:none!important}}"
+    ].join("\n");
+    document.head.appendChild(css);
+  })();
+
+  /* ============================================================
+     MODULE INIT — runs after the app's own init (same event, later)
+     ============================================================ */
+  function bmInit(){
+    /* trading sub-tab bar */
+    var head=document.querySelector("#pageTrading .page-head");
+    if(head && !document.getElementById("trSubBar")){
+      var bar=document.createElement("div");
+      bar.className="tr-subbar"; bar.id="trSubBar"; bar.setAttribute("role","tablist");
+      bar.innerHTML='<button data-sub="stats" class="on" role="tab">📈 Stats</button>'
+        +'<button data-sub="questions" role="tab">💬 Questions</button>'
+        +'<button data-sub="invest" role="tab">🕵️ Investigation</button>'
+        +'<button data-sub="auto" role="tab">🤖 Auto Analyze</button>';
+      head.insertAdjacentElement("afterend", bar);
+      ["trSubQuestions","trSubInvest","trSubAuto"].forEach(function(id){
+        var d=document.createElement("div"); d.id=id; d.className="tr-sub"; d.style.display="none";
+        bar.insertAdjacentElement("afterend", d);
+      });
+      bar.addEventListener("click", function(e){
+        var b=e.target.closest("button[data-sub]"); if(b) trSetSub(b.getAttribute("data-sub"));
+      });
+    }
+    /* the Load model button — previously bound to nothing */
+    var lb=document.getElementById("wllmLoadBtn");
+    if(lb && !lb._bmBound){ lb._bmBound=true; lb.addEventListener("click", function(){ wllmGuardedLoad(); }); }
+    /* pop-up preference select */
+    var ps=document.getElementById("setPopups");
+    if(ps && !ps._bmBound){
+      ps._bmBound=true;
+      ps.value=popupsQuiet()?"quiet":"on";
+      ps.addEventListener("change", function(){ setPopupsMode(ps.value); flashSaved(ps.value==="quiet"?"quiet mode on — notices go to Investigation":"pop-ups back on"); });
+    }
+    investBadge();
+    bindErrxButtons(document);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(bmInit, 500); });
+  else setTimeout(bmInit, 500);
+
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
@@ -15560,6 +16912,13 @@ AI_TYPES.join(", "),
     <button class="btn ghost sm" id="layoutReset" style="width:100%;margin-top:8px">Reset to defaults</button>
     <hr class="sep" style="margin:18px 0">
 
+    <div class="fld"><label for="setPopups">Pop-ups</label>
+      <select id="setPopups">
+        <option value="on">Show all pop-ups</option>
+        <option value="quiet">Quiet — only critical confirmations</option>
+      </select>
+    </div>
+    <div class="hint" style="margin-top:-4px">Quiet mode files non-critical notices to <b>Trading → Investigation</b> instead of interrupting you. Confirmations that change data always still appear.</div>
     <div class="fld"><label for="setChartMode">Balance chart shows</label>
       <select id="setChartMode">
         <option value="candle">Candles — monthly high/low</option>
@@ -15612,7 +16971,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.0</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.2</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
