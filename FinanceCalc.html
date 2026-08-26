@@ -4659,7 +4659,16 @@ AI_TYPES.join(", "),
     box.style.display="block";
     var list=res.list||[];
     if(!list.length){
-      box.innerHTML='<div class="ai-banner warn">Nothing financial found in those images.</div>';
+      box.innerHTML='<div class="ai-banner warn"><b>The engine read the images but found no transactions in them.</b>'
+        +'<br>Nothing was added. That usually means the picture is too dark or cropped, or it isn\'t a receipt/statement. '
+        +'Try a straighter, brighter shot, or add the entry by hand.'
+        +'<br><br><button class="btn ghost sm" id="aiNoneInv">🕵️ Investigate</button></div>';
+      var nb=document.getElementById("aiNoneInv");
+      if(nb) nb.onclick=function(){
+        investOpenWith({source:"AI image read", title:"AI found no transactions in the images",
+          plain:"The engine answered normally but returned an empty list, so nothing was added.",
+          action:"Retake the photo straighter and brighter, or enter it by hand."});
+      };
       return;
     }
     var banner;
@@ -9604,6 +9613,19 @@ AI_TYPES.join(", "),
       if(fresh.length){ saveAgentCfg(); showAgentPopup(fresh, true); }
     });
   }
+  /* File every finding into Investigation so a check that found something
+     actually leaves something behind — reading a list and closing it changed
+     nothing, which is indistinguishable from the check not working. */
+  function fileFindings(findings, how){
+    var ids=[];
+    (findings||[]).forEach(function(f){
+      ids.push(investLog({ page:"Entries", source:how||"Advanced check",
+        title:f.title||"Finding", plain:f.body||"",
+        action:(f.ids&&f.ids.length)?("Affects "+f.ids.length+" entr"+(f.ids.length===1?"y":"ies")+" — open Entries to review."):"",
+        raw:(f.ids&&f.ids.length)?("entry ids: "+f.ids.join(", ")):"" }));
+    });
+    return ids;
+  }
   function showAgentPopup(findings, fromWatch){
     if(document.getElementById("agentPopOv")) return;
     var host=document.createElement("div");
@@ -9621,13 +9643,20 @@ AI_TYPES.join(", "),
       +'  </div>'
       +'  <div class="sheet-ft">'
       +(fromWatch?'<button class="btn ghost sm" id="apOff">Stop watching</button>':'')
-      +'    <button class="btn ghost sm" id="apDeep">Run deep check</button>'
-      +'    <button class="btn primary sm" id="apOk">Got it</button></div>'
+      +'    <button class="btn ghost sm" id="apDeep">Run again</button>'
+      +'    <button class="btn primary sm" id="apInv">🕵️ Investigate these</button>'
+      +'    <button class="btn ghost sm" id="apOk">Close</button></div>'
       +'</div>';
     document.body.appendChild(host);
     var close=function(){ if(host.parentNode) host.parentNode.removeChild(host); };
     host.querySelector("#apX").onclick=close;
     host.querySelector("#apOk").onclick=close;
+    host.querySelector("#apInv").onclick=function(){
+      fileFindings(findings, fromWatch?"Background review":"Advanced check");
+      close();
+      setTab("pageTrading"); trSetSub("invest");
+      flashSaved(findings.length+" finding"+(findings.length===1?"":"s")+" filed to Investigation");
+    };
     host.querySelector("#apDeep").onclick=function(){ close(); openDeepCheck(); };
     var off=host.querySelector("#apOff");
     if(off) off.onclick=function(){
@@ -9694,10 +9723,21 @@ AI_TYPES.join(", "),
         host.querySelector("#agBar").style.width="100%";
         stop.style.display="none"; go.style.display=""; go.textContent="Run again";
         agentCfg.lastDeep=Date.now(); saveAgentCfg();
+        var when=new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
         host.querySelector("#agNow").textContent=findings.length
-          ? findings.length+" finding"+(findings.length===1?"":"s")+"."
-          : "Nothing found \u2014 your records look clean.";
+          ? findings.length+" finding"+(findings.length===1?"":"s")+" \u2014 opening them\u2026"
+          : "Checked "+(state.transactions||[]).length+" entries at "+when+" \u2014 nothing wrong found.";
         if(findings.length){ setTimeout(function(){ close(); showAgentPopup(findings,false); },600); }
+        else {
+          /* A clean run used to end on one small grey line, which reads as
+             "it did nothing". Say plainly what was checked and by whom. */
+          var res=host.querySelector("#agNow");
+          res.insertAdjacentHTML("afterend",
+            '<div class="ag-find info" style="margin-top:10px"><div class="ag-ft">\u2705 All clear</div>'
+            +'<div class="ag-fb">'+AGENTS.length+' agents went through '+((state.transactions||[]).length)
+            +' entries and found nothing worth flagging. Nothing was changed.</div></div>');
+          host.querySelector("#dpClose").textContent="Done";
+        }
       });
     };
   }
@@ -15829,6 +15869,7 @@ AI_TYPES.join(", "),
         break;
       case "Entries":
         add("Open entries", function(){ setTab("pageLedger"); });
+        add("Run the check again", function(){ if(typeof openDeepCheck==="function") openDeepCheck(); });
         break;
     }
     add("Retry last action", null); /* placeholder replaced below if a retry exists */
@@ -17008,7 +17049,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.3</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.4</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
