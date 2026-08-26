@@ -1614,6 +1614,8 @@
           <option value="save">Move to savings</option>
           <option value="withdraw">Take from savings</option>
           <option value="move_to_debt">Move to debt (owe it instead)</option>
+          <option value="trade_win">Trade — profit</option>
+          <option value="trade_loss">Trade — loss</option>
           <option value="to_trading" class="sep-only">Move bank → trading</option>
           <option value="from_trading" class="sep-only">Move trading → bank</option>
           <option value="tax_set">Set aside for tax</option>
@@ -1654,6 +1656,17 @@
           <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove all</button>
         </div>
         <div id="fPhotoStrip" class="ph-strip"></div>
+      <div class="fld full" id="mtOcrBar" style="display:none">
+        <div class="mtocr-row">
+          <span id="mtOcrStatus" class="mut" style="font-size:12px;flex:1">⚡ Attach a statement photo to auto-read it</span>
+          <select id="mtOcrFillMode" class="mtocr-sel">
+            <option value="net">One net entry</option>
+            <option value="each">Each trade separately</option>
+          </select>
+          <button type="button" class="btn ghost sm" id="mtOcrFillBtn" style="display:none">Fill in</button>
+        </div>
+        <div id="mtOcrProg" class="mtocr-prog" style="display:none"><div id="mtOcrProgFill"></div></div>
+        <div id="mtOcrIntro" style="display:none"></div>
       </div>
       <div class="fld full">
         <button type="submit" class="btn primary" id="entrySubmitBtn" style="width:100%">Add entry</button>
@@ -2666,7 +2679,7 @@
     // Neutral defaults. These were 41/30/11 — one household's actual allowance numbers,
     // handed to every new portfolio as if they were universal. Zero means "not set up
     // yet", which is the only honest default for someone else's money.
-    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, isTrader:false, photoQ:"med"},
+    settings:{allowance:0, toDebt:0, toTrading:0, toSavings:0, taxPct:0, sepTrading:false, isTrader:false, photoQ:"med", mtOcr:"silent"},
     // Wording is the user's, not ours. Defaults are deliberately neutral — this app
     // started life as a pocket-money tracker with one household's vocabulary hardcoded.
     labels:{debt:"Debt", income:"Monthly income", savings:"Savings", trading:"Money"},
@@ -11581,6 +11594,14 @@ AI_TYPES.join(", "),
     });
   }
   function scanLiveCamera(done){
+    /* The app has its own camera off-switch in Settings; ignoring it here meant
+       the browser prompted for a camera the user had already switched off. */
+    if(typeof cameraBlocked==="function" && cameraBlocked()){
+      done(null, new Error("Camera access is switched off for this app in Settings \u203a Security & privacy.")); return;
+    }
+    if(!window.isSecureContext){
+      done(null, new Error("Live camera needs https. Opened straight from disk (file://) browsers block it \u2014 use Choose photos instead.")); return;
+    }
     if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ done(null, new Error("Live camera is not available in this browser.")); return; }
     navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}, audio:false}).then(function(stream){
       var ov=document.createElement("div"); ov.className="mdl-ov"; ov.id="camOv";
@@ -11594,6 +11615,17 @@ AI_TYPES.join(", "),
         +'<button class="btn sm solid" id="camDone" disabled>Use 0 photos</button></div></div>';
       document.body.appendChild(ov);
       var vid=document.getElementById("camVid"); vid.srcObject=stream;
+      /* A stream attached after insertion isn't always autoplayed — without this
+         the preview stays black even when permission was granted. */
+      try{ var _p=vid.play(); if(_p&&_p.catch) _p.catch(function(){}); }catch(e){}
+      var _nf=setTimeout(function(){
+        if(!vid.videoWidth){
+          investAutoNote("Camera", errxTranslate(new Error("The camera opened but sent no picture."),{source:"Camera"}));
+          var th=document.getElementById("camThumbs");
+          if(th) th.insertAdjacentHTML("beforebegin",'<div class="hint" style="margin-top:8px">The camera opened but no picture is coming through \u2014 another app may be using it. Close that app, or use <b>Choose photos</b>.</div>');
+        }
+      },4000);
+      vid.addEventListener("loadedmetadata", function(){ clearTimeout(_nf); });
       var shots=[];
       var stopAll=function(){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} ov.remove(); };
       var refresh=function(){
@@ -11647,8 +11679,20 @@ AI_TYPES.join(", "),
         if(err){
           var t=errxTranslate(err,{source:"Camera"});
           investAutoNote("Camera", t);
-          flashSaved("camera: "+t.title+" — using photo picker");
-          var cam=document.getElementById("scanCamInput"); if(cam) cam.click();
+          var ua=navigator.userAgent||"";
+          var how=/iPhone|iPad|iPod/.test(ua)
+            ? "On iOS: Settings \u203a Safari \u203a Camera, set it to Ask or Allow, then reload."
+            : (/Safari/.test(ua)&&!/Chrome/.test(ua))
+            ? "In Safari: Safari \u203a Settings for This Website, set Camera to Allow, then reload."
+            : "In Chrome or Edge: click the \uD83D\uDD12 icon by the address bar, allow Camera, then reload.";
+          appModal({title:"Camera didn't open", investigate:true,
+            message:t.plain+"\n\n"+how+"\n\nOr just pick a photo \u2014 the reading works exactly the same.",
+            confirmText:"Choose photos", cancelText:"Close",
+            onConfirm:function(){
+              var g=scanGalleryInput();
+              g.onchange=function(e){ scanFilesToUrls(e.target.files, function(urls){ g.value=""; if(urls.length) openScanSheet(null, urls); }); };
+              g.click();
+            }});
         }
       });
     };
@@ -13400,11 +13444,15 @@ AI_TYPES.join(", "),
     if(isTrade) refreshInstList();
     var lbl=document.getElementById("amtLbl");
     lbl.textContent = (v==="adjust")?"Amount (use − for a drop)":"Amount";
+    if(typeof mtOcrUI==="function") mtOcrUI();
+    if(isTrade && typeof mtOcr!=="undefined" && mtOcr.state==="idle"
+       && typeof mtOcrImages==="function" && mtOcrImages().length) mtOcrStart();
   }
   function clearPhotoPick(){
     pendingPhotos=[]; keepPhotos=[]; photoCleared=true;
     var fPhotoEl=document.getElementById("fPhoto"); if(fPhotoEl) fPhotoEl.value="";
     renderPhotoStrip();
+    photosChangedMt();
   }
   // One strip showing both what's already saved and what's just been picked — they look
   // the same to the person, so they shouldn't be in two different places.
@@ -13446,15 +13494,101 @@ AI_TYPES.join(", "),
       var inner = attIsImage(pp.name,pp.dataUrl)
         ? '<img src="'+pp.dataUrl+'" alt="New attachment '+(i+1)+'">'
         : '<div class="ph-doc"><span class="ph-ic">'+attIcon(pp.name,pp.dataUrl)+'</span><span class="ph-nm">'+esc((pp.name||"file").slice(0,14))+'</span></div>';
+      if(pp.auto) c.classList.add("ph-auto");
       c.innerHTML=inner+'<button type="button" class="ph-x" title="Remove">×</button>'
+        +(pp.auto?'<span class="ph-lock" title="Picked automatically by the scanner — can\'t be swapped">🔒</span>':'')
         +(note?'<span class="ph-kb">'+esc(note)+'</span>':'');
+      if(!pp.auto) c.classList.add("swappable");
+      c.title=(pp.auto?"Picked automatically by the scanner — locked. ":"Tap to swap this image. ")+(c.title||"");
       strip.appendChild(c);
-      c.querySelector(".ph-x").addEventListener("click", function(){
-        pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip();
+      /* Tap a box to swap its image — unless the scanner chose it, in which
+         case it stays put so an auto-read result can't be quietly replaced. */
+      c.addEventListener("click", function(e){
+        if(e.target.closest(".ph-x")) return;
+        if(pp.auto){
+          flashSaved("that photo was picked automatically — remove it first to change it");
+          return;
+        }
+        photoSwapPick(function(res){
+          if(!res) return;
+          var at=pendingPhotos.indexOf(pp);
+          if(at<0) return;
+          res.auto=false;
+          pendingPhotos.splice(at,1,res);
+          photoCleared=false;
+          renderPhotoStrip(); photosChangedMt();
+          flashSaved("image swapped");
+        });
+      });
+      c.querySelector(".ph-x").addEventListener("click", function(ev){
+        ev.stopPropagation();
+        pendingPhotos.splice(pendingPhotos.indexOf(pp),1); renderPhotoStrip(); photosChangedMt();
       });
     });
   }
 
+
+  /* Swap one box's image for another file. */
+  function photoSwapPick(cb){
+    var inp=document.createElement("input");
+    inp.type="file"; inp.accept="image/*,application/pdf"; inp.style.display="none";
+    document.body.appendChild(inp);
+    inp.onchange=function(){
+      var f=inp.files&&inp.files[0];
+      inp.remove();
+      if(!f){ cb(null); return; }
+      readFileRaw(f, function(res){ cb(res||null); });
+    };
+    inp.click();
+  }
+  /* Photos changed → the statement read is stale. Restart or clear it. */
+  function photosChangedMt(){
+    if(typeof mtOcr==="undefined") return;
+    mtOcr.token++; mtOcr.state="idle"; mtOcr.result=null; mtOcr.wantFill=false;
+    if(typeof mtOcrImages==="function" && mtOcrImages().length && typeof mtOcrStart==="function") mtOcrStart();
+    else if(typeof mtOcrUI==="function") mtOcrUI();
+  }
+  /* Drag a photo straight onto the strip — the same path as the picker,
+     including the MT statement read and the photo cap. */
+  function addPhotoFiles(files, opts){
+    opts=opts||{};
+    var list=Array.prototype.slice.call(files||[]);
+    if(!list.length) return;
+    var room=PHOTO_MAX-(keepPhotos.length+pendingPhotos.length);
+    var over=list.length-room;
+    if(over>0) list=list.slice(0,Math.max(0,room));
+    if(!list.length){ flashSaved("that's the most ("+PHOTO_MAX+")"); return; }
+    var left=list.length;
+    list.forEach(function(f){
+      readFileRaw(f, function(res){
+        if(res){ res.auto=!!opts.auto; pendingPhotos.push(res); }
+        photoCleared=false;
+        if(--left===0){
+          renderPhotoStrip(); photosChangedMt();
+          flashSaved(over>0 ? ("added "+list.length+" — "+PHOTO_MAX+" is the limit") : ("added "+list.length+" photo"+(list.length===1?"":"s")));
+        }
+      });
+    });
+  }
+  function bindPhotoDrop(){
+    var strip=document.getElementById("fPhotoStrip");
+    if(!strip || strip._drop) return;
+    strip._drop=true;
+    var zone=strip.closest(".fld")||strip;
+    ["dragenter","dragover"].forEach(function(ev){
+      zone.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); strip.classList.add("drag-over"); });
+    });
+    ["dragleave","dragend"].forEach(function(ev){
+      zone.addEventListener(ev, function(e){ e.preventDefault(); strip.classList.remove("drag-over"); });
+    });
+    zone.addEventListener("drop", function(e){
+      e.preventDefault(); e.stopPropagation();
+      strip.classList.remove("drag-over");
+      var dt=e.dataTransfer; if(!dt) return;
+      var files=dt.files&&dt.files.length ? dt.files : null;
+      if(files) addPhotoFiles(files, {auto:false});
+    });
+  }
 
   // Guarantees a fresh, strictly-increasing id for every new transaction, even if two are
   // created in the same millisecond (Date.now() alone can't promise that — a same-millisecond
@@ -14504,7 +14638,7 @@ AI_TYPES.join(", "),
           photoCleared=false;
           if(--left===0){
             fPhoto.value="";
-            renderPhotoStrip();
+            renderPhotoStrip(); photosChangedMt();
             if(over>0) flashSaved("added "+files.length+" — "+PHOTO_MAX+" is the limit");
           }
         });
@@ -15191,6 +15325,8 @@ AI_TYPES.join(", "),
         });
       }).observe(document.body,{childList:true,subtree:true});
     }catch(e){}
+    bindPhotoDrop();
+    if(typeof bindMtOcr==="function") bindMtOcr();
     var fcb=document.getElementById("forecastBtn");
     if(fcb && !fcb._bound){ fcb._bound=true; fcb.addEventListener("click", openForecast); }
     bindChatLaunchers();   // independent of bindChat, which bails when the sheet is shut
@@ -16235,12 +16371,30 @@ AI_TYPES.join(", "),
       +'</div>'
       +'<div class="sheet-ft" style="display:flex;gap:8px;justify-content:flex-end;padding:0 16px 14px">'
         +'<button class="btn sm" id="scCancel">Cancel</button>'
+        +'<button class="btn sm" id="scForm">\uD83D\uDCCE To entry form</button>'
         +'<button class="btn sm solid" id="scAdd">Add expense</button>'
       +'</div></div>';
     document.body.appendChild(host);
     var close=function(){ host.remove(); };
     document.getElementById("scX").onclick=close;
     document.getElementById("scCancel").onclick=close;
+    /* Put the scanned photo(s) into the entry form's boxes, flagged auto so they
+       can't be silently swapped for a different image. */
+    function scanToForm(){
+      var cap=(typeof PHOTO_MAX==="number"?PHOTO_MAX:6)-(keepPhotos.length+pendingPhotos.length);
+      urls.slice(0,Math.max(0,cap)).forEach(function(u,i){
+        pendingPhotos.push({dataUrl:u, name:"scan_"+(i+1)+".jpg", auto:true});
+      });
+      photoCleared=false;
+      renderPhotoStrip();
+      if(typeof photosChangedMt==="function") photosChangedMt();
+    }
+    document.getElementById("scForm").onclick=function(){
+      scanToForm(); close();
+      setTab("pageDash");
+      var s=document.getElementById("fPhotoStrip"); if(s&&s.scrollIntoView) try{ s.scrollIntoView({block:"center"}); }catch(e){}
+      flashSaved("photo"+(urls.length===1?"":"s")+" added to the entry form \u2014 locked");
+    };
     host.addEventListener("click", function(e){ if(e.target===host) close(); });
     document.getElementById("scDate").value=todayStr();
     try{ attachDatePicker(document.getElementById("scDate")); }catch(e){}
@@ -16415,6 +16569,15 @@ AI_TYPES.join(", "),
       ".errx-d pre{white-space:pre-wrap;word-break:break-all;font-size:10.5px;background:rgba(0,0,0,.25);border-radius:8px;padding:8px;max-height:140px;overflow:auto}",
       ".errx-b{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}",
       ".sc-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}",
+      ".mtocr-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+      ".mtocr-sel{font:inherit;font-size:12px;background:var(--card2,#151b28);color:var(--tx,#e8ecf4);border:1px solid var(--bd2,#2a3448);border-radius:8px;padding:4px 6px}",
+      ".mtocr-prog{height:4px;border-radius:3px;background:var(--bd2,#2a3448);overflow:hidden;margin-top:8px}",
+      ".mtocr-prog>div{height:100%;width:0%;background:var(--amber,#f4b73f);transition:width .25s ease}",
+      ".ph-thumb{position:relative}",
+      ".ph-thumb.ph-auto{border:2px solid var(--amber,#f4b73f)}",
+      ".ph-thumb .ph-lock{position:absolute;left:2px;bottom:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:5px;padding:0 3px}",
+      ".ph-strip.drag-over{outline:2px dashed var(--amber,#f4b73f);outline-offset:3px;border-radius:10px}",
+      ".ph-thumb.swappable{cursor:pointer}",
       ".sc-th{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;border:1px solid var(--bd2,#2a3448);animation:aepIn .22s ease}",
       ".sc-th.on{border-color:var(--amber,#f4b73f)}",
       ".sc-th img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}",
@@ -16496,6 +16659,580 @@ AI_TYPES.join(", "),
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(bmInit, 500); });
   else setTimeout(bmInit, 500);
+
+
+/* ===== MT4/MT5 PHOTO AUTO-ANALYZE — restored from build 093 (v1.98 engine), re-integrated ===== */
+  var MTOCR_HEADERS=[
+    {key:"time",re:/\btime\b/i},{key:"symbol",re:/\bsymbol\b|\bitem\b/i},{key:"type",re:/\btype\b/i},
+    {key:"volume",re:/\bvolume\b|\bvol\.?\b|\blots?\b|\bsize\b/i},{key:"price",re:/\bprice\b/i},
+    {key:"sl",re:/^s\s*\/?\s*l$/i},{key:"tp",re:/^t\s*\/?\s*p$/i},
+    {key:"commission",re:/commission|comm\.?/i},{key:"swap",re:/\bswap\b/i},
+    {key:"profit",re:/\bprofit\b|p\s*&?\s*l/i},
+    {key:"id",re:/\bposition\b|\bdeal\b|\border\b|\bticket\b|^#$/i}];
+  var MTOCR_TIME=/\d{1,2}[.:]\d{2}([.:]\d{2})?/;
+  var MTOCR_DIR=/^(buy|sell)$/i;
+  var MTOCR_NUM=/^-?\d[\d,]*\.\d+$/;
+  var MTOCR_INT=/^\d{4,}$/;
+  var MTOCR_CUR=/(USD|EUR|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|XPT|XPD|BTC|ETH|LTC|XRP|BNB|SOL|DOGE|WTI|OIL|SPX|NAS|US30|US500|GER|UK100|GOLD|SILV)/i;
+  function mtOcrInstrument(raw){
+    if(!raw) return false;
+    var s=raw.replace(/[,._]+$/,"").trim();
+    if(MTOCR_DIR.test(s)) return false;
+    if(!/^[A-Za-z][A-Za-z0-9./]{1,14}$/.test(s)) return false;
+    if(MTOCR_CUR.test(s)) return true;
+    if(/^[A-Za-z]{6}$/.test(s) && /^(EUR|GBP|USD|AUD|NZD|CAD|CHF|JPY)/i.test(s)) return true;
+    if(/_$/.test(raw)) return true;
+    return false;
+  }
+  function mtOcrRows(words){
+    var sorted=words.slice().sort(function(a,b){return a.y-b.y;});
+    var rows=[];
+    var hs=sorted.map(function(w){return w.h;}).filter(function(h){return h>0;});
+    var medH=hs.length?hs.slice().sort(function(a,b){return a-b;})[Math.floor(hs.length/2)]:20;
+    var tol=Math.max(12,medH*0.7);
+    sorted.forEach(function(w){
+      var cy=w.y+w.h/2, placed=null;
+      for(var i=0;i<rows.length;i++){
+        var r=rows[i];
+        var rcy=r.reduce(function(s,x){return s+x.y+x.h/2;},0)/r.length;
+        if(Math.abs(cy-rcy)<tol){placed=r;break;}
+      }
+      if(placed) placed.push(w); else rows.push([w]);
+    });
+    return rows;
+  }
+  function mtOcrCells(rowWords){
+    var sorted=rowWords.slice().sort(function(a,b){return a.x-b.x;});
+    var hs=sorted.map(function(w){return w.h;}).filter(function(h){return h>0;}).sort(function(a,b){return a-b;});
+    var medH=hs.length?hs[Math.floor(hs.length/2)]:20;
+    var gap=Math.max(45,medH*2.2);
+    var cells=[], cur=[sorted[0]];
+    for(var i=1;i<sorted.length;i++){
+      var prev=cur[cur.length-1];
+      if(sorted[i].x-(prev.x+prev.w)<gap) cur.push(sorted[i]);
+      else{cells.push(cur);cur=[sorted[i]];}
+    }
+    cells.push(cur);
+    return cells.map(function(c){return{text:c.map(function(w){return w.text;}).join(" ").trim(),x:c[0].x};});
+  }
+  function mtOcrStitch(sortedWords){
+    var out=[];
+    for(var i=0;i<sortedWords.length;i++){
+      var w=sortedWords[i], nxt=sortedWords[i+1];
+      if(nxt && /^-?\d{1,3}$/.test(w.text.trim()) && /^\d+\.\d+$/.test(nxt.text.trim())){
+        if(nxt.x-(w.x+w.w) < Math.max(20,w.h)){
+          out.push({text:w.text.trim()+nxt.text.trim(),x:w.x,y:Math.min(w.y,nxt.y),
+                    w:(nxt.x+nxt.w-w.x),h:Math.max(w.h,nxt.h)});
+          i++; continue;
+        }
+      }
+      out.push(w);
+    }
+    return out;
+  }
+  function mtOcrParse(words){
+    if(!words.length) return {trades:[],isStatement:false};
+    var rowsData=mtOcrRows(words)
+      .map(function(r){return r.slice().sort(function(a,b){return a.x-b.x;});})
+      .sort(function(a,b){
+        var ay=Math.min.apply(null,a.map(function(w){return w.y;}));
+        var by=Math.min.apply(null,b.map(function(w){return w.y;}));
+        return ay-by;
+      })
+      .map(function(r){return{words:r,cells:mtOcrCells(r)};})
+      .filter(function(rd){return rd.cells.length;});
+
+    var headerRow=null, headerMap=[], headerWords=[];
+    rowsData.forEach(function(rd){
+      var m=rd.cells.map(function(c){
+        var f=MTOCR_HEADERS.filter(function(p){return p.re.test(c.text);});
+        return f.length?f[0].key:null;
+      });
+      if(m.filter(Boolean).length>=3 && !headerRow){headerRow=rd.cells;headerMap=m;headerWords=rd.words;}
+    });
+    var trades=[];
+    if(headerRow){
+      /* Real statements are WIDE: a timestamp OCRs as two words and merges with
+         the next column, so mapping whole merged cells to columns put the symbol
+         under "Time" and the price under "Volume". Map each WORD to its own
+         column instead, using midpoints between header positions as the borders. */
+      /* Header labels merge into one cell on a wide table ("Position Symbol",
+         "Volume Price"), so column anchors come from each header WORD, matched
+         to its key individually. Each data word then joins its nearest anchor. */
+      var anchors=[];
+      headerWords.forEach(function(hw){
+        var txt=(hw.text||"").trim();
+        for(var i=0;i<MTOCR_HEADERS.length;i++){
+          if(MTOCR_HEADERS[i].re.test(txt)){
+            anchors.push({key:MTOCR_HEADERS[i].key, x:hw.x+(hw.w||0)/2});
+            break;
+          }
+        }
+      });
+      anchors.sort(function(a,b){ return a.x-b.x; });
+      function keyOf(x){
+        var best=null, bd=Infinity;
+        for(var i=0;i<anchors.length;i++){
+          var d=Math.abs(x-anchors[i].x);
+          if(d<bd){ bd=d; best=anchors[i]; }
+        }
+        return best ? best.key+"#"+best.x : null;
+      }
+      /* Statements end with Total / Balance / Deposit lines. Parsed as a trade,
+         a "Total 679.75" row doubled the net. Anything that looks like a summary
+         line is skipped. */
+      var SUMMARY=/^(total|totals|balance|summary|deposit|withdrawal|credit|equity|floating|free\s*margin|margin|no\s+transactions)\b/i;
+      rowsData.forEach(function(rd){
+        var cells=rd.cells;
+        if(cells===headerRow) return;
+        if(!cells.some(function(c){return MTOCR_NUM.test(c.text.replace(/,/g,""));})) return;
+        if(cells.length && SUMMARY.test(cells[0].text.trim())) return;
+        if(rd.words.some(function(w){ return SUMMARY.test(w.text.trim()); }) && cells.length<=3) return;
+        var byCol={};
+        rd.words.forEach(function(w){
+          var k=keyOf(w.x + (w.w||0)/2);
+          if(k) (byCol[k]=byCol[k]||[]).push(w);
+        });
+        var t={symbol:null,type:null,volume:null,date:null,profit:null};
+        var seenTime=0, filled=0;
+        Object.keys(byCol).sort(function(a,b){ return (+a.split("#")[1])-(+b.split("#")[1]); }).forEach(function(k){
+          var key=k.split("#")[0];
+          if(!key) return;
+          var txt=byCol[k].sort(function(a,b){return a.x-b.x;}).map(function(w){return w.text;}).join(" ").trim();
+          var raw=txt, num=parseFloat(raw.replace(/[, ]/g,""));
+          if(key==="symbol"&&!/^\d+$/.test(raw)&&raw){ t.symbol=t.symbol||raw.replace(/[,._]+$/,"").toUpperCase(); filled++; }
+          else if(key==="type"&&MTOCR_DIR.test(raw)){ t.type=raw.toLowerCase(); filled++; }
+          else if(key==="volume"&&!isNaN(num)){ t.volume=num; filled++; }
+          else if(key==="time"){ seenTime++; if(seenTime===1) t.date=raw; filled++; }
+          else if(key==="profit"&&!isNaN(num)){
+            /* the P/L column sits last; a merged neighbour can donate a number,
+               so keep the right-most one found in that column */
+            t.profit=num; filled++;
+          }
+          else if(key==="id"){
+            /* the ticket shares its column with a clock time on wide tables —
+               take the longest 4+ digit run rather than the whole cell */
+            var cand=null;
+            (raw.match(/\d{4,}/g)||[]).forEach(function(d){ if(!cand||d.length>cand.length) cand=d; });
+            if(cand){ t.ticket=cand; filled++; }
+          }
+        });
+        /* A real deal row fills several columns; one stray number does not. */
+        if(filled<3) return;
+        if(t.symbol||t.type||t.profit!=null) trades.push(t);
+      });
+    } else {
+      rowsData.forEach(function(rd){
+        var cells=rd.cells, dirIdx=-1;
+        for(var i=0;i<cells.length;i++){if(MTOCR_DIR.test(cells[i].text.trim())){dirIdx=i;break;}}
+        if(dirIdx===-1) return;
+        var t={symbol:null,type:cells[dirIdx].text.trim().toLowerCase(),volume:null,date:null,profit:null,ticket:null};
+        var timeCells=cells.filter(function(c){return MTOCR_TIME.test(c.text)&&!/^\d+$/.test(c.text.trim());});
+        if(timeCells[0]) t.date=timeCells[0].text.trim();
+        /* v2.12: TICKET NUMBER in the header-less layout. MT4/MT5 puts a long bare
+           integer (position/deal id) next to the time, before buy/sell. It was never
+           captured, so Trade Info always showed a blank ticket. Longest 6+ digit
+           run wins, so a 4-digit stray can't be mistaken for one. */
+        var symIdx=-1;
+        for(var j=dirIdx+1;j<cells.length;j++){
+          if(mtOcrInstrument(cells[j].text.trim())){
+            t.symbol=cells[j].text.trim().replace(/[,._]+$/,"").toUpperCase(); symIdx=j; break;
+          }
+        }
+        var bestTicket=null;
+        cells.forEach(function(c){
+          var raw=c.text.trim().replace(/[ ,]/g,"");
+          if(/^\d{6,}$/.test(raw) && (!bestTicket || raw.length>bestTicket.length)) bestTicket=raw;
+        });
+        if(bestTicket) t.ticket=bestTicket;
+        /* v2.12: VOLUME was taking whichever decimal came first after buy/sell, which
+           on statements that put P&L before the lot size (e.g. "buy  -0.16  0.01")
+           recorded the loss as the lot size. Lots are positive, under 1000, and sit
+           BEFORE the instrument — all three now required. */
+        var volCell=null;
+        for(var k=dirIdx+1;k<cells.length;k++){
+          if(symIdx>=0 && k>=symIdx) break;              // lots come before the symbol
+          var r2=cells[k].text.trim().replace(/,/g,"");
+          if(!MTOCR_NUM.test(r2)||MTOCR_INT.test(r2)) continue;
+          var v=parseFloat(r2);
+          if(v>0 && v<1000){ t.volume=v; volCell=cells[k]; break; }   // never negative
+        }
+        var nums=cells.filter(function(c){
+          var raw=c.text.trim().replace(/,/g,"");
+          return MTOCR_NUM.test(raw)&&!MTOCR_INT.test(raw)&&c!==volCell;
+        });
+        if(nums.length) t.profit=parseFloat(nums[nums.length-1].text.trim().replace(/,/g,""));
+        // v1.98 STRICT WHITELIST: a header-less row only counts as a trade if it has a
+        // REAL instrument (mtOcrInstrument) AND a buy/sell direction. A bare number grid
+        // (e.g. an Apple Notes table) has neither -> "not MT4/MT5, ignored". This
+        // deliberately replaces the old looser test that accepted 3 numbers alone.
+        var looks=(!!t.symbol)&&(!!t.type);
+        if(looks) trades.push(t);
+      });
+      if(!trades.length){
+        var used={};
+        for(var ri=0;ri<rowsData.length;ri++){
+          if(used[ri]) continue;
+          var wa=rowsData[ri].words;
+          var ta=wa.map(function(w){return w.text;}).join(" ");
+          if(!/\b(buy|sell)\b/i.test(ta)) continue;
+          if(!wa.some(function(w){return mtOcrInstrument(w.text.trim());})) continue;
+          var rb=rowsData[ri+1];
+          if(!rb) continue;
+          if(/\b(buy|sell)\b/i.test(rb.words.map(function(w){return w.text;}).join(" "))) continue;
+          var sa=mtOcrStitch(wa), sb=mtOcrStitch(rb.words);
+          var taJ=sa.map(function(w){return w.text;}).join(" ");
+          var tbJ=sb.map(function(w){return w.text;}).join(" ");
+          var sym=wa.filter(function(w){return mtOcrInstrument(w.text.trim());})[0];
+          var dir=taJ.match(/\b(buy|sell)\b/i);
+          var dm=taJ.match(/\d{4}[.\-]\d{2}[.\-]\d{2}(\s+\d{1,2}:\d{2}(:\d{2})?)?/);
+          var da=taJ.match(/-?\d+\.\d+/g)||[];
+          var db=tbJ.match(/-?\d+\.\d+/g)||[];
+          if(!db.length) continue;
+          var tk=taJ.match(/\b\d{6,}\b/);
+          var t2={symbol:sym?sym.text.replace(/[,._]+$/,"").toUpperCase():null,
+                  ticket:tk?tk[0]:null,
+                  type:dir?dir[1].toLowerCase():null,
+                  volume:da.length?parseFloat(da[0]):null,
+                  date:dm?dm[0]:null,
+                  profit:db.length>2?parseFloat(db[2]):null};
+          if(t2.symbol&&t2.type){trades.push(t2);used[ri+1]=true;}
+        }
+      }
+    }
+    return {trades:trades,isStatement:trades.length>0};
+  }
+
+  /* ############################################################################
+     STAGED BUILD v1.99 -> v2.06 (from master handoff roadmap)
+     Each block below is one stage; all additive, all fail-safe.
+     ############################################################################ */
+
+  /* ---------- shared: option-picker modal (used by onboarding + consent) ---------- */
+  var mtOcr={ state:"idle",           // idle | loading | running | done | failed | nota
+              result:null, error:null,
+              token:0,                // invalidates a run when photos change mid-read
+              progress:0, wantFill:false };
+  function mtOcrMode(){ return (state.settings&&state.settings.mtOcr)||"off"; }
+  function mtOcrIsTradeType(){
+    var v=document.getElementById("fType").value;
+    return v==="trade_win"||v==="trade_loss";
+  }
+  function mtOcrImages(){
+    return pendingPhotos.filter(function(pp){
+      return attIsImage(pp.name, pp.dataUrl);
+    });
+  }
+  function mtOcrLoadEngine(cb){
+    if(typeof Tesseract!=="undefined"){cb(true);return;}
+    if(!navigator.onLine){cb(false);return;}
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js";
+    s.onload=function(){cb(typeof Tesseract!=="undefined");};
+    s.onerror=function(){cb(false);};
+    document.head.appendChild(s);
+  }
+  function mtOcrUpscale(dataUrl, cb){
+    var img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth,h=img.naturalHeight;
+      if(!w||!h){cb(dataUrl,1);return;}
+      var sc=w<900?Math.min(3,Math.max(1,Math.ceil(900/w))):1;
+      if(sc===1){cb(dataUrl,1);return;}
+      try{
+        var c=document.createElement("canvas");
+        c.width=w*sc;c.height=h*sc;
+        var x=c.getContext("2d");
+        x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+        x.drawImage(img,0,0,c.width,c.height);
+        cb(c,sc);
+      }catch(e){cb(dataUrl,1);}
+    };
+    img.onerror=function(){cb(dataUrl,1);};
+    img.src=dataUrl;
+  }
+  /* =====================================================
+     v1.98 — SANDBOXED IMAGE FOLDER (Stage 1)
+     Every image the analyzer looks at is filed into its own
+     IndexedDB bucket, completely separate from app data:
+     verdict "accepted" (parsed as MT4/MT5) or "ignored"
+     (didn't clear the whitelist bar). Nothing is uploaded;
+     this is the local staging area later stages (consent /
+     outbox) will read from. All calls are fail-safe: if IDB
+     is unavailable the app carries on unaffected.
+     ===================================================== */
+  var MT_SANDBOX_DB="mymoney_mtocr_sandbox", MT_SANDBOX_STORE="images", MT_SANDBOX_MAX=200;
+  function mtSandboxOpen(cb){
+    try{
+      var req=indexedDB.open(MT_SANDBOX_DB,1);
+      req.onupgradeneeded=function(){
+        try{
+          var db=req.result;
+          if(!db.objectStoreNames.contains(MT_SANDBOX_STORE)){
+            var st=db.createObjectStore(MT_SANDBOX_STORE,{keyPath:"id",autoIncrement:true});
+            st.createIndex("ts","ts");
+            st.createIndex("verdict","verdict");
+          }
+        }catch(e){}
+      };
+      req.onsuccess=function(){cb(req.result);};
+      req.onerror=function(){cb(null);};
+    }catch(e){cb(null);}
+  }
+  function mtSandboxSave(entry){
+    mtSandboxOpen(function(db){
+      if(!db) return;
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readwrite"),st=tx.objectStore(MT_SANDBOX_STORE);
+        st.add(entry);
+        // cap the bucket so it can never grow unbounded — trim oldest beyond MT_SANDBOX_MAX
+        var cnt=st.count();
+        cnt.onsuccess=function(){
+          if(cnt.result<=MT_SANDBOX_MAX) return;
+          var over=cnt.result-MT_SANDBOX_MAX, cur=st.index("ts").openCursor();
+          cur.onsuccess=function(){
+            var c=cur.result;
+            if(c&&over>0){ c.delete(); over--; c.continue(); }
+          };
+        };
+        tx.oncomplete=function(){db.close();};
+        tx.onerror=function(){db.close();};
+      }catch(e){try{db.close();}catch(e2){}}
+    });
+  }
+  function mtSandboxList(cb){
+    mtSandboxOpen(function(db){
+      if(!db){cb([]);return;}
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readonly");
+        var g=tx.objectStore(MT_SANDBOX_STORE).getAll();
+        g.onsuccess=function(){cb(g.result||[]);db.close();};
+        g.onerror=function(){cb([]);db.close();};
+      }catch(e){cb([]);try{db.close();}catch(e2){}}
+    });
+  }
+  function mtSandboxClear(cb){
+    mtSandboxOpen(function(db){
+      if(!db){if(cb)cb(false);return;}
+      try{
+        var tx=db.transaction(MT_SANDBOX_STORE,"readwrite");
+        tx.objectStore(MT_SANDBOX_STORE).clear();
+        tx.oncomplete=function(){db.close();if(cb)cb(true);};
+        tx.onerror=function(){db.close();if(cb)cb(false);};
+      }catch(e){try{db.close();}catch(e2){}if(cb)cb(false);}
+    });
+  }
+
+  function mtOcrStart(){
+    if(mtOcrMode()==="off"||!mtOcrIsTradeType()) return;
+    var imgs=mtOcrImages();
+    if(!imgs.length){mtOcr.state="idle";mtOcr.result=null;mtOcrUI();return;}
+    var myToken=++mtOcr.token;
+    mtOcr.state="loading";mtOcr.progress=0;mtOcr.result=null;mtOcr.error=null;mtOcrUI();
+    mtOcrLoadEngine(function(ok){
+      if(myToken!==mtOcr.token) return;
+      if(!ok){
+        mtOcr.state="failed";
+        mtOcr.error=navigator.onLine?"The reader couldn't load — try again.":"You're offline — the reader needs a connection once, then it's cached.";
+        mtOcrUI();return;
+      }
+      mtOcr.state="running";mtOcrUI();
+      var allTrades=[], idx=0, per=1/imgs.length;
+      function next(){
+        if(myToken!==mtOcr.token) return;
+        if(idx>=imgs.length){
+          mtOcr.result={trades:allTrades,isStatement:allTrades.length>0};
+          mtOcr.state=allTrades.length?"done":"nota";
+          mtOcrUI();
+          if(mtOcr.state==="done"&&(mtOcrMode()==="auto"||mtOcr.wantFill)){mtOcr.wantFill=false;mtOcrFill();}
+          if(mtOcr.state==="nota") mtOcr.wantFill=false;
+          return;
+        }
+        var pp=imgs[idx], n=idx;
+        mtOcrUpscale(pp.dataUrl,function(input,sc){
+          if(myToken!==mtOcr.token) return;
+          Tesseract.recognize(input,"eng",{logger:function(m){
+            if(m.status==="recognizing text"&&myToken===mtOcr.token){
+              mtOcr.progress=(n+m.progress)*per;mtOcrUI();
+            }
+          }}).then(function(res){
+            if(myToken!==mtOcr.token) return;
+            var words=(res.data.words||[]).map(function(w){
+              return{text:w.text,x:w.bbox.x0/sc,y:w.bbox.y0/sc,w:(w.bbox.x1-w.bbox.x0)/sc,h:(w.bbox.y1-w.bbox.y0)/sc};
+            }).filter(function(w){return w.text&&w.text.trim().length;});
+            var r=mtOcrParse(words);
+            // v1.98: file the analyzed image into the sandboxed bucket with its verdict
+            mtSandboxSave({ts:Date.now(),name:pp.name||("image_"+(n+1)),dataUrl:pp.dataUrl,
+                           verdict:r.trades.length?"accepted":"ignored",
+                           tradeCount:r.trades.length,
+                           reason:r.trades.length?"parsed as MT4/MT5":"not MT4/MT5 — no instrument + buy/sell and no statement header"});
+            allTrades=allTrades.concat(r.trades);
+            idx++;next();
+          }).catch(function(){ if(myToken===mtOcr.token){idx++;next();} });
+        });
+      }
+      next();
+    });
+  }
+  /* =====================================================
+     v1.97 — MT5 STATEMENT ANALYZER CSV IMPORT
+     Accepts the CSV exported by mt5_statement_analyzer.html
+     (columns: symbol,type,volume,open_time,open_price,
+      close_time,close_price,sl,tp,swap,commission,profit)
+     ===================================================== */
+  function mtOcrNet(trades){
+    var n=0;trades.forEach(function(t){if(typeof t.profit==="number")n+=t.profit;});
+    return Math.round(n*100)/100;
+  }
+  function mtOcrDominantInst(trades){
+    var c={};trades.forEach(function(t){if(t.symbol){var s=t.symbol.replace(/_+$/,"");c[s]=(c[s]||0)+1;}});
+    var best=null,bn=0;Object.keys(c).forEach(function(k){if(c[k]>bn){bn=c[k];best=k;}});
+    return best;
+  }
+  function mtOcrFill(){
+    var r=mtOcr.result;
+    if(!r||!r.trades.length) return;
+    var modeSel=document.getElementById("mtOcrFillMode");
+    var fillMode=modeSel?modeSel.value:"net";
+    if(fillMode==="each"){ mtOcrFillEach(r.trades); return; }
+    var net=mtOcrNet(r.trades);
+    document.getElementById("fType").value = net>=0?"trade_win":"trade_loss";
+    typeUI();
+    document.getElementById("fAmt").value = Math.abs(net).toFixed(2);
+    var inst=mtOcrDominantInst(r.trades);
+    if(inst) document.getElementById("fInst").value=inst;
+    var noteEl=document.getElementById("fNote");
+    if(!noteEl.value.trim())
+      noteEl.value="MT statement: "+r.trades.length+" trade"+(r.trades.length>1?"s":"")+", net "+(net>=0?"+":"")+net.toFixed(2);
+    flashSaved("filled from statement — check, then Add entry");
+    mtOcrUI();
+  }
+  function mtOcrFillEach(trades){
+    var rows=trades.filter(function(t){return typeof t.profit==="number"&&t.profit!==0;});
+    if(!rows.length){flashSaved("no P/L amounts to import");return;}
+    var noSplits=!!(state.settings&&state.settings.noSplits);
+    var splitN=noSplits?1:(parseInt(document.getElementById("fSplit").value,10)||1);
+    if(splitN<1) splitN=1;
+    var total=mtOcrNet(rows);
+    appModal({
+      title:"Add "+rows.length+" separate trades?",
+      message:"One entry per trade from the photo — <b>"+rows.length+"</b> entries, net <b>"
+        +(total>=0?"+":"")+total.toFixed(2)+"</b>"
+        +(splitN>1?"<br>Each amount split "+splitN+" ways (your share recorded).":"")
+        +"<br><span class='mut'>The photo attaches to the first entry.</span>",
+      confirmText:"Add them", cancelText:"Cancel",
+      onConfirm:function(){
+        var date=document.getElementById("fDate").value||todayStr();
+        var added=0;
+        rows.forEach(function(t,i){
+          var amtFull=Math.abs(t.profit);
+          var amt=splitN>1?Math.round((amtFull/splitN)*100)/100:amtFull;
+          if(!amt) return;
+          var tx={id:freshIdBase(),date:date,
+                  type:(t.profit>=0?"trade_win":"trade_loss"),amount:amt};
+          if(t.symbol) tx.inst=t.symbol.replace(/_+$/,"");
+          var noteBits=[];
+          if(t.date) noteBits.push(t.date);
+          if(splitN>1) noteBits.push("Split "+splitN+" ways — "+fmt(amtFull)+" total, your share "+fmt(amt));
+          if(noteBits.length) tx.note=noteBits.join(" · ");
+          if(i===0&&pendingPhotos.length){
+            var pids=[];
+            pendingPhotos.forEach(function(pp){
+              var nid=newPhotoId(tx.id,pids);pids.push(nid);
+              savePhoto(nid,pp.dataUrl,null,pp.name);
+            });
+            setPhotos(tx,pids);
+          }
+          state.transactions.push(tx);
+          mirrorNewTransaction(tx);
+          added++;
+        });
+        recordAction("Imported "+added+" trades from a statement photo");
+        state.selectedMonths=[monthKey(date)];
+        persist();render();
+        document.getElementById("fAmt").value="";document.getElementById("fNote").value="";
+        document.getElementById("fInst").value="";
+        clearPhotoPick();
+        mtOcr.state="idle";mtOcr.result=null;mtOcrUI();
+        flashSaved("added "+added+" trades");
+      }
+    });
+  }
+
+  function mtOcrUI(){
+    if(typeof tradeInfoSync==="function") tradeInfoSync();   // v1.99 Stage 2
+    var bar=document.getElementById("mtOcrBar");
+    if(!bar) return;
+    var on = mtOcrMode()!=="off" && mtOcrIsTradeType();
+    bar.style.display = on?"flex":"none";
+    if(!on) return;
+    // one-time grey walkthrough
+    var intro=document.getElementById("mtOcrIntro");
+    var seen=false;try{seen=!!localStorage.getItem("mymoney_mtocr_intro");}catch(e){}
+    intro.style.display=seen?"none":"block";
+    var st=document.getElementById("mtOcrStatus");
+    var btn=document.getElementById("mtOcrFillBtn");
+    var prog=document.getElementById("mtOcrProg");
+    var fill=document.getElementById("mtOcrProgFill");
+    var imgs=mtOcrImages().length;
+    var showProg = (mtOcr.state==="running"||mtOcr.state==="loading") && (mtOcrMode()==="auto"||mtOcr.wantFill);
+    prog.style.display=showProg?"block":"none";
+    if(showProg) fill.style.width=Math.round(mtOcr.progress*100)+"%";
+    btn.style.display="none";
+    if(!imgs){ st.textContent="⚡ Attach a statement photo to auto-read it"; return; }
+    if(mtOcr.state==="loading"){ st.textContent="⚡ Getting the reader ready…"; }
+    else if(mtOcr.state==="running"){
+      st.textContent=(mtOcrMode()==="auto"||mtOcr.wantFill)
+        ? "⚡ Reading the statement… "+Math.round(mtOcr.progress*100)+"%"
+        : "⚡ Reading in the background…";
+      if(mtOcrMode()==="silent"&&!mtOcr.wantFill) btn.style.display="inline-block";
+    }
+    else if(mtOcr.state==="done"){
+      var n=mtOcr.result.trades.length, net=mtOcrNet(mtOcr.result.trades);
+      st.textContent="⚡ Read "+n+" trade"+(n>1?"s":"")+", net "+(net>=0?"+":"")+net.toFixed(2);
+      if(mtOcrMode()==="silent") btn.style.display="inline-block";
+    }
+    else if(mtOcr.state==="nota"){ st.textContent="⚡ That photo doesn't look like an MT4/MT5 statement — ignored"; }
+    else if(mtOcr.state==="failed"){ st.textContent="⚡ "+(mtOcr.error||"Couldn't read the photo"); }
+  }
+  function applyNoSplits(){
+    var hide=!!(state.settings&&state.settings.noSplits);
+    var fld=document.getElementById("splitFld");
+    if(fld) fld.style.display=hide?"none":"";
+    if(hide){
+      var s=document.getElementById("fSplit");if(s)s.value="1";
+      var h=document.getElementById("splitHint");if(h)h.style.display="none";
+    }
+  }
+  function bindMtOcr(){
+    var sel=document.getElementById("setMtOcr");
+    if(sel){
+      sel.addEventListener("change",function(){
+        if(!state.settings)state.settings={};
+        state.settings.mtOcr=sel.value;
+        persistNow();flashSaved("saved");mtOcrUI();
+      });
+    }
+    var ns=document.getElementById("setNoSplits");
+    if(ns){
+      ns.addEventListener("change",function(){
+        if(!state.settings)state.settings={};
+        state.settings.noSplits=ns.checked;
+        persistNow();flashSaved("saved");applyNoSplits();
+      });
+    }
+    var ok=document.getElementById("mtOcrIntroOk");
+    if(ok) ok.addEventListener("click",function(){
+      try{localStorage.setItem("mymoney_mtocr_intro","1");}catch(e){}
+      document.getElementById("mtOcrIntro").style.display="none";
+    });
+    var btn=document.getElementById("mtOcrFillBtn");
+    if(btn) btn.addEventListener("click",function(){
+      if(mtOcr.state==="done"){mtOcrFill();}
+      else if(mtOcr.state==="running"||mtOcr.state==="loading"){mtOcr.wantFill=true;mtOcrUI();}
+      else{mtOcrStart();mtOcr.wantFill=true;}
+    });
+  }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init);
   else init();
@@ -16990,7 +17727,15 @@ AI_TYPES.join(", "),
     <button class="btn ghost sm" id="layoutReset" style="width:100%;margin-top:8px">Reset to defaults</button>
     <hr class="sep" style="margin:18px 0">
 
-    <div class="fld"><label for="setPopups">Pop-ups</label>
+    <div class="fld"><label for="setMtOcr">MT4/MT5 statement photos</label>
+    <select id="setMtOcr">
+      <option value="off">Off — never analyze photos</option>
+      <option value="auto">Auto — read it and fill the form</option>
+      <option value="silent">Silent — read in the background, fill when I tap</option>
+    </select>
+  </div>
+  <div class="hint" style="margin:-6px 0 12px">Attach a screenshot of an MT4/MT5 statement to a trade entry and it's read on this device with local OCR — nothing is uploaded. Photos that aren't statements are left completely alone.</div>
+  <div class="fld"><label for="setPopups">Pop-ups</label>
       <select id="setPopups">
         <option value="on">Show all pop-ups</option>
         <option value="quiet">Quiet — only critical confirmations</option>
@@ -17049,7 +17794,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.4</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.6</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
