@@ -7645,8 +7645,12 @@ AI_TYPES.join(", "),
       // a refused permission is still worth opening the sheet for — it can be retried
       // or swapped for a photo in there. Only a genuinely absent camera stops us.
       if(!c.ok && /No camera found|frame|https/.test(c.why)){
-        appModal({title:"Face unlock unavailable", message:c.why, confirmText:"OK"});
-        cb&&cb(false); return;
+        var canPhoto2=!inFrame();
+        appModal({title:"Face unlock unavailable", investigate:true,
+          message:c.why+(canPhoto2?"\n\nYou can still enrol from a photo.":""),
+          confirmText:canPhoto2?"Use a photo":"OK", cancelText:canPhoto2?"Close":undefined,
+          onConfirm:canPhoto2?function(){ openPhotoEnrol({onResult:function(a,f){ var h=arguments; appModal({title:"Whose face is this?", message:"Captured from one photo. Give it a name.", input:{placeholder:"e.g. Me"}, confirmText:"Save", onConfirm:function(name){ addFacePerson((name||"").trim()||"Me", a); flashSaved("face saved"); refreshSecUI(); refreshFacePanel(); renderFacePeople&&renderFacePeople(); cb&&cb(true); }}); }, onCancel:function(){ cb&&cb(false); }}); }:undefined});
+        if(!canPhoto2){ cb&&cb(false); } return;
       }
       openGuidedEnrol({
         onResult:function(angles, fromPhoto){
@@ -9109,8 +9113,19 @@ AI_TYPES.join(", "),
       navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:480,height:480}})
         .then(function(s){
           stream=s; video.srcObject=s; stopped=false;
-          hintEl.textContent="Loading the face model\u2026";
-          return loadFaceApi(function(m){ hintEl.textContent=m; });
+          hintEl.textContent="";
+          if(_faceApiReady) return true;
+          var aepHost=document.createElement("div"); aepHost.id="enAep";
+          hintEl.parentNode.insertBefore(aepHost, hintEl.nextSibling);
+          host._enAep=aepStart({ task:"facemodel", engine:"app", host:aepHost, title:"Getting the face model (once)",
+            phases:[{id:"runtime",label:"Face engine",kind:"network",est:6000},
+                    {id:"weights",label:"Model weights (~6MB)",kind:"model",est:9000}]});
+          return loadFaceApi(function(m){
+            if(!host._enAep) return;
+            if(/weight/i.test(m)) host._enAep.phase("weights",0.35);
+            else if(/ready/i.test(m)) host._enAep.phase("weights",1);
+            else host._enAep.phase("runtime",0.5);
+          }).then(function(v){ if(host._enAep){ host._enAep.finish("Model ready — it now runs offline on this device."); host._enAep=null; setTimeout(function(){ var a=document.getElementById("enAep"); if(a) a.innerHTML=""; },1200); } return v; });
         })
         .then(function(){
           running=true; startedAt=Date.now();
@@ -9120,10 +9135,12 @@ AI_TYPES.join(", "),
         })
         .catch(function(err){
           var m=String(err&&err.name||err);
-          if(/NotAllowed|Permission/i.test(m)){ permissionRefused(); return; }
-          stepEl.textContent="Couldn't start the camera";
-          stepEl.style.color="var(--down)";
-          hintEl.textContent=String(err&&err.message||m).slice(0,110);
+          if(/NotAllowed|Permission/i.test(m)){ if(host._enAep){ host._enAep.cancel(); host._enAep=null; } permissionRefused(); return; }
+          var t=errxTranslate(err,{source:"Face unlock"});
+          investAutoNote("Face unlock setup", t);
+          stepEl.textContent="Setup hit a problem"; stepEl.style.color="var(--down)";
+          if(host._enAep){ host._enAep.fail(err,{retryId:"enRetry2", onRetry:start}); host._enAep=null; hintEl.textContent=""; }
+          else hintEl.textContent=t.title+" — "+t.plain;
           fix.style.display="";
         });
     }
@@ -11169,6 +11186,22 @@ AI_TYPES.join(", "),
 
     var faceBtn=document.getElementById("faceBtn");
     if(faceBtn) faceBtn.addEventListener("click", function(){
+      if(window._faceWhy){
+        var c=window._faceWhy;
+        var canPhoto = !c.blocked && !inFrame();   // photo enrolment needs no camera, only the model
+        appModal({title:"Face unlock can't run here", investigate:true,
+          message:c.why+(canPhoto?"\n\nYou can still enrol from a photo — the model downloads once (~6MB) and face matching then runs on this device.":""),
+          confirmText:canPhoto?"Use a photo":"OK", cancelText:canPhoto?"Close":undefined,
+          onConfirm:canPhoto?function(){
+            if(!lockIsOn()){ appModal({title:"Set a PIN first", message:"Face unlock sits on top of the PIN — the PIN is the fallback whenever your face can't be read.", confirmText:"OK"}); return; }
+            openPhotoEnrol({ onResult:function(angles, fromPhoto){
+              appModal({title:"Whose face is this?", message:"Captured from one photo. Give it a name.",
+                input:{placeholder:"e.g. Me"}, confirmText:"Save",
+                onConfirm:function(name){ addFacePerson((name||"").trim()||"Me", angles); flashSaved("face saved"); refreshSecUI(); refreshFacePanel(); renderFacePeople&&renderFacePeople(); }});
+            }, onCancel:function(){} });
+          }:undefined});
+        return;
+      }
       if(!lockIsOn()){
         appModal({title:"Set a PIN first",
           message:"Face unlock sits on top of the PIN — the PIN is the fallback whenever your face can't be read.",
@@ -11235,8 +11268,12 @@ AI_TYPES.join(", "),
     var fn=document.getElementById("faceNote");
     if(!fb) return;
     cameraCheck().then(function(c){
+      window._faceWhy = c.ok ? null : c;
       if(!c.ok){
-        fb.textContent="Unavailable"; fb.disabled=true;
+        /* Never a dead disabled button — their own rule from recBtn above:
+           a button that does nothing teaches you it's broken. It stays
+           clickable and explains itself when tapped. */
+        fb.textContent="Why not?"; fb.disabled=false;
         if(fn){ fn.textContent=c.why; fn.style.color="var(--amber)"; }
         return;
       }
@@ -16971,7 +17008,7 @@ AI_TYPES.join(", "),
 
   <!-- Advanced — deliberately not signposted; revealed by tapping the version line -->
   <div style="padding:0 20px 4px">
-    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.2</div>
+    <div id="advTap" style="font-size:11px;color:var(--mut);text-align:center;padding:8px;cursor:default;user-select:none;-webkit-user-select:none">My Money Tracker · v17.3</div>
   </div>
   <div id="advWrap" style="display:none;padding:0 20px 4px">
     <div style="font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:12px">⚡ Advanced</div>
