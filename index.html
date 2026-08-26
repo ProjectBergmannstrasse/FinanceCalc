@@ -20,6 +20,9 @@ h1 span{color:var(--dim);font-weight:400}
 .bbtn.ghost{background:none;color:var(--dim);border:1px solid var(--line2)}
 .bbtn.ghost:hover{color:var(--fg);border-color:var(--fg)}
 main[hidden]{display:none}
+main{min-height:60vh}
+html{background:var(--bg)}
+body{min-height:100vh}
 @keyframes tpage{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 main{opacity:1}
 .pageanim{animation:tpage .3s var(--ease) both}
@@ -128,8 +131,7 @@ footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);color:v
 @media(max-width:640px){.acts{flex-direction:column;gap:4px}thead th:nth-child(4),tbody td:nth-child(4){display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-.btt{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:42px;height:42px;border-radius:12px;background:#161616;border:1px solid #2e2e2e;color:#f2f2f2;font:inherit;font-size:16px;cursor:pointer;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1);z-index:89;isolation:isolate}
-@supports ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){.btt{background:rgba(18,18,18,.82);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}}
+.btt{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:42px;height:42px;border-radius:12px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;color:#f2f2f2;font:inherit;font-size:16px;cursor:pointer;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1);z-index:89}
 .btt.show{opacity:1;transform:none;pointer-events:auto}
 .btt:active{transform:scale(.9)}
 </style></head><body><div class="wrap">
@@ -299,7 +301,8 @@ function show(i,noHash){
  if(i===2&&!modsBuilt){buildModules();modsBuilt=true}
  anim(views[i]);
  if(!noHash&&window.history&&history.replaceState){try{history.replaceState(null,"","#"+HASH[i])}catch(e){}}
- try{scrollTo({top:0,behavior:"smooth"})}catch(e){try{window.scrollTo(0,0)}catch(e2){}}
+ try{window.scrollTo(0,0)}catch(e){}
+ try{if(document.documentElement)document.documentElement.scrollTop=0;if(document.body)document.body.scrollTop=0}catch(e){}
 }
 bs.forEach(function(b,i){b.addEventListener("click",function(){show(i)})});
 if(window.addEventListener){window.addEventListener("resize",function(){align(sel)});
@@ -340,9 +343,19 @@ function openSource(idx){
  $("srcRun").href=url;$("srcDl").href=url;$("srcDl").setAttribute("download",d.file);
  var dv=$("srcDiff");
  if(d.prev){dv.style.display="";dv.href=REPO+"/compare/"+d.prev+"..."+d.sha}else{dv.style.display="none"}
- $("codewrap").innerHTML='<div class="srcload">Loading '+fmtB(d.bytes)+' of source\u2026</div>';
  $("srcMore").innerHTML="";
  show(4);
+ if(d.bytes>3145728){
+  $("codewrap").innerHTML='<div class="srcload">This build is <b>'+fmtB(d.bytes)+'</b> \u2014 large enough to slow down or crash a browser tab if rendered in full.<br><br>'+
+   '<button class="srcbtn" id="srcForce">Load it anyway</button> &nbsp; <a class="srcbtn" href="'+url+'" download>Download instead</a></div>';
+  var fb=$("srcForce");
+  if(fb)fb.addEventListener("click",function(){$("codewrap").innerHTML='<div class="srcload">Loading '+fmtB(d.bytes)+'\u2026</div>';loadSrc(url)});
+  return;
+ }
+ $("codewrap").innerHTML='<div class="srcload">Loading '+fmtB(d.bytes)+' of source\u2026</div>';
+ loadSrc(url);
+}
+function loadSrc(url){
  fetch(url).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
  .then(function(t){SRC.text=t;SRC.lines=t.split("\n");$("codewrap").innerHTML="";renderChunk()})
  .catch(function(e){$("codewrap").innerHTML='<div class="srcload">Could not load this file ('+e.message+'). <a href="'+url+'">Open it directly \u2192</a></div>'});
@@ -493,8 +506,8 @@ try{
 })();
 </script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button><script>(function(){function init(){var b=document.getElementById("btt");if(!b)return;
 function up(){var el=document.documentElement;
- try{ if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}} }
- catch(e){ try{if(el)el.scrollTop=0;if(document.body)document.body.scrollTop=0}catch(e2){} }}
+ if(window.scrollTo){if(el&&el.style&&("scrollBehavior" in el.style)){window.scrollTo({top:0,behavior:"smooth"})}else{window.scrollTo(0,0)}}
+ else{if(el)el.scrollTop=0;if(document.body)document.body.scrollTop=0}}
 b.addEventListener("click",up);
 function chk(){var y=window.pageYOffset||((document.documentElement&&document.documentElement.scrollTop)||0);
  b.classList.toggle("show",y>500)}

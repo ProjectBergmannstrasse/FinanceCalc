@@ -50,12 +50,24 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 .btt{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:42px;height:42px;border-radius:12px;background:#161616;background:rgba(18,18,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid #2e2e2e;color:#f2f2f2;font:inherit;font-size:16px;cursor:pointer;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1);z-index:89}
 .btt.show{opacity:1;transform:none;pointer-events:auto}
 .btt:active{transform:scale(.9)}
+
+/* v2 preview harness: app tokens + a real sizing context + zero-size detection */
+.prevhost{--bg:#0b0e14;--panel:#121722;--card:#161c28;--card2:#1b2230;--bd:#232c3d;--bd2:#2c3648;--tx:#e6ebf2;--mut:#808b9c;--amber:#f4b73f;--amber-dim:#8a6a1f;--hm0:#1b2230;--hm1:#4a3a1c;--hm2:#7a5a20;--hm3:#b08328;--hm4:#e0a832;--hm5:#f4b73f;--up:#3ddc84;--down:#ff5d5d;--cool:#5aa9e6;--hero-grad:linear-gradient(160deg,#151b28,#10151f);--hero-glow:rgba(244,183,63,.13);}
+.prevhost{position:relative;width:300px;min-height:72px;display:flex;align-items:center;justify-content:center;padding:10px;background:var(--card,#161c28);border:1px dashed #2a2a2a;color:var(--tx,#e6ebf2);font-family:var(--mono)}
+.prevhost.wide{width:100%;max-width:520px}
+.prevhost .ghost{outline:1px dashed #f4b73f;outline-offset:1px;min-width:56px!important;min-height:16px!important}
+.prevnote{color:#5c5c5c;font-size:12px;margin-top:10px;line-height:1.5}
+.prevnote b{color:#9a9a9a;font-weight:400}
+.prevtog{display:inline-flex;border:1px solid #333;margin-left:10px;vertical-align:middle}
+.prevtog button{background:none;border:0;color:#9a9a9a;font:inherit;font-size:11px;padding:3px 9px;cursor:pointer;transition:background .15s,color .15s,transform .12s}
+.prevtog button.on{background:#f2f2f2;color:#000;font-weight:700}
+.prevtog button:active{transform:scale(.95)}
 </style></head><body><div class="m">
 <div class="k">FinanceCalc module · 01-animations</div>
 <h1>.ov.page-mode .sheet<span class="badge ok">tested · valid css</span></h1>
 <div class="meta">CSS component · extracted from build v38.4 · variant 1</div>
-<h2>Live preview</h2><div class="prev"><div class="ov page-mode"><div class="sheet"><span>Aa 1,234.56 — demo</span></div></div></div><style>.ov.page-mode .sheet{max-width:100%;width:100%;height:100%;max-height:100%;
-    border-radius:0;border:0;box-shadow:none;animation:pageUp .22s cubic-bezier(.22,1,.36,1) backwards}</style><p style="color:#5c5c5c;font-size:12px;margin-top:8px">A sample element matching <code>.ov.page-mode .sheet</code> is rendered above with the rule applied. Hover / focus states are live.</p>
+<h2>Live preview</h2><div class="prev"><div class="prevhost"><div class="ov page-mode"><div class="sheet"><span>Aa 1,234.56 — demo</span></div></div></div></div><div class="prevnote" id="prevnote"></div><style>.ov.page-mode .sheet{max-width:100%;width:100%;height:100%;max-height:100%;
+    border-radius:0;border:0;box-shadow:none;animation:pageUp .22s cubic-bezier(.22,1,.36,1) backwards}</style>
 <h2>Source</h2><div class="row"><button class="act ghost" id="copy2">Copy code</button></div><pre>.ov.page-mode .sheet{max-width:100%;width:100%;height:100%;max-height:100%;
     border-radius:0;border:0;box-shadow:none;animation:pageUp .22s cubic-bezier(.22,1,.36,1) backwards}</pre>
 <div class="meta" style="margin-top:16px"><a href="../../index.html#modules">← all modules</a> · <a href="https://github.com/ProjectBergmannstrasse/FinanceCalc">repo</a></div>
@@ -92,4 +104,41 @@ if(window.addEventListener){window.addEventListener("scroll",chk,{passive:true})
 chk();
 }
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
-})();</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button></body></html>
+})();</script><button class="btt" id="btt" aria-label="Back to top" title="Back to top">↑</button><script>
+(function(){function init(){
+ var host=document.querySelector(".prevhost"); if(!host) return;
+ var demo=host.firstElementChild; if(!demo) return;
+ var note=document.getElementById("prevnote");
+ function measure(){
+  var r=demo.getBoundingClientRect();
+  var cs=(window.getComputedStyle?getComputedStyle(demo):null);
+  var invisible = r.width<2 || r.height<2 ||
+    (cs && (cs.display==="none" || cs.visibility==="hidden" || parseFloat(cs.opacity||"1")===0));
+  return {r:r,invisible:invisible,cs:cs};
+ }
+ var m=measure();
+ if(m.invisible){
+  demo.classList.add("ghost");
+  var m2=measure();
+  var why=[];
+  var css=document.querySelector("pre")?document.querySelector("pre").textContent:"";
+  if(/width\s*:\s*0/.test(css)) why.push("it sets <b>width:0</b> — the app animates it open at runtime");
+  if(/height\s*:\s*100%/.test(css)) why.push("it uses <b>height:100%</b>, so it needs a parent with a fixed height");
+  if(/display\s*:\s*none/.test(css)) why.push("it sets <b>display:none</b> — the app toggles it on");
+  if(/opacity\s*:\s*0/.test(css)) why.push("it starts at <b>opacity:0</b> and is animated in");
+  if(/position\s*:\s*(absolute|fixed)/.test(css)) why.push("it is <b>positioned</b> relative to a container in the app");
+  if(!why.length) why.push("it has no intrinsic size of its own — the app gives it one from its parent");
+  note.innerHTML="This rule draws nothing on its own: "+why.join("; and ")+
+    ". It is outlined in amber above so you can see where it sits. The source below is exactly as extracted.";
+ } else {
+  note.innerHTML="Rendered with the app's own design tokens applied. Hover and focus states are live.";
+ }
+ var t=document.getElementById("togWide");
+ if(t){t.addEventListener("click",function(){
+   host.classList.toggle("wide");
+   this.classList.toggle("on");
+   this.textContent=host.classList.contains("wide")?"narrow":"full width";
+ })}
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init)}else{init()}
+})();</script></body></html>
