@@ -1,6 +1,6 @@
 # FinanceCalc — complete version history
 https://projectbergmannstrasse.github.io/FinanceCalc/
-149 builds, **v1.0 to v39.7**, oldest to newest.
+150 builds, **v1.0 to v39.8**, oldest to newest.
 
 Files are numbered `001` upward so they sort chronologically in any file browser.
 Duplicates were removed: the original archive's 217 files contained 143 unique builds.
@@ -190,6 +190,18 @@ code grew more than 12%.
 ## v39.0
 
 All app data now lives in one folder you choose (core.json, settings.json, photos/, backups/), with Supabase backup. See DATA-SETUP.md.
+
+## v39.8
+
+Automatic saving and full version history, plus the remaining inspection fixes.
+
+- **Every edit is kept.** Each save also stores a compressed saved version (IndexedDB), never pruned. Settings → Saved versions lets you view, download or restore any of them; restoring first saves the current state as a version too.
+- **iCloud Drive (Mac, Chrome/Edge).** Settings → pick a folder inside iCloud Drive (e.g. "My Money"). The app then writes your data there on every edit, plus `my-money-data/history/YYYY-MM/…json.gz` for every version. Deleted photos go to `photos-deleted/`, never erased.
+- **Safari / iPhone.** Browsers can't write to iCloud automatically there, so there's a "Save a copy to iCloud…" button (share sheet → Save to Files → iCloud Drive).
+- Storage: newest copy wins across all storage tiers on load; folder conflict guard (never overwrites newer data in the folder); damaged-store recovery from the latest version; cross-tab guard; timeouts so an old tab can't freeze loading; storage-nearly-full warning.
+- Reconnecting a folder never pops a permission prompt without a click.
+- Offline copy via a small service worker (`sw.js`, network first).
+- All remaining findings from the v39.7 inspection fixed across AI scan, trading, money maths, app lock and UI (except the face-match threshold, left as is).
 
 ## v39.7
 
