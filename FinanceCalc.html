@@ -461,7 +461,6 @@
   .ai-banner.bad{background:rgba(255,93,93,.1);border:1px solid var(--down);color:var(--down)}
   .ai-banner.warn{background:rgba(244,183,63,.1);border:1px solid var(--amber);color:var(--amber)}
   .ai-banner b{color:var(--tx)}
-  #aiBtn{display:none}
 
   /* In-app modal — replaces the browser's native prompt/confirm */
   /* Confirmations are always a response to something already open, so they
@@ -822,7 +821,7 @@
   .mpick-foot{padding:12px 16px 16px}
 
   /* undo-delete toast */
-  .undo-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:70;max-width:calc(100vw - 32px)}
+  .undo-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card2);border:1px solid var(--bd2);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:70;max-width:calc(100vw - 32px)}
   .undo-toast button{background:var(--amber);color:#20160a;border:0;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;flex:none;cursor:pointer}
 
   /* copy menu */
@@ -1656,6 +1655,7 @@
           <button type="button" class="btn ghost sm" id="fPhotoClear" style="display:none">Remove all</button>
         </div>
         <div id="fPhotoStrip" class="ph-strip"></div>
+      </div>
       <div class="fld full" id="mtOcrBar" style="display:none">
         <div class="mtocr-row">
           <span id="mtOcrStatus" class="mut" style="font-size:12px;flex:1">⚡ Attach a statement photo to auto-read it</span>
@@ -1815,7 +1815,6 @@
   </div>
 </main>
 
-<div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
 
 <!-- touch bar -->
 <nav class="tabbar" id="tabbar" role="tablist">
@@ -2673,6 +2672,17 @@
     alw_trading:{label:"TRADING"}, tax_set:{label:"TAX SET"}, tax_pay:{label:"TAX PAID"}
   };
 
+  // One definition of "spending", used by the month summary, budgets and the heatmap.
+  // Moving money to savings, setting tax aside, moving it to the trading account and a
+  // trade loss all make the balance drop, but none of them is money spent.
+  var NOT_SPENDING={save:1, tax_set:1, trade_loss:1, to_trading:1};
+  function isSpendingOut(t){ return balDelta(t)<0 && !NOT_SPENDING[t.type]; }
+  // "expense" is the form's name for what older saves call "spend" — both carry a category
+  function isCatType(v){ return v==="spend" || v==="expense"; }
+  // Row ids: most are numbers, but older scanned entries have ids like "t1790…".
+  // Converting those with + gave NaN, so they could never be opened, edited or deleted.
+  function rid(v){ v=String(v); return /^\d+$/.test(v) ? +v : v; }
+
   var DEFAULTS = {
     currency:"$",
     opening:{balance:0, debt:0, savings:0, tax:0, trading:0},
@@ -2921,7 +2931,7 @@
   function computeMonthly(cur){
     cur = cur || monthKey(todayStr());
     var txs=sortedTx();
-    var open0=num(state.opening.balance);
+    var open0=num(state.opening.balance)+(sepTrading()?0:num(state.opening.trading));   // match "Money I have right now"
     var out=[];
     if(txs.length===0){
       out=[{key:cur,o:open0,h:open0,l:open0,c:open0}];
@@ -3005,6 +3015,8 @@
     state.opening.balance=roundCents(convertAmount(state.opening.balance, fromCode, toCode));
     state.opening.debt=roundCents(convertAmount(state.opening.debt, fromCode, toCode));
     state.opening.savings=roundCents(convertAmount(state.opening.savings, fromCode, toCode));
+    state.opening.tax=roundCents(convertAmount(num(state.opening.tax), fromCode, toCode));
+    state.opening.trading=roundCents(convertAmount(num(state.opening.trading), fromCode, toCode));
     state.settings.allowance=roundCents(convertAmount(state.settings.allowance, fromCode, toCode));
     state.settings.toDebt=roundCents(convertAmount(state.settings.toDebt, fromCode, toCode));
     state.settings.toTrading=roundCents(convertAmount(state.settings.toTrading, fromCode, toCode));
@@ -3045,7 +3057,7 @@
       // Any outflow counts as spending, not just the legacy "spend" type — and a
       // sub-category is reported under its top-level parent so the breakdown
       // stays six slices instead of fragmenting into twenty.
-      if(balDelta(t)<0 && t.type!=="save" && t.type!=="tax_set"){
+      if(isSpendingOut(t)){
         var out=Math.abs(balDelta(t));
         r.spent+=out;
         var c=t.cat||"Other", top=topCatOf(c);
@@ -3053,7 +3065,7 @@
       }
       else if(t.type==="trade_win"){ r.tradePL+=a; }
       else if(t.type==="trade_loss"){ r.tradePL-=a; }
-      else if(t.type==="income"||t.type==="alw_trading"){ r.moneyIn+=a; }
+      else if(t.type==="income"||t.type==="salary"||t.type==="alw_trading"){ r.moneyIn+=a; }
       if(t.type==="pay_debt_balance"||t.type==="alw_debt") r.debtPaid+=a;
       r.saved+=savDelta(t);
     });
@@ -3404,9 +3416,29 @@
 
   /* ---------------- storage ---------------- */
   var saveTimer=null;
+  var _flashHold=0, _toastT=null;
   function flashSaved(txt){
-    var el=document.getElementById("saved"); document.getElementById("savedTxt").textContent=txt||"saved";
+    var el=document.getElementById("saved"), now=Date.now();
+    var real = txt && txt!=="saved";
+    // a plain autosave "saved" must not wipe a message the user hasn't had time to read
+    if(!real && now<_flashHold){ el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },400); return; }
+    document.getElementById("savedTxt").textContent=txt||"saved";
     el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },400);
+    if(!real) return;
+    _flashHold=now+2600;
+    // and show it where the user is looking — the header pill scrolls off-screen
+    var t=document.getElementById("mmToast");
+    if(!t){
+      t=document.createElement("div"); t.id="mmToast"; t.setAttribute("role","status"); t.setAttribute("aria-live","polite");
+      t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9999;"
+        +"max-width:min(440px,calc(100vw - 32px));padding:9px 14px;border-radius:10px;background:var(--card2,#1b2230);color:var(--tx,#e6ebf2);"
+        +"border:1px solid var(--bd2,#2c3648);box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:13px;line-height:1.35;text-align:center;"
+        +"pointer-events:none;opacity:0;transition:opacity .2s ease";
+      document.body.appendChild(t);
+    }
+    t.textContent=txt; t.style.opacity="1";
+    if(_toastT) clearTimeout(_toastT);
+    _toastT=setTimeout(function(){ t.style.opacity="0"; }, 2600);
   }
   function showStorageWarning(){ var el=document.getElementById("storageWarn"); if(el) el.style.display="flex"; }
   function hideStorageWarning(){ var el=document.getElementById("storageWarn"); if(el) el.style.display="none"; }
@@ -3469,7 +3501,7 @@
         render();
         checkRecurPrompt();
         _lastApplied = JSON.parse(msg.json).savedAt || Date.now();
-        flashSavedMsg("\u21C4 synced from another tab");
+        flashSaved("\u21C4 synced from another tab");
       };
     }catch(e){ _bc = null; }
   }
@@ -3638,13 +3670,32 @@
      Copies always get fresh transaction ids and fresh photo ids, for the same reason
      imports do: photos live in one global namespace keyed by transaction id, so reusing
      a source id would let two portfolios fight over the same photo file. */
+  /* Give a copied entry its OWN photo files. Copies used to keep the source's photo
+     ids, so deleting either side deleted the other side's photos too. getData(oldId, cb)
+     supplies the image (from storage, or from an import's photo map). */
+  function clonePhotosFor(copy, getData, done){
+    var olds=photosOf(copy), fresh=[], left=olds.length;
+    olds.forEach(function(o){ fresh.push(newPhotoId(copy.id, fresh)); });
+    setPhotos(copy, fresh);
+    if(!left){ if(done) done(); return; }
+    var missing=[];
+    olds.forEach(function(oldId, i){
+      getData(oldId, function(dataUrl){
+        if(dataUrl) savePhoto(fresh[i], dataUrl, null, attNames[oldId]);
+        else missing.push(fresh[i]);
+        if(--left<=0){
+          if(missing.length) setPhotos(copy, photosOf(copy).filter(function(x){ return missing.indexOf(x)<0; }));
+          if(done) done();
+        }
+      });
+    });
+  }
   function copyEntriesInto(srcTx, cb){
     var jobs=[];
     srcTx.forEach(function(t){
       var copy=clone(t);
-      var oldPhoto=copy.photo;
       copy.id=freshIdBase();
-      if(oldPhoto){ copy.photo=copy.id; jobs.push({oldId:oldPhoto, rec:copy}); }
+      if(photosOf(copy).length) jobs.push({rec:copy});
       state.transactions.push(copy);
     });
     // Entries arriving from elsewhere are usually dated in other months. The month
@@ -3654,12 +3705,8 @@
     var n=srcTx.length, remaining=jobs.length;
     if(!remaining){ cb(n); return; }
     jobs.forEach(function(j){
-      loadPhoto(j.oldId, function(dataUrl){
-        // if the source photo has gone missing, drop the reference rather than leave
-        // the copy pointing at a file that was never written
-        if(dataUrl) savePhoto(j.rec.photo, dataUrl, function(){ if(--remaining<=0) cb(n); });
-        else { delete j.rec.photo; if(--remaining<=0) cb(n); }
-      });
+      // a missing source photo is dropped rather than left pointing at nothing
+      clonePhotosFor(j.rec, loadPhoto, function(){ if(--remaining<=0){ persistNow(); cb(n); } });
     });
   }
   // Called whenever a new entry lands in the active portfolio. Any portfolio set to
@@ -3675,10 +3722,7 @@
       p.data.selectedMonths=["all"];
       var copy=clone(tx);
       copy.id=freshIdBase();
-      if(copy.photo){
-        var oldP=copy.photo; copy.photo=copy.id;
-        loadPhoto(oldP, function(d){ if(d) savePhoto(copy.photo, d); else { delete copy.photo; persistNow(); } });
-      }
+      if(photosOf(copy).length) clonePhotosFor(copy, loadPhoto, function(){ persistNow(); });
       p.data.transactions.push(copy);
     });
     persistNow();
@@ -3786,6 +3830,8 @@
         var content=[{type:"text",text:prompt}];
         images.forEach(function(im){ content.push({type:"image_url", image_url:{url:"data:"+im.mime+";base64,"+im.b64}}); });
         var body={model:model||this.model, temperature:0, messages:[{role:"user",content:content}]};
+        // OpenAI reasoning models (o-series, gpt-5) reject any temperature but the default
+        if(/^(o\d|gpt-5)/i.test(body.model)) delete body.temperature;
         // json mode isn't universal across OpenRouter's catalogue — drop it and retry
         var attempts=[Object.assign({response_format:{type:"json_object"}}, body), body];
         var lastErr=null;
@@ -3808,7 +3854,7 @@
   var AI_PROVIDERS={
     gemini:{
       label:"Gemini",
-      model:"gemini-2.0-flash", // only a starting guess — real list comes from listModels()
+      model:"gemini-2.5-flash", // only a starting guess — real list comes from listModels()
       keyUrl:"https://aistudio.google.com/apikey",
       keyHint:"Google AI Studio → Get API key. Make sure the Generative Language API is enabled on the project.",
       canList:true,
@@ -3875,14 +3921,14 @@
       filter:function(id){ return /^(gpt-|o\d|chatgpt)/i.test(id) && !/audio|realtime|tts|whisper|embed|moderation|image|dall/i.test(id); }
     }),
     openrouter:openAiCompatible({
-      label:"OpenRouter", base:"https://openrouter.ai/api/v1", model:"google/gemini-2.0-flash-001",
+      label:"OpenRouter", base:"https://openrouter.ai/api/v1", model:"google/gemini-2.5-flash",
       keyUrl:"https://openrouter.ai/keys",
       keyHint:"openrouter.ai → Keys. One key reaches Gemini, GPT, Claude, Grok and more — the easiest option by far.",
       extraHeaders:{"HTTP-Referer":"https://my-money-tracker.local","X-Title":"My Money Tracker"},
       filter:function(id){ return !/embed|tts|whisper|moderation/i.test(id); }
     }),
     xai:openAiCompatible({
-      label:"Grok (xAI)", base:"https://api.x.ai/v1", model:"grok-2-vision-1212",
+      label:"Grok (xAI)", base:"https://api.x.ai/v1", model:"grok-4",
       keyUrl:"https://console.x.ai",
       keyHint:"console.x.ai → API keys. Use a vision-capable Grok model.",
       filter:function(id){ return !/embed/i.test(id); }
@@ -3903,7 +3949,10 @@
       },
       async run(key, prompt, images, model){
         var content=[];
-        images.forEach(function(im){ content.push({type:"image", source:{type:"base64", media_type:im.mime, data:im.b64}}); });
+        images.forEach(function(im){
+          if(im.mime==="application/pdf") content.push({type:"document", source:{type:"base64", media_type:"application/pdf", data:im.b64}});
+          else content.push({type:"image", source:{type:"base64", media_type:im.mime, data:im.b64}});
+        });
         content.push({type:"text",text:prompt});
         var r=await aiFetch("Claude","https://api.anthropic.com/v1/messages",{
           method:"POST",
@@ -3947,6 +3996,25 @@
   }
 
   var AI_KEY="mymoney_ai_cfg";
+  // No model picked yet? Ask the provider what this key can use and take the best
+  // match, instead of relying on a hard-coded name that providers keep retiring
+  // (gemini-2.0-flash and grok-2-vision-1212 were both switched off in 2026).
+  async function aiEnsureModel(slot){
+    var provKey=aiCfg["prov"+slot], key=aiCfg["key"+slot], cur=aiCfg["model"+slot];
+    var prov=AI_PROVIDERS[provKey];
+    if(cur || !prov || !key || !prov.listModels) return cur;
+    try{
+      var list=await prov.listModels(key);
+      if(!list || !list.length) return cur;
+      // the provider's own default wins when this key can use it; otherwise the best-ranked
+      var best=list.filter(function(m){ return m.id===prov.model; })[0]
+            || list.slice().sort(function(a,b){ return aiRankModel(b.id)-aiRankModel(a.id); })[0];
+      aiCfg["model"+slot]=best.id; if(best.ver) aiCfg["ver"+slot]=best.ver;
+      saveAiCfg();
+      var mi=document.getElementById("aiModel"+slot); if(mi) mi.value=best.id;
+      return best.id;
+    }catch(e){ return cur; }
+  }
   var aiCfg={provA:"gemini", keyA:"", modelA:"", verA:"", provB:"", keyB:"", modelB:"", verB:""};
   function loadAiCfg(){
     try{ var raw=window.localStorage.getItem(AI_KEY); if(raw) aiCfg=Object.assign(aiCfg, JSON.parse(raw)); }catch(e){}
@@ -4073,6 +4141,7 @@ AI_TYPES.join(", "),
   async function aiExtract(images, expected, log){
     var provA=AI_PROVIDERS[aiCfg.provA], provB=aiCfg.provB?AI_PROVIDERS[aiCfg.provB]:null;
     if(!provA || !aiCfg.keyA) throw new Error("Engine A isn't configured.");
+    await aiEnsureModel("A"); if(provB && aiCfg.keyB) await aiEnsureModel("B");
 
     if(!provB || !aiCfg.keyB){
       log("Single engine ("+provA.label+") — no cross-check configured.","warn");
@@ -4443,7 +4512,7 @@ AI_TYPES.join(", "),
       else if(dd2!==0){ amt=(dd2<0?"\u2212":"+")+fmt(Math.abs(dd2),sym)+" (debt)"; cls=dd2<0?"pt-up":"pt-down"; }
       else if(ds!==0){ amt=(ds>0?"+":"\u2212")+fmt(Math.abs(ds),sym)+" (savings)"; cls="pt-cool"; }
       else { amt=fmt(0,sym); cls=""; }
-      var note=t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      var note=t.note? esc(t.note) : (isCatType(t.type)&&t.cat? esc(t.cat) : "");
       if(t.inst) note=(note?esc(t.inst)+" · "+note:esc(t.inst));
       rows+="<tr><td>"+esc(t.date)+"</td><td>"+esc(meta.label)+"</td><td>"+note+"</td><td class='"+cls+"' style='text-align:right;white-space:nowrap'>"+amt+"</td></tr>";
     });
@@ -4723,7 +4792,9 @@ AI_TYPES.join(", "),
         state.transactions.push(tx);
         mirrorNewTransaction(tx);
       });
-      state.selectedMonths=null;
+      // show every month the new entries landed in (resetting to "this month" hid older ones)
+      var addedMonths={}; picks.forEach(function(t){ addedMonths[monthKey(t.date)]=1; });
+      if(!isAllSelected()) state.selectedMonths=Object.keys(addedMonths).sort();
       persistNow(); render();
       flashSaved("added "+picks.length);
       closeAiPanel();
@@ -4830,7 +4901,8 @@ AI_TYPES.join(", "),
     });
 
     document.getElementById("aiRunBtn").addEventListener("click", async function(){
-      if(aiBusy || !aiImages.length) return;
+      if(aiBusy) return;
+      if(!aiImages.length){ var lg=document.getElementById("aiLog"); lg.style.display="block"; lg.innerHTML=""; aiLogLine("Add at least one photo or screenshot first (＋ Add images).","warn"); return; }
       aiBusy=true;
       var btn=this; btn.disabled=true; btn.textContent="Reading…";
       var log=document.getElementById("aiLog"); log.innerHTML=""; log.style.display="block";
@@ -4838,7 +4910,14 @@ AI_TYPES.join(", "),
       var expected=parseInt(document.getElementById("aiExpected").value,10);
       if(!isFinite(expected) || expected<1) expected=0;
       try{
-        var res=await aiExtract(aiImages, expected, aiLogLine);
+        // Only images can be read by the vision engines — PDFs, documents and the rest
+        // were being sent as "images" and every provider but Gemini rejected the request.
+        var pdfOk=[aiCfg.provA].concat(aiCfg.keyB&&aiCfg.provB?[aiCfg.provB]:[]).every(function(p){ return p==="gemini"||p==="anthropic"; });
+        var sendImgs=aiImages.filter(function(im){ return !im.isFile || (pdfOk && im.mime==="application/pdf"); });
+        var skipped=aiImages.length-sendImgs.length;
+        if(skipped) aiLogLine(skipped+" file"+(skipped>1?"s":"")+" skipped — only photos and screenshots"+(pdfOk?" and PDFs":"")+" can be read"+(pdfOk?"":" by this engine (Gemini and Claude also read PDFs)")+".","warn");
+        if(!sendImgs.length) throw new Error("Nothing to read — attach a photo or screenshot (PDFs and documents can't be read here).");
+        var res=await aiExtract(sendImgs, expected, aiLogLine);
         if(expected>0 && res.list.length!==expected){
           aiLogLine("You said "+expected+" but "+res.list.length+" came back — check the list.","warn");
         }
@@ -4860,7 +4939,7 @@ AI_TYPES.join(", "),
   function maybeSuggestTax(tx){
     var pct=num(state.settings.taxPct);
     if(pct<=0) return;
-    if(tx.type!=="income" && tx.type!=="trade_win") return;
+    if(tx.type!=="income" && tx.type!=="salary" && tx.type!=="trade_win") return;
     var amt=Math.round(num(tx.amount)*pct)/100;
     if(amt<0.01) return;
     appModal({
@@ -4884,8 +4963,8 @@ AI_TYPES.join(", "),
      on exactly the setup this app is most often used in. Hence the execCommand fallback,
      and hence never claiming success we haven't confirmed — a crypto address the user
      THINKS they copied is worse than one they know they didn't. */
-  function copyText(text){
-    return new Promise(function(resolve){
+  function copyText(text, toastMsg){
+    var pr=new Promise(function(resolve){
       try{
         if(navigator.clipboard && window.isSecureContext){
           navigator.clipboard.writeText(text).then(function(){ resolve(true); }, function(){ resolve(legacyCopy(text)); });
@@ -4894,6 +4973,8 @@ AI_TYPES.join(", "),
       }catch(e){}
       resolve(legacyCopy(text));
     });
+    if(toastMsg) pr.then(function(ok){ flashSaved(ok ? toastMsg : "couldn\u2019t copy \u2014 your browser blocked the clipboard"); });
+    return pr;
   }
   function legacyCopy(text){
     try{
@@ -5058,6 +5139,7 @@ AI_TYPES.join(", "),
     s=s.replace(/[()]/g,"").replace(/[^0-9.,-]/g,"");
     // 1.234,56 (EU) vs 1,234.56 (US)
     if(/,\d{2}$/.test(s) && /\./.test(s)) s=s.replace(/\./g,"").replace(",",".");
+    else if(/^-?\d+,\d{1,2}$/.test(s)) s=s.replace(",",".");   // 12,50 = twelve-fifty
     else s=s.replace(/,/g,"");
     var n=parseFloat(s.replace(/-/g,""));
     if(!isFinite(n)) return NaN;
@@ -5135,6 +5217,8 @@ AI_TYPES.join(", "),
   function restoreFromTrash(idx){
     var item=trashList()[idx];
     if(!item) return null;
+    // restoring the entry that is still in its 5s undo window: that undo is now spent
+    if(pendingDelete && pendingDelete.tx && item.tx && pendingDelete.tx.id===item.tx.id){ if(pendingDelete.timer) clearTimeout(pendingDelete.timer); pendingDelete=null; hideUndoToast(); }
     state.trash.splice(idx,1);
     var tx=item.tx;
     // an id could have been reused by an import while this sat in the bin
@@ -5223,7 +5307,7 @@ AI_TYPES.join(", "),
     if(!e) return;
     e.addEventListener("click", function(){
       var n=trashList().length;
-      if(!n) return;
+      if(!n){ flashSaved("the bin is already empty"); return; }
       appModal({
         title:"Empty the bin?",
         message:"<b>"+n+"</b> deleted entr"+(n===1?"y":"ies")+" — and any photos attached to them — go for good. This can't be undone.",
@@ -5261,9 +5345,15 @@ AI_TYPES.join(", "),
     return (+b.slice(0,4)-+a.slice(0,4))*12 + (+b.slice(5,7)-+a.slice(5,7));
   }
   function goalProgress(g){
+    // Goals share one savings pot: earlier goals claim their share first, so two
+    // 5,000 goals on 5,000 saved no longer both show "reached".
     var now=savingsNow();
+    var gl=goalList();
+    for(var gi=0; gi<gl.length && gl[gi]!==g && gl[gi].id!==g.id; gi++){
+      now-=Math.min(Math.max(now,0), Math.abs(num(gl[gi].target))||0);
+    }
     var target=Math.abs(num(g.target))||0;
-    var pct = target>0 ? Math.min(1, now/target) : 0;
+    var pct = target>0 ? Math.max(0, Math.min(1, now/target)) : 0;
     var left=Math.max(0, target-now);
     var rate=savingRate();
     var monthsNeeded = (left>0 && rate.perMonth>0) ? left/rate.perMonth : (left<=0 ? 0 : null);
@@ -5366,7 +5456,7 @@ AI_TYPES.join(", "),
     var out={};
     state.transactions.forEach(function(t){
       var d=balDelta(t);
-      if(d>=0) return;                   // money leaving only
+      if(!isSpendingOut(t)) return;      // real spending only
       var k=t.date;
       if(!k) return;
       out[k]=(out[k]||0)+(-d);
@@ -6183,7 +6273,7 @@ AI_TYPES.join(", "),
     var byRule={};
     list.forEach(function(item){
       var r=item.rule;
-      var tx={ id:freshIdBase()+Math.floor(Math.random()*10000), date:item.date,
+      var tx={ id:freshIdBase(), date:item.date,
                type:r.type, amount:Math.abs(num(r.amount)) };
       if(r.type==="spend") tx.cat=r.cat||"Other";
       if(r.note) tx.note=r.note;
@@ -6339,6 +6429,16 @@ AI_TYPES.join(", "),
     // the old status bar is gone; the chat badge is the single indicator now
     var dot=null, lbl=null;
     try{
+      if(_aiSession) return true;
+      var SYS="You are a personal finance assistant. The user will share their financial summary and ask questions. Be concise, specific, and actionable. Do not give generic advice — refer to the actual numbers provided.";
+      // Current Chrome exposes a global LanguageModel; the window.ai.languageModel shape
+      // below is the retired origin-trial API, kept only as a fallback.
+      if(typeof self.LanguageModel!=="undefined"){
+        var av=await self.LanguageModel.availability();
+        if(av==="unavailable") return false;
+        _aiSession=await self.LanguageModel.create({initialPrompts:[{role:"system",content:SYS}]});
+        return true;
+      }
       if(typeof window.ai==="undefined"||typeof window.ai.languageModel==="undefined"){
       /* status shown on the chat badge */
         return false;
@@ -6460,7 +6560,6 @@ AI_TYPES.join(", "),
     if(btn) btn.style.display="none";
     if(prog) prog.style.display="none";
     if(sta){ sta.style.display=""; sta.textContent="Llama 3.2 1B ready — running on your device."; sta.style.color="var(--up)"; }
-    if(chat) chat.style.display="";
     var cs=document.getElementById("chatEngine");
     if(cs){ cs.textContent="WebLLM \u00b7 on device"; cs.className="chat-engine ready"; }
     refreshWllmUI();
@@ -6882,7 +6981,7 @@ AI_TYPES.join(", "),
       extra:extra,
       validate:function(d, prog){
         var cd=lockCooldownLeft();
-        if(cd>0) return Promise.resolve(false);
+        if(cd>0){ setTimeout(function(){ pad.say("Too many tries \u2014 wait "+cd+"s, then enter it again"); }, 460); return Promise.resolve(false); }
         return new Promise(function(res){
           verifyPin(d, function(ok){
             if(!ok){
@@ -7140,7 +7239,7 @@ AI_TYPES.join(", "),
       }
       return null;
     }).then(function(ans){
-      setAnswer(ans || "No model is ready yet. Chrome 127+ has one built in — otherwise set one up in Settings › Extra › AI mode.");
+      setAnswer(ans || "No on-device model is ready yet. Load the on-device model in Settings › AI mode (needs Chrome or Edge with WebGPU), or use Chrome\u2019s built-in AI where it\u2019s switched on.");
     }).catch(function(e){
       setAnswer("\u26a0 "+errxLine(e,{source:"chat"}));
     });
@@ -8012,7 +8111,7 @@ AI_TYPES.join(", "),
           message:"Face unlock needs it. Blocking the camera turns face unlock off \u2014 your PIN still works.",
           confirmText:"Block it", cancelText:"Cancel",
           onConfirm:function(){
-            setCameraBlocked(true); faceDisable();
+            setCameraBlocked(true); faceCfg.on=false; saveFace();   // turn it off but keep the enrolled faces
             paint(); refreshSecUI(); refreshFacePanel(); renderFacePeople&&renderFacePeople();
             flashSaved("camera blocked");
           }});
@@ -8403,11 +8502,13 @@ AI_TYPES.join(", "),
         clearLock();
         appModal({title:"Answer accepted",
           message:"Choose a new PIN. Your data is untouched.",
-          confirmText:"Set a new PIN",
+          confirmText:"Set a new PIN", cancelText:"Not now",
           onConfirm:function(){
             openPinSetup();
             onUnlocked&&onUnlocked();
-          }});
+          },
+          // the old PIN is already cleared, so cancelling must still let you in
+          onCancel:function(){ onUnlocked&&onUnlocked(); flashSaved("PIN removed \u2014 set a new one in Settings"); }});
       }, function(p){ if(p<1) btn.textContent="Checking\u2026 "+Math.round(p*100)+"%"; });
     };
     setTimeout(function(){ try{ host.querySelector("#ruA").focus(); }catch(e){} },80);
@@ -8803,7 +8904,7 @@ AI_TYPES.join(", "),
       +'    <div class="rc-sec">When</div>'
       +      list.slice(0,12).map(function(a){
               return '<div class="rc-card"><div class="rc-ic">⛔</div>'
-                +'<div class="rc-main"><div class="rc-t">'+esc(a.kind==="face"?"Face didn\u2019t match":"Wrong PIN")+'</div>'
+                +'<div class="rc-main"><div class="rc-t">'+esc(a.kind==="face"?"Face didn\u2019t match":a.kind==="spoof"?"Looked like a photo or screen":"Wrong PIN")+'</div>'
                 +'<div class="rc-s">'+esc(fmtLogTime(a.at))+' · '+agoText(a.at)+'</div></div></div>';
             }).join("")
       +'    <div class="rc-secd" style="margin-top:12px">If this was you, nothing to do. If it wasn’t, '
@@ -10916,6 +11017,7 @@ AI_TYPES.join(", "),
         }
         if(pts) this.prevForFlow=pts.map(function(q){ return {x:q.x,y:q.y}; });
 
+        var pose=pts?poseFromLandmarks(lm):null;
         /* Challenge progress — checked here so the verdict stays cheap. */
         if(pose && !this.chDone){
           var ch=this.challenges[this.chIdx];
@@ -10928,7 +11030,6 @@ AI_TYPES.join(", "),
           } else if(this.chFrames>0) this.chFrames--;
         }
         // did the head actually move? (used by the challenge)
-        var pose=pts?poseFromLandmarks(lm):null;
         if(pose){
           if(!this.baselinePose) this.baselinePose=pose;
           else if(Math.abs(pose.yaw-this.baselinePose.yaw)>0.18) this.poseMoved=true;
@@ -11300,7 +11401,7 @@ AI_TYPES.join(", "),
       }
     }
     var rb=document.getElementById("recBtn");
-    var rn=document.getElementById("recNote");
+    var rn=document.getElementById("recQNote");
     if(rb){
       /* Deliberately NOT disabled when there's no PIN: a dead button that
          does nothing teaches you it's broken. It stays clickable and says
@@ -11455,21 +11556,12 @@ AI_TYPES.join(", "),
      ready, say so and open the tab that can fix it — rather than
      failing silently or pretending an answer. */
   function askBestLocalEngine(question){
-    openAiSettings();
-    if(q) q.value=question;
-    initBuiltinAi().then(function(ready){
-      if(ready){
-        return;
-      }
-      if(window._wllmEngine){
-        openAiSettings();
-        if(wq) wq.value=question;
-        return;
-      }
-      if(resp) resp.innerHTML='<div class="aud-llm-resp" style="color:var(--amber)">'
-        +'No model is ready yet. Chrome 127+ has one built in, or set one up in '
-        +'Settings \u203a Extra \u203a AI mode.</div>';
-    });
+    // Open the Ask AI chat with the question already sent. The chat picks the engine
+    // and says plainly when no model is ready. (This used to reference variables that
+    // didn't exist, so it crashed after jumping to Settings and nothing was asked.)
+    openChatSheet();
+    var inp=document.getElementById("chatInput");
+    if(inp){ inp.value=question||""; if(question) chatSend(); }
   }
 
 
@@ -11494,7 +11586,7 @@ AI_TYPES.join(", "),
     daysAhead = daysAhead || 3;
     if(typeof Notification==="undefined") return;   // browser doesn't support it
     loadNotifSent();
-    var todayS = todayStr(), today = new Date(todayS);
+    var todayS = todayStr(), today = new Date(+todayS.slice(0,4), +todayS.slice(5,7)-1, +todayS.slice(8,10));   // local midnight, not UTC
     // build the window of dates to check
     var window_dates = [];
     for(var d=0; d<=daysAhead; d++){
@@ -11505,6 +11597,7 @@ AI_TYPES.join(", "),
     var upcoming = [];
     recurList().forEach(function(r){
       if(r.paused) return;
+      if(balDelta({type:r.type, amount:1})>=0) return;   // salary / savings withdrawals aren't bills
       window_dates.forEach(function(ds){
         var dts = dueDates(r, ds);
         if(dts.indexOf(ds)>=0){
@@ -11532,7 +11625,11 @@ AI_TYPES.join(", "),
         });
         _notifSent.ids.push(key);
         saveNotifSent();
-      }catch(e){}
+      }catch(e){
+        // Android Chrome refuses new Notification() outside a service worker — show it in-app instead of dropping it
+        flashSaved("\uD83D\uDCB3 "+label+amt+" \u2014 "+when);
+        _notifSent.ids.push(key); saveNotifSent();
+      }
     });
   }
 
@@ -11906,6 +12003,7 @@ AI_TYPES.join(", "),
     }
   }
 
+  var _recSnooze=false;   // "Not now" holds for this session instead of returning on the next save
   function checkRecurPrompt(){
     var el=document.getElementById("recPrompt");
     if(!el) return;
@@ -11926,7 +12024,7 @@ AI_TYPES.join(", "),
       return;   // applyRecur calls checkRecurPrompt again when done
     }
 
-    if(!manualPend.length){ el.style.display="none"; return; }
+    if(!manualPend.length || _recSnooze){ el.style.display="none"; return; }
     var total=manualPend.reduce(function(a,b){ return a+Math.abs(num(b.rule.amount)); },0);
     document.getElementById("recPromptMsg").innerHTML=
       "<b>"+manualPend.length+"</b> recurring entr"+(manualPend.length===1?"y is":"ies are")+" due — "+fmt(total,state.currency)+" in total.";
@@ -12021,7 +12119,7 @@ AI_TYPES.join(", "),
       var pend=pendingRecur().filter(function(x){ return !x.rule.auto; });
       if(pend.length) applyRecur(pend, function(n){ flashSaved("added "+n); checkRecurPrompt(); });
     });
-    if(n2) n2.addEventListener("click", function(){ document.getElementById("recPrompt").style.display="none"; });
+    if(n2) n2.addEventListener("click", function(){ _recSnooze=true; document.getElementById("recPrompt").style.display="none"; });
   }
 
   /* ================= BUDGETS =================
@@ -12101,8 +12199,8 @@ AI_TYPES.join(", "),
     var wanted=catAndDescendants(cat);
     var total=0;
     state.transactions.forEach(function(t){
-      // outflow of any kind, not just the legacy "spend" type
-      if(balDelta(t)>=0) return;
+      // real spending only — savings, tax set-aside and trading moves are not spending
+      if(!isSpendingOut(t)) return;
       if(monthKey(t.date)!==mk) return;
       if(wanted.indexOf(t.cat||"Other")<0) return;
       total+=Math.abs(balDelta(t));
@@ -12167,10 +12265,11 @@ AI_TYPES.join(", "),
   // Fires after the entry is added: it reports, it never blocks. Refusing to record
   // money you've already spent would just make the ledger wrong.
   function maybeWarnBudget(tx){
-    if(!tx || tx.type!=="spend") return;
+    if(!tx || !isSpendingOut(tx)) return;
     if(monthKey(tx.date)!==monthKey(todayStr())) return;   // only the live month
     var cat=tx.cat||"Other";
-    var cap=budgetFor(cat);
+    var cap=budgetFor(cat) || budgetFor(topCatOf(cat));
+    if(!budgetFor(cat)) cat=topCatOf(cat);
     if(!cap) return;
     var spent=spentThisMonth(cat);          // already includes this entry
     var sym=state.currency;
@@ -12361,7 +12460,7 @@ AI_TYPES.join(", "),
         onConfirm:function(){
           rows.forEach(function(r){
             delete r.dupe;
-            r.id=freshIdBase()+Math.floor(Math.random()*1000);
+            r.id=freshIdBase();   // already unique; a random offset made ids collide
             state.transactions.push(r);
           });
           // imported rows are almost always dated outside the current month — without
@@ -13185,6 +13284,8 @@ AI_TYPES.join(", "),
 
   /* ---------------- render ---------------- */
   function render(){
+    // keep the MT-statement mode box in step with the saved setting (it loads after the settings UI binds)
+    (function(){ var mo=document.getElementById("setMtOcr"); if(mo && typeof mtOcrMode==="function" && document.activeElement!==mo && mo.value!==mtOcrMode()){ mo.value=mtOcrMode(); try{ if(mo._xsync) mo._xsync(); }catch(e){} } })();
     var t=totals(), sym=state.currency;
 
     // live date, top of page
@@ -13438,7 +13539,7 @@ AI_TYPES.join(", "),
   // type -> show/hide category & adjust label (shared by bind()'s live listener and startEdit/cancelEdit)
   function typeUI(){
     var v=document.getElementById("fType").value;
-    document.getElementById("catFld").style.display = (v==="spend")?"flex":"none";
+    document.getElementById("catFld").style.display = isCatType(v)?"flex":"none";
     var isTrade=(v==="trade_win"||v==="trade_loss");
     document.getElementById("instFld").style.display = isTrade?"flex":"none";
     if(isTrade) refreshInstList();
@@ -13653,7 +13754,7 @@ AI_TYPES.join(", "),
         amtHtml='<span class="'+(dd2<0?"up":"down")+'">'+(dd2<0?"−":"+")+fmt(Math.abs(dd2),sym)+'</span>'; tag="debt";
       } else if(ds!==0){ amtHtml='<span class="cool">'+(ds>0?"+":"−")+fmt(Math.abs(ds),sym)+'</span>'; tag="savings"; }
       else { amtHtml='<span class="neu">'+fmt(0,sym)+'</span>'; }
-      var note = t.note? esc(t.note) : (t.type==="spend"&&t.cat? esc(t.cat) : "");
+      var note = t.note? esc(t.note) : (isCatType(t.type)&&t.cat? esc(t.cat) : "");
       var instTag = t.inst ? '<span class="inst-tag">'+esc(t.inst)+'</span>' : '';
       var hasProof = photosOf(t).length>0;
       var eyeBtn = hasProof ? '<button type="button" class="eye-btn" data-id="'+t.id+'" title="View photo">\u{1F441}</button>' : '';
@@ -13689,7 +13790,7 @@ AI_TYPES.join(", "),
     Array.prototype.forEach.call(led.querySelectorAll(".del"), function(b){
       b.addEventListener("click", function(e){
         e.stopPropagation();
-        var id=+b.getAttribute("data-id");
+        var id=rid(b.getAttribute("data-id"));
         if(editingId===id) cancelEdit(); // don't leave a deleted entry loaded in the form
         deleteWithUndo(id);
       });
@@ -13697,13 +13798,13 @@ AI_TYPES.join(", "),
     Array.prototype.forEach.call(led.querySelectorAll(".edit"), function(b){
       b.addEventListener("click", function(e){
         e.stopPropagation();
-        startEdit(+b.getAttribute("data-id"));
+        startEdit(rid(b.getAttribute("data-id")));
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lchk"), function(cb){
       cb.addEventListener("click", function(e){ e.stopPropagation(); });
       cb.addEventListener("change", function(){
-        toggleSelect(+cb.getAttribute("data-id"), cb.checked);
+        toggleSelect(rid(cb.getAttribute("data-id")), cb.checked);
       });
     });
     // anywhere in the zone — the tick, the date, the gap around them
@@ -13711,7 +13812,7 @@ AI_TYPES.join(", "),
       z.addEventListener("click", function(e){
         e.stopPropagation();                       // never opens the record
         if(e.target.classList.contains("lchk")) return;  // the tick handles itself
-        var id=+z.getAttribute("data-id");
+        var id=rid(z.getAttribute("data-id"));
         toggleSelect(id, !selectedIds[id]);
       });
     });
@@ -13721,22 +13822,22 @@ AI_TYPES.join(", "),
     Array.prototype.forEach.call(led.querySelectorAll(".eye-btn"), function(b){
       b.addEventListener("click", function(e){
         e.stopPropagation();
-        openViewer(+b.getAttribute("data-id"));
+        openViewer(rid(b.getAttribute("data-id")));
       });
     });
     Array.prototype.forEach.call(led.querySelectorAll(".lrow"), function(row){
       row.addEventListener("click", function(e){
         if(e.target.closest(".del,.edit,.eye-btn,.lsel")) return;
-        openTxDetail(+row.getAttribute("data-id"));
+        openTxDetail(rid(row.getAttribute("data-id")));
       });
       row.addEventListener("contextmenu", function(e){
         e.preventDefault();                       // replace the browser menu with ours
-        var t=state.transactions.filter(function(x){ return x.id===+row.getAttribute("data-id"); })[0];
+        var t=state.transactions.filter(function(x){ return x.id===rid(row.getAttribute("data-id")); })[0];
         if(t) openCopyMenu(t);
       });
       row.setAttribute("tabindex","0");
       row.addEventListener("keydown", function(e){
-        if(e.key==="Enter"){ e.preventDefault(); openTxDetail(+row.getAttribute("data-id")); }
+        if(e.key==="Enter"){ e.preventDefault(); openTxDetail(rid(row.getAttribute("data-id"))); }
       });
     });
     updateExportBtn();
@@ -13748,15 +13849,27 @@ AI_TYPES.join(", "),
     if(!tx || tx.auto) return;
     editingId=id;
     document.getElementById("fDate").value=tx.date;
-    document.getElementById("fType").value=tx.type;
+    (function(){
+      // Older and imported entries use types the form no longer lists (spend,
+      // pay_debt_balance, borrow, alw_*). Setting .value to a missing option left the
+      // box blank, and saving then wrote type "" — the entry stopped counting.
+      var ft=document.getElementById("fType");
+      Array.prototype.forEach.call(ft.querySelectorAll("option[data-legacy]"), function(o){ o.remove(); });
+      if(!ft.querySelector('option[value="'+tx.type+'"]')){
+        var o=document.createElement("option"); o.value=tx.type; o.setAttribute("data-legacy","1");
+        var LEG={spend:"Spent (older type)", pay_debt_balance:"Paid off debt (older type)", borrow:"Borrowed (older type)", alw_debt:"Allowance \u2192 debt", alw_savings:"Allowance \u2192 savings", alw_trading:"Allowance \u2192 money", borrow_cash:"Borrowed cash"};
+        o.textContent=LEG[tx.type]||tx.type;
+        ft.appendChild(o);
+      }
+      ft.value=tx.type;
+    })();
     typeUI();
-    if(tx.type==="spend") document.getElementById("fCat").value=tx.cat||"Other";
+    if(isCatType(tx.type)) document.getElementById("fCat").value=tx.cat||"Other";
     refreshSelects();   // programmatic .value changes don't fire change
     document.getElementById("fInst").value=tx.inst||"";
     document.getElementById("fAmt").value=tx.amount;
-    // default the split field from the setting — off means 1 (no split)
-    document.getElementById("fSplit").value = (typeof splitIsOn==="function" && splitIsOn())
-      ? String(splitWays()) : "1";
+    // the stored amount is already your share — re-splitting on save halved it again
+    document.getElementById("fSplit").value = "1";
     var splitHintEl0=document.getElementById("splitHint"); if(splitHintEl0) splitHintEl0.style.display="none";
     document.getElementById("fNote").value=tx.note||"";
     // Picking a new photo used to REPLACE the old one. Now they add, and each existing
@@ -13774,8 +13887,10 @@ AI_TYPES.join(", "),
     var form=document.getElementById("entryForm");
     if(form && form.reset) form.reset();
     document.getElementById("fDate").value=todayStr();
+    Array.prototype.forEach.call(document.querySelectorAll("#fType option[data-legacy]"), function(o){ o.remove(); });
     document.getElementById("fType").value="income";
     typeUI();
+    try{ refreshSelects(); }catch(e){}
     clearPhotoPick();
     var titleEl=document.getElementById("formTitle"); if(titleEl) titleEl.textContent="Add an entry";
     var submitBtn=document.getElementById("entrySubmitBtn"); if(submitBtn) submitBtn.textContent="Add entry";
@@ -13796,7 +13911,10 @@ AI_TYPES.join(", "),
     state.transactions.splice(idx,1);
     delete selectedIds[id];
     persist(); render();
-    pendingDelete={ tx:tx };
+    // straight into the bin, so closing the tab during the 5s undo window can't lose it
+    toTrash(tx);
+    persist();
+    pendingDelete={ tx:tx, inTrash:true };
     pendingDelete.timer=setTimeout(finalizePendingDelete, 5000);
     showUndoToast(tx);
   }
@@ -13805,7 +13923,7 @@ AI_TYPES.join(", "),
     if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
     // the 5s toast expiring means "they didn't undo", not "destroy it" — it goes to the
     // bin, photo intact, and only leaves for good after TRASH_DAYS
-    toTrash(pendingDelete.tx);
+    if(!pendingDelete.inTrash) toTrash(pendingDelete.tx);
     pendingDelete=null;
     persistNow();
     hideUndoToast();
@@ -13813,7 +13931,12 @@ AI_TYPES.join(", "),
   function undoDelete(){
     if(!pendingDelete) return;
     if(pendingDelete.timer) clearTimeout(pendingDelete.timer);
-    state.transactions.push(pendingDelete.tx);
+    if(pendingDelete.inTrash && Array.isArray(state.trash)){
+      var pid=pendingDelete.tx.id;
+      for(var ti=0; ti<state.trash.length; ti++){ if(state.trash[ti] && state.trash[ti].tx && state.trash[ti].tx.id===pid){ state.trash.splice(ti,1); break; } }
+    }
+    var already=state.transactions.some(function(t){ return t.id===pendingDelete.tx.id; });
+    if(!already) state.transactions.push(pendingDelete.tx);
     pendingDelete=null;
     persist(); render();
     hideUndoToast();
@@ -13931,7 +14054,7 @@ AI_TYPES.join(", "),
     })();
   }
   function exportSelectedClick(){
-    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+    var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(rid);
     if(!ids.length) return;
     var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });
     flashSaved("preparing…");
@@ -14107,20 +14230,9 @@ AI_TYPES.join(", "),
   function manyAsText(list){
     return list.map(txAsText).join("\n");
   }
-  function copyText(str, msg){
-    var done=function(){ flashSaved(msg||"copied"); };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(str).then(done, function(){ legacyCopy(str); done(); });
-    } else { legacyCopy(str); done(); }
-  }
-  function legacyCopy(str){
-    // clipboard API needs https/permission; this works everywhere as a fallback
-    var ta=document.createElement("textarea");
-    ta.value=str; ta.style.position="fixed"; ta.style.opacity="0";
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    try{ document.execCommand("copy"); }catch(e){}
-    document.body.removeChild(ta);
-  }
+  /* copyText / legacyCopy are defined once, near bindCopyRows. A second pair used to
+     live here and silently replaced the first, which broke the Email/Wallet copy rows
+     and reported "copied" even when the copy failed. */
 
   /* ---- render one transaction to a PNG on a <canvas>, matching the sheet ----
      Canvas rather than screenshotting the DOM: no external library, works offline,
@@ -14137,7 +14249,7 @@ AI_TYPES.join(", "),
     var addMove=function(label,v,key){ if(Math.abs(v)<0.005) return;
       moves.push({label:label, text:(v>0?"+":"\u2212")+fmt(Math.abs(v),sym), key:key}); };
     addMove(L("trading")||"Money", balDelta(t), balDelta(t)>0?"up":"down");
-    addMove(L("debt"), debtDelta(t), debtDelta(t)>0?"up":"down");
+    addMove(L("debt"), debtDelta(t), debtDelta(t)>0?"down":"up");   // more debt is bad news
     addMove(L("savings"), savDelta(t), savDelta(t)>0?"up":"down");
     addMove("Tax set aside", taxDelta(t), "cool");
     if(sepTrading()) addMove("Trading pot", tradingDelta(t), tradingDelta(t)>0?"up":"down");
@@ -14674,10 +14786,11 @@ AI_TYPES.join(", "),
       if(editingId!=null){
         var tx=state.transactions.filter(function(t){ return t.id===editingId; })[0];
         if(!tx){ cancelEdit(); return; }
+        if(!type){ type=tx.type; }   // never save an entry with a blank type
         recordAction("Edited "+(TYPE_META[tx.type]||{label:tx.type}).label.toLowerCase()
           +" "+fmt(Math.abs(num(tx.amount)), state.currency));
         tx.date=date; tx.type=type; tx.amount=raw;
-        if(type==="spend") tx.cat=document.getElementById("fCat").value; else delete tx.cat;
+        if(isCatType(type)) tx.cat=document.getElementById("fCat").value; else delete tx.cat;
         if(type==="trade_win"||type==="trade_loss"){
           var iv2=document.getElementById("fInst").value.trim().toUpperCase();
           if(iv2) tx.inst=iv2; else delete tx.inst;
@@ -14703,7 +14816,7 @@ AI_TYPES.join(", "),
         flashSaved("saved changes");
       } else {
         var tx2={ id:freshIdBase(), date:date, type:type, amount:raw };
-        if(type==="spend") tx2.cat=document.getElementById("fCat").value;
+        if(isCatType(type)) tx2.cat=document.getElementById("fCat").value;
         if(type==="trade_win"||type==="trade_loss"){
           var iv=document.getElementById("fInst").value.trim().toUpperCase();
           if(iv) tx2.inst=iv;
@@ -14791,7 +14904,7 @@ AI_TYPES.join(", "),
     document.getElementById("exportSelBtn").addEventListener("click", exportSelectedClick);
     var copyBtn=document.getElementById("copySelBtn");
     if(copyBtn) copyBtn.addEventListener("click", function(){
-      var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(Number);
+      var ids=Object.keys(selectedIds).filter(function(k){ return selectedIds[k]; }).map(rid);
       if(!ids.length) return;
       var list=state.transactions.filter(function(t){ return ids.indexOf(t.id)>=0; });
       if(list.length===1){ openCopyMenu(list[0]); return; }   // one row -> full menu incl. image
@@ -14824,7 +14937,7 @@ AI_TYPES.join(", "),
     // apply allowance — adds next unadded month, up to 3 months advance outstanding at once
     document.getElementById("applyAlw").addEventListener("click", function(){
       var sd=num(state.settings.toDebt), stt=num(state.settings.toTrading), ss=num(state.settings.toSavings);
-      if(sd+stt+ss<=0) return;
+      if(sd+stt+ss<=0){ flashSaved("set how your allowance splits first (the amounts above)"); return; }
       var amSetNow=allowanceMonths();
       // find next unadded month from current month onwards — walks forward with monthAdd()
       // so it can roll from December into January of next year and keep going indefinitely.
@@ -15128,12 +15241,9 @@ AI_TYPES.join(", "),
     function adoptTransactions(txs, photosMap){
       return txs.map(function(t){
         var copy=clone(t);
-        var oldPhoto=copy.photo;
         copy.id=freshIdBase();
-        if(oldPhoto){
-          if(photosMap && photosMap[oldPhoto]){ copy.photo=copy.id; savePhoto(copy.id, photosMap[oldPhoto]); }
-          else delete copy.photo;
-        }
+        // every photo in the list gets a fresh id; photos the backup doesn't carry are dropped
+        if(photosOf(copy).length) clonePhotosFor(copy, function(oldId, cb){ cb(photosMap && photosMap[oldId] || null); });
         return copy;
       });
     }
@@ -15148,7 +15258,7 @@ AI_TYPES.join(", "),
       flashSaved("loaded");
     }
     document.getElementById("impLoad").addEventListener("click", function(){
-      var txt=document.getElementById("impBox").value.trim(); if(!txt) return;
+      var txt=document.getElementById("impBox").value.trim(); if(!txt){ flashSaved("paste a backup into the box first"); return; }
       var obj;
       try{ obj=JSON.parse(txt); }
       catch(e){ appModal({title:"That isn't valid JSON", message:"The backup didn't parse. Check you pasted the whole thing.", confirmText:"OK", cancelText:"Close"}); return; }
@@ -15255,8 +15365,9 @@ AI_TYPES.join(", "),
     document.getElementById("viewerDel").addEventListener("click", function(){
       if(viewingId==null) return;
       var tx=state.transactions.filter(function(x){ return x.id===viewingId; })[0];
-      if(tx && tx.photo){ delPhoto(tx.photo); delete tx.photo; }
+      if(tx){ photosOf(tx).forEach(delPhoto); setPhotos(tx, []); if(tx.photo){ delPhoto(tx.photo); delete tx.photo; } }
       persist(); render(); closeViewer();
+      flashSaved("image removed");
     });
 
     // one Escape handler for every overlay, closing only the topmost open one
@@ -15870,7 +15981,8 @@ AI_TYPES.join(", "),
       etaEl.textContent="done in "+Math.round((Date.now()-H.t0)/100)/10+"s";
       phEl.textContent=""; sayEl.textContent=msg||"Done.";
       box.classList.add("aep-done");
-      setTimeout(function(){ box.classList.add("aep-out"); setTimeout(function(){ box.remove(); }, 350); }, cfg.host?900:1600);
+      // an in-sheet panel keeps its result line ("Read by Gemini: …, check and adjust") — it vanished after 0.9s
+      if(!cfg.host) setTimeout(function(){ box.classList.add("aep-out"); setTimeout(function(){ box.remove(); }, 350); }, 1600);
     };
     H.fail=function(err, opts){
       if(H.done||H.failed) return;
@@ -15896,6 +16008,8 @@ AI_TYPES.join(", "),
       if(b._inv) return; b._inv=true;
       b.addEventListener("click", function(){
         var t={}; try{ t=JSON.parse(decodeURIComponent(b.getAttribute("data-t")||"")); }catch(e){}
+        // close the sheet the error came from, or it keeps covering the Investigation page
+        var so=b.closest("#scanOv"); if(so) so.remove();
         investOpenWith(t);
       });
     });
@@ -15922,13 +16036,29 @@ AI_TYPES.join(", "),
   var _invSnaps={};   /* snapshot ring for reverts — session only, keyed by snap id */
   function investSnap(){
     var id="s"+Date.now()+Math.floor(Math.random()*999);
-    try{ _invSnaps[id]=JSON.stringify(state); }catch(e){ return null; }
-    var keys=Object.keys(_invSnaps); if(keys.length>12) delete _invSnaps[keys[0]];
+    try{ _invSnaps[id]=JSON.stringify({pid:ACTIVE_PID, s:state}); }catch(e){ return null; }
+    // evict the oldest, but never the investigation's starting point
+    var first=INVEST.active&&INVEST.active.firstSnap;
+    var keys=Object.keys(_invSnaps).filter(function(k){ return k!==first; });
+    if(keys.length>12) delete _invSnaps[keys[0]];
     return id;
   }
-  function investRestore(id){
+  function investRestore(id, dropNewer){
     var raw=_invSnaps[id]; if(!raw) return false;
-    try{ var s=JSON.parse(raw); Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state,s); }
+    try{
+      var w=JSON.parse(raw), s=w&&w.s?w.s:w;
+      // a snapshot from another portfolio must never be written into this one
+      if(w && w.pid && w.pid!==ACTIVE_PID) return false;
+      // Reverting one fix keeps entries added since the snapshot; only "Revert
+      // everything" (which says so) drops them.
+      var keepNew=[];
+      if(!dropNewer){
+        var had={}; (s.transactions||[]).forEach(function(t){ had[t.id]=1; });
+        keepNew=(state.transactions||[]).filter(function(t){ return !had[t.id]; });
+      }
+      Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state,s);
+      if(keepNew.length) state.transactions=(state.transactions||[]).concat(keepNew);
+    }
     catch(e){ return false; }
     persistNow(); render(); return true;
   }
@@ -16098,9 +16228,8 @@ AI_TYPES.join(", "),
     });
     var ra=document.getElementById("invRevertAll");
     if(ra) ra.addEventListener("click", function(){
-      appModal({title:"Revert everything?", message:"Your data goes back to the moment this investigation started. Entries added since then in this session are removed. A backup snapshot is taken first.", confirmText:"Revert", danger:true, critical:true, onConfirm:function(){
-        investSnap();
-        if(a.firstSnap && investRestore(a.firstSnap)) flashSaved("reverted to investigation start");
+      appModal({title:"Revert everything?", message:"Your data goes back to the moment this investigation started. Entries added since then in this session are removed.", confirmText:"Revert", danger:true, critical:true, onConfirm:function(){
+        if(a.firstSnap && investRestore(a.firstSnap, true)) flashSaved("reverted to investigation start");
         else appModal({title:"Nothing to revert to", message:"The starting snapshot isn't available (it lives for the session only). No changes were made.", confirmText:"OK", cancelText:"Close", critical:true});
         investRender();
       }});
@@ -16356,7 +16485,7 @@ AI_TYPES.join(", "),
         +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">'
           +'<div style="flex:1;min-width:120px;max-width:200px"><img id="scImg" alt="receipt" style="width:100%;border-radius:10px;display:block">'
             +'<div id="scThumbs" class="sc-thumbs"></div>'
-            +'<button class="btn ghost sm" id="scMore" style="width:100%;margin-top:6px">＋ Add photo</button></div'
+            +'<button class="btn ghost sm" id="scMore" style="width:100%;margin-top:6px">＋ Add photo</button></div>'
           +'<div style="flex:2;min-width:200px">'
             +'<div id="scAep"></div>'
             +'<div class="fld"><label>Amount</label><input class="inp" id="scAmt" inputmode="decimal" placeholder="e.g. 24.99"></div>'
@@ -16391,7 +16520,7 @@ AI_TYPES.join(", "),
     }
     document.getElementById("scForm").onclick=function(){
       scanToForm(); close();
-      setTab("pageDash");
+      setTab("pageLedger");   // the entry form lives on Entries
       var s=document.getElementById("fPhotoStrip"); if(s&&s.scrollIntoView) try{ s.scrollIntoView({block:"center"}); }catch(e){}
       flashSaved("photo"+(urls.length===1?"":"s")+" added to the entry form \u2014 locked");
     };
@@ -16418,14 +16547,27 @@ AI_TYPES.join(", "),
     document.getElementById("scAdd").onclick=function(){
       var amt=parseFloat(document.getElementById("scAmt").value);
       if(!isFinite(amt)||amt<=0){ shake(document.getElementById("scAmt")); return; }
-      state.transactions.unshift({
-        id:"t"+Date.now()+Math.floor(Math.random()*9999),
+      var stx={
+        id:freshIdBase(),   // a numeric id like every other entry — "t…" ids could never be opened, edited or deleted
         type:"expense", amount:amt,
         date:document.getElementById("scDate").value||todayStr(),
         note:document.getElementById("scNote").value.trim(),
         cat:document.getElementById("scCat").value
+      };
+      // keep the receipt photo(s) with the entry
+      var spids=[];
+      urls.slice(0,(typeof PHOTO_MAX==="number"?PHOTO_MAX:6)).forEach(function(u){
+        var nid=newPhotoId(stx.id, spids); spids.push(nid); savePhoto(nid, u, null, "receipt.jpg");
       });
+      if(spids.length) setPhotos(stx, spids);
+      state.transactions.unshift(stx);
+      try{ recordAction("Added spent "+fmt(amt, state.currency)+" from a receipt"); }catch(e){}
+      try{ mirrorNewTransaction(stx); }catch(e){}
+      // make sure the month it landed in is on screen
+      var smk=monthKey(stx.date);
+      if(!isAllSelected() && activeMonths().indexOf(smk)<0) state.selectedMonths=[smk];
       persist(); close(); render();
+      try{ maybeWarnBudget(stx); }catch(e){}
       flashSaved("expense logged from receipt");
     };
 
@@ -16490,8 +16632,14 @@ AI_TYPES.join(", "),
               aep.phase("read", 0.1);
               var parts=cvs.map(function(cv){ return scanDataUrlParts(cv.toDataURL("image/jpeg",0.85)); });
               var prov=AI_PROVIDERS[eng.prov];
+              if(!eng.model && eng.slot && !eng._resolved){
+                // first run with no model chosen: pick one from the key's own model list
+                eng._resolved=true;
+                aiEnsureModel(eng.slot).then(function(m){ eng.model=m||""; go(); }, function(){ go(); });
+                return;
+              }
               var tick=setInterval(function(){ aep.progress(Math.min(0.92, (aep.pProg||0)+0.05)); }, 600);
-              var timeout=setTimeout(function(){ clearInterval(tick); step(idx+1, new Error("Timeout: "+prov.label+" didn't answer within 30 seconds.")); }, 30000);
+              var timeout=setTimeout(function(){ if(settled) return; settled=true; clearInterval(tick); step(idx+1, new Error("Timeout: "+prov.label+" didn't answer within 30 seconds.")); }, 30000);
               var settled=false;
               prov.run(eng.key, SCAN_PROMPT+(cvs.length>1?"\nThere are "+cvs.length+" images: they may be parts of ONE long receipt (combine into one entry) or separate receipts (use the clearest single total).":""), parts, eng.model||undefined)
                 .then(function(txt){
@@ -16785,9 +16933,13 @@ AI_TYPES.join(", "),
       rowsData.forEach(function(rd){
         var cells=rd.cells;
         if(cells===headerRow) return;
-        if(!cells.some(function(c){return MTOCR_NUM.test(c.text.replace(/,/g,""));})) return;
+        // test WORDS, not cells: on a normal-width statement a whole row merges into one or two
+        // cells, so no cell was ever a bare number and every trade row was thrown away
+        if(!rd.words.some(function(w){return MTOCR_NUM.test(String(w.text).trim().replace(/,/g,""));})) return;
         if(cells.length && SUMMARY.test(cells[0].text.trim())) return;
         if(rd.words.some(function(w){ return SUMMARY.test(w.text.trim()); }) && cells.length<=3) return;
+        // a balance / deposit / credit line is never a trade, however many columns it fills
+        if(rd.words.some(function(w){ return /^(balance|deposit|withdrawal|credit)$/i.test(w.text.trim()); })) return;
         var byCol={};
         rd.words.forEach(function(w){
           var k=keyOf(w.x + (w.w||0)/2);
@@ -16804,6 +16956,8 @@ AI_TYPES.join(", "),
           else if(key==="type"&&MTOCR_DIR.test(raw)){ t.type=raw.toLowerCase(); filled++; }
           else if(key==="volume"&&!isNaN(num)){ t.volume=num; filled++; }
           else if(key==="time"){ seenTime++; if(seenTime===1) t.date=raw; filled++; }
+          else if(key==="commission"&&!isNaN(num)){ t.commission=-Math.abs(num); }   // a charge; OCR often drops the minus
+          else if(key==="swap"&&!isNaN(num)){ t.swap=num; }
           else if(key==="profit"&&!isNaN(num)){
             /* the P/L column sits last; a merged neighbour can donate a number,
                so keep the right-most one found in that column */
@@ -17037,10 +17191,18 @@ AI_TYPES.join(", "),
         mtOcrUI();return;
       }
       mtOcr.state="running";mtOcrUI();
-      var allTrades=[], idx=0, per=1/imgs.length;
+      var allTrades=[], idx=0, per=1/imgs.length, errs=[];
       function next(){
         if(myToken!==mtOcr.token) return;
         if(idx>=imgs.length){
+          if(!allTrades.length && errs.length===imgs.length){
+            // the reader itself failed (blocked download, worker crash) — say so,
+            // instead of telling the user their statement isn't a statement
+            var e0=errs[0]; mtOcr.state="failed";
+            var em=String((e0&&e0.message)||e0||"");
+            mtOcr.error=/network|fetch|importScripts|load/i.test(em) ? "The reader couldn\u2019t download its files (the first run needs a connection) — check the connection and try again." : "The reader failed ("+em.slice(0,80)+") — try again.";
+            mtOcrUI(); return;
+          }
           mtOcr.result={trades:allTrades,isStatement:allTrades.length>0};
           mtOcr.state=allTrades.length?"done":"nota";
           mtOcrUI();
@@ -17068,7 +17230,7 @@ AI_TYPES.join(", "),
                            reason:r.trades.length?"parsed as MT4/MT5":"not MT4/MT5 — no instrument + buy/sell and no statement header"});
             allTrades=allTrades.concat(r.trades);
             idx++;next();
-          }).catch(function(){ if(myToken===mtOcr.token){idx++;next();} });
+          }).catch(function(err){ if(myToken===mtOcr.token){ errs.push(err); idx++;next();} });
         });
       }
       next();
@@ -17081,7 +17243,8 @@ AI_TYPES.join(", "),
       close_time,close_price,sl,tp,swap,commission,profit)
      ===================================================== */
   function mtOcrNet(trades){
-    var n=0;trades.forEach(function(t){if(typeof t.profit==="number")n+=t.profit;});
+    // true P&L = profit + commission + swap (commission was being read and then ignored)
+    var n=0;trades.forEach(function(t){if(typeof t.profit==="number")n+=t.profit+(t.commission||0)+(t.swap||0);});
     return Math.round(n*100)/100;
   }
   function mtOcrDominantInst(trades){
@@ -17128,7 +17291,10 @@ AI_TYPES.join(", "),
           var amtFull=Math.abs(t.profit);
           var amt=splitN>1?Math.round((amtFull/splitN)*100)/100:amtFull;
           if(!amt) return;
-          var tx={id:freshIdBase(),date:date,
+          // use the trade's own date from the statement (YYYY.MM.DD) when it reads cleanly
+          var tdm=/^(\d{4})[.\-\/](\d{2})[.\-\/](\d{2})/.exec(String(t.date||""));
+          var tdate=(tdm && +tdm[2]>=1 && +tdm[2]<=12 && +tdm[3]>=1 && +tdm[3]<=31) ? tdm[1]+"-"+tdm[2]+"-"+tdm[3] : date;
+          var tx={id:freshIdBase(),date:tdate,
                   type:(t.profit>=0?"trade_win":"trade_loss"),amount:amt};
           if(t.symbol) tx.inst=t.symbol.replace(/_+$/,"");
           var noteBits=[];
@@ -17207,10 +17373,13 @@ AI_TYPES.join(", "),
   function bindMtOcr(){
     var sel=document.getElementById("setMtOcr");
     if(sel){
+      sel.value=mtOcrMode();   // show the saved mode — it read "Off" after every reload
+      try{ refreshSelects(); }catch(e){}
       sel.addEventListener("change",function(){
         if(!state.settings)state.settings={};
         state.settings.mtOcr=sel.value;
         persistNow();flashSaved("saved");mtOcrUI();
+        if(sel.value!=="off" && mtOcr.state==="idle") mtOcrStart();   // a photo may already be attached
       });
     }
     var ns=document.getElementById("setNoSplits");
@@ -17274,7 +17443,7 @@ AI_TYPES.join(", "),
     </div>
     <div class="sec-item">
       <div class="si-main"><div class="si-t">Recovery question</div>
-        <div class="si-d" id="recNote">Optional. Lets you reset a forgotten PIN without wiping your data.</div></div>
+        <div class="si-d" id="recQNote">Optional. Lets you reset a forgotten PIN without wiping your data.</div></div>
       <button class="btn ghost sm" id="recBtn">Set up</button>
     </div>
     <div class="sec-item">
@@ -17838,5 +18007,6 @@ AI_TYPES.join(", "),
     </div>
   </div>
 </main>
+<div class="foot">Made for keeping track — every number here is yours.<br>Losses show in red, gains in green. Paying down debt is a win too.</div>
 </body>
 </html>
