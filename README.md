@@ -1,6 +1,6 @@
 # FinanceCalc — complete version history
 https://projectbergmannstrasse.github.io/FinanceCalc/
-148 builds, **v1.0 to v39.0**, oldest to newest.
+149 builds, **v1.0 to v39.7**, oldest to newest.
 
 Files are numbered `001` upward so they sort chronologically in any file browser.
 Duplicates were removed: the original archive's 217 files contained 143 unique builds.
@@ -190,3 +190,14 @@ code grew more than 12%.
 ## v39.0
 
 All app data now lives in one folder you choose (core.json, settings.json, photos/, backups/), with Supabase backup. See DATA-SETUP.md.
+
+## v39.7
+
+Full functional inspection: every source line read, all 328 controls clicked in a real browser, AI scanning run against all five providers, and the MT5 reader run on real OCR. 66 critical and high defects fixed, each re-tested:
+
+- AI scan works on first use: when no model is chosen, it picks one from the models your key can use (gemini-2.0-flash and grok-2-vision-1212 were retired in 2026)
+- Scanned receipts can be opened, edited and deleted, and keep their photo; the Fill button is visible again; PDFs are handled properly
+- MT4/MT5 statement reader reads trade rows again and nets commission and swap
+- Correct numbers: salary counts as money in, trade losses are not spending, one spending rule for summary, budgets and heatmap, currency switch converts the trading and tax pots, split entries are not halved again on edit, CSV "12,50" and duplicate ids fixed
+- Data safety: deletes go to the bin at once, Undo is tappable, copied/mirrored/imported entries keep their own photos
+- Confirmation messages are shown on screen instead of being overwritten by "saved"
